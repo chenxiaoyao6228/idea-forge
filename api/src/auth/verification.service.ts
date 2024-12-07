@@ -1,0 +1,112 @@
+import { Injectable, Inject } from "@nestjs/common";
+import { RedisService } from "@/_shared/database/redis/redis.service";
+import { MailService } from "@/_shared/email/mail.service";
+import { ApiException } from "@/_shared/model/api.exception";
+import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
+import { UserStatus } from "@prisma/client";
+import { UserService } from "@/user/user.service";
+import { DocumentService } from "@/document/ document.service";
+
+export const VERIFICATION_CODE_TYPES = ["register", "reset-password", "change-email", "2fa"] as const;
+export type VerificationCodeType = (typeof VERIFICATION_CODE_TYPES)[number];
+
+interface VerificationCodeConfig {
+  codeExpiry: number;
+  cooldown: number;
+}
+
+@Injectable()
+export class VerificationService {
+  private readonly CODE_TYPE_CONFIG: Record<VerificationCodeType, VerificationCodeConfig> = {
+    register: { codeExpiry: 300, cooldown: 60 },
+    "reset-password": { codeExpiry: 300, cooldown: 60 },
+    "change-email": { codeExpiry: 300, cooldown: 60 },
+    "2fa": { codeExpiry: 120, cooldown: 30 },
+  };
+
+  constructor(
+    @Inject(RedisService)
+    private readonly redis: RedisService,
+    @Inject(MailService)
+    private readonly mailService: MailService,
+    @Inject(UserService)
+    private readonly userService: UserService,
+    @Inject(DocumentService)
+    private readonly documentService: DocumentService,
+  ) {}
+
+  async generateAndSendCode(email: string, type: VerificationCodeType) {
+    try {
+      const config = this.CODE_TYPE_CONFIG[type];
+      const cooldownKey = this.getCooldownKey(email, type);
+      const isInCooldown = await this.redis.get(cooldownKey);
+
+      if (isInCooldown) {
+        throw new ApiException(ErrorCodeEnum.RequestTooFrequent);
+      }
+
+      const code = Math.random().toString().slice(2, 8);
+      const codeKey = this.getCodeKey(email, type);
+
+      await this.sendVerificationEmail(email, code, type);
+
+      await this.redis.setex(codeKey, config.codeExpiry, code);
+      await this.redis.setex(cooldownKey, config.cooldown, "1");
+
+      return code;
+    } catch (error) {
+      // TODO: 记录错误日志
+      throw new ApiException(ErrorCodeEnum.SendEmailError);
+    }
+  }
+
+  async validateCode(email: string, code: string, type: VerificationCodeType) {
+    const codeKey = this.getCodeKey(email, type);
+    const storedCode = await this.redis.get(codeKey);
+
+    if (!storedCode || storedCode !== code) {
+      throw new ApiException(ErrorCodeEnum.VerificationCodeInvalid);
+    }
+
+    const user = await this.userService.getUserByEmail(email);
+
+    if (!user) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    await this.redis.del(codeKey);
+
+    switch (type) {
+      case "register":
+        await this.userService.updateUserStatus(email, UserStatus.ACTIVE);
+        await this.documentService.createDefault(user.id);
+        break;
+      case "reset-password":
+      // return this.userService.verifyEmail(email);
+      break;
+    }
+
+    return true;
+  }
+
+  private async sendVerificationEmail(email: string, code: string, type: VerificationCodeType) {
+    switch (type) {
+      case "register":
+        return this.mailService.sendRegistrationEmail(email, code);
+      case "reset-password":
+        return this.mailService.sendPasswordResetEmail(email, code);
+      //   case "change-email":
+      //     return this.mailService.sendEmailChangeVerification(email, code);
+      //   case "2fa":
+      //     return this.mailService.send2FACode(email, code);
+    }
+  }
+
+  private getCodeKey(email: string, type: VerificationCodeType): string {
+    return `email:code:${type}:${email}`;
+  }
+
+  private getCooldownKey(email: string, type: VerificationCodeType): string {
+    return `email:cooldown:${type}:${email}`;
+  }
+}

@@ -1,0 +1,90 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int     @id @default(autoincrement())
+  email       String  @unique
+  displayName String? // display name, 没有displayName, 用户如果换邮箱就解绑全部
+  imageUrl    String?
+
+  emailVerified DateTime? // 邮箱验证时间
+  status        UserStatus @default(ACTIVE) // 用户状态
+
+  created_time DateTime @default(now()) @db.Timestamp()
+  updated_time DateTime @updatedAt @db.Timestamp()
+
+  hashedRefreshToken String?
+  password           Password?
+  connections        Connection[]
+  docs               Doc[]
+}
+
+model Password {
+  hash String
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId Int  @unique
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum Provider {
+  google
+  github
+}
+
+model Connection {
+  id           String   @id @default(cuid())
+  providerName Provider // 提供商名称：github、google 等
+  providerId   String // 提供商的用户 ID
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Connection 和 User 是多对一的关系
+  // 一个用户可以有多个第三方账号连接(Connection)
+  // 每个连接只能属于一个用户
+  // onDelete: Cascade 表示当用户被删除时,相关的连接也会被级联删除
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int // 修改为 Int 类型以匹配 User 的 id
+
+  @@unique([providerName, providerId])
+}
+
+model Doc {
+  id             String      @id @default(cuid())
+  title          String
+  content        String
+  contentBinary  Bytes?
+  isArchived     Boolean     @default(false)
+  isStarred      Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  owner          User        @relation(fields: [ownerId], references: [id])
+  ownerId        Int // Changed from String to Int to match User.id type
+  parent         Doc?        @relation("ChildrenDocs", fields: [parentId], references: [id])
+  parentId       String?
+  children       Doc[]       @relation("ChildrenDocs")
+  sharedPassword String?
+  coverImageId   String?     @unique
+  coverImage     CoverImage?
+}
+
+model CoverImage {
+  id      String @id @default(cuid())
+  url     String
+  scrollY Float
+  doc     Doc    @relation(fields: [docId], references: [id])
+  docId   String @unique
+}

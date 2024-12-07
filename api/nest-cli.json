@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true
+  },
+  "generateOptions": {
+    "spec": false
+  },
+  "watchOptions": {
+    "watchExclude": [
+      "src/@generated/**/*",
+      "src/@generated/*",
+      "**/@generated/**/*",
+      "**/*.spec.ts"
+    ]
+  }
+}

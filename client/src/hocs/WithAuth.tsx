@@ -1,0 +1,40 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import useUserStore, { UserInfo } from "@/stores/user";
+
+/**
+ * Get userInfo from local window object and destroy local storage
+ * Dehydrate user information
+ */
+function getUserInfoAndDestroyFromLocal(): UserInfo | undefined {
+  const localInfo = (window as any)._userInfo || undefined;
+
+  // Destroy locally stored information
+  (window as any)._userInfo = null;
+
+  // Remove HTML node containing local storage info
+  document.querySelector("#userHook")?.remove();
+
+  return localInfo;
+}
+
+export default function WithAuth(WrappedComponent: React.ComponentType<any>) {
+  return function EnhancedComponent(props: any) {
+    const { userInfo, setUserInfo } = useUserStore();
+
+    useEffect(() => {
+      const userInfo = getUserInfoAndDestroyFromLocal();
+      if (userInfo) {
+        setUserInfo(userInfo);
+      }
+    }, []);
+
+    // Loading state
+    if (!userInfo?.id) {
+      return <div>Loading...</div>;
+    }
+
+    // Render original component
+    return <WrappedComponent {...props} />;
+  };
+}

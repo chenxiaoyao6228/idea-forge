@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "React: debug client",
+      "request": "launch",
+      "type": "chrome",
+      "url": "http://localhost:5001",
+      "webRoot": "${workspaceFolder}/client"
+    },
+   
+    // # https://nextjs.org/docs/pages/building-your-application/configuring/debugging
+    {
+      "name": "NestJS: debug server",
+      "type": "node",
+      "request": "attach",
+      "port": 9333,
+      "cwd": "${workspaceFolder}/api",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/api/dist/**/*.js"]
+    },
+
+
+  ],
+  "compounds": [
+    {
+      "name": "Fullstack: debug full stack (compound)",
+      "configurations": ["NestJS: debug server", "React: debug client"]
+    }
+  ]
+}
