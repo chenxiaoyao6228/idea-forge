@@ -7,7 +7,12 @@ import { UserStatus } from "@prisma/client";
 import { UserService } from "@/user/user.service";
 import { DocumentService } from "@/document/ document.service";
 
-export const VERIFICATION_CODE_TYPES = ["register", "reset-password", "change-email", "2fa"] as const;
+export const VERIFICATION_CODE_TYPES = [
+  "register",
+  "reset-password",
+  "change-email",
+  "2fa",
+] as const;
 export type VerificationCodeType = (typeof VERIFICATION_CODE_TYPES)[number];
 
 interface VerificationCodeConfig {
@@ -17,7 +22,10 @@ interface VerificationCodeConfig {
 
 @Injectable()
 export class VerificationService {
-  private readonly CODE_TYPE_CONFIG: Record<VerificationCodeType, VerificationCodeConfig> = {
+  private readonly CODE_TYPE_CONFIG: Record<
+    VerificationCodeType,
+    VerificationCodeConfig
+  > = {
     register: { codeExpiry: 300, cooldown: 60 },
     "reset-password": { codeExpiry: 300, cooldown: 60 },
     "change-email": { codeExpiry: 300, cooldown: 60 },
@@ -25,14 +33,10 @@ export class VerificationService {
   };
 
   constructor(
-    @Inject(RedisService)
     private readonly redis: RedisService,
-    @Inject(MailService)
     private readonly mailService: MailService,
-    @Inject(UserService)
     private readonly userService: UserService,
-    @Inject(DocumentService)
-    private readonly documentService: DocumentService,
+    private readonly documentService: DocumentService
   ) {}
 
   async generateAndSendCode(email: string, type: VerificationCodeType) {
@@ -82,14 +86,18 @@ export class VerificationService {
         await this.documentService.createDefault(user.id);
         break;
       case "reset-password":
-      // return this.userService.verifyEmail(email);
-      break;
+        // return this.userService.verifyEmail(email);
+        break;
     }
 
     return true;
   }
 
-  private async sendVerificationEmail(email: string, code: string, type: VerificationCodeType) {
+  private async sendVerificationEmail(
+    email: string,
+    code: string,
+    type: VerificationCodeType
+  ) {
     switch (type) {
       case "register":
         return this.mailService.sendRegistrationEmail(email, code);

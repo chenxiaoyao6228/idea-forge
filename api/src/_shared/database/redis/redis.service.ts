@@ -1,17 +1,20 @@
 import { Global, Injectable } from "@nestjs/common";
 import type { RedisClientType } from "redis";
 import { createClient } from "redis";
+import { ConfigService } from "@nestjs/config";
 
 @Global()
 @Injectable()
 export class RedisService {
   private redisClient: RedisClientType;
 
+  constructor(private configService: ConfigService) {}
+
   async onModuleInit() {
     this.redisClient = createClient({
       socket: {
-        host: process.env.REDIS_HOST,
-        port: Number.parseInt(process.env.REDIS_PORT || "6379"),
+        host: this.configService.get("REDIS_HOST"),
+        port: this.configService.get("REDIS_PORT", 6379),
       },
     });
     await this.redisClient.connect();

@@ -1,17 +1,22 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy as PassportJWTStrategy } from 'passport-jwt';
-import type { ConfigType } from '@nestjs/config';
-import type { AuthJwtPayload } from '../types/auth-jwtPayload';
-import { AuthService } from '../auth.service';
-import {refreshJwtConfig} from '../config/refresh.config';
-import type { Request } from 'express';
+import { Inject, Injectable } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt, Strategy as PassportJWTStrategy } from "passport-jwt";
+import type { ConfigType } from "@nestjs/config";
+import type { AuthJwtPayload } from "../types/auth-jwtPayload";
+import { AuthService } from "../auth.service";
+import { refreshJwtConfig } from "@/_shared/config/configs";
+import type { Request } from "express";
 
 @Injectable()
-export class RefreshTokenStrategy extends PassportStrategy(PassportJWTStrategy, 'refresh-jwt') {
+export class RefreshTokenStrategy extends PassportStrategy(
+  PassportJWTStrategy,
+  "refresh-jwt"
+) {
   constructor(
     @Inject(refreshJwtConfig.KEY)
-    private readonly refreshJwtConfiguration: ConfigType<typeof refreshJwtConfig>,
+    private readonly refreshJwtConfiguration: ConfigType<
+      typeof refreshJwtConfig
+    >
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([

@@ -5,7 +5,7 @@
 This repository serves as an ideal starting point for developers looking to build full-stack applications with NestJS and React, particularly when:
 
 - Server-side rendering (SSR) isn't necessary for your project
-- You prefer not to use frameworks like Next.js or Remix
+- You prefer not to use frameworks like Next.js or Remix to have more flexibility
 - You want a modern development experience with features like:
   - Fast hot reloading
   - End-to-end type safety

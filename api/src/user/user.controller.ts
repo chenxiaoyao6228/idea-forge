@@ -1,11 +1,18 @@
-import { Body, Controller, Get, Inject, Param, Post, Put } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Put,
+} from "@nestjs/common";
 import { UserService } from "./user.service";
 import { UpdateUserDto } from "@/auth/auth.dto";
 
 @Controller("/api/user")
 export class UserController {
-  @Inject(UserService)
-  private readonly userService: UserService;
+  constructor(private readonly userService: UserService) {}
 
   @Get(":id")
   async getUserById(@Param("id") id: string) {

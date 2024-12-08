@@ -3,13 +3,20 @@ import { WinstonModule } from "nest-winston";
 import * as winston from "winston";
 import { utilities } from "nest-winston";
 import { MailModule } from "../email/mail.module";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 
 @Module({
   imports: [
     WinstonModule.forRootAsync({
-      useFactory: () => ({
-        level: process.env.NODE_ENV === "production" ? "info" : "debug",
-        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        level:
+          configService.get("NODE_ENV") === "production" ? "info" : "debug",
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.json()
+        ),
         transports: [
           new winston.transports.File({
             filename: `${process.cwd()}/logs/error.log`,
@@ -28,7 +35,7 @@ import { MailModule } from "../email/mail.module";
               winston.format.colorize(),
               utilities.format.nestLike("IdeaForge", {
                 prettyPrint: true,
-              }),
+              })
             ),
           }),
         ],

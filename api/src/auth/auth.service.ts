@@ -1,10 +1,14 @@
-import { HttpStatus, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  HttpStatus,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { UserService } from "../user/user.service";
 import { hash, verify } from "argon2";
 import type { AuthJwtPayload } from "./types/auth-jwtPayload";
 import { ApiException } from "@/_shared/model/api.exception";
 import { JwtService } from "@nestjs/jwt";
-import { refreshJwtConfig,   } from "./config/refresh.config";
 import type { ConfigType } from "@nestjs/config";
 import { RedisService } from "@/_shared/database/redis/redis.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
@@ -15,42 +19,31 @@ import { VerificationService } from "./verification.service";
 import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto } from "./auth.dto";
 import { AuthResponse, LoginResponseData } from "./types/oauth";
 import { DocumentService } from "@/document/ document.service";
-import { jwtConfig } from "./config/jwt.config";
+import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 
 @Injectable()
 export class AuthService {
-  @Inject(UserService)
-  private readonly userService: UserService;
-
-  @Inject(JwtService)
-  private readonly jwtService: JwtService;
+  constructor(
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+    private readonly redis: RedisService,
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+    private readonly verificationService: VerificationService,
+    private readonly documentService: DocumentService
+  ) {}
 
   @Inject(refreshJwtConfig.KEY)
   private readonly refreshJwtConfig: ConfigType<typeof refreshJwtConfig>;
-
   @Inject(jwtConfig.KEY)
   private readonly jwtConfig: ConfigType<typeof jwtConfig>;
-
-  @Inject(RedisService)
-  private readonly redis: RedisService;
-
-  @Inject(PrismaService)
-  private readonly prisma: PrismaService;
-
-  @Inject(MailService)
-  private readonly mailService: MailService;
-
-  @Inject(VerificationService)
-  private readonly verificationService: VerificationService;
-
-  @Inject(DocumentService)
-  private readonly documentService: DocumentService;
 
   async register(data: RegisterDto) {
     let user = await this.userService.getUserByEmail(data.email);
 
     if (user) {
-      if (user.status === UserStatus.ACTIVE) throw new ApiException(ErrorCodeEnum.UserAlreadyExists);
+      if (user.status === UserStatus.ACTIVE)
+        throw new ApiException(ErrorCodeEnum.UserAlreadyExists);
 
       await this.userService.updateUserStatus(data.email, UserStatus.SUSPENDED);
     } else {
@@ -85,7 +78,10 @@ export class AuthService {
 
     const hashedRefreshToken = await hash(refreshToken);
 
-    await this.userService.updateHashedRefreshToken(user.id, hashedRefreshToken);
+    await this.userService.updateHashedRefreshToken(
+      user.id,
+      hashedRefreshToken
+    );
 
     return {
       user: {
@@ -106,7 +102,8 @@ export class AuthService {
 
     if (!user) throw new ApiException(ErrorCodeEnum.UserNotFound);
 
-    if (user.status !== UserStatus.ACTIVE) throw new ApiException(ErrorCodeEnum.UserNotActive);
+    if (user.status !== UserStatus.ACTIVE)
+      throw new ApiException(ErrorCodeEnum.UserNotActive);
 
     await this.verificationService.generateAndSendCode(email, "reset-password");
     return {};
@@ -117,7 +114,8 @@ export class AuthService {
 
     const user = await this.userService.getUserByEmail(email);
     if (!user) throw new ApiException(ErrorCodeEnum.UserNotFound);
-    if (user.status !== UserStatus.ACTIVE) throw new ApiException(ErrorCodeEnum.UserNotActive);
+    if (user.status !== UserStatus.ACTIVE)
+      throw new ApiException(ErrorCodeEnum.UserNotActive);
 
     await this.userService.updateUserPassword(email, data.password);
     return {};
@@ -170,7 +168,9 @@ export class AuthService {
   }
 
   async validateLocalUser(email: string, password: string) {
-    const user = await this.userService.getUserWithPassword(email.toLowerCase());
+    const user = await this.userService.getUserWithPassword(
+      email.toLowerCase()
+    );
 
     if (!user) {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
@@ -208,7 +208,10 @@ export class AuthService {
       sub: userId,
     };
 
-    const [accessToken, refreshToken] = await Promise.all([this.jwtService.signAsync(payload, this.jwtConfig), this.jwtService.signAsync(payload, this.refreshJwtConfig)]);
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, this.jwtConfig),
+      this.jwtService.signAsync(payload, this.refreshJwtConfig),
+    ]);
 
     return { accessToken, refreshToken };
   }
@@ -230,14 +233,20 @@ export class AuthService {
     const user = await this.userService.getUserById(userId);
 
     if (!user) {
-      throw new ApiException(ErrorCodeEnum.UserNotFound, HttpStatus.UNAUTHORIZED);
+      throw new ApiException(
+        ErrorCodeEnum.UserNotFound,
+        HttpStatus.UNAUTHORIZED
+      );
     }
 
     if (!user.hashedRefreshToken) {
       throw new ApiException(ErrorCodeEnum.InvalidRefreshToken);
     }
 
-    const isRefreshTokenValid = await verify(user.hashedRefreshToken, refreshToken);
+    const isRefreshTokenValid = await verify(
+      user.hashedRefreshToken,
+      refreshToken
+    );
 
     if (!isRefreshTokenValid) {
       throw new UnauthorizedException("Invalid refresh token");
@@ -255,7 +264,10 @@ export class AuthService {
 
     const hashedRefreshToken = await hash(refreshToken);
 
-    await this.userService.updateHashedRefreshToken(user.id, hashedRefreshToken);
+    await this.userService.updateHashedRefreshToken(
+      user.id,
+      hashedRefreshToken
+    );
 
     return {
       accessToken,
@@ -272,7 +284,13 @@ export class AuthService {
   }
 
   async handleOAuthLogin(profile: CreateOAuthUserDto): Promise<AuthResponse> {
-    const { providerName, providerId, email: originalEmail, displayName, imageUrl } = profile;
+    const {
+      providerName,
+      providerId,
+      email: originalEmail,
+      displayName,
+      imageUrl,
+    } = profile;
 
     const email = originalEmail.toLowerCase();
 
@@ -300,7 +318,9 @@ export class AuthService {
     });
 
     if (connection) {
-      const { accessToken, refreshToken } = await this.generateJWTToken(connection.user.id);
+      const { accessToken, refreshToken } = await this.generateJWTToken(
+        connection.user.id
+      );
       return {
         type: "EXISTING_USER",
         data: {
@@ -354,7 +374,9 @@ export class AuthService {
 
     await this.documentService.createDefault(newUser.id);
 
-    const { accessToken, refreshToken } = await this.generateJWTToken(newUser.id);
+    const { accessToken, refreshToken } = await this.generateJWTToken(
+      newUser.id
+    );
 
     return {
       type: "NEW_USER",

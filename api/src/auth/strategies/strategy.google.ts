@@ -1,16 +1,21 @@
-import { Strategy as PassportGoogleStrategy, type Profile } from "passport-google-oauth20";
+import {
+  Strategy as PassportGoogleStrategy,
+  type Profile,
+} from "passport-google-oauth20";
 import { PassportStrategy } from "@nestjs/passport";
 
 import { Inject } from "@nestjs/common";
 import { AuthService } from "../auth.service";
-import { googleOAuthConfig } from "../config/google.config";
+import { googleOAuthConfig } from "@/_shared/config/configs";
 import type { ConfigType } from "@nestjs/config";
 import { Provider, UserStatus } from "@prisma/client";
 
 export class GoogleStrategy extends PassportStrategy(PassportGoogleStrategy) {
   constructor(
     @Inject(googleOAuthConfig.KEY)
-    private readonly googleOAuthConfiguration: ConfigType<typeof googleOAuthConfig>,
+    private readonly googleOAuthConfiguration: ConfigType<
+      typeof googleOAuthConfig
+    >
   ) {
     super({
       clientID: googleOAuthConfiguration.clientId,

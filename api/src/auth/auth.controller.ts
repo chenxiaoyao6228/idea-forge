@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Inject, Post, Req, Res, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { LocalAuthGuard } from "./guards/local-auth.guard";
 import { JwtRefreshAuthGuard } from "./guards/jwt-refresh-auth.guard";
@@ -6,24 +15,29 @@ import { GoogleAuthGuard } from "./guards/google-auth.guard";
 import { GithubAuthGuard } from "./guards/github-auth.guard";
 import type { Response } from "express";
 import { Public } from "./decorators/public.decorator";
-import { EmailVerifyDto, ForgotPasswordDto, CodeValidateDto, ResetPasswordDto, RegisterDto } from "./auth.dto";
+import {
+  EmailVerifyDto,
+  ForgotPasswordDto,
+  CodeValidateDto,
+  ResetPasswordDto,
+  RegisterDto,
+} from "./auth.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { UserService } from "@/user/user.service";
 import { ApiException } from "@/_shared/model/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { VerificationService } from "./verification.service";
-import { setAuthCookies } from '@/_shared/utils/cookie';
+import { setAuthCookies } from "@/_shared/utils/cookie";
+import { ConfigService } from "@nestjs/config";
 
 @Controller("/api/auth")
 export class AuthController {
-  @Inject(AuthService)
-  private readonly authService: AuthService;
-
-  @Inject(UserService)
-  private readonly userService: UserService;
-
-  @Inject(VerificationService)
-  private readonly verificationService: VerificationService;
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
+    private readonly verificationService: VerificationService,
+    private readonly configService: ConfigService
+  ) {}
 
   @Public()
   @Post("/code/validate")
@@ -47,8 +61,9 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post("/login")
   async login(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken, user } = await this.authService.loginUser(req.user.email);
-    
+    const { accessToken, refreshToken, user } =
+      await this.authService.loginUser(req.user.email);
+
     setAuthCookies(res, accessToken, refreshToken);
 
     return user;
@@ -69,11 +84,14 @@ export class AuthController {
   @Public()
   @UseGuards(JwtRefreshAuthGuard)
   @Post("/refresh")
-  async refreshToken(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken, user } = await this.authService.refreshToken(req.user);
-    
-    setAuthCookies(res, accessToken, refreshToken);
+  async refreshToken(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const { accessToken, refreshToken, user } =
+      await this.authService.refreshToken(req.user);
 
+    setAuthCookies(res, accessToken, refreshToken);
 
     return user;
   }
@@ -142,20 +160,22 @@ export class AuthController {
         Object.entries({
           type: result.type,
           ...result.data,
-        }).reduce(
-          (acc, [key, value]) => {
-            if (value !== undefined) {
-              acc[key] = typeof value === "object" ? JSON.stringify(value) : String(value);
-            }
-            return acc;
-          },
-          {} as Record<string, string>,
-        ),
+        }).reduce((acc, [key, value]) => {
+          if (value !== undefined) {
+            acc[key] =
+              typeof value === "object" ? JSON.stringify(value) : String(value);
+          }
+          return acc;
+        }, {} as Record<string, string>)
       ).toString();
 
-      res.redirect(`${process.env.CLIENT_APP_URL}/auth/${provider}/callback?${queryParams}`);
+      const clientAppUrl = this.configService.get<string>("CLIENT_APP_URL");
+      res.redirect(`${clientAppUrl}/auth/${provider}/callback?${queryParams}`);
     } catch (error) {
-      res.redirect(`${process.env.CLIENT_APP_URL}/auth/${provider}/callback?type=ERROR&error=${error.code}&message=${error.message}`);
+      const clientAppUrl = this.configService.get<string>("CLIENT_APP_URL");
+      res.redirect(
+        `${clientAppUrl}/auth/${provider}/callback?type=ERROR&error=${error.code}&message=${error.message}`
+      );
     }
   }
 }

@@ -2,8 +2,8 @@ import { Inject, Injectable, NestMiddleware } from "@nestjs/common";
 import { Request, Response, NextFunction } from "express";
 import { join } from "path";
 import * as fs from "fs";
-import { jwtConfig } from "@/auth/config/jwt.config";
-import { ConfigType } from "@nestjs/config";
+import { jwtConfig } from "@/_shared/config/configs";
+import { ConfigService, ConfigType } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { AuthService } from "@/auth/auth.service";
 import { UserService } from "@/user/user.service";
@@ -17,17 +17,14 @@ const skipAuthPaths = ["/register", "/login", "/reset-password"];
 // TODO: There's a Vite plugin that can get the manifest.json after Vite build, read it and check if CSS files need to be handled
 @Injectable()
 export class FallbackMiddleware implements NestMiddleware {
-  @Inject(jwtConfig.KEY)
-  private readonly jwtConfiguration: ConfigType<typeof jwtConfig>;
-
-  @Inject(JwtService)
-  private readonly jwtService: JwtService;
-
-  @Inject(UserService)
-  private readonly userService: UserService;
-
-  @Inject(AuthService)
-  private readonly authService: AuthService;
+  constructor(
+    @Inject(jwtConfig.KEY)
+    private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
+    private readonly jwtService: JwtService,
+    private readonly userService: UserService,
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService
+  ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
     try {
@@ -56,8 +53,8 @@ export class FallbackMiddleware implements NestMiddleware {
 
   private async renderApp(req: Request, res: Response) {
     console.log("====renderApp==== ");
-    const isDev = process.env.NODE_ENV === "development";
-    const vitePort = process.env.PORT || 5173;
+    const isDev = this.configService.get("NODE_ENV") === "development";
+    const vitePort = this.configService.get("PORT", 5173);
 
     // Only get user info if not on skipAuthPaths
     const needAuth = !skipAuthPaths.some((path) => req.url.includes(path));
@@ -113,7 +110,9 @@ export class FallbackMiddleware implements NestMiddleware {
     };
 
     const renderEnv = () => {
-      return `<script>console.log("NODE_ENV", "${process.env.NODE_ENV}")</script>`;
+      return `<script>console.log("NODE_ENV", "${this.configService.get(
+        "NODE_ENV"
+      )}")</script>`;
     };
 
     const renderUserInfoScript = () => {
