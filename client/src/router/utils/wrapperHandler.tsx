@@ -1,5 +1,5 @@
 import { IRouteObject } from "./types";
-import { Suspense } from "react";
+import React, { Suspense } from "react";
 
 export function wrapperHandler(route: IRouteObject): IRouteObject {
   const { wrapper = [], element, children, ...restParams } = route;
@@ -7,13 +7,13 @@ export function wrapperHandler(route: IRouteObject): IRouteObject {
   const WrapperElement = wrapper.reduce(
     (reactNode, hoc) => {
       const node = () => {
-        return <Suspense fallback={<></>}>{reactNode({})}</Suspense>;
+        return <Suspense fallback={<React.Fragment />}>{reactNode({})}</Suspense>;
       };
       return hoc(node, { ...restParams, children });
     },
     (() => {
       return element;
-    }) as React.FC
+    }) as React.FC,
   );
 
   const wrapperChildren = children?.map(wrapperHandler);

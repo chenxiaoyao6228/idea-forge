@@ -1,7 +1,4 @@
-import {
-  AgnosticIndexRouteObject,
-  AgnosticNonIndexRouteObject,
-} from "@remix-run/router";
+import { AgnosticIndexRouteObject, AgnosticNonIndexRouteObject } from "@remix-run/router";
 
 export interface IndexRoute {
   /** route Hoc */
@@ -16,10 +13,7 @@ export interface IndexRoute {
   handle?: AgnosticIndexRouteObject["handle"];
   index: true;
   children?: undefined;
-  element?:
-    | React.ReactNode
-    | null
-    | React.LazyExoticComponent<(props: any) => JSX.Element | null>;
+  element?: React.ReactNode | null | React.LazyExoticComponent<(props: any) => JSX.Element | null>;
   errorElement?: React.ReactNode | null;
 }
 
@@ -36,10 +30,7 @@ export interface NonRoute {
   handle?: AgnosticNonIndexRouteObject["handle"];
   index?: false;
   children?: IRouteObject[];
-  element?:
-    | React.ReactNode
-    | null
-    | React.LazyExoticComponent<(props: any) => JSX.Element | null>;
+  element?: React.ReactNode | null | React.LazyExoticComponent<(props: any) => JSX.Element | null>;
   errorElement?: React.ReactNode | null;
 }
 

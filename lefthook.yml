@@ -1,0 +1,19 @@
+# EXAMPLE USAGE:
+#
+#   Refer for explanation to following link:
+#   https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
+
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: "*.{js,ts,jsx,tsx,json}"
+      run: pnpm biome format --write {staged_files}
+    lint:
+      glob: "*.{js,ts,jsx,tsx}"
+      run: pnpm biome lint {staged_files}
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm commitlint --edit {1}

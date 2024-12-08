@@ -42,9 +42,7 @@ class Router {
     for (const handler of handlerList) {
       // Promise not supported
       if (handler instanceof Promise) {
-        logger.warn(
-          "Router class _getHandledRoute warning: route handler function cannot be asynchronous"
-        );
+        logger.warn("Router class _getHandledRoute warning: route handler function cannot be asynchronous");
         continue;
       }
 
@@ -67,9 +65,8 @@ export function registerRoute(...rest: Route[] | IRouteOptions[]) {
   const routeList = rest.map((options) => {
     if (options instanceof Route) {
       return options;
-    } else {
-      return new Route(options.route, options.handler);
     }
+    return new Route(options.route, options.handler);
   });
 
   router.push(...routeList);

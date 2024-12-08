@@ -1,25 +1,17 @@
 import React from "react";
 import { createBrowserRouter } from "react-router-dom";
-import { Route } from "./route";
-import { IRouteObject } from "./types";
-import { wrapperHandler } from "./wrapperHandler";
-import { getOrCreateRouter, registerRoute } from "./router";
+import { Route } from "./utils/route";
+import { IRouteObject } from "./utils/types";
+import { wrapperHandler } from "./utils/wrapperHandler";
+import { getOrCreateRouter, registerRoute } from "./utils/router";
 import WithAuth from "@/hocs/WithAuth";
 import LazyBoundary from "@/components/lazy-boundary";
 
-const RootLayout = React.lazy(
-  () => import(/* webpackChunkName: "RootLayout" */ "@/RootLayout")
-);
-const Home = React.lazy(
-  () => import(/* webpackChunkName: "Home" */ "@/pages/Home")
-);
-const Login = React.lazy(
-  () => import(/* webpackChunkName: "Login" */ "@/pages/Login")
-);
+const RootLayout = React.lazy(() => import(/* webpackChunkName: "RootLayout" */ "@/RootLayout"));
+const Home = React.lazy(() => import(/* webpackChunkName: "Home" */ "@/pages/Home"));
+const Login = React.lazy(() => import(/* webpackChunkName: "Login" */ "@/pages/Login"));
 
-const NotFound = React.lazy(
-  () => import(/* webpackChunkName: "NotFound" */ "@/pages/NotFound")
-);
+const NotFound = React.lazy(() => import(/* webpackChunkName: "NotFound" */ "@/pages/NotFound"));
 
 // Routes that require authentication
 const AuthRouteConfig: IRouteObject = {
@@ -31,6 +23,7 @@ const AuthRouteConfig: IRouteObject = {
 };
 
 // Routes that don't require authentication
+// TODO: remember to update skipAuthPaths in api/src/_shared/middlewares/fallback.middleware.ts when changing this
 const UnAuthRouteConfig: IRouteObject = {
   path: "/",
   element: <RootLayout />,

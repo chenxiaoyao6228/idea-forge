@@ -53,17 +53,7 @@
     }
   },
   "files": {
-    "include": [
-      "apps/client/app/**",
-      "apps/server/src/**"
-    ],
-    "ignore": [
-      "node_modules",
-      "dist",
-      ".next",
-      "build",
-      "coverage",
-      "client/src/assets/_icons-spritesheet-auto-generated/**"
-    ]
+    "include": ["client/src/**", "api/src/**"],
+    "ignore": ["node_modules", "dist", "build", "coverage", "client/src/assets/_icons-spritesheet-auto-generated/**"]
   }
 }

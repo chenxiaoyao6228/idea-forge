@@ -1,4 +1,4 @@
-import { IRouteHandler, IRouteObject } from "./utils/types";
+import { IRouteHandler, IRouteObject } from "./types";
 
 export class Route {
   private readonly _route: IRouteObject;
