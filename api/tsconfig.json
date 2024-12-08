@@ -10,7 +10,7 @@
     "jsx": "react-jsx",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "baseUrl": ".",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
@@ -18,10 +18,11 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-     "paths": {
-      "@/*": ["src/*"]
-    }
-    
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "declarationMap": true,
+    "composite": true
   },
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }

@@ -8,6 +8,7 @@ import { JwtService } from "@nestjs/jwt";
 import { AuthService } from "@/auth/auth.service";
 import { UserService } from "@/user/user.service";
 import { setAuthCookies } from "@/_shared/utils/cookie";
+import { ClientEnv } from "@/_shared/config/config-validation";
 
 // Skip authentication for these paths
 const skipAuthPaths = ["/register", "/login", "/reset-password"];
@@ -110,9 +111,24 @@ export class FallbackMiddleware implements NestMiddleware {
     };
 
     const renderEnv = () => {
-      return `<script>console.log("NODE_ENV", "${this.configService.get(
-        "NODE_ENV"
-      )}")</script>`;
+      // Filter only CLIENT_ prefixed variables
+      const clientEnv = Object.entries(process.env)
+        .filter(([key]) => key.startsWith("CLIENT_"))
+        .reduce(
+          (acc, [key, value]) => ({
+            ...acc,
+            [key]: value,
+          }),
+          {} as Partial<ClientEnv>
+        );
+
+      return `
+        <script>
+          window.__ENV__ = ${JSON.stringify(clientEnv)};
+          Object.freeze(window.__ENV__);
+          console.log("clientEnv", window.__ENV__);
+        </script>
+      `;
     };
 
     const renderUserInfoScript = () => {

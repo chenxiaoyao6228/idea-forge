@@ -17,9 +17,6 @@ export const envSchema = z.object({
   EMAIL_PASSWORD: z.string().min(1),
   EMAIL_TO: z.string().email(),
 
-  /* CLIENT CONFIG */
-  CLIENT_APP_URL: z.string().url(),
-
   /* REDIS CONFIG */
   REDIS_HOST: z.string().min(1),
   REDIS_PORT: z.string().min(1).regex(/^\d+$/),
@@ -44,7 +41,13 @@ export const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
 });
 
+const clientEnvSchema = z.object({
+  /* CLIENT CONFIG */
+  CLIENT_APP_URL: z.string().url(),
+});
+
 export type Env = z.infer<typeof envSchema>;
+export type ClientEnv = z.infer<typeof clientEnvSchema>;
 
 export const validateConfig = (config: Record<string, unknown>) => {
   try {
