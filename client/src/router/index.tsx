@@ -23,7 +23,8 @@ const AuthRouteConfig: IRouteObject = {
 };
 
 // Routes that don't require authentication
-// TODO: remember to update skipAuthPaths in api/src/_shared/middlewares/fallback.middleware.ts when changing this
+// TODO: remember to update skipAuthPaths  when changing adding new paths
+export const skipAuthPaths = ["/register", "/login", "/reset-password"];
 const UnAuthRouteConfig: IRouteObject = {
   path: "/",
   element: <RootLayout />,

@@ -1,0 +1,1 @@
+export { skipAuthPaths } from "./router";

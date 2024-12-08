@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { getEnvVariable } from "@/lib/env";
 
 export default function Home() {
-  const clientPort = getEnvVariable("CLIENT_PORT");
   const clientAppUrl = getEnvVariable("CLIENT_APP_URL");
   const handleGetUserInfo = async () => {
     try {
@@ -18,7 +17,6 @@ export default function Home() {
     <div>
       <div>Home</div>
       <div>Client App Url: {clientAppUrl}</div>
-      <div>Client Port: {clientPort}</div>
       <Button onClick={handleGetUserInfo}>Get User Info</Button>
     </div>
   );

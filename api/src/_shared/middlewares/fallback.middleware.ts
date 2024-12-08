@@ -1,7 +1,7 @@
 import { Inject, Injectable, NestMiddleware } from "@nestjs/common";
 import { Request, Response, NextFunction } from "express";
-import { join } from "path";
-import * as fs from "fs";
+import { join } from "node:path";
+import * as fs from "node:fs";
 import { jwtConfig } from "@/_shared/config/configs";
 import { ConfigService, ConfigType } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -9,9 +9,9 @@ import { AuthService } from "@/auth/auth.service";
 import { UserService } from "@/user/user.service";
 import { setAuthCookies } from "@/_shared/utils/cookie";
 import { ClientEnv } from "@/_shared/config/config-validation";
+import { skipAuthPaths } from "@client/router";
 
 // Skip authentication for these paths
-const skipAuthPaths = ["/register", "/login", "/reset-password"];
 
 // https://stackoverflow.com/questions/55335096/excluding-all-api-routes-in-nest-js-to-serve-react-app
 
@@ -24,7 +24,7 @@ export class FallbackMiddleware implements NestMiddleware {
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
     private readonly authService: AuthService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -36,11 +36,7 @@ export class FallbackMiddleware implements NestMiddleware {
         next();
       }
       // Exclude static assets
-      else if (
-        req.url.match(
-          /\.(jpg|jpeg|png|gif|ico|css|js|json|svg|mp3|mp4|wav|ogg|ttf|woff|woff2|eot|html|txt)$/
-        )
-      ) {
+      else if (req.url.match(/\.(jpg|jpeg|png|gif|ico|css|js|json|svg|mp3|mp4|wav|ogg|ttf|woff|woff2|eot|html|txt)$/)) {
         next();
       } else {
         const result = await this.renderApp(req, res);
@@ -85,23 +81,11 @@ export class FallbackMiddleware implements NestMiddleware {
 
     const renderProdScript = () => {
       try {
-        const manifestPath = join(
-          __dirname,
-          "..",
-          "view",
-          ".vite",
-          "manifest.json"
-        );
+        const manifestPath = join(__dirname, "..", "view", ".vite", "manifest.json");
         const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
         const entryPoint = manifest["src/main.tsx"];
 
-        return `${
-          entryPoint.css
-            ? entryPoint.css
-                .map((css) => `<link rel="stylesheet" href="${css}">`)
-                .join("\n")
-            : ""
-        }
+        return `${entryPoint.css ? entryPoint.css.map((css) => `<link rel="stylesheet" href="${css}">`).join("\n") : ""}
           <script type="module" src="${entryPoint.file}"></script>
         `;
       } catch (error) {
@@ -114,13 +98,7 @@ export class FallbackMiddleware implements NestMiddleware {
       // Filter only CLIENT_ prefixed variables
       const clientEnv = Object.entries(process.env)
         .filter(([key]) => key.startsWith("CLIENT_"))
-        .reduce(
-          (acc, [key, value]) => ({
-            ...acc,
-            [key]: value,
-          }),
-          {} as Partial<ClientEnv>
-        );
+        .reduce((acc, [key, value]) => Object.assign(acc, { [key]: value }), {} as Partial<ClientEnv>);
 
       return `
         <script>
@@ -193,10 +171,7 @@ export class FallbackMiddleware implements NestMiddleware {
           const user = await this.userService.getUserById(refreshPayload.sub);
 
           if (user) {
-            const {
-              accessToken: newAccessToken,
-              refreshToken: newRefreshToken,
-            } = await this.authService.refreshToken(user);
+            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await this.authService.refreshToken(user);
 
             setAuthCookies(res, newAccessToken, newRefreshToken);
 

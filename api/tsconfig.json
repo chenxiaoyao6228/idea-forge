@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "composite": true,
     "module": "commonjs",
     "declaration": true,
     "removeComments": true,
@@ -19,10 +20,14 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@client/*": ["../client/src/*"]
     },
     "declarationMap": true,
-    "composite": true
+    
   },
+  "references": [
+    { "path": "../client" }
+  ],
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }
