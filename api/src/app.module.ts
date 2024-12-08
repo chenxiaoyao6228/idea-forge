@@ -1,9 +1,4 @@
-import {
-  type MiddlewareConsumer,
-  Module,
-  type NestModule,
-  RequestMethod,
-} from "@nestjs/common";
+import { type MiddlewareConsumer, Module, type NestModule, RequestMethod } from "@nestjs/common";
 import { AppController } from "./app.controller";
 import { TRPCModule } from "nestjs-trpc";
 import { DogsRouter } from "@/_shared/utils/trpc/dogs.router";
@@ -21,7 +16,7 @@ import { HttpExceptionFilter } from "./_shared/filters/http-exception-filter";
 import { ZodValidationPipe } from "./_shared/pipes/zod-validation.pipe";
 import { DocumentModule } from "./document/document.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
-import { join } from "path";
+import { join } from "node:path";
 import { FallbackMiddleware } from "./_shared/middlewares/fallback.middleware";
 import { ConfigsModule } from "./_shared/config/config.module";
 
