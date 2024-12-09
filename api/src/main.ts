@@ -5,7 +5,7 @@ import * as session from "express-session";
 import * as cookieParser from "cookie-parser";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { ConfigService } from "@nestjs/config";
-import { SHARE_NAME } from "shared";
+import { SHARE_NAME } from "@repo/shared";
 declare const module: any;
 
 async function bootstrap() {

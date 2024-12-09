@@ -105,57 +105,42 @@ export default function LoginPage() {
                   type: "password",
                   autoComplete: "current-password",
                 }}
-                errors={
-                  errors.password?.message ? [errors.password.message] : []
-                }
+                errors={errors.password?.message ? [errors.password.message] : []}
               />
 
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <CheckboxField
                   labelProps={{
                     htmlFor: "remember",
                     children: "Remember me",
                   }}
                   buttonProps={{
-                    ...register("remember"),
-                    type: "checkbox",
+                    name: "remember",
+                    onChange: (checked: boolean) => {
+                      register("remember").onChange({ target: { checked } });
+                    },
                   }}
-                  errors={
-                    errors.remember?.message ? [errors.remember.message] : []
-                  }
+                  errors={errors.remember?.message ? [errors.remember.message] : []}
                 />
                 <div>
-                  <Link
-                    to="/forgot-password"
-                    className="text-body-xs font-semibold">
+                  <Link to="/forgot-password" className="text-body-xs font-semibold">
                     Forgot password?
                   </Link>
                 </div>
-              </div>
+              </div> */}
 
               <input type="hidden" {...register("redirectTo")} />
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
               <div className="flex items-center justify-between gap-6 pt-3">
-                <StatusButton
-                  className="w-full"
-                  status={isPending ? "pending" : "idle"}
-                  type="submit"
-                  disabled={isPending || isSubmitting}>
+                <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
                   Log in
                 </StatusButton>
               </div>
             </form>
             <div className="flex items-center justify-center gap-2 pt-6">
               <span className="text-muted-foreground">New here?</span>
-              <Link
-                to={
-                  redirectTo
-                    ? `/register?${encodeURIComponent(redirectTo)}`
-                    : "/register"
-                }>
-                Create an account
-              </Link>
+              <Link to={redirectTo ? `/register?${encodeURIComponent(redirectTo)}` : "/register"}>Create an account</Link>
             </div>
           </div>
         </div>

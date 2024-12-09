@@ -3,12 +3,7 @@ import { useId } from "react";
 import { type OTPInputProps } from "input-otp";
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
 import { Checkbox, type CheckboxProps } from "./ui/checkbox.tsx";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSeparator,
-  InputOTPSlot,
-} from "./ui/input-otp.tsx";
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp.tsx";
 import { Input } from "./ui/input.tsx";
 import { Label } from "./ui/label.tsx";
 import { Textarea } from "./ui/textarea.tsx";
@@ -53,15 +48,8 @@ export function Field({
   return (
     <div className={className}>
       <Label htmlFor={id} {...labelProps} />
-      <Input
-        id={id}
-        aria-invalid={errorId ? true : undefined}
-        aria-describedby={errorId}
-        {...inputProps}
-      />
-      <div className="min-h-[32px] px-4 pb-3 pt-1">
-        {errorId ? <ErrorList id={errorId} errors={errors} /> : null}
-      </div>
+      <Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
+      <div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
     </div>
   );
 }
@@ -90,7 +78,8 @@ export function OTPField({
         id={id}
         aria-invalid={errorId ? true : undefined}
         aria-describedby={errorId}
-        {...inputProps}>
+        {...inputProps}
+      >
         <InputOTPGroup>
           <InputOTPSlot index={0} />
           <InputOTPSlot index={1} />
@@ -103,9 +92,7 @@ export function OTPField({
           <InputOTPSlot index={5} />
         </InputOTPGroup>
       </InputOTP>
-      <div className="min-h-[32px] px-4 pb-3 pt-1">
-        {errorId ? <ErrorList id={errorId} errors={errors} /> : null}
-      </div>
+      <div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
     </div>
   );
 }
@@ -127,15 +114,8 @@ export function TextareaField({
   return (
     <div className={className}>
       <Label htmlFor={id} {...labelProps} />
-      <Textarea
-        id={id}
-        aria-invalid={errorId ? true : undefined}
-        aria-describedby={errorId}
-        {...textareaProps}
-      />
-      <div className="min-h-[32px] px-4 pb-3 pt-1">
-        {errorId ? <ErrorList id={errorId} errors={errors} /> : null}
-      </div>
+      <Textarea id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...textareaProps} />
+      <div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
     </div>
   );
 }
@@ -147,7 +127,7 @@ export function CheckboxField({
   className,
 }: {
   labelProps: JSX.IntrinsicElements["label"];
-  buttonProps: CheckboxProps & {
+  buttonProps: Omit<CheckboxProps, "type" | "onCheckedChange"> & {
     name?: string;
     onChange?: (checked: boolean) => void;
   };
@@ -162,23 +142,19 @@ export function CheckboxField({
     <div className={className}>
       <div className="flex gap-2">
         <Checkbox
-          {...(buttonProps as CheckboxProps)}
           id={id}
+          name={buttonProps.name}
+          checked={buttonProps.checked}
+          defaultChecked={buttonProps.defaultChecked}
+          disabled={buttonProps.disabled}
+          required={buttonProps.required}
           aria-invalid={errorId ? true : undefined}
           aria-describedby={errorId}
-          onCheckedChange={(checked) => {
-            buttonProps.onChange?.(checked as boolean);
-          }}
+          onCheckedChange={buttonProps.onChange}
         />
-        <label
-          htmlFor={id}
-          {...labelProps}
-          className="self-center text-body-xs text-muted-foreground"
-        />
+        <Label htmlFor={id} className="self-center text-body-xs text-muted-foreground" {...labelProps} />
       </div>
-      <div className="px-4 pb-3 pt-1">
-        {errorId ? <ErrorList id={errorId} errors={errors} /> : null}
-      </div>
+      <div className="px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
     </div>
   );
 }

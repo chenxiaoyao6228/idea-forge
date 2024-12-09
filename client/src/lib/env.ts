@@ -1,8 +1,6 @@
-import type { ClientEnv } from "@server/export-to-client";
+import type { ClientEnv } from "@api/export-to-client";
 
-export const getEnvVariable = <K extends keyof ClientEnv>(
-  key: K
-): ClientEnv[K] => {
+export const getEnvVariable = <K extends keyof ClientEnv>(key: K): ClientEnv[K] => {
   if (!window.__ENV__) {
     throw new Error("Environment variables not initialized");
   }

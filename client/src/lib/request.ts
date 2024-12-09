@@ -13,14 +13,11 @@ export const ApiHttpStatusCode = {
 
 type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
 
-export type RequestConfig = Omit<
-  AxiosRequestConfig,
-  "url" | "data" | "method" | "params"
->;
+export type RequestConfig = Omit<AxiosRequestConfig, "url" | "data" | "method" | "params">;
 
 const REQUEST_TIMEOUT = 1000 * 60; // 1 minute
 
-let request = axios.create({
+const request = axios.create({
   baseURL: window.location.origin,
   withCredentials: true,
   timeout: REQUEST_TIMEOUT,
@@ -29,24 +26,10 @@ let request = axios.create({
   },
 });
 
-// Add token to request interceptor
-request.interceptors.request.use((config) => {
-  const tokens = useUserStore.getState().tokens;
-  if (tokens?.accessToken) {
-    config.headers.Authorization = `Bearer ${tokens.accessToken}`;
-  }
-  return config;
-});
-
 // Handle token refresh in response interceptor
 request.interceptors.response.use(
   (response) => {
-    if (
-      response.status < 200 ||
-      response.status >= 300 ||
-      !response.data ||
-      response.data.statusCode !== ApiHttpStatusCode.SUCCESS
-    ) {
+    if (response.status < 200 || response.status >= 300 || !response.data || response.data.statusCode !== ApiHttpStatusCode.SUCCESS) {
       // Let business logic handle the error
       return Promise.reject(response.data);
     }
@@ -75,13 +58,11 @@ request.interceptors.response.use(
         // Clear user info and redirect to login on refresh token failure
         useUserStore.getState().logout();
         const currentPath = window.location.pathname;
-        window.location.href = `/login?redirectTo=${encodeURIComponent(
-          currentPath
-        )}`;
+        window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}`;
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default request;

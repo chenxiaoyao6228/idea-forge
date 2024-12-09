@@ -3,12 +3,7 @@ import { useSpinDelay } from "spin-delay";
 import { cn } from "@/lib/utils.ts";
 import { Button, type ButtonProps } from "./button.tsx";
 import { Icon } from "./icon.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./tooltip.tsx";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip.tsx";
 
 export const StatusButton = React.forwardRef<
   HTMLButtonElement,
@@ -36,21 +31,14 @@ export const StatusButton = React.forwardRef<
     ),
     error: (
       <output className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive">
-        <Icon
-          name="Cross1"
-          className="text-destructive-foreground"
-          title="error"
-        />
+        <Icon name="Cross1" className="text-destructive-foreground" title="error" />
       </output>
     ),
     idle: null,
   }[status];
 
   return (
-    <Button
-      ref={ref}
-      className={cn("flex justify-center gap-4", className)}
-      {...props}>
+    <Button ref={ref} className={cn("flex justify-center gap-4", className)} {...props}>
       <div>{children}</div>
       {message ? (
         <TooltipProvider>
