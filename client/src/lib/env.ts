@@ -1,4 +1,6 @@
-import type { ClientEnv } from "@api/export-to-client";
+interface ClientEnv {
+  CLIENT_APP_URL: string;
+}
 
 export const getEnvVariable = <K extends keyof ClientEnv>(key: K): ClientEnv[K] => {
   if (!window.__ENV__) {

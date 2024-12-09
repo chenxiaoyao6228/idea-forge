@@ -1,7 +1,10 @@
 {
   "name": "nest-react-vite-starter",
-  "version": "1.0.0",
   "description": "Nest.js + React + Vite Starter",
+  "keywords": ["nest", "react", "vite", "starter", "type-safe", "monorepo", "tailwind", "shadcn"],
+  "author": "YorkChan",
+  "license": "MIT",
+  "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
@@ -9,7 +12,7 @@
     "dev": "turbo run dev",
     "dev:api": "cd api && npm run dev",
     "dev:client": "cd client && npm dev",
-    "build": "npm run build:client && npm run build:api",
+    "build": "turbo run build",
     "build:client": "cd client && npm run build",
     "build:api": "cd api && npm run build",
     "start": "turbo run start",
@@ -24,9 +27,7 @@
     "removeLocks": "find . -name 'pnpm-lock.yaml' -type f -delete",
     "setup": "cd ./api && sh setup.sh"
   },
-  "keywords": [],
-  "author": "YorkChan",
-  "license": "MIT",
+
   "devDependencies": {
     "concurrently": "^8.2.2",
     "@biomejs/biome": "^1.9.2",

@@ -16,15 +16,15 @@
     "declarationMap": true, // 为声明文件生成 source map
     // "noImplicitReturns": true,     // 检查函数隐式返回
     "useDefineForClassFields": true, // 现代类字段定义方式
-    "baseUrl": ".",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "baseUrl": ".", // 用于解析非相对模块名的基准目录,设置为"."表示以tsconfig.json所在目录作为基准
+    "rootDir": ".", // 指定TypeScript项目的根目录,用于控制输出目录结构,通常与baseUrl相同
+    "outDir": "./dist",
     "types": ["vite/client"],
     "paths": {
       "@/*": ["./src/*"],
-      "@api/*": ["../api/src/*"],
     },
   },
-  "references": [
-    { "path": "../api" }
-  ], 
   "include": ["src", "src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"]
 }
