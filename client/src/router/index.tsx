@@ -10,7 +10,6 @@ import LazyBoundary from "@/components/lazy-boundary";
 const RootLayout = React.lazy(() => import(/* webpackChunkName: "RootLayout" */ "@/RootLayout"));
 const Home = React.lazy(() => import(/* webpackChunkName: "Home" */ "@/pages/Home"));
 const Login = React.lazy(() => import(/* webpackChunkName: "Login" */ "@/pages/Login"));
-
 const NotFound = React.lazy(() => import(/* webpackChunkName: "NotFound" */ "@/pages/NotFound"));
 
 // Routes that require authentication
@@ -23,8 +22,7 @@ const AuthRouteConfig: IRouteObject = {
 };
 
 // Routes that don't require authentication
-// TODO: remember to update skipAuthPaths  when changing adding new paths
-export const skipAuthPaths = ["/register", "/login", "/reset-password"];
+// TODO: remember to update skipAuthPaths in api/src/_shared/middlewares/fallback.middleware.ts when changing adding new paths
 const UnAuthRouteConfig: IRouteObject = {
   path: "/",
   element: <RootLayout />,

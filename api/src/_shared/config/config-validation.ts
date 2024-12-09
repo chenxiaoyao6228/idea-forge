@@ -13,7 +13,7 @@ export const envSchema = z.object({
   /* EMAIL CONFIG */
   EMAIL_HOST: z.string().min(1),
   EMAIL_PORT: z.string().min(1).regex(/^\d+$/),
-  EMAIL_USER: z.string().email(),
+  EMAIL_USER: z.string().min(1),
   EMAIL_PASSWORD: z.string().min(1),
   EMAIL_TO: z.string().email(),
 

@@ -53,6 +53,7 @@ lerna-debug.log*
 
 # Runtime data
 .turbo
+tsconfig.tsbuildinfo
 pids
 *.pid
 *.seed

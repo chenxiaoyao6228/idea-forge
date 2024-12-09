@@ -10,11 +10,9 @@
     "start": "NODE_ENV=production nest start",
     "predev": "chmod +x scripts/start-docker.sh && ./scripts/start-docker.sh",
     "dev": "npm run start:debug",
-    "email:dev": "email preview ./src/_shared/email/templates",
-    "start:dev": "NODE_ENV=development nest start  --watch",
-    "start:dev:webpack": "nest build --webpack --webpackPath webpack-hmr.config.js --watch",
-    "start:debug": "NODE_ENV=development nest start --debug 9333 --watch",
+    "start:debug": "NODE_ENV=development nest start --debug 9333 --watch --preserveWatchOutput",
     "dev:studio": "concurrently \"npm run start:debug\" \"npm run prisma:studio\"",
+    "email:dev": "email preview ./src/_shared/email/templates",
     "start:prod": "NODE_ENV=production node dist/main",
     "lint": "biome lint .",
     "lint:fix": "biome check --apply .",
@@ -35,6 +33,7 @@
     "prisma:generate": "npx prisma generate"
   },
   "dependencies": {
+    "shared": "*",
     "@hocuspocus/extension-database": "^2.13.5",
     "@hocuspocus/extension-logger": "^2.13.5",
     "@hocuspocus/extension-throttle": "^2.13.6",
@@ -118,6 +117,7 @@
     "ts-loader": "^9.2.3",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "4.1.1",
+    "tsconfig-paths-webpack-plugin": "^4.2.0",
     "typescript": "^4.7.4",
     "webpack": "^5.95.0",
     "webpack-node-externals": "^3.0.0"

@@ -5,7 +5,7 @@ import * as session from "express-session";
 import * as cookieParser from "cookie-parser";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { ConfigService } from "@nestjs/config";
-
+import { SHARE_NAME } from "shared";
 declare const module: any;
 
 async function bootstrap() {
@@ -21,7 +21,7 @@ async function bootstrap() {
       secret: configService.get("SESSION_SECRET", "123456"),
       resave: false,
       saveUninitialized: false,
-    })
+    }),
   );
 
   app.use(cookieParser());
@@ -30,6 +30,7 @@ async function bootstrap() {
 
   console.log("------------------");
   console.log(configService.get("NODE_ENV"), configService.get("DATABASE_URL"));
+  console.log(SHARE_NAME);
   console.log("------------------");
 
   const port = configService.get("NEST_API_PORT", 5001);

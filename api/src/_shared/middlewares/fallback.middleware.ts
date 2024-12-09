@@ -9,12 +9,11 @@ import { AuthService } from "@/auth/auth.service";
 import { UserService } from "@/user/user.service";
 import { setAuthCookies } from "@/_shared/utils/cookie";
 import { ClientEnv } from "@/_shared/config/config-validation";
-import { skipAuthPaths } from "@client/router";
 
 // Skip authentication for these paths
+const skipAuthPaths = ["/login", "/register"];
 
 // https://stackoverflow.com/questions/55335096/excluding-all-api-routes-in-nest-js-to-serve-react-app
-
 // TODO: There's a Vite plugin that can get the manifest.json after Vite build, read it and check if CSS files need to be handled
 @Injectable()
 export class FallbackMiddleware implements NestMiddleware {

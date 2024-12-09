@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { ClientEnv } from "@server/export-to-client";
+import type { ClientEnv } from "@api/export-to-client";
 
 declare global {
   interface Window {

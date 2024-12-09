@@ -1,0 +1,18 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "main": "./dist/cjs/src/index.js",   
+  "module": "./dist/esm/src/index.js",  
+  "types": "./dist/types/src/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/src/index.js",
+      "import": "./dist/esm/src/index.js",
+      "types": "./dist/types/src/index.d.ts"
+    }
+  },
+  "scripts": {
+    "dev": "tsc -p tsconfig.cjs.json -w & tsc -p tsconfig.json -w",
+    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.json"
+  }
+}

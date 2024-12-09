@@ -5,14 +5,13 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
     },
     "start": {
       "dependsOn": [],
@@ -35,10 +34,6 @@
       "outputs": []
     },
     "check-types": {},
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
     "clean": {
       "cache": false
     },

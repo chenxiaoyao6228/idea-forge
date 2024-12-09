@@ -19,15 +19,11 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@/*": ["./src/*"],
-      "@client/*": ["../client/src/*"]
-    },
     "declarationMap": true,
-    
+    "paths": {
+      "@/*": ["./src/*"]
+    },
   },
-  "references": [
-    { "path": "../client" }
-  ],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }
