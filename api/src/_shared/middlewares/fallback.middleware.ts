@@ -10,13 +10,20 @@ import { UserService } from "@/user/user.service";
 import { setAuthCookies } from "@/_shared/utils/cookie";
 import { ClientEnv } from "@/_shared/config/config-validation";
 
-// Skip authentication for these paths
-const skipAuthPaths = ["/login", "/register"];
+interface Manifest {
+  preload: string | null;
+  css: string | null;
+  js: string;
+}
 
 // https://stackoverflow.com/questions/55335096/excluding-all-api-routes-in-nest-js-to-serve-react-app
-// TODO: There's a Vite plugin that can get the manifest.json after Vite build, read it and check if CSS files need to be handled
 @Injectable()
 export class FallbackMiddleware implements NestMiddleware {
+  private static readonly SKIP_AUTH_PATHS = ["/login", "/register"];
+  private static readonly STATIC_ASSETS_REGEX = /\.(jpg|jpeg|png|gif|ico|css|js|json|svg|mp3|mp4|wav|ogg|ttf|woff|woff2|eot|html|txt)$/;
+  private static readonly API_PATH = "/api";
+  private static readonly STACK_FRAME_PATH = "/__open-stack-frame-in-editor";
+  private manifestCache: Manifest | null = null;
   constructor(
     @Inject(jwtConfig.KEY)
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
@@ -28,23 +35,24 @@ export class FallbackMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     try {
-      // Exclude API paths
-      if (req.url.includes("/api")) {
-        next();
-      } else if (req.url.includes("/__open-stack-frame-in-editor")) {
-        next();
+      if (this.shouldSkipProcessing(req)) {
+        return next();
       }
-      // Exclude static assets
-      else if (req.url.match(/\.(jpg|jpeg|png|gif|ico|css|js|json|svg|mp3|mp4|wav|ogg|ttf|woff|woff2|eot|html|txt)$/)) {
-        next();
-      } else {
-        const result = await this.renderApp(req, res);
-        return res.send(result);
-      }
+
+      const result = await this.renderApp(req, res);
+      return res.send(result);
     } catch (error) {
       console.error("Fallback middleware error:", error);
-      next(error);
+      return next(error);
     }
+  }
+
+  private shouldSkipProcessing(req: Request): boolean {
+    return (
+      req.url.includes(FallbackMiddleware.API_PATH) ||
+      req.url.includes(FallbackMiddleware.STACK_FRAME_PATH) ||
+      FallbackMiddleware.STATIC_ASSETS_REGEX.test(req.url)
+    );
   }
 
   private async renderApp(req: Request, res: Response) {
@@ -53,7 +61,7 @@ export class FallbackMiddleware implements NestMiddleware {
     const vitePort = this.configService.get("PORT", 5173);
 
     // Only get user info if not on skipAuthPaths
-    const needAuth = !skipAuthPaths.some((path) => req.url.includes(path));
+    const needAuth = !FallbackMiddleware.SKIP_AUTH_PATHS.some((path) => req.url.includes(path));
 
     const { accessToken, refreshToken } = req.cookies;
 
@@ -66,7 +74,11 @@ export class FallbackMiddleware implements NestMiddleware {
 
     const userInfo = needAuth ? await this.getUserInfo(req, res) : null;
 
-    const renderDevScript = () => `
+    const createDevHTML = () => {
+      return {
+        preload: null,
+        css: null,
+        js: `
       <script type="module">
         import RefreshRuntime from 'http://localhost:${vitePort}/@react-refresh'
         RefreshRuntime.injectIntoGlobalHook(window)
@@ -76,24 +88,41 @@ export class FallbackMiddleware implements NestMiddleware {
       </script>
       <script type="module" src="http://localhost:${vitePort}/@vite/client"></script>
       <script type="module" src="http://localhost:${vitePort}/src/index.tsx"></script>
-    `;
+    `,
+      };
+    };
 
-    const renderProdScript = () => {
+    const createProdHTML = () => {
       try {
-        const manifestPath = join(__dirname, "..", "view", ".vite", "manifest.json");
-        const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
-        const entryPoint = manifest["src/main.tsx"];
+        const manifest = this.loadManifest();
+        const publicPath = "/";
+        const entryPath = "src/index.tsx";
 
-        return `${entryPoint.css ? entryPoint.css.map((css) => `<link rel="stylesheet" href="${css}">`).join("\n") : ""}
-          <script type="module" src="${entryPoint.file}"></script>
-        `;
+        const entryPoint = manifest[entryPath];
+        if (!entryPoint) {
+          throw new Error("Entry not found in the manifest.json file");
+        }
+
+        const preloadHtml = this.generatePreloadTags(manifest, entryPoint, publicPath);
+        const cssHtml = this.generateCssTags(entryPoint);
+        const jsHtml = `<script type="module" src="${entryPoint.file}"></script>`;
+
+        return {
+          preload: preloadHtml,
+          css: cssHtml,
+          js: jsHtml,
+        };
       } catch (error) {
-        console.error("Failed to read manifest.json:", error);
-        return '<script>console.error("Failed to load application");</script>';
+        console.error("Failed to create prod HTML:", error);
+        return {
+          preload: null,
+          css: null,
+          js: '<script>console.error("Failed to load application");</script>',
+        };
       }
     };
 
-    const renderEnv = () => {
+    const createEnvScript = () => {
       // Filter only CLIENT_ prefixed variables
       const clientEnv = Object.entries(process.env)
         .filter(([key]) => key.startsWith("CLIENT_"))
@@ -108,7 +137,7 @@ export class FallbackMiddleware implements NestMiddleware {
       `;
     };
 
-    const renderUserInfoScript = () => {
+    const createUserInfoScript = () => {
       if (!needAuth) return "";
 
       return `
@@ -128,6 +157,8 @@ export class FallbackMiddleware implements NestMiddleware {
       `;
     };
 
+    const _html = isDev ? createDevHTML() : createProdHTML();
+
     const html = `
       <!DOCTYPE html>
       <html lang="en">
@@ -135,12 +166,14 @@ export class FallbackMiddleware implements NestMiddleware {
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>Vite + React + TS</title>
+          ${_html.preload}
+          ${_html.css}
         </head>
         <body>
           <div id="root"></div>
-          ${renderUserInfoScript()}
-          ${renderEnv()}
-          ${isDev ? renderDevScript() : renderProdScript()}
+          ${createUserInfoScript()}
+          ${createEnvScript()}
+          ${_html.js}
         </body>
       </html>
     `;
@@ -182,5 +215,38 @@ export class FallbackMiddleware implements NestMiddleware {
       }
     }
     return null;
+  }
+
+  private loadManifest(): Record<string, any> {
+    if (this.manifestCache) {
+      return this.manifestCache;
+    }
+
+    try {
+      const manifestPath = join(process.cwd(), "view", ".vite", "manifest.json");
+      this.manifestCache = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+      return this.manifestCache;
+    } catch (error) {
+      console.error("Failed to load manifest:", error);
+      return {};
+    }
+  }
+
+  private generatePreloadTags(manifest: Record<string, any>, entryPoint: any, publicPath: string): string {
+    const preloadList = ["src/index.tsx"];
+    if (Array.isArray(entryPoint.imports)) {
+      preloadList.push(...entryPoint.imports);
+    }
+
+    return preloadList
+      .map((pre) => {
+        if (!manifest[pre]?.file) return "";
+        return `<link rel="modulepreload" href="${publicPath}${manifest[pre].file}" />`;
+      })
+      .join(" ");
+  }
+
+  private generateCssTags(entryPoint: any): string {
+    return entryPoint.css.map((css: string) => `<link rel="stylesheet" href="${css}">`).join("\n");
   }
 }

@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "composite": true,
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
@@ -13,7 +12,6 @@
     "moduleResolution": "Bundler", // 更新为现代打包工具推荐配置
     "target": "ESNext", // 如果不需要支持旧浏览器
     "sourceMap": true, // 添加 source map 支持
-    "declarationMap": true, // 为声明文件生成 source map
     // "noImplicitReturns": true,     // 检查函数隐式返回
     "useDefineForClassFields": true, // 现代类字段定义方式
     "allowImportingTsExtensions": true,
