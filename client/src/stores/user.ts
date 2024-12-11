@@ -7,7 +7,6 @@ export interface UserInfo {
   imageUrl: string;
 }
 
-
 interface UserStoreState {
   userInfo: UserInfo | null;
   setUserInfo: (userInfo: UserInfo) => void;

@@ -3,11 +3,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { Spacer } from "@/components/spacer";
-import { CheckboxField, ErrorList, Field } from "@/components/forms";
+import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
-import { login } from "@/apis/auth";
 import { useState } from "react";
-import useUserStore from "@/stores/user";
+import useUserStore, { UserInfo } from "@/stores/user";
+import request from "@/lib/request";
 
 export const EmailSchema = z
   .string({ required_error: "Email is required" })
@@ -37,6 +37,7 @@ type LoginFormData = z.infer<typeof LoginFormSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { userInfo, setUserInfo } = useUserStore();
   const [error, setError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
@@ -59,13 +60,10 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsPending(true);
     try {
-      const user = (await login({
-        email: data.email,
-        password: data.password,
-      })) as any;
+      const user = (await request.post("/api/auth/login", data)) as UserInfo;
 
       // 保存用户信息和token
-      useUserStore.getState().setUserInfo(user);
+      setUserInfo(user);
 
       // 登录成功后跳转
       navigate(redirectTo || "/");
