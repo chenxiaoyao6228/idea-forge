@@ -19,7 +19,7 @@ interface Manifest {
 // https://stackoverflow.com/questions/55335096/excluding-all-api-routes-in-nest-js-to-serve-react-app
 @Injectable()
 export class FallbackMiddleware implements NestMiddleware {
-  private static readonly SKIP_AUTH_PATHS = ["/login", "/register"];
+  private static readonly SKIP_AUTH_PATHS = ["/login", "/register", "/verify", "/reset-password"];
   private static readonly STATIC_ASSETS_REGEX = /\.(jpg|jpeg|png|gif|ico|css|js|json|svg|mp3|mp4|wav|ogg|ttf|woff|woff2|eot|html|txt)$/;
   private static readonly API_PATH = "/api";
   private static readonly STACK_FRAME_PATH = "/__open-stack-frame-in-editor";
@@ -79,16 +79,16 @@ export class FallbackMiddleware implements NestMiddleware {
         preload: null,
         css: null,
         js: `
-      <script type="module">
-        import RefreshRuntime from 'http://localhost:${vitePort}/@react-refresh'
-        RefreshRuntime.injectIntoGlobalHook(window)
-        window.$RefreshReg$ = () => {}
-        window.$RefreshSig$ = () => (type) => type
-        window.__vite_plugin_react_preamble_installed__ = true
-      </script>
-      <script type="module" src="http://localhost:${vitePort}/@vite/client"></script>
-      <script type="module" src="http://localhost:${vitePort}/src/index.tsx"></script>
-    `,
+            <script type="module">
+              import RefreshRuntime from 'http://localhost:${vitePort}/@react-refresh'
+              RefreshRuntime.injectIntoGlobalHook(window)
+              window.$RefreshReg$ = () => {}
+              window.$RefreshSig$ = () => (type) => type
+              window.__vite_plugin_react_preamble_installed__ = true
+            </script>
+            <script type="module" src="http://localhost:${vitePort}/@vite/client"></script>
+            <script type="module" src="http://localhost:${vitePort}/src/index.tsx"></script>
+          `,
       };
     };
 
@@ -166,8 +166,8 @@ export class FallbackMiddleware implements NestMiddleware {
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>Vite + React + TS</title>
-          ${_html.preload}
-          ${_html.css}
+          ${_html.preload ? _html.preload : ""}
+          ${_html.css ? _html.css : ""}
         </head>
         <body>
           <div id="root"></div>

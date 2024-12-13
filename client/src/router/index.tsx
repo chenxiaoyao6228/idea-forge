@@ -10,6 +10,8 @@ import LazyBoundary from "@/components/lazy-boundary";
 const RootLayout = React.lazy(() => import(/* webpackChunkName: "RootLayout" */ "@/RootLayout"));
 const Home = React.lazy(() => import(/* webpackChunkName: "Home" */ "@/pages/home"));
 const Login = React.lazy(() => import(/* webpackChunkName: "Login" */ "@/pages/login"));
+const Register = React.lazy(() => import(/* webpackChunkName: "Register" */ "@/pages/register"));
+const Verify = React.lazy(() => import(/* webpackChunkName: "Verify" */ "@/pages/verify"));
 const NotFound = React.lazy(() => import(/* webpackChunkName: "NotFound" */ "@/pages/not-found"));
 
 // Routes that require authentication
@@ -32,6 +34,14 @@ const UnAuthRouteConfig: IRouteObject = {
     {
       path: "/login",
       element: LazyBoundary(Login),
+    },
+    {
+      path: "/register",
+      element: LazyBoundary(Register),
+    },
+    {
+      path: "/verify",
+      element: LazyBoundary(Verify),
     },
   ],
 };

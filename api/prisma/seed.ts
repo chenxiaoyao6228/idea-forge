@@ -32,7 +32,7 @@ async function seed() {
         });
 
         for (let folderIndex = 0; folderIndex < 5; folderIndex++) {
-          let parentId = null;
+          let parentId: string | null = null;
           for (let level = 0; level < 4; level++) {
             const document = await prisma.doc.create({
               data: {
@@ -42,7 +42,7 @@ async function seed() {
                 parentId,
               },
             }) as Doc;
-            parentId = document.id;
+            parentId = document.id ;
           }
         }
       } else {

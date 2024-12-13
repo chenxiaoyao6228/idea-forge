@@ -1,7 +1,30 @@
 import { z } from "zod";
-import { Provider } from "./_shared";
-import { UserStatus } from "./_shared";
-import { VERIFICATION_CODE_TYPES } from "./_shared";
+
+export const VERIFICATION_CODE_TYPES = [
+  "register",
+  "reset-password",
+  "change-email",
+  "2fa",
+] as const;
+
+export const VerificationTypeSchema = z.enum(VERIFICATION_CODE_TYPES);
+export type VerificationCodeType = z.infer<typeof VerificationTypeSchema>;
+
+
+export const UserStatus = {
+  ACTIVE: 'ACTIVE',
+  SUSPENDED: 'SUSPENDED',
+  DELETED: 'DELETED'
+} as const;
+
+export type UserStatus = typeof UserStatus[keyof typeof UserStatus];
+
+export const Provider = {
+  google: 'google',
+  github: 'github'
+} as const;
+
+export type Provider = typeof Provider[keyof typeof Provider];
 
 // request
 export const EmailSchema = z
@@ -61,8 +84,9 @@ export const ForgotPasswordSchema = z.object({
 export const CodeValidateSchema = z.object({
   email: EmailSchema,
   code: z.string().length(6),
-  type: z.enum(VERIFICATION_CODE_TYPES),
+  type: VerificationTypeSchema,
 });
+export type CodeValidateData = z.infer<typeof CodeValidateSchema>;
 
 export const ResetPasswordSchema = z.object({
   email: EmailSchema,

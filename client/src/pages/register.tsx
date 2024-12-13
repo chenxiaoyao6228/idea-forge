@@ -32,7 +32,7 @@ export default function Register() {
       await request.post("/api/auth/register", data);
 
       // 注册成功后跳转到验证页面
-      navigate(`/verify?target=${encodeURIComponent(data.email)}&type=register`);
+      navigate(`/verify?email=${encodeURIComponent(data.email)}&type=register`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

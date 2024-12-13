@@ -34,11 +34,7 @@ export default function LoginPage() {
     setIsPending(true);
     try {
       const user = await request.post<LoginData, UserInfo>("/api/auth/login", data);
-
-      // 保存用户信息和token
       setUserInfo(user);
-
-      // 登录成功后跳转
       navigate(redirectTo || "/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
