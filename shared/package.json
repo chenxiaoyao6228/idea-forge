@@ -1,8 +1,8 @@
 {
   "name": "shared",
   "version": "1.0.0",
-  "main": "./dist/cjs/src/index.js",   
-  "module": "./dist/esm/src/index.js",  
+  "main": "./dist/cjs/src/index.js",
+  "module": "./dist/esm/src/index.js",
   "types": "./dist/types/src/index.d.ts",
   "exports": {
     ".": {
@@ -14,5 +14,9 @@
   "scripts": {
     "dev": "tsc -p tsconfig.cjs.json -w & tsc -p tsconfig.json -w",
     "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.18.0",
+    "@types/node": "18.11.18"
   }
 }

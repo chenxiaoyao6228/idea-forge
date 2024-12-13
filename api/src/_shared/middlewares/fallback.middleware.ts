@@ -225,7 +225,7 @@ export class FallbackMiddleware implements NestMiddleware {
     try {
       const manifestPath = join(process.cwd(), "view", ".vite", "manifest.json");
       this.manifestCache = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
-      return this.manifestCache;
+      return this.manifestCache || {};
     } catch (error) {
       console.error("Failed to load manifest:", error);
       return {};
