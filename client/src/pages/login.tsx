@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Spacer } from "@/components/spacer";
-import { ErrorList, Field } from "@/components/forms";
+import { CheckboxField, ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
 import useUserStore, { UserInfo } from "@/stores/user";
@@ -75,8 +75,8 @@ export default function LoginPage() {
                 errors={errors.password?.message ? [errors.password.message] : []}
               />
 
-              {/* <div className="flex justify-between">
-                <CheckboxField
+              <div className="flex justify-between">
+                {/* <CheckboxField
                   labelProps={{
                     htmlFor: "remember",
                     children: "Remember me",
@@ -88,13 +88,13 @@ export default function LoginPage() {
                     },
                   }}
                   errors={errors.remember?.message ? [errors.remember.message] : []}
-                />
+                /> */}
                 <div>
                   <Link to="/forgot-password" className="text-body-xs font-semibold">
                     Forgot password?
                   </Link>
                 </div>
-              </div> */}
+              </div>
 
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 

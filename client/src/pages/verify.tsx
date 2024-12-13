@@ -70,7 +70,7 @@ export default function VerifyRoute() {
           navigate(redirectTo || "/login");
           break;
         case "reset-password":
-          navigate(redirectTo || "/reset-password");
+          navigate(redirectTo || `/reset-password?email=${encodeURIComponent(email)}`);
           break;
         case "change-email":
           // Handle change email case
