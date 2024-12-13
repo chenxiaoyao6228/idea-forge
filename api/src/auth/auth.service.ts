@@ -1,9 +1,4 @@
-import {
-  HttpStatus,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { UserService } from "../user/user.service";
 import { hash, verify } from "argon2";
 import type { AuthJwtPayload } from "./types/auth-jwtPayload";
@@ -13,13 +8,14 @@ import type { ConfigType } from "@nestjs/config";
 import { RedisService } from "@/_shared/database/redis/redis.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { MailService } from "@/_shared/email/mail.service";
-import { User, UserStatus } from "@prisma/client";
+import { User } from "@prisma/client";
 import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { VerificationService } from "./verification.service";
 import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto } from "./auth.dto";
 import { AuthResponse, LoginResponseData } from "./types/oauth";
 import { DocumentService } from "@/document/ document.service";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
+import { UserStatus } from "shared";
 
 @Injectable()
 export class AuthService {
@@ -30,7 +26,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
     private readonly verificationService: VerificationService,
-    private readonly documentService: DocumentService
+    private readonly documentService: DocumentService,
   ) {}
 
   @Inject(refreshJwtConfig.KEY)
@@ -42,8 +38,7 @@ export class AuthService {
     let user = await this.userService.getUserByEmail(data.email);
 
     if (user) {
-      if (user.status === UserStatus.ACTIVE)
-        throw new ApiException(ErrorCodeEnum.UserAlreadyExists);
+      if (user.status === UserStatus.ACTIVE) throw new ApiException(ErrorCodeEnum.UserAlreadyExists);
 
       await this.userService.updateUserStatus(data.email, UserStatus.SUSPENDED);
     } else {
@@ -78,10 +73,7 @@ export class AuthService {
 
     const hashedRefreshToken = await hash(refreshToken);
 
-    await this.userService.updateHashedRefreshToken(
-      user.id,
-      hashedRefreshToken
-    );
+    await this.userService.updateHashedRefreshToken(user.id, hashedRefreshToken);
 
     return {
       user: {
@@ -102,8 +94,7 @@ export class AuthService {
 
     if (!user) throw new ApiException(ErrorCodeEnum.UserNotFound);
 
-    if (user.status !== UserStatus.ACTIVE)
-      throw new ApiException(ErrorCodeEnum.UserNotActive);
+    if (user.status !== UserStatus.ACTIVE) throw new ApiException(ErrorCodeEnum.UserNotActive);
 
     await this.verificationService.generateAndSendCode(email, "reset-password");
     return {};
@@ -114,8 +105,7 @@ export class AuthService {
 
     const user = await this.userService.getUserByEmail(email);
     if (!user) throw new ApiException(ErrorCodeEnum.UserNotFound);
-    if (user.status !== UserStatus.ACTIVE)
-      throw new ApiException(ErrorCodeEnum.UserNotActive);
+    if (user.status !== UserStatus.ACTIVE) throw new ApiException(ErrorCodeEnum.UserNotActive);
 
     await this.userService.updateUserPassword(email, data.password);
     return {};
@@ -168,9 +158,7 @@ export class AuthService {
   }
 
   async validateLocalUser(email: string, password: string) {
-    const user = await this.userService.getUserWithPassword(
-      email.toLowerCase()
-    );
+    const user = await this.userService.getUserWithPassword(email.toLowerCase());
 
     if (!user) {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
@@ -233,20 +221,14 @@ export class AuthService {
     const user = await this.userService.getUserById(userId);
 
     if (!user) {
-      throw new ApiException(
-        ErrorCodeEnum.UserNotFound,
-        HttpStatus.UNAUTHORIZED
-      );
+      throw new ApiException(ErrorCodeEnum.UserNotFound, HttpStatus.UNAUTHORIZED);
     }
 
     if (!user.hashedRefreshToken) {
       throw new ApiException(ErrorCodeEnum.InvalidRefreshToken);
     }
 
-    const isRefreshTokenValid = await verify(
-      user.hashedRefreshToken,
-      refreshToken
-    );
+    const isRefreshTokenValid = await verify(user.hashedRefreshToken, refreshToken);
 
     if (!isRefreshTokenValid) {
       throw new UnauthorizedException("Invalid refresh token");
@@ -264,10 +246,7 @@ export class AuthService {
 
     const hashedRefreshToken = await hash(refreshToken);
 
-    await this.userService.updateHashedRefreshToken(
-      user.id,
-      hashedRefreshToken
-    );
+    await this.userService.updateHashedRefreshToken(user.id, hashedRefreshToken);
 
     return {
       accessToken,
@@ -284,13 +263,7 @@ export class AuthService {
   }
 
   async handleOAuthLogin(profile: CreateOAuthUserDto): Promise<AuthResponse> {
-    const {
-      providerName,
-      providerId,
-      email: originalEmail,
-      displayName,
-      imageUrl,
-    } = profile;
+    const { providerName, providerId, email: originalEmail, displayName, imageUrl } = profile;
 
     const email = originalEmail.toLowerCase();
 
@@ -318,9 +291,7 @@ export class AuthService {
     });
 
     if (connection) {
-      const { accessToken, refreshToken } = await this.generateJWTToken(
-        connection.user.id
-      );
+      const { accessToken, refreshToken } = await this.generateJWTToken(connection.user.id);
       return {
         type: "EXISTING_USER",
         data: {
@@ -363,6 +334,7 @@ export class AuthService {
         email: email.toLowerCase(),
         displayName,
         imageUrl,
+        status: UserStatus.ACTIVE,
         connections: {
           create: {
             providerName,
@@ -374,9 +346,7 @@ export class AuthService {
 
     await this.documentService.createDefault(newUser.id);
 
-    const { accessToken, refreshToken } = await this.generateJWTToken(
-      newUser.id
-    );
+    const { accessToken, refreshToken } = await this.generateJWTToken(newUser.id);
 
     return {
       type: "NEW_USER",

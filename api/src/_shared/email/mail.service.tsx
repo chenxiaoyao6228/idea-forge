@@ -48,7 +48,7 @@ export class MailService {
       await this.transporter.sendMail(email);
       return {} as const;
     } catch (error) {
-      console.error("Error sending email:", error.message);
+      console.error("Error sending email:", (error as Error).message);
       throw error;
       // TODO: Log error
     }
@@ -67,16 +67,14 @@ export class MailService {
         html,
       });
     } catch (error) {
-      console.error("Error sending registration email:", error.message);
+      console.error("Error sending registration email:", (error as Error).message);
       throw error;
     }
   }
 
   async sendPasswordResetEmail(email: string, code: string) {
     try {
-      const html = await render(
-        <ResetPasswordEmail code={code} email={email} />
-      );
+      const html = await render(<ResetPasswordEmail code={code} email={email} />);
       const text = `Your password reset verification code is: ${code}`;
       return this.sendEmail({
         to: email,
@@ -85,7 +83,7 @@ export class MailService {
         html,
       });
     } catch (error) {
-      console.error("Error sending password reset email:", error.message);
+      console.error("Error sending password reset email:", (error as Error).message);
       throw error;
     }
   }

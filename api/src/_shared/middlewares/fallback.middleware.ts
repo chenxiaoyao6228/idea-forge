@@ -194,7 +194,7 @@ export class FallbackMiddleware implements NestMiddleware {
       });
       return await this.userService.getUserById(payload.sub);
     } catch (error) {
-      if (error.name === "TokenExpiredError" && refreshToken) {
+      if ((error as any).name === "TokenExpiredError" && refreshToken) {
         try {
           const refreshPayload = this.jwtService.verify(refreshToken, {
             secret: this.jwtConfiguration.secret,

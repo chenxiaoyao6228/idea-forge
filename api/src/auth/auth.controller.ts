@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Inject,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, Get, Inject, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { LocalAuthGuard } from "./guards/local-auth.guard";
 import { JwtRefreshAuthGuard } from "./guards/jwt-refresh-auth.guard";
@@ -15,13 +6,7 @@ import { GoogleAuthGuard } from "./guards/google-auth.guard";
 import { GithubAuthGuard } from "./guards/github-auth.guard";
 import type { Response } from "express";
 import { Public } from "./decorators/public.decorator";
-import {
-  EmailVerifyDto,
-  ForgotPasswordDto,
-  CodeValidateDto,
-  ResetPasswordDto,
-  RegisterDto,
-} from "./auth.dto";
+import { EmailVerifyDto, ForgotPasswordDto, CodeValidateDto, ResetPasswordDto, RegisterDto } from "./auth.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { UserService } from "@/user/user.service";
 import { ApiException } from "@/_shared/model/api.exception";
@@ -36,7 +21,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UserService,
     private readonly verificationService: VerificationService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
   ) {}
 
   @Public()
@@ -61,8 +46,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post("/login")
   async login(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken, user } =
-      await this.authService.loginUser(req.user.email);
+    const { accessToken, refreshToken, user } = await this.authService.loginUser(req.user.email);
 
     setAuthCookies(res, accessToken, refreshToken);
 
@@ -84,12 +68,8 @@ export class AuthController {
   @Public()
   @UseGuards(JwtRefreshAuthGuard)
   @Post("/refresh")
-  async refreshToken(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: Response
-  ) {
-    const { accessToken, refreshToken, user } =
-      await this.authService.refreshToken(req.user);
+  async refreshToken(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, refreshToken, user } = await this.authService.refreshToken(req.user);
 
     setAuthCookies(res, accessToken, refreshToken);
 
@@ -160,22 +140,22 @@ export class AuthController {
         Object.entries({
           type: result.type,
           ...result.data,
-        }).reduce((acc, [key, value]) => {
-          if (value !== undefined) {
-            acc[key] =
-              typeof value === "object" ? JSON.stringify(value) : String(value);
-          }
-          return acc;
-        }, {} as Record<string, string>)
+        }).reduce(
+          (acc, [key, value]) => {
+            if (value !== undefined) {
+              acc[key] = typeof value === "object" ? JSON.stringify(value) : String(value);
+            }
+            return acc;
+          },
+          {} as Record<string, string>,
+        ),
       ).toString();
 
       const clientAppUrl = this.configService.get<string>("CLIENT_APP_URL");
       res.redirect(`${clientAppUrl}/auth/${provider}/callback?${queryParams}`);
-    } catch (error) {
+    } catch (error: any) {
       const clientAppUrl = this.configService.get<string>("CLIENT_APP_URL");
-      res.redirect(
-        `${clientAppUrl}/auth/${provider}/callback?type=ERROR&error=${error.code}&message=${error.message}`
-      );
+      res.redirect(`${clientAppUrl}/auth/${provider}/callback?type=ERROR&error=${error.code}&message=${error.message}`);
     }
   }
 }

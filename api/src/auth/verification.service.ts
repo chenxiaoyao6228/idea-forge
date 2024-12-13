@@ -3,17 +3,9 @@ import { RedisService } from "@/_shared/database/redis/redis.service";
 import { MailService } from "@/_shared/email/mail.service";
 import { ApiException } from "@/_shared/model/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
-import { UserStatus } from "@prisma/client";
 import { UserService } from "@/user/user.service";
 import { DocumentService } from "@/document/ document.service";
-
-export const VERIFICATION_CODE_TYPES = [
-  "register",
-  "reset-password",
-  "change-email",
-  "2fa",
-] as const;
-export type VerificationCodeType = (typeof VERIFICATION_CODE_TYPES)[number];
+import { UserStatus, VerificationCodeType } from "shared";
 
 interface VerificationCodeConfig {
   codeExpiry: number;
@@ -22,10 +14,7 @@ interface VerificationCodeConfig {
 
 @Injectable()
 export class VerificationService {
-  private readonly CODE_TYPE_CONFIG: Record<
-    VerificationCodeType,
-    VerificationCodeConfig
-  > = {
+  private readonly CODE_TYPE_CONFIG: Record<VerificationCodeType, VerificationCodeConfig> = {
     register: { codeExpiry: 300, cooldown: 60 },
     "reset-password": { codeExpiry: 300, cooldown: 60 },
     "change-email": { codeExpiry: 300, cooldown: 60 },
@@ -36,7 +25,7 @@ export class VerificationService {
     private readonly redis: RedisService,
     private readonly mailService: MailService,
     private readonly userService: UserService,
-    private readonly documentService: DocumentService
+    private readonly documentService: DocumentService,
   ) {}
 
   async generateAndSendCode(email: string, type: VerificationCodeType) {
@@ -93,11 +82,7 @@ export class VerificationService {
     return true;
   }
 
-  private async sendVerificationEmail(
-    email: string,
-    code: string,
-    type: VerificationCodeType
-  ) {
+  private async sendVerificationEmail(email: string, code: string, type: VerificationCodeType) {
     switch (type) {
       case "register":
         return this.mailService.sendRegistrationEmail(email, code);

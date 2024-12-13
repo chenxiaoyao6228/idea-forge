@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { VERIFICATION_CODE_TYPES } from "./verification.service";
-import { Provider } from "@prisma/client";
-import { UserStatus } from "@prisma/client";
+import { Provider } from "./_shared";
+import { UserStatus } from "./_shared";
+import { VERIFICATION_CODE_TYPES } from "./_shared";
 
+// request
 export const EmailSchema = z
   .string({ required_error: "Email is required" })
   .email({ message: "Email is invalid" })
@@ -26,10 +27,23 @@ export const DisplayNameSchema = z
   .max(20)
   .transform((val) => val.trim().toLowerCase().trim());
 
+// register
 export const RegisterSchema = z.object({
   email: EmailSchema,
   password: PasswordSchema,
 });
+
+export type RegisterData = z.infer<typeof RegisterSchema>;
+
+// login
+export const LoginSchema = z.object({
+  email: EmailSchema,
+  password: PasswordSchema,
+  remember: z.boolean().optional(),
+});
+
+export type LoginData = z.infer<typeof LoginSchema>;
+
 
 export const EmailVerifySchema = z.object({
   email: EmailSchema,
@@ -73,3 +87,11 @@ export const UpdateUserSchema = z.object({
   displayName: z.string().optional(),
   imageUrl: z.string().url().optional(),
 });
+
+
+// ============================== response ==============================
+export const LoginResponseSchema = z.object({
+  token: z.string(),
+});
+
+export type LoginResponse = z.infer<typeof LoginResponseSchema>;

@@ -1,5 +1,4 @@
 import { createZodDto } from "@/_shared/utils/zod/create-zod-dto";
-
 import {
   RegisterSchema,
   EmailVerifySchema,
@@ -10,7 +9,7 @@ import {
   CreateUserSchema,
   UpdateUserSchema,
   CreateOAuthUserSchema,
-} from "./auth.type";
+} from "shared";
 
 export class RegisterDto extends createZodDto(RegisterSchema) {}
 export class EmailVerifyDto extends createZodDto(EmailVerifySchema) {}

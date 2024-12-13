@@ -1,39 +1,13 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { z } from "zod";
 import { Spacer } from "@/components/spacer";
 import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
 import useUserStore, { UserInfo } from "@/stores/user";
 import request from "@/lib/request";
-
-export const EmailSchema = z
-  .string({ required_error: "Email is required" })
-  .email({ message: "Email is invalid" })
-  .min(3, { message: "Email is too short" })
-  .max(100, { message: "Email is too long" })
-  // users can type the email in any case, but we store it in lowercase
-  .transform((value) => value.toLowerCase().trim());
-
-export const PasswordSchema = z
-  .string({ required_error: "Password is required" })
-  .min(6, { message: "Password is too short" })
-  .max(100, { message: "Password is too long" })
-  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    // TODO: i18n
-    message: "Password must contain uppercase, lowercase letters and numbers",
-  });
-
-const LoginFormSchema = z.object({
-  email: EmailSchema,
-  password: PasswordSchema,
-  redirectTo: z.string().optional(),
-  remember: z.boolean().optional(),
-});
-
-type LoginFormData = z.infer<typeof LoginFormSchema>;
+import { LoginSchema, type LoginData } from "shared";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -47,20 +21,19 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(LoginFormSchema),
+  } = useForm<LoginData>({
+    resolver: zodResolver(LoginSchema),
     defaultValues: {
-      redirectTo: "",
       remember: true,
       email: "",
       password: "",
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: LoginData) => {
     setIsPending(true);
     try {
-      const user = (await request.post("/api/auth/login", data)) as UserInfo;
+      const user = await request.post<LoginData, UserInfo>("/api/auth/login", data);
 
       // 保存用户信息和token
       setUserInfo(user);
@@ -127,7 +100,6 @@ export default function LoginPage() {
                 </div>
               </div> */}
 
-              <input type="hidden" {...register("redirectTo")} />
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
               <div className="flex items-center justify-between gap-6 pt-3">

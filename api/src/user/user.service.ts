@@ -1,10 +1,10 @@
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ConflictException, Inject, Injectable } from "@nestjs/common";
-import type { Prisma, UserStatus } from "@prisma/client";
 import { hash } from "argon2";
 import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { ApiException } from "@/_shared/model/api.exception";
 import { CreateUserDto, UpdateUserDto } from "@/auth/auth.dto";
+import { UserStatus } from "shared";
 
 @Injectable()
 export class UserService {
@@ -54,7 +54,7 @@ export class UserService {
         where: { id },
         data,
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error.code === "P2002") {
         throw new ConflictException(`User with this ${error.meta.target[0]} already exists`);
       }

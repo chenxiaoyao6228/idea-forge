@@ -4,15 +4,12 @@ import { type Profile, Strategy } from "passport-github2";
 import type { ConfigService, ConfigType } from "@nestjs/config";
 import { githubOAuthConfig } from "@/_shared/config/configs";
 import { AuthService } from "../auth.service";
-import { Provider, UserStatus } from "@prisma/client";
-
+import { Provider, UserStatus } from "shared";
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, "github") {
   constructor(
     @Inject(githubOAuthConfig.KEY)
-    private readonly githubOAuthConfiguration: ConfigType<
-      typeof githubOAuthConfig
-    >
+    private readonly githubOAuthConfiguration: ConfigType<typeof githubOAuthConfig>,
   ) {
     super({
       clientID: githubOAuthConfiguration.clientId,

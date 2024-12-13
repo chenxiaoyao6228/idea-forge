@@ -1,19 +1,11 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { z } from "zod";
 import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
-import { EmailSchema, PasswordSchema } from "shared";
 import request from "@/lib/request";
-
-const RegisterSchema = z.object({
-  email: EmailSchema,
-  password: PasswordSchema,
-});
-
-type RegisterFormData = z.infer<typeof RegisterSchema>;
+import { RegisterSchema, RegisterData } from "shared";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -26,7 +18,7 @@ export default function Register() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({
+  } = useForm<RegisterData>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
       email: "",
@@ -34,7 +26,7 @@ export default function Register() {
     },
   });
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: RegisterData) => {
     setIsPending(true);
     try {
       await request.post("/api/auth/register", data);

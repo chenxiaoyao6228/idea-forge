@@ -1,8 +1,5 @@
 import { type MiddlewareConsumer, Module, type NestModule, RequestMethod } from "@nestjs/common";
 import { AppController } from "./app.controller";
-import { TRPCModule } from "nestjs-trpc";
-import { DogsRouter } from "@/_shared/utils/trpc/dogs.router";
-import { TrpcPanelController } from "@/_shared/utils/trpc/trpc-panel.controller";
 import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { RedisModule } from "@/_shared/database/redis/redis.module";
 import { AuthModule } from "./auth/auth.module";
@@ -21,7 +18,7 @@ import { FallbackMiddleware } from "./_shared/middlewares/fallback.middleware";
 import { ConfigsModule } from "./_shared/config/config.module";
 
 @Module({
-  controllers: [AppController, TrpcPanelController],
+  controllers: [AppController],
   imports: [
     // serve public static files
     ServeStaticModule.forRoot({
@@ -46,9 +43,6 @@ import { ConfigsModule } from "./_shared/config/config.module";
     }),
     LoggerModule,
     ConfigsModule,
-    TRPCModule.forRoot({
-      autoSchemaFile: "./src/_shared/utils/trpc/@generated",
-    }),
     PrismaModule,
     RedisModule,
     AuthModule,
@@ -57,7 +51,6 @@ import { ConfigsModule } from "./_shared/config/config.module";
     DocumentModule,
   ],
   providers: [
-    DogsRouter,
     {
       provide: APP_PIPE,
       useClass: ZodValidationPipe,

@@ -1,3 +1,5 @@
+// NOTE: do not use Enum in this file, use contracts to constrain the data
+
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
@@ -15,7 +17,7 @@ model User {
   imageUrl    String?
 
   emailVerified DateTime? // 邮箱验证时间
-  status        UserStatus @default(ACTIVE) // 用户状态
+  status        String // 用户状态
 
   created_time DateTime @default(now()) @db.Timestamp()
   updated_time DateTime @updatedAt @db.Timestamp()
@@ -33,20 +35,9 @@ model Password {
   userId Int  @unique
 }
 
-enum UserStatus {
-  ACTIVE
-  SUSPENDED
-  DELETED
-}
-
-enum Provider {
-  google
-  github
-}
-
 model Connection {
-  id           String   @id @default(cuid())
-  providerName Provider // 提供商名称：github、google 等
+  id           String @id @default(cuid())
+  providerName String // 提供商名称：github、google 等
   providerId   String // 提供商的用户 ID
 
   createdAt DateTime @default(now())

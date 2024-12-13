@@ -1,4 +1,4 @@
-import { Doc, PrismaClient, UserStatus } from '@prisma/client';
+import { Doc, PrismaClient } from '@prisma/client';
 import { hash } from 'argon2';
 
 const prisma = new PrismaClient();
@@ -27,7 +27,7 @@ async function seed() {
                 hash: passwordHash,
               },
             },
-            status: UserStatus.ACTIVE,
+            status: 'ACTIVE',
           },
         });
 
