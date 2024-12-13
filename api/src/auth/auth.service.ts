@@ -12,7 +12,7 @@ import { User } from "@prisma/client";
 import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { VerificationService } from "./verification.service";
 import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto } from "./auth.dto";
-import { AuthResponse, LoginResponseData } from "./types/oauth";
+import { AuthResponse, LoginResponseData } from "shared";
 import { DocumentService } from "@/document/ document.service";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 import { UserStatus } from "shared";

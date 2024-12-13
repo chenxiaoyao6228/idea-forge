@@ -136,10 +136,19 @@ export class AuthController {
 
     try {
       const result = await this.authService.handleOAuthLogin(data);
+
+      console.log("====result==== ", result);
+
+      if (result.type === "NEW_USER" || result.type === "EXISTING_USER") {
+        const { accessToken, refreshToken } = result.data;
+        setAuthCookies(res, accessToken, refreshToken);
+      }
+
       const queryParams = new URLSearchParams(
         Object.entries({
+          provider,
           type: result.type,
-          ...result.data,
+          data: JSON.stringify(Object.fromEntries(Object.entries(result.data).filter(([key]) => !["accessToken", "refreshToken"].includes(key)))),
         }).reduce(
           (acc, [key, value]) => {
             if (value !== undefined) {
@@ -151,11 +160,9 @@ export class AuthController {
         ),
       ).toString();
 
-      const clientAppUrl = this.configService.get<string>("CLIENT_APP_URL");
-      res.redirect(`${clientAppUrl}/auth/${provider}/callback?${queryParams}`);
+      res.redirect(`/auth-callback?${queryParams}`);
     } catch (error: any) {
-      const clientAppUrl = this.configService.get<string>("CLIENT_APP_URL");
-      res.redirect(`${clientAppUrl}/auth/${provider}/callback?type=ERROR&error=${error.code}&message=${error.message}`);
+      res.redirect(`/auth-callback?type=ERROR&error=${error.code}&message=${error.message}`);
     }
   }
 }

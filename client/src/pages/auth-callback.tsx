@@ -1,0 +1,42 @@
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import useUserStore, { UserInfo } from "@/stores/user";
+import type { AuthResponseType, AuthResponseData } from "shared";
+
+export default function AuthCallbackPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const setUserInfo = useUserStore((state) => state.setUserInfo);
+  const type = searchParams.get("type") as AuthResponseType;
+  const data = JSON.parse(searchParams.get("data") ?? "{}") as AuthResponseData;
+
+  useEffect(() => {
+    switch (type) {
+      case "NEW_USER":
+      case "EXISTING_USER": {
+        setUserInfo(data.user as UserInfo);
+        navigate("/");
+        break;
+      }
+
+      case "EMAIL_CONFLICT": {
+        navigate("/login", {
+          state: {
+            error: "An account with this email already exists. Please login first.",
+          },
+        });
+        break;
+      }
+
+      default: {
+        navigate("/login", {
+          state: {
+            error: searchParams.get("message") ?? "Authentication failed",
+          },
+        });
+      }
+    }
+  }, [type]);
+
+  return null;
+}

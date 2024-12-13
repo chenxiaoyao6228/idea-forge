@@ -33,7 +33,7 @@ async function bootstrap() {
   console.log(SHARE_NAME);
   console.log("------------------");
 
-  const port = configService.get("NEST_API_PORT", 5001);
+  const port = configService.get("NEST_API_PORT", 5000);
 
   await app.listen(port);
 

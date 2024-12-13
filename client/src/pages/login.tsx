@@ -8,6 +8,8 @@ import { useState } from "react";
 import useUserStore, { UserInfo } from "@/stores/user";
 import request from "@/lib/request";
 import { LoginSchema, type LoginData } from "shared";
+import { providerNames } from "@/components/connections";
+import { ProviderConnectionForm } from "@/components/connections";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -104,6 +106,13 @@ export default function LoginPage() {
                 </StatusButton>
               </div>
             </form>
+            <ul className="mt-5 flex flex-col gap-5 border-b-2 border-t-2 border-border py-3">
+              {providerNames.map((providerName) => (
+                <li key={providerName}>
+                  <ProviderConnectionForm type="Login" providerName={providerName} redirectTo={redirectTo} />
+                </li>
+              ))}
+            </ul>
             <div className="flex items-center justify-center gap-2 pt-6">
               <span className="text-muted-foreground">New here?</span>
               <Link to={redirectTo ? `/register?${encodeURIComponent(redirectTo)}` : "/register"}>Create an account</Link>

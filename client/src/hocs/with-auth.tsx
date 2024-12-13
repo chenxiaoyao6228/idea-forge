@@ -23,6 +23,10 @@ export default function WithAuth(WrappedComponent: React.ComponentType<any>) {
     const { userInfo, setUserInfo } = useUserStore();
 
     useEffect(() => {
+      if (window.location.pathname === "/auth-callback") {
+        return;
+      }
+
       const userInfo = getUserInfoAndDestroyFromLocal();
       if (userInfo) {
         setUserInfo(userInfo);
@@ -30,7 +34,7 @@ export default function WithAuth(WrappedComponent: React.ComponentType<any>) {
     }, []);
 
     // Loading state
-    if (!userInfo?.id) {
+    if (!userInfo?.id && window.location.pathname !== "/auth-callback") {
       return <div>Loading...</div>;
     }
 
