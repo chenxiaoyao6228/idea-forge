@@ -2,7 +2,7 @@ import type { SVGProps } from "react";
 import type { IconName } from "./icons.d";
 import { cn } from "@/lib/utils";
 
-const newHref = window.location.origin + "/public/sprite.svg";
+const newHref = window.location.origin + "/sprite.svg";
 
 export type { IconName };
 
@@ -43,33 +43,17 @@ export type IconProps = SVGProps<SVGSVGElement> & {
  * Pass `title` prop to the `Icon` component to get `<title>` element rendered
  * in the SVG container, providing this way for accessibility.
  */
-export function Icon({
-  name,
-  size = "font",
-  className,
-  title,
-  children,
-  ...props
-}: IconProps) {
+export function Icon({ name, size = "font", className, title, children, ...props }: IconProps) {
   if (children) {
     return (
-      <span
-        className={`inline-flex items-center ${childrenSizeClassName[size]}`}>
-        <Icon
-          name={name}
-          size={size}
-          className={className}
-          title={title}
-          {...props}
-        />
+      <span className={`inline-flex items-center ${childrenSizeClassName[size]}`}>
+        <Icon name={name} size={size} className={className} title={title} {...props} />
         {children}
       </span>
     );
   }
   return (
-    <svg
-      {...props}
-      className={cn(sizeClassName[size], "inline self-center", className)}>
+    <svg {...props} className={cn(sizeClassName[size], "inline self-center", className)}>
       {title ? <title>{title}</title> : null}
       <use href={`${newHref}#${name}`} />
     </svg>

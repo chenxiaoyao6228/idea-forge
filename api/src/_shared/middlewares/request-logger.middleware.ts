@@ -14,15 +14,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     // TODO: better log format
 
     res.on("finish", () => {
-      console.log(
-        res.statusCode,
-        req.url,
-        req.method,
-        req.body,
-        req.headers.authorization,
-        req.cookies?.accessToken,
-        req.cookies?.refreshToken
-      );
+      console.log(res.statusCode, req.url, req.method, req.body, req.headers.authorization, req.cookies?.accessToken, req.cookies?.refreshToken);
     });
 
     // const start = Date.now();

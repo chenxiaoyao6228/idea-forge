@@ -11,13 +11,7 @@ export const logger = (() => {
   };
 
   function print(method: LoggerMethods, ...args: LogArgs): void {
-    const styles = [
-      `background: ${methodColorMap[method]}`,
-      `border-radius: 0.5em`,
-      `color: white`,
-      `font-weight: bold`,
-      `padding: 2px 0.5em`,
-    ];
+    const styles = [`background: ${methodColorMap[method]}`, `border-radius: 0.5em`, `color: white`, `font-weight: bold`, `padding: 2px 0.5em`];
 
     if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
       console[method](...args);

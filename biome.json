@@ -29,7 +29,8 @@
       },
       "complexity": {
         "noForEach": "off",
-        "noBannedTypes": "off"
+        "noBannedTypes": "off",
+        "noStaticOnlyClass": "off"
       },
       "security": {
         "noDangerouslySetInnerHtml": "off"
@@ -53,7 +54,7 @@
     }
   },
   "files": {
-    "include": ["client/src/**", "api/src/**"],
+    "include": ["client/src/**", "api/src/**", "shared/**"],
     "ignore": ["node_modules", "dist", "build", "coverage", "client/src/assets/_icons-spritesheet-auto-generated/**"]
   }
 }

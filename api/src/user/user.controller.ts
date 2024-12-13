@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Inject,
-  Param,
-  Post,
-  Put,
-} from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post, Put } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { UpdateUserDto } from "@/auth/auth.dto";
 

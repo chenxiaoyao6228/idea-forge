@@ -55,7 +55,7 @@ export function ProviderConnectionForm({
       <StatusButton type="submit" className="w-full" status={isPending ? "pending" : "idle"}>
         <div className="inline-flex items-center gap-1.5">
           {providerIcons[providerName]}
-          <span>{isPending ? `${type}ing with ${label}...` : `${type} with ${label}`}</span>
+          <span>{isPending ? `${type}ing with ${label}` : `${type} with ${label}`}</span>
         </div>
       </StatusButton>
     </form>

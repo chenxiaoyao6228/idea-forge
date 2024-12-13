@@ -1,18 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-} from "@nestjs/common";
-import {
-  CreateDocumentDto,
-  SearchDocumentDto,
-  UpdateDocumentDto,
-} from "./document.dto";
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
+import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./document.dto";
 import { DocumentService } from "./ document.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 
@@ -21,11 +8,7 @@ export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
 
   @Get("tree")
-  async getDirectoryTree(
-    @GetUser("id") userId: number,
-    @Query("parentId") parentId?: string,
-    @Query("depth") depth = 1
-  ) {
+  async getDirectoryTree(@GetUser("id") userId: number, @Query("parentId") parentId?: string, @Query("depth") depth = 1) {
     return this.documentService.getDirectoryTree(userId, parentId, depth);
   }
 
@@ -50,11 +33,7 @@ export class DocumentController {
   }
 
   @Patch(":id")
-  update(
-    @GetUser("id") userId: number,
-    @Param("id") id: string,
-    @Body() dto: UpdateDocumentDto
-  ) {
+  update(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: UpdateDocumentDto) {
     return this.documentService.update(id, userId, dto);
   }
 

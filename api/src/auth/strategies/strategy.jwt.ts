@@ -11,7 +11,7 @@ import { AuthService } from "../auth.service";
 export class JwtStrategy extends PassportStrategy(PassportJWTStrategy, "jwt") {
   constructor(
     @Inject(jwtConfig.KEY)
-    private readonly jwtConfiguration: ConfigType<typeof jwtConfig>
+    private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([

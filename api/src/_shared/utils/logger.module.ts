@@ -11,12 +11,8 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        level:
-          configService.get("NODE_ENV") === "production" ? "info" : "debug",
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json()
-        ),
+        level: configService.get("NODE_ENV") === "production" ? "info" : "debug",
+        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
         transports: [
           new winston.transports.File({
             filename: `${process.cwd()}/logs/error.log`,
@@ -35,7 +31,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
               winston.format.colorize(),
               utilities.format.nestLike("IdeaForge", {
                 prettyPrint: true,
-              })
+              }),
             ),
           }),
         ],

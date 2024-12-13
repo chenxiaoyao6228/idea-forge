@@ -7,10 +7,7 @@ import { validateConfig } from "./config-validation";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        `${process.cwd()}/.env`,
-        `${process.cwd()}/.env.${process.env.NODE_ENV}`,
-      ],
+      envFilePath: [`${process.cwd()}/.env`, `${process.cwd()}/.env.${process.env.NODE_ENV}`],
       // Load env files from most specific to least specific
       expandVariables: true,
       load: [...Object.values(config)],
