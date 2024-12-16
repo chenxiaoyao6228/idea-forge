@@ -16,6 +16,7 @@ const NotFound = React.lazy(() => import(/* webpackChunkName: "NotFound" */ "@/p
 const ForgotPassword = React.lazy(() => import(/* webpackChunkName: "ForgotPassword" */ "@/pages/forgot-password"));
 const ResetPassword = React.lazy(() => import(/* webpackChunkName: "ResetPassword" */ "@/pages/reset-password"));
 const AuthCallback = React.lazy(() => import(/* webpackChunkName: "AuthCallback" */ "@/pages/auth-callback"));
+const Doc = React.lazy(() => import(/* webpackChunkName: "Doc" */ "@/pages/doc"));
 
 // Routes that require authentication
 const AuthRouteConfig: IRouteObject = {
@@ -23,7 +24,13 @@ const AuthRouteConfig: IRouteObject = {
   element: <RootLayout />,
   errorElement: LazyBoundary(NotFound as any),
   wrapper: [WithAuth],
-  children: [{ path: "/", element: LazyBoundary(Home) }],
+  children: [
+    { path: "/", element: LazyBoundary(Home) },
+    {
+      path: "doc/:docId",
+      element: LazyBoundary(Doc),
+    },
+  ],
 };
 
 // Routes that don't require authentication
