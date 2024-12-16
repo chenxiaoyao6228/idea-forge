@@ -1,7 +1,7 @@
 import Loading from "@/components/loading";
-import { LazyExoticComponent, NamedExoticComponent, Suspense } from "react";
+import { LazyExoticComponent, Suspense } from "react";
 
-const LazyBoundary = (WrapComp: LazyExoticComponent<(() => JSX.Element) | NamedExoticComponent>) => (
+const LazyBoundary = (WrapComp: LazyExoticComponent<() => JSX.Element | null>) => (
   <Suspense fallback={<Loading />}>
     <WrapComp />
   </Suspense>
