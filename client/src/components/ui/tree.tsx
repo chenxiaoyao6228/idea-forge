@@ -1,5 +1,6 @@
 /*
  * https://github.com/shadcn-ui/ui/issues/355
+ * TODO: 1. virtualize tree
  */
 
 import React, { useState, useMemo } from "react";
@@ -7,6 +8,7 @@ import { ChevronRight, Loader2, Folder, FolderOpen, File } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible";
 import { Checkbox } from "./checkbox";
 import { cn } from "@/lib/utils";
+import { useSpinDelay } from "spin-delay";
 
 type IconFn = (props: { selected: boolean; node: TreeDataNode; expanded: boolean }) => React.ReactNode;
 
@@ -168,7 +170,10 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
       if (!controlledExpandedKeys) {
         setInternalExpandedKeys(newExpandedKeys);
       }
-      onExpand?.(newExpandedKeys, { expanded: newExpandedKeys.includes(key), node: normalizedData.find((n) => n.key === key) });
+      onExpand?.(newExpandedKeys, {
+        expanded: newExpandedKeys.includes(key),
+        node: normalizedData.find((n) => n.key === key)!,
+      });
     };
 
     const handleSelect = (node: TreeDataNode, e: React.MouseEvent) => {
@@ -216,7 +221,12 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
         if (!controlledExpandedKeys) {
           setInternalExpandedKeys(newExpandedKeys);
         }
-        onExpand?.(newExpandedKeys, { expanded: newExpandedKeys.includes(key), node: normalizedData.find((n) => n.key === key) });
+        selectedKeys.forEach((selectedKey) => {
+          onExpand?.(newExpandedKeys, {
+            expanded: newExpandedKeys.includes(selectedKey),
+            node: normalizedData.find((n) => n.key === selectedKey)!,
+          });
+        });
       }
     }, [selectedKeys, autoExpandParent]);
 
@@ -350,6 +360,11 @@ const TreeNode = ({
   const [isHovered, setIsHovered] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  const showLoading = useSpinDelay(loading, {
+    delay: 400,
+    minDuration: 200,
+  });
+
   const handleCheck = (checked: boolean) => {
     const childrenKeys = getAllChildrenKeys(node);
     onCheck(node, checked, {} as React.MouseEvent, childrenKeys);
@@ -422,7 +437,6 @@ const TreeNode = ({
         <div
           className={cn(
             "relative flex items-center py-1 px-2",
-            "hover:bg-accent/50 dark:hover:bg-accent/25",
             "rounded-lg transition-colors",
             isSelected && "bg-accent dark:bg-accent/50",
             node.disabled && "opacity-50 pointer-events-none",
@@ -446,31 +460,35 @@ const TreeNode = ({
 
           {checkable && !node.disableCheckbox && <Checkbox checked={checked} indeterminate={indeterminate} onCheckedChange={handleCheck} className="mr-2" />}
           <CollapsibleTrigger asChild>
-            <div className="flex items-center flex-1 min-w-0 cursor-pointer">
-              {(hasChildren || canLoadData) &&
-                (loading ? (
-                  <Loader2 className="h-4 w-4 shrink-0 mr-1 animate-spin text-muted-foreground" />
-                ) : switcherIcon ? (
-                  <div className={cn("shrink-0 mr-1 transition-transform duration-200", isExpanded && "rotate-90")}>{switcherIcon}</div>
-                ) : (
-                  <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200 mr-1", isExpanded && "rotate-90")} />
-                ))}
-              {showIcon && (
-                <div className="mr-2">
-                  {(() => {
-                    const iconProp = node.icon || treeIcon;
-                    if (typeof iconProp === "function") {
-                      return iconProp({ selected: isSelected, node, expanded: isExpanded });
-                    }
-                    return iconProp;
-                  })()}
+            <div className="flex items-center min-w-0">
+              {(hasChildren || canLoadData) && (
+                <div className={cn("flex items-center cursor-pointer rounded  h-4 w-4 mr-1", "hover:bg-accent/50 dark:hover:bg-accent/25")}>
+                  {showLoading ? (
+                    <Loader2 className="h-4 w-4 shrink-0 mr-1 animate-spin text-muted-foreground" />
+                  ) : switcherIcon ? (
+                    <div className={cn("shrink-0 mr-1 transition-transform duration-200", isExpanded && "rotate-90")}>{switcherIcon}</div>
+                  ) : (
+                    <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200 mr-1", isExpanded && "rotate-90")} />
+                  )}
                 </div>
               )}
-              <span className="flex-1 truncate" onClick={(e) => !node.disabled && onSelect(node, e)}>
-                {node.title}
-              </span>
             </div>
           </CollapsibleTrigger>
+
+          <div className="flex items-center flex-1 min-w-0 cursor-pointer" onClick={(e) => !node.disabled && onSelect(node, e)}>
+            {showIcon && (
+              <div className="mr-2">
+                {(() => {
+                  const iconProp = node.icon || treeIcon;
+                  if (typeof iconProp === "function") {
+                    return iconProp({ selected: isSelected, node, expanded: isExpanded });
+                  }
+                  return iconProp;
+                })()}
+              </div>
+            )}
+            <span className="flex-1 truncate user-select-none">{node.title}</span>
+          </div>
 
           {/* Render actions slot with conditional visibility */}
           {renderActions && (
@@ -486,7 +504,7 @@ const TreeNode = ({
 
       {hasChildren && (
         <CollapsibleContent>
-          <div className="pl-6">
+          <div className="pl-4">
             {node.children?.map((child) => (
               <TreeNode
                 key={child.key}

@@ -3,7 +3,7 @@ export interface DocumentItem {
   title: string;
   isStarred: boolean;
   parentId: string | null;
-  hasChildren: boolean;
+  isLeaf: boolean;
 }
 
 export interface DocumentTreeItem extends DocumentItem {

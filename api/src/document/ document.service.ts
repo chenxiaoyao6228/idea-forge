@@ -3,6 +3,7 @@ import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./docum
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { DEFAULT_NEW_DOC_TITLE } from "@/_shared/constants/common";
 import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
+import { CreateDocumentResponse } from "shared";
 
 @Injectable()
 export class DocumentService {
@@ -19,8 +20,8 @@ export class DocumentService {
     });
   }
 
-  async create(ownerId: number, dto: CreateDocumentDto) {
-    return this.prisma.doc.create({
+  async create(ownerId: number, dto: CreateDocumentDto): Promise<CreateDocumentResponse> {
+    const doc = await this.prisma.doc.create({
       data: {
         ownerId,
         isArchived: false,
@@ -28,8 +29,14 @@ export class DocumentService {
         content: dto.content,
         parentId: dto.parentId,
         sharedPassword: dto.sharedPassword,
+        isStarred: false,
       },
     });
+
+    return {
+      ...doc,
+      isLeaf: true,
+    };
   }
 
   async findAll(ownerId: number) {
@@ -174,7 +181,7 @@ export class DocumentService {
       ownerId: userId,
       isStarred: doc.isStarred,
       isArchived: false,
-      hasChildren: doc._count.children > 0,
+      isLeaf: doc._count.children === 0,
     }));
   }
 }
