@@ -1,21 +1,17 @@
-## Nest-React-Vite-Starter
+# Idea Forge
 
-## Why this repo
+Idea Forge is a powerful document collaboration tool that combines the functionality of Notion with the intelligence of AI. It provides a seamless environment for real-time collaborative editing, AI-powered writing assistance, and efficient document management.
 
-This repository serves as an ideal starting point for developers looking to build full-stack applications with NestJS and React, particularly when:
+## Getting Started
 
-- Server-side rendering (SSR) isn't necessary for your project
-- You prefer not to use frameworks like Next.js or Remix to have more flexibility
-- You want a modern development experience with features like:
-  - Fast hot reloading
-  - End-to-end type safety
-  - Modern build system
-  - Clean architecture
-  - Best practices out of the box
-  - ....
+1. Install Docker Desktop for your operating system from the [official Docker website](https://www.docker.com/products/docker-desktop/)
 
-Built with React, Vite, and NestJS, this template provides a robust foundation for building scalable full-stack applications while maintaining excellent developer experience.
+2. Ensure Docker Desktop is running before proceeding with the setup
 
-## Great thanks to
+```bash
+## Install && Setup local docker environment for the server, including postgresql, redis
+pnpm install && pnpm run setup
 
-- [epicweb-dev/epic-stack](https://github.com/epicweb-dev/epic-stack/tree/main)
+## Run the server
+pnpm run dev
+```

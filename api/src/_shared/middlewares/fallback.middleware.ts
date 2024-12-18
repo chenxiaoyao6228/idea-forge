@@ -165,7 +165,7 @@ export class FallbackMiddleware implements NestMiddleware {
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Idea Stack</title>
+          <title>Idea Forge</title>
           ${_html.preload ? _html.preload : ""}
           ${_html.css ? _html.css : ""}
         </head>

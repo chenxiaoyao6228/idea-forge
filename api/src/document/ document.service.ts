@@ -142,7 +142,7 @@ export class DocumentService {
     return { documents, total };
   }
 
-  async getDirectoryTree(userId: number, parentId?: string, depth = 1) {
+  async getDirectoryTree(userId: number, parentId?: string) {
     const docs = await this.prisma.doc.findMany({
       where: {
         ownerId: userId,

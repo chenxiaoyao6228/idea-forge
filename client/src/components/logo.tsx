@@ -5,7 +5,7 @@ export default function Logo() {
   return (
     <Link to="/" className="blog overflow-hidden flex items-center">
       <img src={LogoImg} alt="logo" className="w-6 h-6 rounded-full" />
-      <span className="ml-2 font-bold text-xl">Idea Stack</span>
+      <span className="ml-2 font-bold text-xl">Idea Forge</span>
     </Link>
   );
 }

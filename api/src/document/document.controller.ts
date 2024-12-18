@@ -8,8 +8,8 @@ export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
 
   @Get("tree")
-  async getDirectoryTree(@GetUser("id") userId: number, @Query("parentId") parentId?: string, @Query("depth") depth = 1) {
-    return this.documentService.getDirectoryTree(userId, parentId, depth);
+  async getDirectoryTree(@GetUser("id") userId: number, @Query("parentId") parentId?: string) {
+    return this.documentService.getDirectoryTree(userId, parentId);
   }
 
   @Get("search")
