@@ -1,2 +1,2 @@
 export * from "./auth";
-export { CreateDocumentResponse } from "./document";
+export * from "./document";

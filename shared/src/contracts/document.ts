@@ -1,5 +1,6 @@
 import { Doc } from "./prisma";
 
-export interface CreateDocumentResponse extends Doc {
+export interface CommonDocument extends Doc {
   isLeaf: boolean;
 }
+export interface CreateDocumentResponse extends CommonDocument {}

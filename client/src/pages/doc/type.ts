@@ -1,10 +1,6 @@
-export interface DocumentItem {
-  id: string;
-  title: string;
-  isStarred: boolean;
-  parentId: string | null;
-  isLeaf: boolean;
-}
+import { CommonDocument } from "shared";
+
+export interface DocumentItem extends CommonDocument {}
 
 export interface DocumentTreeItem extends DocumentItem {
   children: DocumentTreeItem[];

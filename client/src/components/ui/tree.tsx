@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { ChevronRight, Loader2, Folder, FolderOpen, File } from "lucide-react";
+import { ChevronRight, Loader2, Folder, FolderOpen, File, Dot } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible";
 import { Checkbox } from "./checkbox";
 import { cn } from "@/lib/utils";
@@ -27,28 +27,28 @@ export interface TreeDataNode {
 export interface TreeProps {
   treeData: TreeDataNode[];
   checkable?: boolean;
-  expandedKeys?: React.Key[];
-  selectedKeys?: React.Key[];
-  checkedKeys?: React.Key[];
-  defaultExpandedKeys?: React.Key[];
-  defaultSelectedKeys?: React.Key[];
-  defaultCheckedKeys?: React.Key[];
+  expandedKeys?: string[];
+  selectedKeys?: string[];
+  checkedKeys?: string[];
+  defaultExpandedKeys?: string[];
+  defaultSelectedKeys?: string[];
+  defaultCheckedKeys?: string[];
   autoExpandParent?: boolean;
-  onExpand?: (expandedKeys: React.Key[], info: { expanded: boolean; node: TreeDataNode }) => void;
-  onSelect?: (selectedKeys: React.Key[], info: { selected: boolean; selectedNodes: TreeDataNode[]; node: TreeDataNode; event: React.MouseEvent }) => void;
-  onCheck?: (checkedKeys: React.Key[], info: { checked: boolean; checkedNodes: TreeDataNode[]; node: TreeDataNode; event: React.MouseEvent }) => void;
+  onExpand?: (expandedKeys: string[], info: { expanded: boolean; node: TreeDataNode }) => void;
+  onSelect?: (selectedKeys: string[], info: { selected: boolean; selectedNodes: TreeDataNode[]; node: TreeDataNode; event: React.MouseEvent }) => void;
+  onCheck?: (checkedKeys: string[], info: { checked: boolean; checkedNodes: TreeDataNode[]; node: TreeDataNode; event: React.MouseEvent }) => void;
   className?: string;
   draggable?: boolean;
   blockNode?: boolean;
   onDragStart?: (info: { event: React.DragEvent; node: TreeDataNode }) => void;
-  onDragEnter?: (info: { event: React.DragEvent; node: TreeDataNode; expandedKeys: React.Key[] }) => void;
+  onDragEnter?: (info: { event: React.DragEvent; node: TreeDataNode; expandedKeys: string[] }) => void;
   onDragOver?: (info: { event: React.DragEvent; node: TreeDataNode }) => void;
   onDragLeave?: (info: { event: React.DragEvent; node: TreeDataNode }) => void;
   onDrop?: (info: {
     event: React.DragEvent;
     node: TreeDataNode;
     dragNode: TreeDataNode;
-    dragNodesKeys: React.Key[];
+    dragNodesKeys: string[];
     dropPosition: number;
     dropToGap: boolean;
   }) => void;
@@ -131,8 +131,8 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
     },
     ref,
   ) => {
-    const getAllKeys = (nodes: TreeDataNode[]): React.Key[] => {
-      let keys: React.Key[] = [];
+    const getAllKeys = (nodes: TreeDataNode[]): string[] => {
+      let keys: string[] = [];
       nodes.forEach((node) => {
         keys.push(node.key);
         if (node.children) {
@@ -149,9 +149,9 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
       return defaultExpandedKeys;
     }, []);
 
-    const [internalExpandedKeys, setInternalExpandedKeys] = React.useState<React.Key[]>(initialExpandedKeys);
-    const [internalSelectedKeys, setInternalSelectedKeys] = React.useState<React.Key[]>(defaultSelectedKeys);
-    const [internalCheckedKeys, setInternalCheckedKeys] = React.useState<React.Key[]>(defaultCheckedKeys);
+    const [internalExpandedKeys, setInternalExpandedKeys] = React.useState<string[]>(initialExpandedKeys);
+    const [internalSelectedKeys, setInternalSelectedKeys] = React.useState<string[]>(defaultSelectedKeys);
+    const [internalCheckedKeys, setInternalCheckedKeys] = React.useState<string[]>(defaultCheckedKeys);
 
     const expandedKeys = controlledExpandedKeys ?? internalExpandedKeys;
     const selectedKeys = controlledSelectedKeys ?? internalSelectedKeys;
@@ -164,7 +164,7 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
 
     const treeDataWithPos = React.useMemo(() => addTreePos(normalizedData), [normalizedData]);
 
-    const handleExpand = (key: React.Key) => {
+    const handleExpand = (key: string) => {
       const newExpandedKeys = expandedKeys.includes(key) ? expandedKeys.filter((k) => k !== key) : [...expandedKeys, key];
 
       if (!controlledExpandedKeys) {
@@ -190,7 +190,7 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
       });
     };
 
-    const handleCheck = (node: TreeDataNode, checked: boolean, e: React.MouseEvent, affectedKeys: React.Key[]) => {
+    const handleCheck = (node: TreeDataNode, checked: boolean, e: React.MouseEvent, affectedKeys: string[]) => {
       const newCheckedKeys = checked ? [...new Set([...checkedKeys, ...affectedKeys])] : checkedKeys.filter((key) => !affectedKeys.includes(key));
 
       if (!controlledCheckedKeys) {
@@ -206,8 +206,8 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
 
     React.useEffect(() => {
       if (autoExpandParent && selectedKeys.length > 0) {
-        const parentKeys = new Set<React.Key>();
-        const findParentKeys = (nodes: TreeDataNode[], parentKey?: React.Key) => {
+        const parentKeys = new Set<string>();
+        const findParentKeys = (nodes: TreeDataNode[], parentKey?: string) => {
           nodes.forEach((node) => {
             if (parentKey) parentKeys.add(parentKey);
             if (node.children) {
@@ -271,12 +271,12 @@ type TreeNodeProps = {
   node: TreeDataNode;
   level: number;
   checkable?: boolean;
-  expandedKeys: React.Key[];
-  selectedKeys: React.Key[];
-  checkedKeys: React.Key[];
-  onExpand: (key: React.Key) => void;
+  expandedKeys: string[];
+  selectedKeys: string[];
+  checkedKeys: string[];
+  onExpand: (key: string) => void;
   onSelect: (node: TreeDataNode, e: React.MouseEvent) => void;
-  onCheck: (node: TreeDataNode, checked: boolean, e: React.MouseEvent, affectedKeys: React.Key[]) => void;
+  onCheck: (node: TreeDataNode, checked: boolean, e: React.MouseEvent, affectedKeys: string[]) => void;
   draggable?: boolean;
   blockNode?: boolean;
   onDragStart?: TreeProps["onDragStart"];
@@ -304,7 +304,7 @@ const getAllChildrenKeys = (node: TreeDataNode): string[] => {
 
 const getCheckStatus = (
   node: TreeDataNode,
-  checkedKeys: React.Key[],
+  checkedKeys: string[],
 ): {
   checked: boolean;
   indeterminate: boolean;
@@ -459,21 +459,26 @@ const TreeNode = ({
           {dragOver === "bottom" && <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />}
 
           {checkable && !node.disableCheckbox && <Checkbox checked={checked} indeterminate={indeterminate} onCheckedChange={handleCheck} className="mr-2" />}
-          <CollapsibleTrigger asChild>
-            <div className="flex items-center min-w-0">
-              {(hasChildren || canLoadData) && (
-                <div className={cn("flex items-center cursor-pointer rounded  h-4 w-4 mr-1", "hover:bg-accent/50 dark:hover:bg-accent/25")}>
-                  {showLoading ? (
-                    <Loader2 className="h-4 w-4 shrink-0 mr-1 animate-spin text-muted-foreground" />
-                  ) : switcherIcon ? (
-                    <div className={cn("shrink-0 mr-1 transition-transform duration-200", isExpanded && "rotate-90")}>{switcherIcon}</div>
-                  ) : (
-                    <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200 mr-1", isExpanded && "rotate-90")} />
-                  )}
-                </div>
-              )}
-            </div>
-          </CollapsibleTrigger>
+
+          {node.isLeaf ? (
+            <Dot className="h-4 w-4 mr-1" />
+          ) : (
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center min-w-0">
+                {(hasChildren || canLoadData) && (
+                  <div className={cn("flex items-center cursor-pointer rounded  h-4 w-4 mr-1", "hover:bg-accent/50 dark:hover:bg-accent/25")}>
+                    {showLoading ? (
+                      <Loader2 className="h-4 w-4 shrink-0 mr-1 animate-spin text-muted-foreground" />
+                    ) : switcherIcon ? (
+                      <div className={cn("shrink-0 mr-1 transition-transform duration-200", isExpanded && "rotate-90")}>{switcherIcon}</div>
+                    ) : (
+                      <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200 mr-1", isExpanded && "rotate-90")} />
+                    )}
+                  </div>
+                )}
+              </div>
+            </CollapsibleTrigger>
+          )}
 
           <div className="flex items-center flex-1 min-w-0 cursor-pointer" onClick={(e) => !node.disabled && onSelect(node, e)}>
             {showIcon && (

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
 import { useDocumentTree } from "../store";
+import { useNavigate } from "react-router-dom";
 
 interface AddDocButtonProps {
   parentId: string | null;
@@ -9,6 +10,7 @@ interface AddDocButtonProps {
 
 export function AddDocButton({ parentId }: AddDocButtonProps) {
   const { createDocument } = useDocumentTree();
+  const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
 
   const handleClick = async () => {
@@ -16,7 +18,8 @@ export function AddDocButton({ parentId }: AddDocButtonProps) {
 
     setIsCreating(true);
     try {
-      await createDocument(parentId, "Untitled");
+      const newDocId = await createDocument(parentId, "Untitled");
+      navigate(`/doc/${newDocId}`);
     } finally {
       setIsCreating(false);
     }

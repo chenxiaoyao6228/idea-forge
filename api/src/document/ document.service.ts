@@ -172,6 +172,9 @@ export class DocumentService {
           },
         },
       },
+      orderBy: {
+        updatedAt: "desc",
+      },
     });
 
     return docs.map((doc) => ({

@@ -1,23 +1,24 @@
-import { Key, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { DirectoryTree, Tree, TreeDataNode, TreeProps } from "@/components/ui/tree";
-import { PlusIcon, MoreHorizontalIcon } from "lucide-react";
+import { Tree, TreeDataNode } from "@/components/ui/tree";
+import { MoreHorizontalIcon } from "lucide-react";
 import { useDocumentTree } from "../store";
 import { AddDocButton } from "./add-doc-button";
 
 export function MyDocs() {
   const navigate = useNavigate();
-  const { treeData, expandedKeys, selectedKeys, loadChildren, setExpandedKeys, setSelectedKeys } = useDocumentTree();
+  const { treeData, expandedKeys, selectedKeys, loadChildren, setExpandedKeys, setSelectedKeys, deleteDocument } = useDocumentTree();
 
   useEffect(() => {
     loadChildren(null);
   }, []);
 
-  const handleSelect = (keys: Key[], { node }: { node: TreeDataNode }) => {
-    setSelectedKeys(keys);
+  const handleSelect = (keys: string[], { node }: { node: TreeDataNode }) => {
+    // TODO: handle multiple selection
+    setSelectedKeys([node.key]);
     navigate(`/doc/${node.key}`);
   };
 
@@ -35,6 +36,9 @@ export function MyDocs() {
           expandedKeys={expandedKeys}
           selectedKeys={selectedKeys}
           onExpand={(keys) => setExpandedKeys(keys)}
+          fieldNames={{
+            key: "id",
+          }}
           onSelect={handleSelect}
           loadData={async (node) => {
             if (!node.isLeaf) {
@@ -52,10 +56,12 @@ export function MyDocs() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem>Rename</DropdownMenuItem>
-                  <DropdownMenuItem>Delete</DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive" onClick={() => deleteDocument(node.key)}>
+                    Delete
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <AddDocButton parentId={node.key as string} />
+              <AddDocButton parentId={node.key} />
             </div>
           )}
         />
