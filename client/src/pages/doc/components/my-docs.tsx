@@ -10,7 +10,7 @@ import { AddDocButton } from "./add-doc-button";
 
 export function MyDocs() {
   const navigate = useNavigate();
-  const { treeData, expandedKeys, selectedKeys, loadChildren, setExpandedKeys, setSelectedKeys, deleteDocument } = useDocumentTree();
+  const { treeData, expandedKeys, selectedKeys, loadChildren, setExpandedKeys, setSelectedKeys, deleteDocument, updateDocument } = useDocumentTree();
 
   useEffect(() => {
     loadChildren(null);
@@ -20,6 +20,10 @@ export function MyDocs() {
     // TODO: handle multiple selection
     setSelectedKeys([node.key]);
     navigate(`/doc/${node.key}`);
+  };
+
+  const handleRenameComplete = (key: string, newTitle: string) => {
+    updateDocument(key, { title: newTitle });
   };
 
   return (
@@ -36,6 +40,7 @@ export function MyDocs() {
           expandedKeys={expandedKeys}
           selectedKeys={selectedKeys}
           onExpand={(keys) => setExpandedKeys(keys)}
+          onRename={handleRenameComplete}
           fieldNames={{
             key: "id",
           }}
@@ -46,7 +51,7 @@ export function MyDocs() {
             }
           }}
           actionsOnHover
-          renderActions={({ node, onDropdownOpenChange }) => (
+          renderActions={({ node, onDropdownOpenChange, onStartRename }) => (
             <div className="flex gap-1 ">
               <DropdownMenu onOpenChange={onDropdownOpenChange}>
                 <DropdownMenuTrigger asChild>
@@ -55,7 +60,13 @@ export function MyDocs() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>Rename</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      onStartRename();
+                    }}
+                  >
+                    Rename
+                  </DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive" onClick={() => deleteDocument(node.key)}>
                     Delete
                   </DropdownMenuItem>

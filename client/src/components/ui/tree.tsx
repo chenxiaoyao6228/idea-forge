@@ -3,8 +3,8 @@
  * TODO: 1. virtualize tree
  */
 
-import React, { useState, useMemo } from "react";
-import { ChevronRight, Loader2, Folder, FolderOpen, File, Dot } from "lucide-react";
+import React, { useState, useMemo, useRef } from "react";
+import { ChevronRight, Loader2, Folder, FolderOpen, File, Dot, Pen } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible";
 import { Checkbox } from "./checkbox";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,7 @@ export interface TreeDataNode {
   isLeaf?: boolean;
   loading?: boolean;
   icon?: IconFn;
+  onRename?: (key: string, newTitle: string) => void;
 }
 
 export interface TreeProps {
@@ -60,6 +61,7 @@ export interface TreeProps {
   renderActions?: (props: {
     node: TreeDataNode;
     onDropdownOpenChange: (open: boolean) => void;
+    onStartRename: () => void;
   }) => React.ReactNode;
   actionsOnHover?: boolean;
   fieldNames?: {
@@ -67,6 +69,7 @@ export interface TreeProps {
     key?: string; // 默认 'key'
     children?: string; // 默认 'children'
   };
+  onRename?: (key: string, newTitle: string) => void;
 }
 
 export interface DirectoryTreeProps extends TreeProps {
@@ -128,6 +131,7 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
         key: "key",
         children: "children",
       },
+      onRename,
     },
     ref,
   ) => {
@@ -257,6 +261,7 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
             switcherIcon={switcherIcon}
             renderActions={renderActions}
             actionsOnHover={actionsOnHover}
+            onRename={onRename}
           />
         ))}
       </div>
@@ -290,6 +295,7 @@ type TreeNodeProps = {
   switcherIcon?: React.ReactNode;
   renderActions?: TreeProps["renderActions"];
   actionsOnHover?: boolean;
+  onRename?: (key: string, newTitle: string) => void;
 };
 
 const getAllChildrenKeys = (node: TreeDataNode): string[] => {
@@ -348,6 +354,7 @@ const TreeNode = ({
   switcherIcon,
   renderActions,
   actionsOnHover = true,
+  onRename,
 }: TreeNodeProps) => {
   const isExpanded = expandedKeys.includes(node.key);
   const isSelected = selectedKeys.includes(node.key);
@@ -359,6 +366,9 @@ const TreeNode = ({
   const [loading, setLoading] = React.useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const showLoading = useSpinDelay(loading, {
     delay: 400,
@@ -428,6 +438,28 @@ const TreeNode = ({
     onExpand(node.key);
   };
 
+  const handleStartRename = () => {
+    setTimeout(() => {
+      setIsEditing(true);
+      setEditValue(node.title as string);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }, 200);
+  };
+
+  const handleRenameComplete = () => {
+    setIsEditing(false);
+    if (editValue.trim() && editValue !== node.title) {
+      onRename?.(node.key, editValue.trim());
+    }
+  };
+
+  const handleInputBlur = (e: React.FocusEvent) => {
+    if (e.relatedTarget?.closest('[role="menu"]')) {
+      return;
+    }
+    handleRenameComplete();
+  };
+
   return (
     <Collapsible open={isExpanded} onOpenChange={handleExpand}>
       <div className="relative">
@@ -492,15 +524,33 @@ const TreeNode = ({
                 })()}
               </div>
             )}
-            <span className="flex-1 truncate user-select-none">{node.title}</span>
+
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameComplete();
+                  if (e.key === "Escape") setIsEditing(false);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onBlur={handleInputBlur}
+                className="flex-1  border-none focus:outline-none focus:ring-1 focus:ring-primary px-1 rounded-sm"
+              />
+            ) : (
+              <span className="flex-1 truncate user-select-none">{node.title}</span>
+            )}
           </div>
 
           {/* Render actions slot with conditional visibility */}
-          {renderActions && (
+          {renderActions && !isEditing && (
             <div className={cn("flex items-center ml-2", actionsOnHover && !isHovered && !isDropdownOpen && "hidden")}>
               {renderActions({
                 node,
                 onDropdownOpenChange: setIsDropdownOpen,
+                onStartRename: handleStartRename,
               })}
             </div>
           )}
@@ -535,6 +585,7 @@ const TreeNode = ({
                 switcherIcon={switcherIcon}
                 renderActions={renderActions}
                 actionsOnHover={actionsOnHover}
+                onRename={onRename}
               />
             ))}
           </div>

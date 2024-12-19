@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
-import { CommonDocumentResponse } from "shared";
+import { CommonDocumentResponse, UpdateDocumentDto } from "shared";
 
 interface DocumentTreeState {
   expandedKeys: string[];
@@ -17,6 +17,7 @@ interface DocumentTreeState {
   selectDocuments: (keys: string[]) => void;
   createDocument: (parentId: string | null, title: string) => Promise<string>;
   deleteDocument: (id: string) => Promise<void>;
+  updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
 }
 
 export const useDocumentTree = create<DocumentTreeState>()(
@@ -117,6 +118,14 @@ export const useDocumentTree = create<DocumentTreeState>()(
             })),
           }));
         }
+      },
+
+      updateDocument: async (id, update) => {
+        await documentApi.update(id, update);
+
+        set((state) => ({
+          treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({ ...node, ...update })),
+        }));
       },
     }),
     { name: "document-tree-store" },
