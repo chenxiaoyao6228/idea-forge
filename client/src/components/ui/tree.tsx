@@ -34,6 +34,10 @@ export interface TreeProps {
   defaultExpandedKeys?: string[];
   defaultSelectedKeys?: string[];
   defaultCheckedKeys?: string[];
+  /**
+   * When true, automatically expands parent nodes when a child is selected.
+   * Useful during initial load to show the full path to selected nodes.
+   */
   autoExpandParent?: boolean;
   onExpand?: (expandedKeys: string[], info: { expanded: boolean; node: TreeDataNode }) => void;
   onSelect?: (selectedKeys: string[], info: { selected: boolean; selectedNodes: TreeDataNode[]; node: TreeDataNode; event: React.MouseEvent }) => void;
@@ -107,7 +111,7 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
       defaultExpandedKeys = [],
       defaultSelectedKeys = [],
       defaultCheckedKeys = [],
-      autoExpandParent = true,
+      autoExpandParent = false,
       onExpand,
       onSelect,
       onCheck,

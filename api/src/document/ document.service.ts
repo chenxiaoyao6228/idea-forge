@@ -6,7 +6,7 @@ import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
 import { CreateDocumentResponse } from "shared";
 import { MoveDocumentsDto } from "shared";
 
-const POSITION_GAP = 1024; // 定义间隔值
+const POSITION_GAP = 1024; // Define position gap
 
 @Injectable()
 export class DocumentService {
@@ -67,7 +67,7 @@ export class DocumentService {
   }
 
   async update(id: string, ownerId: number, dto: UpdateDocumentDto) {
-    await this.findOne(id, ownerId); // 验证文档存在且属于该用户
+    await this.findOne(id, ownerId); // Verify document exists and belongs to user
 
     return this.prisma.doc.update({
       where: { id },
@@ -195,7 +195,7 @@ export class DocumentService {
   private async checkNeedReorder(siblings: any[], newPosition: number): Promise<boolean> {
     if (siblings.length === 0) return false;
 
-    // 检查是否接近最大值或最小值
+    // Check if close to max or min values
     const minPosition = siblings[0].position;
     const maxPosition = siblings[siblings.length - 1].position;
 
@@ -203,7 +203,7 @@ export class DocumentService {
       return true;
     }
 
-    // 检查相邻位置是否过近
+    // Check if adjacent positions are too close
     for (let i = 1; i < siblings.length; i++) {
       if (siblings[i].position - siblings[i - 1].position <= 2) {
         return true;
@@ -223,7 +223,7 @@ export class DocumentService {
       orderBy: { position: "asc" },
     });
 
-    // 重新分配位置
+    // Reassign positions
     await this.prisma.$transaction(
       documents.map((doc, index) =>
         this.prisma.doc.update({
@@ -235,7 +235,7 @@ export class DocumentService {
   }
 
   async moveDocuments(ownerId: number, { id, targetId, dropPosition }: MoveDocumentsDto) {
-    // 1. 验证源文档和目标文档
+    // 1. Validate source and target documents
     const [sourceDoc, targetDoc] = await Promise.all([
       this.prisma.doc.findFirst({
         where: { id, ownerId, isArchived: false },
@@ -254,25 +254,25 @@ export class DocumentService {
       throw new NotFoundException("Document not found");
     }
 
-    // 1. 确定目标文档是否是叶子节点
+    // 1. Determine if target document is a leaf node
     const isLeaf = targetDoc?.children?.length === 0;
 
-    // 2. 确定目标 parentId
+    // 2. Determine target parentId
     let targetParentId: string | null;
     if (!isLeaf && dropPosition === 0) {
-      // 如果目标是文件夹且 dropPosition 为 0，则移动到文件夹内
+      // If target is a folder and dropPosition is 0, move inside the folder
       targetParentId = targetId;
     } else {
-      // 否则移动到目标文档所在层级
+      // Otherwise move to the same level as target document
       targetParentId = targetDoc.parentId;
     }
 
-    // 3. 防止循环引用
+    // 3. Prevent circular references
     if (targetParentId && (await this.isDescendant(id, targetParentId))) {
       throw new BadRequestException("Cannot move a document to its descendant");
     }
 
-    // 4. 获取同级文档
+    // 4. Get sibling documents
     const siblings = await this.prisma.doc.findMany({
       where: {
         parentId: targetParentId,
@@ -283,14 +283,14 @@ export class DocumentService {
       orderBy: { position: "asc" },
     });
 
-    // 5. 计算新位置
+    // 5. Calculate new position
     let newPosition: number;
 
     if (siblings.length === 0) {
-      // 如果没有同级文档，使用基础间隔
+      // If no siblings, use base gap
       newPosition = POSITION_GAP;
     } else if (!isLeaf && dropPosition === 0) {
-      // 移动到文件夹内，放到最后
+      // Moving inside folder, place at end
       if (targetDoc.children?.length) {
         newPosition = targetDoc.children[targetDoc.children.length - 1].position + POSITION_GAP;
       } else {
@@ -300,14 +300,14 @@ export class DocumentService {
       const targetIndex = siblings.findIndex((s) => s.id === targetId);
 
       if (dropPosition === -1) {
-        // 放到目标位置前面
+        // Place before target position
         if (targetIndex === 0) {
           newPosition = Math.floor(siblings[0].position / 2);
         } else {
           newPosition = Math.floor((siblings[targetIndex - 1].position + targetDoc.position) / 2);
         }
       } else {
-        // dropPosition === 1，放到目标位置后面
+        // dropPosition === 1, place after target position
         if (targetIndex === siblings.length - 1) {
           newPosition = targetDoc.position + POSITION_GAP;
         } else {
@@ -316,15 +316,15 @@ export class DocumentService {
       }
     }
 
-    // 6. 检查是否需要重排序
+    // 6. Check if reordering is needed
     const needReorder = await this.checkNeedReorder(siblings, newPosition);
     if (needReorder) {
       await this.reorderDocuments(ownerId, targetParentId);
-      // 重新计算位置
+      // Recalculate position
       return this.moveDocuments(ownerId, { id, targetId, dropPosition });
     }
 
-    // 7. 更新文档位置
+    // 7. Update document position
     await this.prisma.doc.update({
       where: { id },
       data: {
@@ -333,8 +333,17 @@ export class DocumentService {
       },
     });
 
-    // 8. 返回更新后的树结构
-    // 如果移动到了新的父节点，需要返回原父节点和新父节点的结构
+    /*
+     * 8. Return updated tree structure
+     * If moved to a new parent, return structure of both old and new parent nodes
+     * 1. Performance optimization:
+     * Returning entire tree for large document trees would return unnecessary data
+     * Only returning changed parts (old and new position subtrees) minimizes data transfer
+     * Frontend only needs to update actually changed parts, not entire tree structure
+     * 2. State preservation:
+     * Frontend tree may have loaded multiple child levels, returning entire new tree would lose loaded states
+     * By only updating changed parts, can maintain expand states and loaded children of other nodes
+     */
     const oldParentId = sourceDoc.parentId;
     if (oldParentId !== targetParentId) {
       const [oldTree, newTree] = await Promise.all([

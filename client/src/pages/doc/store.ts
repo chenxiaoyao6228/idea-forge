@@ -14,7 +14,6 @@ interface DocumentTreeState {
   setExpandedKeys: (keys: string[]) => void;
   setSelectedKeys: (keys: string[]) => void;
   loadChildren: (key: string | null) => Promise<void>;
-  selectDocuments: (keys: string[]) => void;
   createDocument: (parentId: string | null, title: string) => Promise<string>;
   deleteDocument: (id: string) => Promise<void>;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
@@ -29,9 +28,11 @@ export const useDocumentTree = create<DocumentTreeState>()(
       treeData: [],
       loading: false,
 
-      setExpandedKeys: (keys) => set({ expandedKeys: keys }),
+      setExpandedKeys: (keys) => {
+        console.log("setExpandedKeys", keys);
+        set({ expandedKeys: keys });
+      },
       setSelectedKeys: (keys) => set({ selectedKeys: keys }),
-      selectDocuments: (keys) => set({ selectedKeys: keys }),
 
       loadChildren: async (key = null) => {
         set({ loading: true });
@@ -87,16 +88,6 @@ export const useDocumentTree = create<DocumentTreeState>()(
           };
         });
 
-        if (parentId) {
-          const data = await documentApi.getTree(parentId);
-          set((state) => ({
-            treeData: treeUtils.updateTreeNodes(state.treeData, parentId, (node) => ({
-              ...node,
-              children: treeUtils.mergeTreeData(node.children || [], data.map(treeUtils.convertToTreeNode)),
-            })),
-          }));
-        }
-
         return response.id;
       },
 
@@ -137,35 +128,63 @@ export const useDocumentTree = create<DocumentTreeState>()(
             dropPosition,
           })) as any;
 
-          // 如果返回了新旧树结构，分别更新
           if ("oldTree" in result && "newTree" in result) {
             const { oldTree, newTree } = result;
             set((state) => {
               let newTreeData = [...state.treeData];
 
-              // 更新原位置的树
+              // Update tree at original position
               if (oldTree.length > 0) {
                 const oldParentId = treeUtils.findParentKey(state.treeData, id);
-                newTreeData = treeUtils.updateTreeNodes(newTreeData, oldParentId, (node) => ({
-                  ...node,
-                  children: oldTree.map(treeUtils.convertToTreeNode),
-                }));
+                if (oldParentId) {
+                  // If has parent node, update parent's children
+                  newTreeData = treeUtils.updateTreeNodes(newTreeData, oldParentId, (node) => ({
+                    ...node,
+                    children: treeUtils.mergeTreeData(node.children || [], oldTree.map(treeUtils.convertToTreeNode)),
+                  }));
+                } else {
+                  // If direct child of root, update root level data
+                  newTreeData = treeUtils.mergeTreeData(
+                    newTreeData.filter((node) => node.key !== id), // Remove moved node
+                    oldTree.map(treeUtils.convertToTreeNode),
+                  );
+                }
               }
 
-              // 更新新位置的树
+              // Update tree at new position
               if (newTree.length > 0) {
-                const newParentId = treeUtils.findParentKey(newTree, targetId);
-                newTreeData = treeUtils.updateTreeNodes(newTreeData, newParentId, (node) => ({
-                  ...node,
-                  children: newTree.map(treeUtils.convertToTreeNode),
-                }));
+                const targetNode = treeUtils.findNode(newTreeData, targetId);
+                if (!targetNode) return { treeData: newTreeData };
+
+                if (dropPosition === 0 && !targetNode.isLeaf) {
+                  // Move into folder
+                  newTreeData = treeUtils.updateTreeNodes(newTreeData, targetId, (node) => ({
+                    ...node,
+                    children: treeUtils.mergeTreeData(node.children || [], newTree.map(treeUtils.convertToTreeNode)),
+                  }));
+                } else {
+                  // Move to same level
+                  const newParentId = treeUtils.findParentKey(newTreeData, targetId);
+                  if (newParentId) {
+                    // Has parent node, update parent's children
+                    newTreeData = treeUtils.updateTreeNodes(newTreeData, newParentId, (node) => ({
+                      ...node,
+                      children: treeUtils.mergeTreeData(node.children || [], newTree.map(treeUtils.convertToTreeNode)),
+                    }));
+                  } else {
+                    // Root level, update root level data
+                    newTreeData = treeUtils.mergeTreeData(newTreeData, newTree.map(treeUtils.convertToTreeNode));
+                  }
+                }
               }
 
               return { treeData: newTreeData };
             });
           } else {
-            // 如果是同级移动，直接更新整个树
-            set({ treeData: result.map(treeUtils.convertToTreeNode) });
+            // Move within same level
+            set((state) => ({
+              treeData: treeUtils.mergeTreeData(state.treeData, result.map(treeUtils.convertToTreeNode)),
+            }));
           }
         } catch (error) {
           console.error("Failed to move documents:", error);
@@ -230,5 +249,16 @@ export const treeUtils = {
       }
       return newNode;
     });
+  },
+
+  findNode: (nodes: TreeDataNode[], key: string): TreeDataNode | null => {
+    for (const node of nodes) {
+      if (node.key === key) return node;
+      if (node.children) {
+        const foundNode = treeUtils.findNode(node.children, key);
+        if (foundNode) return foundNode;
+      }
+    }
+    return null;
   },
 };
