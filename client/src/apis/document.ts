@@ -1,8 +1,8 @@
 import request from "@/lib/request";
-import type { CommonDocumentResponse, CreateDocumentDto, UpdateDocumentDto } from "shared";
+import type { CommonDocumentResponse, CreateDocumentDto, UpdateDocumentDto, MoveDocumentsDto } from "shared";
 
 export const documentApi = {
-  getTree: async (parentId?: string) => {
+  getTree: async (parentId?: string | null) => {
     const searchParams = new URLSearchParams();
     if (parentId) searchParams.set("parentId", parentId);
     const url = `/api/documents/tree${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
@@ -24,4 +24,6 @@ export const documentApi = {
   getById: async (id: string) => {
     return request.get<CommonDocumentResponse>(`/api/documents/${id}`);
   },
+
+  moveDocuments: (dto: MoveDocumentsDto) => request.post<MoveDocumentsDto, CommonDocumentResponse[]>("/api/documents/move", dto),
 };

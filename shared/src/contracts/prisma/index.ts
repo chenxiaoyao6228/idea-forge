@@ -18,7 +18,7 @@ export const PasswordScalarFieldEnumSchema = z.enum(['hash','userId']);
 
 export const ConnectionScalarFieldEnumSchema = z.enum(['id','providerName','providerId','createdAt','updatedAt','userId']);
 
-export const DocScalarFieldEnumSchema = z.enum(['id','title','content','contentBinary','isArchived','isStarred','createdAt','updatedAt','ownerId','parentId','sharedPassword','coverImageId']);
+export const DocScalarFieldEnumSchema = z.enum(['id','title','content','contentBinary','isArchived','isStarred','createdAt','updatedAt','ownerId','parentId','sharedPassword','coverImageId','position']);
 
 export const CoverImageScalarFieldEnumSchema = z.enum(['id','url','scrollY','docId']);
 
@@ -92,6 +92,7 @@ export const DocSchema = z.object({
   parentId: z.string().nullable(),
   sharedPassword: z.string().nullable(),
   coverImageId: z.string().nullable(),
+  position: z.number().int(),
 })
 
 export type Doc = z.infer<typeof DocSchema>
@@ -230,6 +231,7 @@ export const DocSelectSchema: z.ZodType<Prisma.DocSelect> = z.object({
   parentId: z.boolean().optional(),
   sharedPassword: z.boolean().optional(),
   coverImageId: z.boolean().optional(),
+  position: z.boolean().optional(),
   owner: z.union([z.boolean(),z.lazy(() => UserArgsSchema)]).optional(),
   parent: z.union([z.boolean(),z.lazy(() => DocArgsSchema)]).optional(),
   children: z.union([z.boolean(),z.lazy(() => DocFindManyArgsSchema)]).optional(),
@@ -493,6 +495,7 @@ export const DocWhereInputSchema: z.ZodType<Prisma.DocWhereInput> = z.object({
   parentId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
   sharedPassword: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
   coverImageId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  position: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
   owner: z.union([ z.lazy(() => UserRelationFilterSchema),z.lazy(() => UserWhereInputSchema) ]).optional(),
   parent: z.union([ z.lazy(() => DocNullableRelationFilterSchema),z.lazy(() => DocWhereInputSchema) ]).optional().nullable(),
   children: z.lazy(() => DocListRelationFilterSchema).optional(),
@@ -512,6 +515,7 @@ export const DocOrderByWithRelationInputSchema: z.ZodType<Prisma.DocOrderByWithR
   parentId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   sharedPassword: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   coverImageId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  position: z.lazy(() => SortOrderSchema).optional(),
   owner: z.lazy(() => UserOrderByWithRelationInputSchema).optional(),
   parent: z.lazy(() => DocOrderByWithRelationInputSchema).optional(),
   children: z.lazy(() => DocOrderByRelationAggregateInputSchema).optional(),
@@ -546,6 +550,7 @@ export const DocWhereUniqueInputSchema: z.ZodType<Prisma.DocWhereUniqueInput> = 
   ownerId: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
   parentId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
   sharedPassword: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  position: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
   owner: z.union([ z.lazy(() => UserRelationFilterSchema),z.lazy(() => UserWhereInputSchema) ]).optional(),
   parent: z.union([ z.lazy(() => DocNullableRelationFilterSchema),z.lazy(() => DocWhereInputSchema) ]).optional().nullable(),
   children: z.lazy(() => DocListRelationFilterSchema).optional(),
@@ -565,6 +570,7 @@ export const DocOrderByWithAggregationInputSchema: z.ZodType<Prisma.DocOrderByWi
   parentId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   sharedPassword: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   coverImageId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  position: z.lazy(() => SortOrderSchema).optional(),
   _count: z.lazy(() => DocCountOrderByAggregateInputSchema).optional(),
   _avg: z.lazy(() => DocAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => DocMaxOrderByAggregateInputSchema).optional(),
@@ -588,6 +594,7 @@ export const DocScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.DocScalar
   parentId: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
   sharedPassword: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
   coverImageId: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
+  position: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
 }).strict();
 
 export const CoverImageWhereInputSchema: z.ZodType<Prisma.CoverImageWhereInput> = z.object({
@@ -854,6 +861,7 @@ export const DocCreateInputSchema: z.ZodType<Prisma.DocCreateInput> = z.object({
   updatedAt: z.coerce.date().optional(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   owner: z.lazy(() => UserCreateNestedOneWithoutDocsInputSchema),
   parent: z.lazy(() => DocCreateNestedOneWithoutChildrenInputSchema).optional(),
   children: z.lazy(() => DocCreateNestedManyWithoutParentInputSchema).optional(),
@@ -873,6 +881,7 @@ export const DocUncheckedCreateInputSchema: z.ZodType<Prisma.DocUncheckedCreateI
   parentId: z.string().optional().nullable(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   children: z.lazy(() => DocUncheckedCreateNestedManyWithoutParentInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageUncheckedCreateNestedOneWithoutDocInputSchema).optional()
 }).strict();
@@ -888,6 +897,7 @@ export const DocUpdateInputSchema: z.ZodType<Prisma.DocUpdateInput> = z.object({
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   owner: z.lazy(() => UserUpdateOneRequiredWithoutDocsNestedInputSchema).optional(),
   parent: z.lazy(() => DocUpdateOneWithoutChildrenNestedInputSchema).optional(),
   children: z.lazy(() => DocUpdateManyWithoutParentNestedInputSchema).optional(),
@@ -907,6 +917,7 @@ export const DocUncheckedUpdateInputSchema: z.ZodType<Prisma.DocUncheckedUpdateI
   parentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   children: z.lazy(() => DocUncheckedUpdateManyWithoutParentNestedInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageUncheckedUpdateOneWithoutDocNestedInputSchema).optional()
 }).strict();
@@ -923,7 +934,8 @@ export const DocCreateManyInputSchema: z.ZodType<Prisma.DocCreateManyInput> = z.
   ownerId: z.number().int(),
   parentId: z.string().optional().nullable(),
   sharedPassword: z.string().optional().nullable(),
-  coverImageId: z.string().optional().nullable()
+  coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional()
 }).strict();
 
 export const DocUpdateManyMutationInputSchema: z.ZodType<Prisma.DocUpdateManyMutationInput> = z.object({
@@ -937,6 +949,7 @@ export const DocUpdateManyMutationInputSchema: z.ZodType<Prisma.DocUpdateManyMut
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const DocUncheckedUpdateManyInputSchema: z.ZodType<Prisma.DocUncheckedUpdateManyInput> = z.object({
@@ -952,6 +965,7 @@ export const DocUncheckedUpdateManyInputSchema: z.ZodType<Prisma.DocUncheckedUpd
   parentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const CoverImageCreateInputSchema: z.ZodType<Prisma.CoverImageCreateInput> = z.object({
@@ -1321,11 +1335,13 @@ export const DocCountOrderByAggregateInputSchema: z.ZodType<Prisma.DocCountOrder
   ownerId: z.lazy(() => SortOrderSchema).optional(),
   parentId: z.lazy(() => SortOrderSchema).optional(),
   sharedPassword: z.lazy(() => SortOrderSchema).optional(),
-  coverImageId: z.lazy(() => SortOrderSchema).optional()
+  coverImageId: z.lazy(() => SortOrderSchema).optional(),
+  position: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const DocAvgOrderByAggregateInputSchema: z.ZodType<Prisma.DocAvgOrderByAggregateInput> = z.object({
-  ownerId: z.lazy(() => SortOrderSchema).optional()
+  ownerId: z.lazy(() => SortOrderSchema).optional(),
+  position: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const DocMaxOrderByAggregateInputSchema: z.ZodType<Prisma.DocMaxOrderByAggregateInput> = z.object({
@@ -1340,7 +1356,8 @@ export const DocMaxOrderByAggregateInputSchema: z.ZodType<Prisma.DocMaxOrderByAg
   ownerId: z.lazy(() => SortOrderSchema).optional(),
   parentId: z.lazy(() => SortOrderSchema).optional(),
   sharedPassword: z.lazy(() => SortOrderSchema).optional(),
-  coverImageId: z.lazy(() => SortOrderSchema).optional()
+  coverImageId: z.lazy(() => SortOrderSchema).optional(),
+  position: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const DocMinOrderByAggregateInputSchema: z.ZodType<Prisma.DocMinOrderByAggregateInput> = z.object({
@@ -1355,11 +1372,13 @@ export const DocMinOrderByAggregateInputSchema: z.ZodType<Prisma.DocMinOrderByAg
   ownerId: z.lazy(() => SortOrderSchema).optional(),
   parentId: z.lazy(() => SortOrderSchema).optional(),
   sharedPassword: z.lazy(() => SortOrderSchema).optional(),
-  coverImageId: z.lazy(() => SortOrderSchema).optional()
+  coverImageId: z.lazy(() => SortOrderSchema).optional(),
+  position: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const DocSumOrderByAggregateInputSchema: z.ZodType<Prisma.DocSumOrderByAggregateInput> = z.object({
-  ownerId: z.lazy(() => SortOrderSchema).optional()
+  ownerId: z.lazy(() => SortOrderSchema).optional(),
+  position: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const BytesNullableWithAggregatesFilterSchema: z.ZodType<Prisma.BytesNullableWithAggregatesFilter> = z.object({
@@ -2000,6 +2019,7 @@ export const DocCreateWithoutOwnerInputSchema: z.ZodType<Prisma.DocCreateWithout
   updatedAt: z.coerce.date().optional(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   parent: z.lazy(() => DocCreateNestedOneWithoutChildrenInputSchema).optional(),
   children: z.lazy(() => DocCreateNestedManyWithoutParentInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageCreateNestedOneWithoutDocInputSchema).optional()
@@ -2017,6 +2037,7 @@ export const DocUncheckedCreateWithoutOwnerInputSchema: z.ZodType<Prisma.DocUnch
   parentId: z.string().optional().nullable(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   children: z.lazy(() => DocUncheckedCreateNestedManyWithoutParentInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageUncheckedCreateNestedOneWithoutDocInputSchema).optional()
 }).strict();
@@ -2110,6 +2131,7 @@ export const DocScalarWhereInputSchema: z.ZodType<Prisma.DocScalarWhereInput> = 
   parentId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
   sharedPassword: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
   coverImageId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  position: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
 }).strict();
 
 export const UserCreateWithoutPasswordInputSchema: z.ZodType<Prisma.UserCreateWithoutPasswordInput> = z.object({
@@ -2295,6 +2317,7 @@ export const DocCreateWithoutChildrenInputSchema: z.ZodType<Prisma.DocCreateWith
   updatedAt: z.coerce.date().optional(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   owner: z.lazy(() => UserCreateNestedOneWithoutDocsInputSchema),
   parent: z.lazy(() => DocCreateNestedOneWithoutChildrenInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageCreateNestedOneWithoutDocInputSchema).optional()
@@ -2313,6 +2336,7 @@ export const DocUncheckedCreateWithoutChildrenInputSchema: z.ZodType<Prisma.DocU
   parentId: z.string().optional().nullable(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   coverImage: z.lazy(() => CoverImageUncheckedCreateNestedOneWithoutDocInputSchema).optional()
 }).strict();
 
@@ -2332,6 +2356,7 @@ export const DocCreateWithoutParentInputSchema: z.ZodType<Prisma.DocCreateWithou
   updatedAt: z.coerce.date().optional(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   owner: z.lazy(() => UserCreateNestedOneWithoutDocsInputSchema),
   children: z.lazy(() => DocCreateNestedManyWithoutParentInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageCreateNestedOneWithoutDocInputSchema).optional()
@@ -2349,6 +2374,7 @@ export const DocUncheckedCreateWithoutParentInputSchema: z.ZodType<Prisma.DocUnc
   ownerId: z.number().int(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   children: z.lazy(() => DocUncheckedCreateNestedManyWithoutParentInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageUncheckedCreateNestedOneWithoutDocInputSchema).optional()
 }).strict();
@@ -2440,6 +2466,7 @@ export const DocUpdateWithoutChildrenInputSchema: z.ZodType<Prisma.DocUpdateWith
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   owner: z.lazy(() => UserUpdateOneRequiredWithoutDocsNestedInputSchema).optional(),
   parent: z.lazy(() => DocUpdateOneWithoutChildrenNestedInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageUpdateOneWithoutDocNestedInputSchema).optional()
@@ -2458,6 +2485,7 @@ export const DocUncheckedUpdateWithoutChildrenInputSchema: z.ZodType<Prisma.DocU
   parentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   coverImage: z.lazy(() => CoverImageUncheckedUpdateOneWithoutDocNestedInputSchema).optional()
 }).strict();
 
@@ -2511,6 +2539,7 @@ export const DocCreateWithoutCoverImageInputSchema: z.ZodType<Prisma.DocCreateWi
   updatedAt: z.coerce.date().optional(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   owner: z.lazy(() => UserCreateNestedOneWithoutDocsInputSchema),
   parent: z.lazy(() => DocCreateNestedOneWithoutChildrenInputSchema).optional(),
   children: z.lazy(() => DocCreateNestedManyWithoutParentInputSchema).optional()
@@ -2529,6 +2558,7 @@ export const DocUncheckedCreateWithoutCoverImageInputSchema: z.ZodType<Prisma.Do
   parentId: z.string().optional().nullable(),
   sharedPassword: z.string().optional().nullable(),
   coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional(),
   children: z.lazy(() => DocUncheckedCreateNestedManyWithoutParentInputSchema).optional()
 }).strict();
 
@@ -2559,6 +2589,7 @@ export const DocUpdateWithoutCoverImageInputSchema: z.ZodType<Prisma.DocUpdateWi
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   owner: z.lazy(() => UserUpdateOneRequiredWithoutDocsNestedInputSchema).optional(),
   parent: z.lazy(() => DocUpdateOneWithoutChildrenNestedInputSchema).optional(),
   children: z.lazy(() => DocUpdateManyWithoutParentNestedInputSchema).optional()
@@ -2577,6 +2608,7 @@ export const DocUncheckedUpdateWithoutCoverImageInputSchema: z.ZodType<Prisma.Do
   parentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   children: z.lazy(() => DocUncheckedUpdateManyWithoutParentNestedInputSchema).optional()
 }).strict();
 
@@ -2599,7 +2631,8 @@ export const DocCreateManyOwnerInputSchema: z.ZodType<Prisma.DocCreateManyOwnerI
   updatedAt: z.coerce.date().optional(),
   parentId: z.string().optional().nullable(),
   sharedPassword: z.string().optional().nullable(),
-  coverImageId: z.string().optional().nullable()
+  coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional()
 }).strict();
 
 export const ConnectionUpdateWithoutUserInputSchema: z.ZodType<Prisma.ConnectionUpdateWithoutUserInput> = z.object({
@@ -2637,6 +2670,7 @@ export const DocUpdateWithoutOwnerInputSchema: z.ZodType<Prisma.DocUpdateWithout
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   parent: z.lazy(() => DocUpdateOneWithoutChildrenNestedInputSchema).optional(),
   children: z.lazy(() => DocUpdateManyWithoutParentNestedInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageUpdateOneWithoutDocNestedInputSchema).optional()
@@ -2654,6 +2688,7 @@ export const DocUncheckedUpdateWithoutOwnerInputSchema: z.ZodType<Prisma.DocUnch
   parentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   children: z.lazy(() => DocUncheckedUpdateManyWithoutParentNestedInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageUncheckedUpdateOneWithoutDocNestedInputSchema).optional()
 }).strict();
@@ -2670,6 +2705,7 @@ export const DocUncheckedUpdateManyWithoutOwnerInputSchema: z.ZodType<Prisma.Doc
   parentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const DocCreateManyParentInputSchema: z.ZodType<Prisma.DocCreateManyParentInput> = z.object({
@@ -2683,7 +2719,8 @@ export const DocCreateManyParentInputSchema: z.ZodType<Prisma.DocCreateManyParen
   updatedAt: z.coerce.date().optional(),
   ownerId: z.number().int(),
   sharedPassword: z.string().optional().nullable(),
-  coverImageId: z.string().optional().nullable()
+  coverImageId: z.string().optional().nullable(),
+  position: z.number().int().optional()
 }).strict();
 
 export const DocUpdateWithoutParentInputSchema: z.ZodType<Prisma.DocUpdateWithoutParentInput> = z.object({
@@ -2697,6 +2734,7 @@ export const DocUpdateWithoutParentInputSchema: z.ZodType<Prisma.DocUpdateWithou
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   owner: z.lazy(() => UserUpdateOneRequiredWithoutDocsNestedInputSchema).optional(),
   children: z.lazy(() => DocUpdateManyWithoutParentNestedInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageUpdateOneWithoutDocNestedInputSchema).optional()
@@ -2714,6 +2752,7 @@ export const DocUncheckedUpdateWithoutParentInputSchema: z.ZodType<Prisma.DocUnc
   ownerId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   children: z.lazy(() => DocUncheckedUpdateManyWithoutParentNestedInputSchema).optional(),
   coverImage: z.lazy(() => CoverImageUncheckedUpdateOneWithoutDocNestedInputSchema).optional()
 }).strict();
@@ -2730,6 +2769,7 @@ export const DocUncheckedUpdateManyWithoutParentInputSchema: z.ZodType<Prisma.Do
   ownerId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   sharedPassword: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   coverImageId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  position: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 /////////////////////////////////////////

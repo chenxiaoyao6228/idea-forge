@@ -442,7 +442,10 @@ const TreeNode = ({
     setTimeout(() => {
       setIsEditing(true);
       setEditValue(node.title as string);
-      setTimeout(() => inputRef.current?.focus(), 0);
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+      }, 0);
     }, 200);
   };
 

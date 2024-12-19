@@ -75,6 +75,7 @@ model Doc {
   sharedPassword String?
   coverImageId   String?     @unique
   coverImage     CoverImage?
+  position       Int         @default(0)
 }
 
 model CoverImage {

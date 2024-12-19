@@ -11,6 +11,7 @@ const commonDocumentSchema = z.object({
   parentId: z.string().nullable(),
   sharedPassword: z.string().nullable(),
   isLeaf: z.boolean(),
+  position: z.number(),
 });
 
 export type CommonDocumentResponse = z.infer<typeof commonDocumentSchema>;
@@ -58,6 +59,14 @@ export const searchDocumentSchema = z.object({
 });
 
 export type SearchDocumentDto = z.infer<typeof searchDocumentSchema>;
+
+export const moveDocumentsSchema = z.object({
+  id: z.string().cuid(),
+  targetId: z.string(),
+  dropPosition: z.number(), // -1 表示移动到目标文档之前，0 表示移动到目标文档之后，1 表示移动到目标文档之后
+});
+
+export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;
 
 //  ============== response ==============
 export interface CreateDocumentResponse extends CommonDocumentResponse {}

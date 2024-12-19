@@ -3,14 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Tree, TreeDataNode } from "@/components/ui/tree";
+import { Tree, TreeDataNode, TreeProps } from "@/components/ui/tree";
 import { MoreHorizontalIcon } from "lucide-react";
-import { useDocumentTree } from "../store";
+import { treeUtils, useDocumentTree } from "../store";
 import { AddDocButton } from "./add-doc-button";
+import { logger } from "@/lib/logger";
 
 export function MyDocs() {
   const navigate = useNavigate();
-  const { treeData, expandedKeys, selectedKeys, loadChildren, setExpandedKeys, setSelectedKeys, deleteDocument, updateDocument } = useDocumentTree();
+  const { treeData, expandedKeys, selectedKeys, loadChildren, setExpandedKeys, setSelectedKeys, moveDocuments, deleteDocument, updateDocument } =
+    useDocumentTree();
 
   useEffect(() => {
     loadChildren(null);
@@ -26,6 +28,32 @@ export function MyDocs() {
     updateDocument(key, { title: newTitle });
   };
 
+  const handleDragEnter: TreeProps["onDragEnter"] = (info) => {
+    logger.info("onDragEnter", info);
+  };
+
+  const handleDrop: TreeProps["onDrop"] = async (info) => {
+    const { node: dropNode, dragNode, dropPosition } = info;
+    const dragKey = dragNode.key;
+    const dropKey = dropNode.key;
+
+    // 不允许拖拽到自身
+    if (dragKey === dropKey) {
+      return;
+    }
+
+    try {
+      await moveDocuments({
+        id: dragKey,
+        targetId: dropKey,
+        dropPosition: !info.dropToGap ? 0 : dropPosition,
+      });
+    } catch (error) {
+      console.error("Failed to move document:", error);
+      // TODO: 添加错误提示
+    }
+  };
+
   return (
     <SidebarGroup>
       <div className="flex items-center justify-between group/label">
@@ -37,6 +65,10 @@ export function MyDocs() {
       <SidebarMenu>
         <Tree
           treeData={treeData}
+          draggable
+          blockNode
+          onDragEnter={handleDragEnter}
+          onDrop={handleDrop}
           expandedKeys={expandedKeys}
           selectedKeys={selectedKeys}
           onExpand={(keys) => setExpandedKeys(keys)}

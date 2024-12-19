@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
-import { CommonDocumentResponse, UpdateDocumentDto } from "shared";
+import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
 
 interface DocumentTreeState {
   expandedKeys: string[];
@@ -18,6 +18,7 @@ interface DocumentTreeState {
   createDocument: (parentId: string | null, title: string) => Promise<string>;
   deleteDocument: (id: string) => Promise<void>;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
+  moveDocuments: (data: MoveDocumentsDto) => Promise<void>;
 }
 
 export const useDocumentTree = create<DocumentTreeState>()(
@@ -127,11 +128,56 @@ export const useDocumentTree = create<DocumentTreeState>()(
           treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({ ...node, ...update })),
         }));
       },
+
+      moveDocuments: async ({ id, targetId, dropPosition }) => {
+        try {
+          const result = (await documentApi.moveDocuments({
+            id,
+            targetId,
+            dropPosition,
+          })) as any;
+
+          // 如果返回了新旧树结构，分别更新
+          if ("oldTree" in result && "newTree" in result) {
+            const { oldTree, newTree } = result;
+            set((state) => {
+              let newTreeData = [...state.treeData];
+
+              // 更新原位置的树
+              if (oldTree.length > 0) {
+                const oldParentId = treeUtils.findParentKey(state.treeData, id);
+                newTreeData = treeUtils.updateTreeNodes(newTreeData, oldParentId, (node) => ({
+                  ...node,
+                  children: oldTree.map(treeUtils.convertToTreeNode),
+                }));
+              }
+
+              // 更新新位置的树
+              if (newTree.length > 0) {
+                const newParentId = treeUtils.findParentKey(newTree, targetId);
+                newTreeData = treeUtils.updateTreeNodes(newTreeData, newParentId, (node) => ({
+                  ...node,
+                  children: newTree.map(treeUtils.convertToTreeNode),
+                }));
+              }
+
+              return { treeData: newTreeData };
+            });
+          } else {
+            // 如果是同级移动，直接更新整个树
+            set({ treeData: result.map(treeUtils.convertToTreeNode) });
+          }
+        } catch (error) {
+          console.error("Failed to move documents:", error);
+          throw error;
+        }
+      },
     }),
     { name: "document-tree-store" },
   ),
 );
-const treeUtils = {
+
+export const treeUtils = {
   findParentKey: (nodes: TreeDataNode[], targetKey: string): string | null => {
     for (const node of nodes) {
       if (node.children?.some((child) => child.key === targetKey)) {
@@ -145,7 +191,7 @@ const treeUtils = {
     return null;
   },
 
-  updateTreeNodes: (nodes: TreeDataNode[], key: string, updater: (node: TreeDataNode) => TreeDataNode): TreeDataNode[] => {
+  updateTreeNodes: (nodes: TreeDataNode[], key: string | null, updater: (node: TreeDataNode) => TreeDataNode): TreeDataNode[] => {
     return nodes.map((node) => {
       if (node.key === key) {
         return updater(node);

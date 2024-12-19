@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
-import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./document.dto";
+import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto } from "./document.dto";
 import { DocumentService } from "./ document.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 
@@ -40,6 +40,11 @@ export class DocumentController {
   @Delete(":id")
   remove(@GetUser("id") userId: number, @Param("id") id: string) {
     return this.documentService.remove(id, userId);
+  }
+
+  @Post("move")
+  async moveDocuments(@GetUser("id") userId: number, @Body() dto: MoveDocumentsDto) {
+    return this.documentService.moveDocuments(userId, dto);
   }
 
   // FIXME: Generic matching must be placed last, need to find a way to handle this
