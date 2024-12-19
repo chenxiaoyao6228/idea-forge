@@ -1,4 +1,5 @@
-import { createZodDto } from "@/_shared/utils/zod/create-zod-dto";
+import { createZodDto } from "nestjs-zod";
+
 import {
   RegisterSchema,
   EmailVerifySchema,

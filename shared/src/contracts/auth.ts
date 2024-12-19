@@ -1,32 +1,26 @@
 import { z } from "zod";
 
-export const VERIFICATION_CODE_TYPES = [
-  "register",
-  "reset-password",
-  "change-email",
-  "2fa",
-] as const;
+export const VERIFICATION_CODE_TYPES = ["register", "reset-password", "change-email", "2fa"] as const;
 
 export const VerificationTypeSchema = z.enum(VERIFICATION_CODE_TYPES);
 export type VerificationCodeType = z.infer<typeof VerificationTypeSchema>;
 
-
 export const UserStatus = {
-  ACTIVE: 'ACTIVE',
-  SUSPENDED: 'SUSPENDED',
-  DELETED: 'DELETED'
+  ACTIVE: "ACTIVE",
+  SUSPENDED: "SUSPENDED",
+  DELETED: "DELETED",
 } as const;
 
-export type UserStatus = typeof UserStatus[keyof typeof UserStatus];
+export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 
 export const Provider = {
-  google: 'google',
-  github: 'github'
+  google: "google",
+  github: "github",
 } as const;
 
-export type Provider = typeof Provider[keyof typeof Provider];
+export type Provider = (typeof Provider)[keyof typeof Provider];
 
-// request
+//  ============== request ==============
 export const EmailSchema = z
   .string({ required_error: "Email is required" })
   .email({ message: "Email is invalid" })
@@ -66,7 +60,6 @@ export const LoginSchema = z.object({
 });
 
 export type LoginData = z.infer<typeof LoginSchema>;
-
 
 export const EmailVerifySchema = z.object({
   email: EmailSchema,
@@ -112,14 +105,12 @@ export const UpdateUserSchema = z.object({
   imageUrl: z.string().url().optional(),
 });
 
-
-// ============================== response ==============================
+//  ============== response ==============
 export const LoginResponseSchema = z.object({
   token: z.string(),
 });
 
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
-
 
 export interface AuthResponse {
   type: AuthResponseType;

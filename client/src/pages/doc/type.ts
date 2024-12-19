@@ -1,7 +1,5 @@
-import { CommonDocument } from "shared";
+import { CommonDocumentResponse } from "shared";
 
-export interface DocumentItem extends CommonDocument {}
-
-export interface DocumentTreeItem extends DocumentItem {
+export interface DocumentTreeItem extends CommonDocumentResponse {
   children: DocumentTreeItem[];
 }

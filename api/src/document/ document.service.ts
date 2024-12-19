@@ -10,13 +10,11 @@ export class DocumentService {
   constructor(private prisma: PrismaService) {}
 
   async createDefault(ownerId: number) {
-    return this.prisma.doc.create({
-      data: {
-        title: DEFAULT_NEW_DOC_TITLE,
-        content: DEFAULT_NEW_DOC_CONTENT,
-        ownerId,
-        isArchived: false,
-      },
+    return this.create(ownerId, {
+      title: DEFAULT_NEW_DOC_TITLE,
+      content: DEFAULT_NEW_DOC_CONTENT,
+      parentId: null,
+      sharedPassword: null,
     });
   }
 
@@ -24,11 +22,11 @@ export class DocumentService {
     const doc = await this.prisma.doc.create({
       data: {
         ownerId,
-        isArchived: false,
         title: dto.title,
         content: dto.content,
         parentId: dto.parentId,
         sharedPassword: dto.sharedPassword,
+        isArchived: false,
         isStarred: false,
       },
     });
