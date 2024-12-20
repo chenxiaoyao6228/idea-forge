@@ -259,8 +259,7 @@ export class DocumentService {
 
     // 2. Determine target parentId
     let targetParentId: string | null;
-    if (!isLeaf && dropPosition === 0) {
-      // If target is a folder and dropPosition is 0, move inside the folder
+    if (dropPosition === 0) {
       targetParentId = targetId;
     } else {
       // Otherwise move to the same level as target document

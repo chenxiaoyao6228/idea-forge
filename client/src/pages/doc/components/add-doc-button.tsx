@@ -26,7 +26,13 @@ export function AddDocButton({ parentId }: AddDocButtonProps) {
   };
 
   return (
-    <Button variant="ghost" size="icon" className="h-4 w-4 p-0 cursor-pointer" onClick={handleClick} disabled={isCreating}>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25"
+      onClick={handleClick}
+      disabled={isCreating}
+    >
       <PlusIcon className="h-4 w-4" />
     </Button>
   );

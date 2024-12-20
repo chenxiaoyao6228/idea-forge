@@ -402,6 +402,7 @@ const TreeNode = ({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setDragOver(calcDropPosition(e) === -1 ? "top" : calcDropPosition(e) === 1 ? "bottom" : "inside");
     onDragOver?.({ event: e, node });
   };
 
@@ -448,7 +449,7 @@ const TreeNode = ({
       setEditValue(node.title as string);
       setTimeout(() => {
         inputRef.current?.focus();
-        inputRef.current?.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+        inputRef.current?.select();
       }, 0);
     }, 200);
   };
@@ -469,99 +470,95 @@ const TreeNode = ({
 
   return (
     <Collapsible open={isExpanded} onOpenChange={handleExpand}>
-      <div className="relative">
+      <div
+        className={cn(
+          "group/tree-node relative flex items-center py-1 px-2",
+          "rounded-lg transition-colors",
+          isSelected && "bg-accent dark:bg-accent/50",
+          node.disabled && "opacity-50 pointer-events-none ",
+          !node.disabled && "hover:bg-accent/50 dark:hover:bg-accent/25",
+          blockNode && "w-full",
+          draggable && "active:opacity-50",
+          dragOver === "inside" && "bg-accent dark:bg-accent/50",
+          "group",
+        )}
+        draggable={draggable}
+        onDragStart={handleDragStart}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDragEnd={handleDragEnd}
+        onDrop={handleDrop}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         {dragOver === "top" && <div className="absolute -top-1 left-0 right-0 h-0.5 bg-primary rounded-full" />}
         {dragOver === "bottom" && <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />}
 
-        <div
-          className={cn(
-            "relative flex items-center py-1 px-2",
-            "rounded-lg transition-colors",
-            isSelected && "bg-accent dark:bg-accent/50",
-            node.disabled && "opacity-50 pointer-events-none",
-            blockNode && "w-full",
-            draggable && "active:opacity-50",
-            dragOver === "inside" && "bg-accent/50 dark:bg-accent/25 ring-2 ring-primary dark:ring-primary/50 ring-offset-2 dark:ring-offset-background",
-            "group",
-          )}
-          draggable={draggable}
-          onDragStart={handleDragStart}
-          onDragEnter={handleDragEnter}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDragEnd={handleDragEnd}
-          onDrop={handleDrop}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          {dragOver === "top" && <div className="absolute -top-1 left-0 right-0 h-0.5 bg-primary rounded-full" />}
-          {dragOver === "bottom" && <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+        {checkable && !node.disableCheckbox && <Checkbox checked={checked} indeterminate={indeterminate} onCheckedChange={handleCheck} className="mr-2" />}
 
-          {checkable && !node.disableCheckbox && <Checkbox checked={checked} indeterminate={indeterminate} onCheckedChange={handleCheck} className="mr-2" />}
+        {node.isLeaf ? (
+          <Dot className="h-4 w-4 mr-1" />
+        ) : (
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center min-w-0">
+              {(hasChildren || canLoadData) && (
+                <div className={cn("flex items-center cursor-pointer rounded  h-4 w-4 mr-1", "hover:bg-accent/50 dark:hover:bg-accent/25")}>
+                  {showLoading ? (
+                    <Loader2 className="h-4 w-4 shrink-0 mr-1 animate-spin text-muted-foreground" />
+                  ) : switcherIcon ? (
+                    <div className={cn("shrink-0 mr-1 transition-transform duration-200", isExpanded && "rotate-90")}>{switcherIcon}</div>
+                  ) : (
+                    <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200 mr-1", isExpanded && "rotate-90")} />
+                  )}
+                </div>
+              )}
+            </div>
+          </CollapsibleTrigger>
+        )}
 
-          {node.isLeaf ? (
-            <Dot className="h-4 w-4 mr-1" />
-          ) : (
-            <CollapsibleTrigger asChild>
-              <div className="flex items-center min-w-0">
-                {(hasChildren || canLoadData) && (
-                  <div className={cn("flex items-center cursor-pointer rounded  h-4 w-4 mr-1", "hover:bg-accent/50 dark:hover:bg-accent/25")}>
-                    {showLoading ? (
-                      <Loader2 className="h-4 w-4 shrink-0 mr-1 animate-spin text-muted-foreground" />
-                    ) : switcherIcon ? (
-                      <div className={cn("shrink-0 mr-1 transition-transform duration-200", isExpanded && "rotate-90")}>{switcherIcon}</div>
-                    ) : (
-                      <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200 mr-1", isExpanded && "rotate-90")} />
-                    )}
-                  </div>
-                )}
-              </div>
-            </CollapsibleTrigger>
-          )}
-
-          <div className="flex items-center flex-1 min-w-0 cursor-pointer" onClick={(e) => !node.disabled && onSelect(node, e)}>
-            {showIcon && (
-              <div className="mr-2">
-                {(() => {
-                  const iconProp = node.icon || treeIcon;
-                  if (typeof iconProp === "function") {
-                    return iconProp({ selected: isSelected, node, expanded: isExpanded });
-                  }
-                  return iconProp;
-                })()}
-              </div>
-            )}
-
-            {isEditing ? (
-              <input
-                ref={inputRef}
-                type="text"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRenameComplete();
-                  if (e.key === "Escape") setIsEditing(false);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                onBlur={handleInputBlur}
-                className="flex-1  border-none focus:outline-none focus:ring-1 focus:ring-primary px-1 rounded-sm"
-              />
-            ) : (
-              <span className="flex-1 truncate user-select-none">{node.title}</span>
-            )}
-          </div>
-
-          {/* Render actions slot with conditional visibility */}
-          {renderActions && !isEditing && (
-            <div className={cn("flex items-center ml-2", actionsOnHover && !isHovered && !isDropdownOpen && "hidden")}>
-              {renderActions({
-                node,
-                onDropdownOpenChange: setIsDropdownOpen,
-                onStartRename: handleStartRename,
-              })}
+        <div className="flex items-center flex-1 min-w-0 cursor-pointer" onClick={(e) => !node.disabled && onSelect(node, e)}>
+          {showIcon && (
+            <div className="mr-2">
+              {(() => {
+                const iconProp = node.icon || treeIcon;
+                if (typeof iconProp === "function") {
+                  return iconProp({ selected: isSelected, node, expanded: isExpanded });
+                }
+                return iconProp;
+              })()}
             </div>
           )}
+
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenameComplete();
+                if (e.key === "Escape") setIsEditing(false);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onBlur={handleInputBlur}
+              className="flex-1  border-none focus:outline-none focus:ring-1 focus:ring-primary px-1 rounded-sm"
+            />
+          ) : (
+            <span className="flex-1 truncate user-select-none">{node.title}</span>
+          )}
         </div>
+
+        {/* Render actions slot with conditional visibility */}
+        {renderActions && !isEditing && (
+          <div className={cn("flex items-center ml-2", actionsOnHover && !isHovered && !isDropdownOpen && "hidden")}>
+            {renderActions({
+              node,
+              onDropdownOpenChange: setIsDropdownOpen,
+              onStartRename: handleStartRename,
+            })}
+          </div>
+        )}
       </div>
 
       {hasChildren && (

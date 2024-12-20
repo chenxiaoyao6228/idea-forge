@@ -122,6 +122,8 @@ export const useDocumentTree = create<DocumentTreeState>()(
 
       moveDocuments: async ({ id, targetId, dropPosition }) => {
         try {
+          const parentId = treeUtils.findParentKey(get().treeData, id);
+
           const result = (await documentApi.moveDocuments({
             id,
             targetId,
@@ -149,6 +151,12 @@ export const useDocumentTree = create<DocumentTreeState>()(
                     oldTree.map(treeUtils.convertToTreeNode),
                   );
                 }
+              } else {
+                // parentId's children is empty, empty children array
+                newTreeData = treeUtils.updateTreeNodes(newTreeData, parentId, (node) => ({
+                  ...node,
+                  children: [],
+                }));
               }
 
               // Update tree at new position

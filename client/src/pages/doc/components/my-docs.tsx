@@ -19,7 +19,6 @@ export function MyDocs() {
   }, []);
 
   const handleSelect = (keys: string[], { node }: { node: TreeDataNode }) => {
-    // TODO: handle multiple selection
     setSelectedKeys([node.key]);
     navigate(`/doc/${node.key}`);
   };
@@ -35,12 +34,13 @@ export function MyDocs() {
   const handleDrop: TreeProps["onDrop"] = async (info) => {
     const { node: dropNode, dragNode, dropPosition } = info;
     const dragKey = dragNode.key;
+    const dragParentId = treeUtils.findParentKey(treeData, dragKey);
     const dropKey = dropNode.key;
 
-    // 不允许拖拽到自身
-    if (dragKey === dropKey) {
-      return;
-    }
+    // not allow drop to self
+    if (dragKey === dropKey) return;
+    // not allow to drop to the same parent
+    if (dragParentId === dropKey) return;
 
     try {
       await moveDocuments({
@@ -50,7 +50,7 @@ export function MyDocs() {
       });
     } catch (error) {
       console.error("Failed to move document:", error);
-      // TODO: 添加错误提示
+      // TODO: add error toast
     }
   };
 
@@ -87,7 +87,7 @@ export function MyDocs() {
             <div className="flex gap-1 ">
               <DropdownMenu onOpenChange={onDropdownOpenChange}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-4 w-4 p-0 mr-1 cursor-pointer">
+                  <Button variant="ghost" size="icon" className="h-4 w-4 p-0 mr-1 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25">
                     <MoreHorizontalIcon className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
