@@ -18,6 +18,14 @@ export function MyDocs() {
     loadChildren(null);
   }, []);
 
+  useEffect(() => {
+    // Get document ID from URL
+    const docId = window.location.pathname.split("/").pop();
+    if (docId) {
+      setSelectedKeys([docId]);
+    }
+  }, [window.location.pathname]);
+
   const handleSelect = (keys: string[], { node }: { node: TreeDataNode }) => {
     setSelectedKeys([node.key]);
     navigate(`/doc/${node.key}`);

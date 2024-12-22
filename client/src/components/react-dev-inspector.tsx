@@ -18,6 +18,7 @@ function generateSearchParams(params: Object = {}) {
 
 function get(url: string, callback?: Function) {
   const xhr = new XMLHttpRequest();
+  xhr.withCredentials = true;
   xhr.open("GET", url, true);
   xhr.onreadystatechange = () => {
     if (xhr.readyState === 4 && xhr.status === 200) {
@@ -38,10 +39,10 @@ const AppWithInspector: React.FC<any> = ({ children }) => {
         if (!ele || !ele.codeInfo) return;
 
         const {
-          codeInfo: { lineNumber, columnNumber, relativePath },
+          codeInfo: { lineNumber, columnNumber, absolutePath },
         } = ele;
-        const launchPath = `${baseUrl}/__open-stack-frame-in-editor/relative?${generateSearchParams({
-          fileName: relativePath,
+        const launchPath = `${baseUrl}/__open-stack-frame-in-editor?${generateSearchParams({
+          fileName: absolutePath,
           lineNumber: lineNumber,
           columnNumber: columnNumber,
         })}`;

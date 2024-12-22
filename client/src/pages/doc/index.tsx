@@ -1,12 +1,12 @@
-import { useParams } from "react-router-dom";
+import { useDocumentTree } from "./store";
 import DocsLayout from "./layout";
 
 export default function Doc() {
-  const { docId } = useParams();
-
+  const { selectedKeys } = useDocumentTree();
+  const docId = selectedKeys[0];
   return (
     <DocsLayout>
-      <div className="p-6">Doc</div>
+      <div className="p-6"> {docId}</div>
     </DocsLayout>
   );
 }

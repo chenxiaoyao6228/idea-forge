@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsib
 import { Checkbox } from "./checkbox";
 import { cn } from "@/lib/utils";
 import { useSpinDelay } from "spin-delay";
+import { Input } from "@/components/ui/input";
 
 type IconFn = (props: { selected: boolean; node: TreeDataNode; expanded: boolean }) => React.ReactNode;
 
@@ -531,7 +532,7 @@ const TreeNode = ({
           )}
 
           {isEditing ? (
-            <input
+            <Input
               ref={inputRef}
               type="text"
               value={editValue}
@@ -542,7 +543,7 @@ const TreeNode = ({
               }}
               onClick={(e) => e.stopPropagation()}
               onBlur={handleInputBlur}
-              className="flex-1  border-none focus:outline-none focus:ring-1 focus:ring-primary px-1 rounded-sm"
+              className="flex-1 h-6 px-1"
             />
           ) : (
             <span className="flex-1 truncate user-select-none">{node.title}</span>
