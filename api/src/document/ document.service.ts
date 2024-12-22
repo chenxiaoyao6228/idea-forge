@@ -3,7 +3,7 @@ import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./docum
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { DEFAULT_NEW_DOC_TITLE } from "@/_shared/constants/common";
 import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
-import { CreateDocumentResponse } from "shared";
+import { CommonDocumentResponse, CreateDocumentResponse } from "shared";
 import { MoveDocumentsDto } from "shared";
 
 const POSITION_GAP = 1024; // Define position gap
@@ -190,6 +190,25 @@ export class DocumentService {
     }));
 
     return res;
+  }
+
+  async getDocumentPath(userId: number, documentId: string) {
+    const path: Omit<CommonDocumentResponse, "isLeaf">[] = [];
+
+    let currentDoc = await this.prisma.doc.findFirst({
+      where: { id: documentId, ownerId: userId, isArchived: false },
+    });
+
+    while (currentDoc) {
+      path.unshift(currentDoc);
+      if (!currentDoc.parentId) break;
+
+      currentDoc = await this.prisma.doc.findFirst({
+        where: { id: currentDoc.parentId, ownerId: userId, isArchived: false },
+      });
+    }
+
+    return path;
   }
 
   private async checkNeedReorder(siblings: any[], newPosition: number): Promise<boolean> {

@@ -12,6 +12,12 @@ export class DocumentController {
     return this.documentService.getDirectoryTree(userId, parentId);
   }
 
+  @Get(":id/path")
+  async getDocumentPath(@GetUser("id") userId: number, @Param("id") id: string) {
+    console.log("getDocumentPath", id);
+    return this.documentService.getDocumentPath(userId, id);
+  }
+
   @Get("search")
   async search(@GetUser("id") userId: number, @Query() dto: SearchDocumentDto) {
     return this.documentService.searchDocuments(userId, dto);
@@ -46,10 +52,4 @@ export class DocumentController {
   async moveDocuments(@GetUser("id") userId: number, @Body() dto: MoveDocumentsDto) {
     return this.documentService.moveDocuments(userId, dto);
   }
-
-  // FIXME: Generic matching must be placed last, need to find a way to handle this
-  // @Get()
-  // findAll(@GetUser("id") userId: number) {
-  //   return this.documentService.findAll(userId);
-  // }
 }

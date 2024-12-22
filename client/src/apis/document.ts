@@ -9,6 +9,11 @@ export const documentApi = {
     return request<null, CommonDocumentResponse[]>(url);
   },
 
+  getDocumentPath: async (documentId: string) => {
+    const url = `/api/documents/${documentId}/path`;
+    return request<null, CommonDocumentResponse[]>(url);
+  },
+
   create: async (data: CreateDocumentDto) => {
     return request.post<CreateDocumentDto, CommonDocumentResponse>("/api/documents", data);
   },

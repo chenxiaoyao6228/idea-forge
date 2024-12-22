@@ -18,6 +18,7 @@ interface DocumentTreeState {
   deleteDocument: (id: string) => Promise<void>;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
   moveDocuments: (data: MoveDocumentsDto) => Promise<void>;
+  loadDocumentPath: (documentId: string) => Promise<void>;
 }
 
 export const useDocumentTree = create<DocumentTreeState>()(
@@ -54,6 +55,10 @@ export const useDocumentTree = create<DocumentTreeState>()(
           console.error("Failed to load children:", error);
           set({ loading: false });
         }
+      },
+
+      loadDocumentPath: async (documentId) => {
+        // TODO:
       },
 
       createDocument: async (parentId, title) => {
