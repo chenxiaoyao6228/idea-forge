@@ -46,6 +46,7 @@
     "react-hook-form": "^7.54.0",
     "react-i18next": "^15.1.3",
     "react-router-dom": "^6.4.4",
+    "react-use": "^17.6.0",
     "shared": "*",
     "sonner": "^1.7.1",
     "spin-delay": "^2.0.1",

@@ -22,7 +22,7 @@ export interface TreeDataNode {
   disableCheckbox?: boolean;
   isLeaf?: boolean;
   loading?: boolean;
-  icon?: IconFn;
+  icon?: IconFn | React.ReactNode | null;
   onRename?: (key: string, newTitle: string) => void;
 }
 

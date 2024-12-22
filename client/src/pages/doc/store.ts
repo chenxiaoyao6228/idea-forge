@@ -3,22 +3,32 @@ import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
 import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
+import { useEffect } from "react";
+import { useState } from "react";
+
+interface DocTreeDataNode extends TreeDataNode {
+  content?: string;
+}
 
 interface DocumentTreeState {
   expandedKeys: string[];
   selectedKeys: string[];
   loading: boolean;
-  treeData: TreeDataNode[];
+  treeData: DocTreeDataNode[];
+  currentDocument: DocTreeDataNode | null;
 
   // actions
+  getCurrentDocument: () => CommonDocumentResponse | null;
   setExpandedKeys: (keys: string[]) => void;
   setSelectedKeys: (keys: string[]) => void;
+  setCurrentDocument: (doc: DocTreeDataNode) => void;
   loadChildren: (key: string | null) => Promise<void>;
   createDocument: (parentId: string | null, title: string) => Promise<string>;
   deleteDocument: (id: string) => Promise<void>;
-  updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
   moveDocuments: (data: MoveDocumentsDto) => Promise<void>;
-  loadDocumentPath: (documentId: string) => Promise<void>;
+  loadCurrentDocument: (id: string) => Promise<void>;
+  updateCurrentDocument: (update: UpdateDocumentDto) => void;
+  updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
 }
 
 export const useDocumentTree = create<DocumentTreeState>()(
@@ -27,13 +37,30 @@ export const useDocumentTree = create<DocumentTreeState>()(
       expandedKeys: [],
       selectedKeys: [],
       treeData: [],
+      currentDocument: null,
       loading: false,
 
-      setExpandedKeys: (keys) => {
-        console.log("setExpandedKeys", keys);
-        set({ expandedKeys: keys });
-      },
+      setExpandedKeys: (keys) => set({ expandedKeys: keys }),
+
       setSelectedKeys: (keys) => set({ selectedKeys: keys }),
+
+      setCurrentDocument: (doc) => set({ currentDocument: doc }),
+
+      getCurrentDocument: () => {
+        const curId = get().selectedKeys[0];
+        if (!curId) return null;
+        const res = treeUtils.findNode(get().treeData, curId);
+        return res;
+      },
+
+      updateCurrentDocument: async (update) => {
+        const curId = get().selectedKeys[0];
+        if (!curId) return;
+        await get().updateDocument(curId, update);
+        set((state) => ({
+          currentDocument: state.currentDocument ? ({ ...state.currentDocument, ...update } as DocTreeDataNode) : null,
+        }));
+      },
 
       loadChildren: async (key = null) => {
         set({ loading: true });
@@ -57,8 +84,19 @@ export const useDocumentTree = create<DocumentTreeState>()(
         }
       },
 
-      loadDocumentPath: async (documentId) => {
-        // TODO:
+      loadCurrentDocument: async (id) => {
+        set({ loading: true, selectedKeys: [id] });
+        try {
+          const doc = await documentApi.getDocument(id);
+          set((state) => ({
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({ ...node, ...doc })),
+            currentDocument: treeUtils.convertToTreeNode(doc),
+          }));
+        } catch (error) {
+          console.error("Failed to load current document:", error);
+        } finally {
+          set({ loading: false });
+        }
       },
 
       createDocument: async (parentId, title) => {
@@ -79,6 +117,7 @@ export const useDocumentTree = create<DocumentTreeState>()(
               treeData: [...state.treeData, newNode],
               expandedKeys: newExpandedKeys,
               selectedKeys: [newNode.key],
+              currentDocument: newNode,
             };
           }
 
@@ -90,6 +129,7 @@ export const useDocumentTree = create<DocumentTreeState>()(
             })),
             expandedKeys: newExpandedKeys,
             selectedKeys: [newNode.key],
+            currentDocument: newNode,
           };
         });
 
@@ -118,11 +158,18 @@ export const useDocumentTree = create<DocumentTreeState>()(
       },
 
       updateDocument: async (id, update) => {
-        await documentApi.update(id, update);
+        try {
+          set({ loading: true });
+          await documentApi.update(id, update);
 
-        set((state) => ({
-          treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({ ...node, ...update })),
-        }));
+          set((state) => ({
+            treeData: treeUtils.updateTreeNodes(get().treeData, id, (node) => ({ ...node, ...update })),
+          }));
+        } catch (error) {
+          console.error("Failed to update document:", error);
+        } finally {
+          set({ loading: false });
+        }
       },
 
       moveDocuments: async ({ id, targetId, dropPosition }) => {
