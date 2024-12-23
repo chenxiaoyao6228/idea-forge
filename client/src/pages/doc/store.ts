@@ -5,6 +5,8 @@ import { documentApi } from "@/apis/document";
 import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
 import createSelectors from "@/stores/utils/createSelector";
 
+const LAST_DOC_ID_KEY = "lastDocId";
+
 interface DocTreeDataNode extends TreeDataNode {
   content?: string;
 }
@@ -14,6 +16,7 @@ interface DocumentTreeState {
   selectedKeys: string[];
   loading: boolean;
   treeData: DocTreeDataNode[];
+  lastDocId: string | null;
 
   // actions
   getCurrentDocument: () => CommonDocumentResponse | null;
@@ -28,6 +31,7 @@ interface DocumentTreeState {
   loadNestedTree: (key: string | null) => Promise<void>;
   updateCurrentDocument: (update: UpdateDocumentDto) => void;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
+  setLastDocId: (id: string) => void;
 }
 
 export const store = create<DocumentTreeState>()(
@@ -37,10 +41,16 @@ export const store = create<DocumentTreeState>()(
       selectedKeys: [],
       treeData: [],
       loading: false,
+      lastDocId: localStorage.getItem(LAST_DOC_ID_KEY),
 
       setExpandedKeys: (keys) => set({ expandedKeys: keys }),
 
-      setSelectedKeys: (keys) => set({ selectedKeys: keys }),
+      setSelectedKeys: (keys) => {
+        set({ selectedKeys: keys });
+        if (keys.length > 0) {
+          get().setLastDocId(keys[0]);
+        }
+      },
 
       updateCurrentDocument: async (update) => {
         const curId = get().selectedKeys[0];
@@ -246,6 +256,11 @@ export const store = create<DocumentTreeState>()(
           console.error("Failed to move documents:", error);
           throw error;
         }
+      },
+
+      setLastDocId: (id) => {
+        localStorage.setItem(LAST_DOC_ID_KEY, id);
+        set({ lastDocId: id });
       },
     }),
     { name: "document-tree-store" },
