@@ -3,15 +3,14 @@ import { z } from "zod";
 const commonDocumentSchema = z.object({
   id: z.string().cuid(),
   title: z.string(),
-  content: z.string(),
   isArchived: z.boolean(),
   isStarred: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   parentId: z.string().nullable(),
-  sharedPassword: z.string().nullable(),
   isLeaf: z.boolean(),
   position: z.number(),
+  sharedPassword: z.string().nullable().optional(),
 });
 
 export type CommonDocumentResponse = z.infer<typeof commonDocumentSchema>;

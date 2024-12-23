@@ -8,14 +8,13 @@ export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
 
   @Get("tree")
-  async getDirectoryTree(@GetUser("id") userId: number, @Query("parentId") parentId?: string) {
-    return this.documentService.getDirectoryTree(userId, parentId);
+  async getNestedTree(@GetUser("id") userId: number, @Query("parentId") parentId?: string) {
+    return this.documentService.getNestedTree(userId, parentId);
   }
 
-  @Get(":id/path")
-  async getDocumentPath(@GetUser("id") userId: number, @Param("id") id: string) {
-    console.log("getDocumentPath", id);
-    return this.documentService.getDocumentPath(userId, id);
+  @Get("children")
+  async loadChildren(@GetUser("id") userId: number, @Query("parentId") parentId?: string) {
+    return this.documentService.loadChildren(userId, parentId);
   }
 
   @Get("search")

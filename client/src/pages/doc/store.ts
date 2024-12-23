@@ -3,8 +3,6 @@ import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
 import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
-import { useEffect } from "react";
-import { useState } from "react";
 
 interface DocTreeDataNode extends TreeDataNode {
   content?: string;
@@ -15,7 +13,6 @@ interface DocumentTreeState {
   selectedKeys: string[];
   loading: boolean;
   treeData: DocTreeDataNode[];
-  currentDocument: DocTreeDataNode | null;
 
   // actions
   getCurrentDocument: () => CommonDocumentResponse | null;
@@ -27,6 +24,7 @@ interface DocumentTreeState {
   deleteDocument: (id: string) => Promise<void>;
   moveDocuments: (data: MoveDocumentsDto) => Promise<void>;
   loadCurrentDocument: (id: string) => Promise<void>;
+  loadNestedTree: (key: string | null) => Promise<void>;
   updateCurrentDocument: (update: UpdateDocumentDto) => void;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
 }
@@ -37,35 +35,35 @@ export const useDocumentTree = create<DocumentTreeState>()(
       expandedKeys: [],
       selectedKeys: [],
       treeData: [],
-      currentDocument: null,
       loading: false,
 
       setExpandedKeys: (keys) => set({ expandedKeys: keys }),
 
       setSelectedKeys: (keys) => set({ selectedKeys: keys }),
 
-      setCurrentDocument: (doc) => set({ currentDocument: doc }),
-
-      getCurrentDocument: () => {
-        const curId = get().selectedKeys[0];
-        if (!curId) return null;
-        const res = treeUtils.findNode(get().treeData, curId);
-        return res;
-      },
-
       updateCurrentDocument: async (update) => {
         const curId = get().selectedKeys[0];
         if (!curId) return;
         await get().updateDocument(curId, update);
-        set((state) => ({
-          currentDocument: state.currentDocument ? ({ ...state.currentDocument, ...update } as DocTreeDataNode) : null,
-        }));
+      },
+
+      loadNestedTree: async (key = null) => {
+        set({ loading: true });
+        try {
+          const data = await documentApi.getNestedTree(key || undefined);
+          const { nodes, ancestors } = treeUtils.buildTree(data);
+          set({ treeData: nodes, expandedKeys: ancestors });
+        } catch (error) {
+          console.error("Failed to load nested tree:", error);
+        } finally {
+          set({ loading: false });
+        }
       },
 
       loadChildren: async (key = null) => {
         set({ loading: true });
         try {
-          const data = await documentApi.getTree(key || undefined);
+          const data = await documentApi.getChildren(key || undefined);
           const treeNodes = data.map(treeUtils.convertToTreeNode);
 
           set((state) => ({
@@ -90,7 +88,6 @@ export const useDocumentTree = create<DocumentTreeState>()(
           const doc = await documentApi.getDocument(id);
           set((state) => ({
             treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({ ...node, ...doc })),
-            currentDocument: treeUtils.convertToTreeNode(doc),
           }));
         } catch (error) {
           console.error("Failed to load current document:", error);
@@ -117,7 +114,6 @@ export const useDocumentTree = create<DocumentTreeState>()(
               treeData: [...state.treeData, newNode],
               expandedKeys: newExpandedKeys,
               selectedKeys: [newNode.key],
-              currentDocument: newNode,
             };
           }
 
@@ -129,7 +125,6 @@ export const useDocumentTree = create<DocumentTreeState>()(
             })),
             expandedKeys: newExpandedKeys,
             selectedKeys: [newNode.key],
-            currentDocument: newNode,
           };
         });
 
@@ -256,6 +251,13 @@ export const useDocumentTree = create<DocumentTreeState>()(
   ),
 );
 
+export const useCurrentDocument = (): { currentDocument: DocTreeDataNode | null } => {
+  const curId = useDocumentTree.getState().selectedKeys[0];
+  if (!curId) return { currentDocument: null };
+  const currentDocument = treeUtils.findNode(useDocumentTree.getState().treeData, curId);
+  return { currentDocument };
+};
+
 export const treeUtils = {
   findParentKey: (nodes: TreeDataNode[], targetKey: string): string | null => {
     for (const node of nodes) {
@@ -320,5 +322,37 @@ export const treeUtils = {
       }
     }
     return null;
+  },
+
+  buildTree: (flatDocs: CommonDocumentResponse[]): { nodes: TreeDataNode[]; ancestors: string[] } => {
+    const nodeMap: Record<string, TreeDataNode> = {};
+    const nodes: TreeDataNode[] = [];
+    const ancestors: string[] = [];
+
+    // First pass: Create all nodes
+    flatDocs.forEach((doc) => {
+      nodeMap[doc.id] = { ...doc, children: [], key: doc.id };
+      if (doc.parentId && !ancestors.includes(doc.parentId)) {
+        ancestors.push(doc.parentId);
+      }
+    });
+
+    // Second pass: Build relationships
+    flatDocs.forEach((doc) => {
+      const node = nodeMap[doc.id];
+      if (doc.parentId === null) {
+        nodes.push(node);
+      } else {
+        const parent = nodeMap[doc.parentId];
+        if (parent) {
+          parent.children?.push(node);
+        }
+      }
+    });
+
+    return {
+      nodes,
+      ancestors,
+    };
   },
 };

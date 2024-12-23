@@ -11,20 +11,35 @@ import { logger } from "@/lib/logger";
 
 export function MyDocs() {
   const navigate = useNavigate();
-  const { treeData, expandedKeys, selectedKeys, loadChildren, setExpandedKeys, setSelectedKeys, moveDocuments, deleteDocument, updateDocument } =
-    useDocumentTree();
+  const {
+    treeData,
+    expandedKeys,
+    selectedKeys,
+    loadChildren,
+    loadNestedTree,
+    setExpandedKeys,
+    setSelectedKeys,
+    moveDocuments,
+    deleteDocument,
+    updateDocument,
+    loadCurrentDocument,
+  } = useDocumentTree();
 
+  // load nested tree when page load
+  const docId = window.location.pathname.split("/").pop();
   useEffect(() => {
-    loadChildren(null);
+    loadNestedTree(docId || null);
   }, []);
+
+  // select document when url change
 
   useEffect(() => {
     // Get document ID from URL
-    const docId = window.location.pathname.split("/").pop();
     if (docId) {
+      loadCurrentDocument(docId);
       setSelectedKeys([docId]);
     }
-  }, [window.location.pathname]);
+  }, [docId]);
 
   const handleSelect = (keys: string[], { node }: { node: TreeDataNode }) => {
     setSelectedKeys([node.key]);

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 type IconFn = (props: { selected: boolean; node: TreeDataNode; expanded: boolean }) => React.ReactNode;
 
 export interface TreeDataNode {
-  title: React.ReactNode;
+  title: string;
   key: string;
   pos?: string;
   children?: TreeDataNode[];
@@ -565,9 +565,9 @@ const TreeNode = ({
       {hasChildren && (
         <CollapsibleContent>
           <div className="pl-4">
-            {node.children?.map((child) => (
+            {node.children?.map((child, index) => (
               <TreeNode
-                key={child.key}
+                key={child.key || `${node.key}-${index}`} // Fallback to parent key + index if child key is missing
                 node={child}
                 level={level + 1}
                 checkable={checkable}

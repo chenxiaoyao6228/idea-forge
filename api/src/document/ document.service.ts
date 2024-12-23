@@ -56,9 +56,20 @@ export class DocumentService {
         ownerId,
         isArchived: false,
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        isStarred: true,
+        parentId: true,
+        position: true,
+        sharedPassword: true,
+        createdAt: true,
+        updatedAt: true,
+        isArchived: true,
+        content: true,
         coverImage: true,
         children: true,
+        parent: true,
       },
     });
 
@@ -150,7 +161,7 @@ export class DocumentService {
     return { documents, total };
   }
 
-  async getDirectoryTree(userId: number, parentId?: string | null) {
+  async loadChildren(userId: number, parentId?: string | null): Promise<CommonDocumentResponse[]> {
     const docs = await this.prisma.doc.findMany({
       where: {
         ownerId: userId,
@@ -163,6 +174,10 @@ export class DocumentService {
         isStarred: true,
         parentId: true,
         position: true,
+        sharedPassword: true,
+        createdAt: true,
+        updatedAt: true,
+        isArchived: true,
         _count: {
           select: {
             children: {
@@ -182,33 +197,44 @@ export class DocumentService {
       id: doc.id,
       title: doc.title,
       parentId: doc.parentId || null,
-      ownerId: userId,
       isStarred: doc.isStarred,
-      isArchived: false,
       isLeaf: doc._count.children === 0,
       position: doc.position,
+      sharedPassword: doc.sharedPassword || null,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+      isArchived: doc.isArchived,
     }));
 
     return res;
   }
 
-  async getDocumentPath(userId: number, documentId: string) {
-    const path: Omit<CommonDocumentResponse, "isLeaf">[] = [];
+  async getNestedTree(userId: number, parentId?: string | null): Promise<CommonDocumentResponse[]> {
+    // Get all ancestors up to root
+    const ancestors: (string | null)[] = [];
+    let currentParentId = parentId;
 
-    let currentDoc = await this.prisma.doc.findFirst({
-      where: { id: documentId, ownerId: userId, isArchived: false },
-    });
-
-    while (currentDoc) {
-      path.unshift(currentDoc);
-      if (!currentDoc.parentId) break;
-
-      currentDoc = await this.prisma.doc.findFirst({
-        where: { id: currentDoc.parentId, ownerId: userId, isArchived: false },
+    while (currentParentId) {
+      const parent = await this.prisma.doc.findFirst({
+        where: { id: currentParentId, ownerId: userId, isArchived: false },
+        select: { id: true, parentId: true },
       });
+      if (!parent) break;
+      ancestors.unshift(parent.id);
+      currentParentId = parent.parentId;
     }
 
-    return path;
+    // Get trees for each level starting from root
+    const trees: CommonDocumentResponse[] = [];
+    let currentParent: string | null = null;
+
+    for (let i = 0; i <= ancestors.length; i++) {
+      const children = await this.loadChildren(userId, currentParent);
+      trees.push(...children);
+      currentParent = ancestors[i];
+    }
+
+    return trees;
   }
 
   private async checkNeedReorder(siblings: any[], newPosition: number): Promise<boolean> {
@@ -365,8 +391,8 @@ export class DocumentService {
     const oldParentId = sourceDoc.parentId;
     if (oldParentId !== targetParentId) {
       const [oldTree, newTree] = await Promise.all([
-        oldParentId ? this.getDirectoryTree(ownerId, oldParentId) : this.getDirectoryTree(ownerId),
-        targetParentId ? this.getDirectoryTree(ownerId, targetParentId) : this.getDirectoryTree(ownerId),
+        oldParentId ? this.loadChildren(ownerId, oldParentId) : this.loadChildren(ownerId),
+        targetParentId ? this.loadChildren(ownerId, targetParentId) : this.loadChildren(ownerId),
       ]);
       return {
         oldTree,
@@ -374,7 +400,7 @@ export class DocumentService {
       };
     }
 
-    return this.getDirectoryTree(ownerId, targetParentId);
+    return this.loadChildren(ownerId, targetParentId);
   }
 
   private async isDescendant(parentId: string, childId: string): Promise<boolean> {

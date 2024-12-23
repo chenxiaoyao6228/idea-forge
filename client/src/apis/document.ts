@@ -2,7 +2,14 @@ import request from "@/lib/request";
 import type { CommonDocumentResponse, CreateDocumentDto, UpdateDocumentDto, MoveDocumentsDto } from "shared";
 
 export const documentApi = {
-  getTree: async (parentId?: string | null) => {
+  getChildren: async (parentId?: string | null) => {
+    const searchParams = new URLSearchParams();
+    if (parentId) searchParams.set("parentId", parentId);
+    const url = `/api/documents/children${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+    return request<null, CommonDocumentResponse[]>(url);
+  },
+
+  getNestedTree: async (parentId?: string | null) => {
     const searchParams = new URLSearchParams();
     if (parentId) searchParams.set("parentId", parentId);
     const url = `/api/documents/tree${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
@@ -11,11 +18,6 @@ export const documentApi = {
 
   getDocument: async (id: string) => {
     return request.get<null, CommonDocumentResponse>(`/api/documents/${id}`);
-  },
-
-  getDocumentPath: async (documentId: string) => {
-    const url = `/api/documents/${documentId}/path`;
-    return request<null, CommonDocumentResponse[]>(url);
   },
 
   create: async (data: CreateDocumentDto) => {

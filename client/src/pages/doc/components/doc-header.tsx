@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { useDocumentTree } from "../store";
-import DocumentBreadcrumb from "./breadcrumb";
+import DocumentBreadcrumb from "./doc-breadcrumb";
 
 export default function DocumentHeader() {
   const { treeData, selectedKeys, setSelectedKeys } = useDocumentTree();
