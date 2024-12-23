@@ -3,11 +3,12 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { useDocumentTree } from "../store";
+import { useDocumentStore } from "../store";
 import DocumentBreadcrumb from "./doc-breadcrumb";
 
 export default function DocumentHeader() {
-  const { treeData, selectedKeys, setSelectedKeys } = useDocumentTree();
+  const selectedKeys = useDocumentStore.use.selectedKeys();
+
   return (
     <header
       className={cn(

@@ -3,6 +3,7 @@ import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
 import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
+import createSelectors from "@/stores/utils/createSelector";
 
 interface DocTreeDataNode extends TreeDataNode {
   content?: string;
@@ -29,7 +30,7 @@ interface DocumentTreeState {
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
 }
 
-export const useDocumentTree = create<DocumentTreeState>()(
+export const store = create<DocumentTreeState>()(
   devtools(
     (set, get) => ({
       expandedKeys: [],
@@ -251,10 +252,12 @@ export const useDocumentTree = create<DocumentTreeState>()(
   ),
 );
 
+export const useDocumentStore = createSelectors(store);
+
 export const useCurrentDocument = (): { currentDocument: DocTreeDataNode | null } => {
-  const curId = useDocumentTree.getState().selectedKeys[0];
+  const curId = useDocumentStore.getState().selectedKeys[0];
   if (!curId) return { currentDocument: null };
-  const currentDocument = treeUtils.findNode(useDocumentTree.getState().treeData, curId);
+  const currentDocument = treeUtils.findNode(useDocumentStore.getState().treeData, curId);
   return { currentDocument };
 };
 
@@ -297,7 +300,7 @@ export const treeUtils = {
   convertToTreeNode: (doc: CommonDocumentResponse): TreeDataNode => ({
     ...doc,
     key: doc.id,
-    children: [],
+    children: doc.isLeaf ? undefined : [],
   }),
 
   mergeTreeData: (oldNodes: TreeDataNode[], newNodes: TreeDataNode[]): TreeDataNode[] => {
@@ -331,7 +334,7 @@ export const treeUtils = {
 
     // First pass: Create all nodes
     flatDocs.forEach((doc) => {
-      nodeMap[doc.id] = { ...doc, children: [], key: doc.id };
+      nodeMap[doc.id] = treeUtils.convertToTreeNode(doc);
       if (doc.parentId && !ancestors.includes(doc.parentId)) {
         ancestors.push(doc.parentId);
       }

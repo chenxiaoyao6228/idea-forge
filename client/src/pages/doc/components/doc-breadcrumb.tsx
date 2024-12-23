@@ -1,4 +1,4 @@
-import { useDocumentTree, treeUtils } from "../store";
+import { useDocumentStore, treeUtils } from "../store";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +6,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Icon } from "@/components/ui/icon";
 
 export default function DocumentBreadcrumb() {
-  const { treeData, selectedKeys } = useDocumentTree();
+  const treeData = useDocumentStore.use.treeData();
+  const selectedKeys = useDocumentStore.use.selectedKeys();
+
   const navigate = useNavigate();
 
   const getBreadcrumbItems = useCallback(() => {

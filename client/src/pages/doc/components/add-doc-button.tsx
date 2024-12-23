@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
-import { useDocumentTree } from "../store";
+import { useDocumentStore } from "../store";
 import { useNavigate } from "react-router-dom";
 
 interface AddDocButtonProps {
@@ -9,7 +9,8 @@ interface AddDocButtonProps {
 }
 
 export function AddDocButton({ parentId }: AddDocButtonProps) {
-  const { createDocument } = useDocumentTree();
+  const createDocument = useDocumentStore.use.createDocument();
+
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
 

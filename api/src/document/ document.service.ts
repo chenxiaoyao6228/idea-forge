@@ -3,7 +3,7 @@ import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./docum
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { DEFAULT_NEW_DOC_TITLE } from "@/_shared/constants/common";
 import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
-import { CommonDocumentResponse, CreateDocumentResponse } from "shared";
+import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse } from "shared";
 import { MoveDocumentsDto } from "shared";
 
 const POSITION_GAP = 1024; // Define position gap
@@ -49,7 +49,7 @@ export class DocumentService {
     });
   }
 
-  async findOne(id: string, ownerId: number) {
+  async findOne(id: string, ownerId: number): Promise<DetailDocumentResponse> {
     const doc = await this.prisma.doc.findFirst({
       where: {
         id,
@@ -68,8 +68,6 @@ export class DocumentService {
         isArchived: true,
         content: true,
         coverImage: true,
-        children: true,
-        parent: true,
       },
     });
 
@@ -178,35 +176,23 @@ export class DocumentService {
         createdAt: true,
         updatedAt: true,
         isArchived: true,
-        _count: {
-          select: {
-            children: {
-              where: {
-                isArchived: false,
-              },
-            },
-          },
-        },
+        _count: { select: { children: { where: { isArchived: false } } } },
       },
-      orderBy: {
-        position: "asc",
-      },
+      orderBy: { position: "asc" },
     });
 
-    const res = docs.map((doc) => ({
+    return docs.map((doc) => ({
       id: doc.id,
       title: doc.title,
-      parentId: doc.parentId || null,
       isStarred: doc.isStarred,
-      isLeaf: doc._count.children === 0,
       position: doc.position,
-      sharedPassword: doc.sharedPassword || null,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
       isArchived: doc.isArchived,
+      isLeaf: doc._count.children === 0,
+      sharedPassword: doc.sharedPassword || null,
+      parentId: doc.parentId || null,
     }));
-
-    return res;
   }
 
   async getNestedTree(userId: number, parentId?: string | null): Promise<CommonDocumentResponse[]> {

@@ -10,7 +10,6 @@ const commonDocumentSchema = z.object({
   parentId: z.string().nullable(),
   isLeaf: z.boolean(),
   position: z.number(),
-  sharedPassword: z.string().nullable().optional(),
 });
 
 export type CommonDocumentResponse = z.infer<typeof commonDocumentSchema>;
@@ -70,3 +69,14 @@ export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;
 //  ============== response ==============
 export interface CreateDocumentResponse extends CommonDocumentResponse {}
 export interface UpdateDocumentResponse extends CommonDocumentResponse {}
+
+export const detailDocumentSchema = commonDocumentSchema
+  .omit({
+    isLeaf: true,
+  })
+  .extend({
+    content: z.string(),
+    // TODO: more detail data
+  });
+
+export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;

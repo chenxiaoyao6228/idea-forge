@@ -5,25 +5,24 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Tree, TreeDataNode, TreeProps } from "@/components/ui/tree";
 import { MoreHorizontalIcon } from "lucide-react";
-import { treeUtils, useDocumentTree } from "../store";
+import { treeUtils, useDocumentStore } from "../store";
 import { AddDocButton } from "./add-doc-button";
 import { logger } from "@/lib/logger";
 
 export function MyDocs() {
   const navigate = useNavigate();
-  const {
-    treeData,
-    expandedKeys,
-    selectedKeys,
-    loadChildren,
-    loadNestedTree,
-    setExpandedKeys,
-    setSelectedKeys,
-    moveDocuments,
-    deleteDocument,
-    updateDocument,
-    loadCurrentDocument,
-  } = useDocumentTree();
+
+  const treeData = useDocumentStore.use.treeData();
+  const expandedKeys = useDocumentStore.use.expandedKeys();
+  const selectedKeys = useDocumentStore.use.selectedKeys();
+  const loadChildren = useDocumentStore.use.loadChildren();
+  const loadNestedTree = useDocumentStore.use.loadNestedTree();
+  const setExpandedKeys = useDocumentStore.use.setExpandedKeys();
+  const setSelectedKeys = useDocumentStore.use.setSelectedKeys();
+  const moveDocuments = useDocumentStore.use.moveDocuments();
+  const deleteDocument = useDocumentStore.use.deleteDocument();
+  const updateDocument = useDocumentStore.use.updateDocument();
+  const loadCurrentDocument = useDocumentStore.use.loadCurrentDocument();
 
   // load nested tree when page load
   const docId = window.location.pathname.split("/").pop();
@@ -42,7 +41,6 @@ export function MyDocs() {
   }, [docId]);
 
   const handleSelect = (keys: string[], { node }: { node: TreeDataNode }) => {
-    setSelectedKeys([node.key]);
     navigate(`/doc/${node.key}`);
   };
 
@@ -80,7 +78,7 @@ export function MyDocs() {
   return (
     <SidebarGroup>
       <div className="flex items-center justify-between group/label">
-        <SidebarGroupLabel>Private</SidebarGroupLabel>
+        <SidebarGroupLabel>My Docs</SidebarGroupLabel>
         <div className="flex items-center gap-1 invisible group-hover/label:visible">
           <AddDocButton parentId={null} />
         </div>
