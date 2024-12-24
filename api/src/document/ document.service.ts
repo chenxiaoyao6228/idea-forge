@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./document.dto";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { DEFAULT_NEW_DOC_TITLE } from "@/_shared/constants/common";
 import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
-import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse } from "shared";
+import {
+  CommonDocumentResponse,
+  CommonSharedDocumentResponse,
+  CreateDocumentResponse,
+  DetailDocumentResponse,
+  DetailSharedDocumentResponse,
+  Permission,
+} from "shared";
 import { MoveDocumentsDto } from "shared";
 
 const POSITION_GAP = 1024; // Define position gap
@@ -12,12 +19,73 @@ const POSITION_GAP = 1024; // Define position gap
 export class DocumentService {
   constructor(private prisma: PrismaService) {}
 
+  async getSharedDocuments(userId: number): Promise<CommonSharedDocumentResponse[]> {
+    const docs = await this.prisma.doc.findMany({
+      where: {
+        sharedWith: { some: { userId } },
+      },
+      include: {
+        sharedWith: {
+          where: { userId },
+          select: { permission: true },
+        },
+        owner: {
+          select: {
+            displayName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    return docs.map((doc) => ({
+      ...doc,
+      permission: doc.sharedWith[0].permission as Permission,
+    }));
+  }
+
+  async findSharedOne(id: string, userId: number): Promise<DetailSharedDocumentResponse> {
+    const doc = await this.prisma.doc.findFirst({
+      where: {
+        id,
+        isArchived: false,
+        sharedWith: { some: { userId } },
+      },
+      include: {
+        sharedWith: {
+          where: { userId },
+          select: { permission: true },
+        },
+        owner: {
+          select: {
+            displayName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!doc) throw new NotFoundException("Shared document not found");
+
+    const { sharedWith, owner, ...rest } = doc;
+    return {
+      ...rest,
+      permission: sharedWith[0].permission as Permission,
+      owner: {
+        displayName: owner.displayName,
+        email: owner.email,
+      },
+    };
+  }
+
   async createDefault(ownerId: number) {
     return this.create(ownerId, {
       title: DEFAULT_NEW_DOC_TITLE,
       content: DEFAULT_NEW_DOC_CONTENT,
       parentId: null,
-      sharedPassword: null,
     });
   }
 
@@ -28,7 +96,6 @@ export class DocumentService {
         title: dto.title,
         content: dto.content,
         parentId: dto.parentId,
-        sharedPassword: dto.sharedPassword,
         isArchived: false,
         isStarred: false,
       },
@@ -62,7 +129,6 @@ export class DocumentService {
         isStarred: true,
         parentId: true,
         position: true,
-        sharedPassword: true,
         createdAt: true,
         updatedAt: true,
         isArchived: true,
@@ -75,8 +141,41 @@ export class DocumentService {
     return doc;
   }
 
-  async update(id: string, ownerId: number, dto: UpdateDocumentDto) {
-    await this.findOne(id, ownerId); // Verify document exists and belongs to user
+  async update(id: string, userId: number, dto: UpdateDocumentDto) {
+    const doc = await this.prisma.doc.findFirst({
+      where: {
+        id,
+        OR: [
+          { ownerId: userId },
+          {
+            sharedWith: {
+              some: {
+                userId,
+                permission: "EDIT",
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        sharedWith: {
+          where: {
+            userId,
+          },
+          select: {
+            permission: true,
+          },
+        },
+      },
+    });
+
+    if (!doc) {
+      throw new NotFoundException("Document not found");
+    }
+
+    if (doc.ownerId !== userId && (!doc.sharedWith[0] || doc.sharedWith[0].permission !== "EDIT")) {
+      throw new ForbiddenException("You don't have permission to edit this document");
+    }
 
     return this.prisma.doc.update({
       where: { id },
@@ -172,7 +271,6 @@ export class DocumentService {
         isStarred: true,
         parentId: true,
         position: true,
-        sharedPassword: true,
         createdAt: true,
         updatedAt: true,
         isArchived: true,
@@ -190,7 +288,6 @@ export class DocumentService {
       updatedAt: doc.updatedAt,
       isArchived: doc.isArchived,
       isLeaf: doc._count.children === 0,
-      sharedPassword: doc.sharedPassword || null,
       parentId: doc.parentId || null,
     }));
   }

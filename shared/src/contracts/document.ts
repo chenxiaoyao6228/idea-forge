@@ -14,12 +14,32 @@ const commonDocumentSchema = z.object({
 
 export type CommonDocumentResponse = z.infer<typeof commonDocumentSchema>;
 
+const noticeType = ["NEW", "UPDATE", "NONE"] as const;
+const permission = ["EDIT", "READ"] as const;
+
+export type Permission = (typeof permission)[number];
+export type NoticeType = (typeof noticeType)[number];
+
+const commonSharedDocumentSchema = commonDocumentSchema
+  .omit({
+    isLeaf: true,
+  })
+  .extend({
+    owner: z.object({
+      displayName: z.string().nullable(),
+      email: z.string(),
+    }),
+    permission: z.enum(permission).optional(),
+    noticeType: z.enum(noticeType).optional(),
+  });
+
+export type CommonSharedDocumentResponse = z.infer<typeof commonSharedDocumentSchema>;
+
 //  ============== request ==============
 export const createDocumentSchema = z.object({
   title: z.string(),
   content: z.string(),
   parentId: z.string().nullable(),
-  sharedPassword: z.string().nullable().optional(),
 });
 
 export type CreateDocumentDto = z.infer<typeof createDocumentSchema>;
@@ -29,7 +49,6 @@ export const updateDocumentSchema = z.object({
   content: z.string().optional(),
   isStarred: z.boolean().optional(),
   parentId: z.string().nullable().optional(),
-  sharedPassword: z.string().nullable().optional(),
 });
 
 export type UpdateDocumentDto = z.infer<typeof updateDocumentSchema>;
@@ -80,3 +99,10 @@ export const detailDocumentSchema = commonDocumentSchema
   });
 
 export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;
+
+export const detailSharedDocumentSchema = commonSharedDocumentSchema.extend({
+  content: z.string(),
+  // TODO: more detail data
+});
+
+export type DetailSharedDocumentResponse = z.infer<typeof detailSharedDocumentSchema>;

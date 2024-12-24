@@ -7,6 +7,8 @@ export default function DocDetail() {
   const updateCurrentDocument = useDocumentStore.use.updateCurrentDocument();
   const treeData = useDocumentStore.use.treeData();
 
+  // TODO: seperate this into two components shareDocDetail and DocDetail
+
   return (
     <div className="flex flex-col gap-4 p-6">
       <Input

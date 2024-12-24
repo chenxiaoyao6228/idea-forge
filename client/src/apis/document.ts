@@ -1,7 +1,19 @@
 import request from "@/lib/request";
-import type { CommonDocumentResponse, CreateDocumentDto, UpdateDocumentDto, MoveDocumentsDto } from "shared";
+import type {
+  CommonDocumentResponse,
+  CreateDocumentDto,
+  UpdateDocumentDto,
+  MoveDocumentsDto,
+  DetailSharedDocumentResponse,
+  CommonSharedDocumentResponse,
+} from "shared";
 
 export const documentApi = {
+  getSharedDocuments: async () => {
+    const url = `/api/documents/shared`;
+    return request<null, CommonSharedDocumentResponse[]>(url);
+  },
+
   getChildren: async (parentId?: string | null) => {
     const searchParams = new URLSearchParams();
     if (parentId) searchParams.set("parentId", parentId);

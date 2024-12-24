@@ -8,11 +8,12 @@ async function seed() {
   console.time(`🌱 Database has been seeded`);
 
   const passwordHash = await hash('Aa111111');
+  const users: { id: number; email: string }[] = [];
 
+  // Create users
   for (let i = 1; i <= 10; i++) {
     const email = `${i}@qq.com`;
     try {
-      // Check if the user already exists
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
@@ -30,7 +31,9 @@ async function seed() {
             status: 'ACTIVE',
           },
         });
+        users.push(user);
 
+        // Create document structure for each user
         for (let folderIndex = 0; folderIndex < 5; folderIndex++) {
           let parentId: string | null = null;
           for (let level = 0; level < 4; level++) {
@@ -42,7 +45,24 @@ async function seed() {
                 parentId,
               },
             }) as Doc;
-            parentId = document.id ;
+            parentId = document.id;
+
+            // Create shares for first level documents
+            if (level === 0 && folderIndex === 0) {
+              // Share with other users (except document owner)
+              for (const otherUser of users) {
+                if (otherUser.id !== user.id) {
+                  await prisma.docShare.create({
+                    data: {
+                      docId: document.id,
+                      userId: otherUser.id,
+                      // Randomly assign permissions
+                      permission: Math.random() > 0.5 ? 'EDIT' : 'READ',
+                    },
+                  });
+                }
+              }
+            }
           }
         }
       } else {

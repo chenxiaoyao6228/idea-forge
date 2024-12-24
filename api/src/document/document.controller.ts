@@ -7,6 +7,16 @@ import { GetUser } from "@/auth/decorators/get-user.decorator";
 export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
 
+  @Get("shared")
+  async getSharedDocuments(@GetUser("id") userId: number) {
+    return this.documentService.getSharedDocuments(userId);
+  }
+
+  @Get("shared/:id")
+  findSharedOne(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.findSharedOne(id, userId);
+  }
+
   @Get("tree")
   async getNestedTree(@GetUser("id") userId: number, @Query("parentId") parentId?: string) {
     return this.documentService.getNestedTree(userId, parentId);

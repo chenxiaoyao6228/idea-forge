@@ -7,6 +7,7 @@ import DocumentHeader from "./components/doc-header";
 import { NavBasic } from "./components/nav-basic";
 import { MyDocs } from "./components/my-docs";
 import DocDetail from "./components/doc-detail";
+import { OthersDocs } from "./components/others-docs";
 
 export default function Doc() {
   return (
@@ -20,6 +21,7 @@ export default function Doc() {
           <NavBasic />
         </SidebarHeader>
         <SidebarContent className="custom-scrollbar">
+          <OthersDocs />
           <MyDocs />
         </SidebarContent>
         <SidebarFooter>{/* TODO: settings */}</SidebarFooter>

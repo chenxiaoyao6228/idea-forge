@@ -1,9 +1,11 @@
-import { useDocumentStore, treeUtils } from "../store";
+import { useDocumentStore } from "../store";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/ui/icon";
+import { treeUtils } from "../util";
+import { Separator } from "@/components/ui/separator";
 
 export default function DocumentBreadcrumb() {
   const treeData = useDocumentStore.use.treeData();
@@ -37,9 +39,12 @@ export default function DocumentBreadcrumb() {
     navigate(`/doc/${id}`);
   };
 
+  if (!breadcrumbItems.length) return null;
+
   if (breadcrumbItems.length > 3) {
     return (
       <>
+        <Separator orientation="vertical" className="mr-2 h-4" />
         {/* First item */}
         <BreadcrumbItem>
           <BreadcrumbLink onClick={() => handleNavigate(breadcrumbItems[0].id)} className="cursor-pointer">
@@ -75,23 +80,26 @@ export default function DocumentBreadcrumb() {
 
   // Show full path for short paths
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        {breadcrumbItems.map((item, index, array) => (
-          <Fragment key={item.id}>
-            <BreadcrumbItem>
-              {index === array.length - 1 ? (
-                <BreadcrumbPage>{item.title}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink onClick={() => handleNavigate(item.id)} className="cursor-pointer">
-                  {item.title}
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
-            {index < array.length - 1 && <BreadcrumbSeparator />}
-          </Fragment>
-        ))}
-      </BreadcrumbList>
-    </Breadcrumb>
+    <>
+      <Separator orientation="vertical" className="mr-2 h-4" />
+      <Breadcrumb>
+        <BreadcrumbList>
+          {breadcrumbItems.map((item, index, array) => (
+            <Fragment key={item.id}>
+              <BreadcrumbItem>
+                {index === array.length - 1 ? (
+                  <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink onClick={() => handleNavigate(item.id)} className="cursor-pointer">
+                    {item.title}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+              {index < array.length - 1 && <BreadcrumbSeparator />}
+            </Fragment>
+          ))}
+        </BreadcrumbList>
+      </Breadcrumb>
+    </>
   );
 }

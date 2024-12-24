@@ -18,11 +18,11 @@ datasource db {
 model User {
   id          Int     @id @default(autoincrement())
   email       String  @unique
-  displayName String? // display name, 没有displayName, 用户如果换邮箱就解绑全部
+  displayName String? // Display name. Without displayName, user will unbind everything when changing email
   imageUrl    String?
 
-  emailVerified DateTime? // 邮箱验证时间
-  status        String // 用户状态
+  emailVerified DateTime? // Email verification time
+  status        String // User status
 
   created_time DateTime @default(now()) @db.Timestamp()
   updated_time DateTime @updatedAt @db.Timestamp()
@@ -31,6 +31,7 @@ model User {
   password           Password?
   connections        Connection[]
   docs               Doc[]
+  sharedDocs         DocShare[]   @relation("SharedToUser")
 }
 
 model Password {
@@ -42,40 +43,36 @@ model Password {
 
 model Connection {
   id           String @id @default(cuid())
-  providerName String // 提供商名称：github、google 等
-  providerId   String // 提供商的用户 ID
+  providerName String // Provider name: github, google etc.
+  providerId   String // Provider's user ID
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Connection 和 User 是多对一的关系
-  // 一个用户可以有多个第三方账号连接(Connection)
-  // 每个连接只能属于一个用户
-  // onDelete: Cascade 表示当用户被删除时,相关的连接也会被级联删除
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId Int // 修改为 Int 类型以匹配 User 的 id
+  userId Int // Changed to Int type to match User.id
 
   @@unique([providerName, providerId])
 }
 
 model Doc {
-  id             String      @id @default(cuid())
-  title          String
-  content        String
-  contentBinary  Bytes?
-  isArchived     Boolean     @default(false)
-  isStarred      Boolean     @default(false)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  owner          User        @relation(fields: [ownerId], references: [id])
-  ownerId        Int // Changed from String to Int to match User.id type
-  parent         Doc?        @relation("ChildrenDocs", fields: [parentId], references: [id])
-  parentId       String?
-  children       Doc[]       @relation("ChildrenDocs")
-  sharedPassword String?
-  coverImageId   String?     @unique
-  coverImage     CoverImage?
-  position       Int         @default(0)
+  id            String      @id @default(cuid())
+  title         String
+  content       String
+  contentBinary Bytes?
+  isArchived    Boolean     @default(false)
+  isStarred     Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  owner         User        @relation(fields: [ownerId], references: [id])
+  ownerId       Int // Changed from String to Int to match User.id type
+  parent        Doc?        @relation("ChildrenDocs", fields: [parentId], references: [id])
+  parentId      String?
+  children      Doc[]       @relation("ChildrenDocs")
+  coverImageId  String?     @unique
+  coverImage    CoverImage?
+  position      Int         @default(0)
+  sharedWith    DocShare[]
 }
 
 model CoverImage {
@@ -84,4 +81,19 @@ model CoverImage {
   scrollY Float
   doc     Doc    @relation(fields: [docId], references: [id])
   docId   String @unique
+}
+
+model DocShare {
+  id       String @id @default(cuid())
+  doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
+  docId    String
+  sharedTo User   @relation("SharedToUser", fields: [userId], references: [id], onDelete: Cascade)
+  userId   Int
+
+  permission String   @default("READ") // EDIT/READ
+  noticeType String   @default("NEW") // NEW/UPDATE/NONE
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([docId, userId])
 }

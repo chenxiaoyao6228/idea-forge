@@ -7,8 +7,6 @@ import { useDocumentStore } from "../store";
 import DocumentBreadcrumb from "./doc-breadcrumb";
 
 export default function DocumentHeader() {
-  const selectedKeys = useDocumentStore.use.selectedKeys();
-
   return (
     <header
       className={cn(
@@ -25,7 +23,6 @@ export default function DocumentHeader() {
             Toggle Sidebar <kbd className="ml-2">⌘+b</kbd>
           </TooltipContent>
         </Tooltip>
-        {selectedKeys.length > 0 && <Separator orientation="vertical" className="mr-2 h-4" />}
         <DocumentBreadcrumb />
       </div>
       {/* right */}
