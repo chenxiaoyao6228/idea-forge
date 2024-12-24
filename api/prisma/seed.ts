@@ -47,6 +47,10 @@ async function seed() {
             }) as Doc;
             parentId = document.id;
 
+            if(i > 3) {
+              continue;
+            }
+
             // Create shares for first level documents
             if (level === 0 && folderIndex === 0) {
               // Share with other users (except document owner)
@@ -56,6 +60,7 @@ async function seed() {
                     data: {
                       docId: document.id,
                       userId: otherUser.id,
+                      authorId: user.id,
                       // Randomly assign permissions
                       permission: Math.random() > 0.5 ? 'EDIT' : 'READ',
                     },

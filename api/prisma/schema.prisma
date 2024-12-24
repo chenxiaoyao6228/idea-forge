@@ -32,6 +32,7 @@ model User {
   connections        Connection[]
   docs               Doc[]
   sharedDocs         DocShare[]   @relation("SharedToUser")
+  DocShare           DocShare[]
 }
 
 model Password {
@@ -87,6 +88,8 @@ model DocShare {
   id       String @id @default(cuid())
   doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
   docId    String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId Int
   sharedTo User   @relation("SharedToUser", fields: [userId], references: [id], onDelete: Cascade)
   userId   Int
 

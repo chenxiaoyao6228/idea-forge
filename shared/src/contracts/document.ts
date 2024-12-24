@@ -85,6 +85,36 @@ export const moveDocumentsSchema = z.object({
 
 export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;
 
+export const docShareUserSchema = z.object({
+  id: z.number(),
+  email: z.string(),
+  displayName: z.string().nullable(),
+  permission: z.enum(permission),
+});
+
+export type DocShareUser = z.infer<typeof docShareUserSchema>;
+
+export const shareDocumentSchema = z.object({
+  email: z.string().email(),
+  permission: z.enum(permission),
+  docId: z.string().cuid(),
+});
+
+export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
+
+export const updateSharePermissionSchema = z.object({
+  userId: z.number(),
+  permission: z.enum(permission),
+});
+
+export type UpdateSharePermissionDto = z.infer<typeof updateSharePermissionSchema>;
+
+export const removeShareSchema = z.object({
+  targetUserId: z.number(),
+});
+
+export type RemoveShareDto = z.infer<typeof removeShareSchema>;
+
 //  ============== response ==============
 export interface CreateDocumentResponse extends CommonDocumentResponse {}
 export interface UpdateDocumentResponse extends CommonDocumentResponse {}
@@ -106,3 +136,6 @@ export const detailSharedDocumentSchema = commonSharedDocumentSchema.extend({
 });
 
 export type DetailSharedDocumentResponse = z.infer<typeof detailSharedDocumentSchema>;
+
+export const docSharesSchema = z.array(docShareUserSchema);
+export type DocSharesResponse = z.infer<typeof docSharesSchema>;

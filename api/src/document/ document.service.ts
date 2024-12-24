@@ -9,6 +9,7 @@ import {
   CreateDocumentResponse,
   DetailDocumentResponse,
   DetailSharedDocumentResponse,
+  DocSharesResponse,
   Permission,
 } from "shared";
 import { MoveDocumentsDto } from "shared";
@@ -18,68 +19,6 @@ const POSITION_GAP = 1024; // Define position gap
 @Injectable()
 export class DocumentService {
   constructor(private prisma: PrismaService) {}
-
-  async getSharedDocuments(userId: number): Promise<CommonSharedDocumentResponse[]> {
-    const docs = await this.prisma.doc.findMany({
-      where: {
-        sharedWith: { some: { userId } },
-      },
-      include: {
-        sharedWith: {
-          where: { userId },
-          select: { permission: true },
-        },
-        owner: {
-          select: {
-            displayName: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
-
-    return docs.map((doc) => ({
-      ...doc,
-      permission: doc.sharedWith[0].permission as Permission,
-    }));
-  }
-
-  async findSharedOne(id: string, userId: number): Promise<DetailSharedDocumentResponse> {
-    const doc = await this.prisma.doc.findFirst({
-      where: {
-        id,
-        isArchived: false,
-        sharedWith: { some: { userId } },
-      },
-      include: {
-        sharedWith: {
-          where: { userId },
-          select: { permission: true },
-        },
-        owner: {
-          select: {
-            displayName: true,
-            email: true,
-          },
-        },
-      },
-    });
-
-    if (!doc) throw new NotFoundException("Shared document not found");
-
-    const { sharedWith, owner, ...rest } = doc;
-    return {
-      ...rest,
-      permission: sharedWith[0].permission as Permission,
-      owner: {
-        displayName: owner.displayName,
-        email: owner.email,
-      },
-    };
-  }
 
   async createDefault(ownerId: number) {
     return this.create(ownerId, {

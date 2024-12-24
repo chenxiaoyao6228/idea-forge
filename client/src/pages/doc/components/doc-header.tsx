@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { useDocumentStore } from "../store";
 import DocumentBreadcrumb from "./doc-breadcrumb";
+import { ShareDocButton } from "./share-doc-button";
 
 export default function DocumentHeader() {
   return (
@@ -27,6 +28,7 @@ export default function DocumentHeader() {
       </div>
       {/* right */}
       <div className="mr-2 sm:mr-4">
+        <ShareDocButton />
         <ThemeSwitcher />
       </div>
     </header>

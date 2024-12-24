@@ -8,18 +8,30 @@ import { useEffect } from "react";
 export function OthersDocs() {
   const sharedTreeData = useSharedDocumentStore.use.sharedTreeData();
   const expandedKeys = useSharedDocumentStore.use.expandedKeys();
+  const setSelectedKeys = useSharedDocumentStore.use.setSelectedKeys();
   const setExpandedKeys = useSharedDocumentStore.use.setExpandedKeys();
   const loadSharedDocuments = useSharedDocumentStore.use.loadSharedDocuments();
 
   const navigate = useNavigate();
 
   const handleSelect = (keys: string[], { node }: { node: TreeDataNode }) => {
-    navigate(`/doc/${node.key}`);
+    // author node is not a doc node
+    if (node.isLeaf) {
+      navigate(`/doc/${node.key}`);
+    }
   };
 
   useEffect(() => {
     loadSharedDocuments();
   }, []);
+
+  // Get document ID from URL
+  const docId = window.location.pathname.split("/").pop();
+  useEffect(() => {
+    if (docId) {
+      setSelectedKeys([docId]);
+    }
+  }, [docId]);
 
   if (!sharedTreeData.length) return null;
 

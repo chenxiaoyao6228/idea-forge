@@ -10,6 +10,7 @@ const LAST_DOC_ID_KEY = "lastDocId";
 
 interface DocTreeDataNode extends TreeDataNode {
   content?: string;
+  id: string;
 }
 
 interface DocumentTreeState {
@@ -272,6 +273,6 @@ export const useDocumentStore = createSelectors(store);
 export const useCurrentDocument = (): { currentDocument: DocTreeDataNode | null } => {
   const curId = useDocumentStore.getState().selectedKeys[0];
   if (!curId) return { currentDocument: null };
-  const currentDocument = treeUtils.findNode(useDocumentStore.getState().treeData, curId);
+  const currentDocument = treeUtils.findNode(useDocumentStore.getState().treeData, curId) as DocTreeDataNode;
   return { currentDocument };
 };

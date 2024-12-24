@@ -13,11 +13,11 @@ export function NavBasic() {
       url: "#",
       icon: <Icon name="Search" />,
     },
-    {
-      name: "Inbox",
-      url: "#",
-      icon: <Icon name="Inbox" />,
-    },
+    // {
+    //   name: "Inbox",
+    //   url: "#",
+    //   icon: <Icon name="Inbox" />,
+    // },
   ] as {
     name: string;
     url: string;
