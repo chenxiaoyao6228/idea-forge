@@ -49,7 +49,7 @@ export function Field({
     <div className={className}>
       <Label htmlFor={id} {...labelProps} />
       <Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
-      <div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
+      {errorId ? <ErrorList id={errorId} errors={errors} /> : null}
     </div>
   );
 }
@@ -82,13 +82,25 @@ export function OTPField({
       >
         <InputOTPGroup>
           <InputOTPSlot index={0} />
+        </InputOTPGroup>
+
+        <InputOTPGroup>
           <InputOTPSlot index={1} />
+        </InputOTPGroup>
+
+        <InputOTPGroup>
           <InputOTPSlot index={2} />
         </InputOTPGroup>
-        <InputOTPSeparator />
+
         <InputOTPGroup>
           <InputOTPSlot index={3} />
+        </InputOTPGroup>
+
+        <InputOTPGroup>
           <InputOTPSlot index={4} />
+        </InputOTPGroup>
+
+        <InputOTPGroup>
           <InputOTPSlot index={5} />
         </InputOTPGroup>
       </InputOTP>

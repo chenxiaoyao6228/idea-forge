@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils.ts";
 import { Check, Minus } from "lucide-react";
 
-interface CheckboxProps extends React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> {
+export interface CheckboxProps extends React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> {
   indeterminate?: boolean;
 }
 

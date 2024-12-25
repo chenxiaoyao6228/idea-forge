@@ -1,15 +1,18 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { Spacer } from "@/components/spacer";
-import { CheckboxField, ErrorList, Field } from "@/components/forms";
-import { StatusButton } from "@/components/ui/status-button";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import useUserStore, { UserInfo } from "@/stores/user";
 import request from "@/lib/request";
 import { LoginSchema, type LoginData } from "shared";
 import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";
+import Logo from "@/components/logo";
+import { ErrorList, Field } from "@/components/forms";
+import { Label } from "@/components/ui/label";
+import { StatusButton } from "@/components/status-button";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -38,25 +41,34 @@ export default function LoginPage() {
       const user = await request.post<LoginData, UserInfo>("/api/auth/login", data);
       setUserInfo(user);
       navigate(redirectTo || "/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+    } catch (err: any) {
+      setError(err.message || "Login failed");
     } finally {
       setIsPending(false);
     }
   };
 
   return (
-    <div className="flex min-h-full flex-col justify-center pb-32 pt-20">
+    <div className="flex min-h-full flex-col justify-center py-8">
       <div className="mx-auto w-full max-w-md">
-        <div className="flex flex-col gap-3 text-center">
-          <h1 className="text-h1">Welcome back!</h1>
-        </div>
-        <Spacer size="xs" />
-        <div>
-          <div className="mx-auto w-full max-w-md px-8">
-            <form onSubmit={handleSubmit(onSubmit)}>
+        <Card>
+          <CardHeader>
+            <span className="flex items-center gap-2 mb-4 self-center text-2xl font-bold">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground ">
+                <Logo />
+              </div>
+              Idea Forge
+            </span>
+            <CardTitle className="text-xl">Login</CardTitle>
+            <CardDescription>Enter your email below to login to your account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Field
-                labelProps={{ children: "Email" }}
+                labelProps={{
+                  children: "Email",
+                  className: "font-medium",
+                }}
                 inputProps={{
                   ...register("email"),
                   type: "email",
@@ -67,58 +79,48 @@ export default function LoginPage() {
                 errors={errors.email?.message ? [errors.email.message] : []}
               />
 
-              <Field
-                labelProps={{ children: "Password" }}
-                inputProps={{
-                  ...register("password"),
-                  type: "password",
-                  autoComplete: "current-password",
-                }}
-                errors={errors.password?.message ? [errors.password.message] : []}
-              />
-
-              <div className="flex justify-between">
-                {/* <CheckboxField
-                  labelProps={{
-                    htmlFor: "remember",
-                    children: "Remember me",
-                  }}
-                  buttonProps={{
-                    name: "remember",
-                    onChange: (checked: boolean) => {
-                      register("remember").onChange({ target: { checked } });
-                    },
-                  }}
-                  errors={errors.remember?.message ? [errors.remember.message] : []}
-                /> */}
-                <div>
-                  <Link to="/forgot-password" className="text-body-xs font-semibold">
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="font-medium">
+                    Password
+                  </Label>
+                  <Link to="/forgot-password" className="text-sm underline-offset-4 hover:underline">
                     Forgot password?
                   </Link>
                 </div>
+                <Field
+                  labelProps={{
+                    children: "Password",
+                    className: "sr-only", // 隐藏标签因为我们已经在上面显示了
+                  }}
+                  inputProps={{
+                    ...register("password"),
+                    type: "password",
+                    autoComplete: "current-password",
+                  }}
+                  errors={errors.password?.message ? [errors.password.message] : []}
+                />
               </div>
 
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
-              <div className="flex items-center justify-between gap-6 pt-3">
-                <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
-                  Log in
-                </StatusButton>
+              <StatusButton type="submit" className="w-full" disabled={isPending || isSubmitting} status={isPending ? "pending" : "idle"}>
+                Log in
+              </StatusButton>
+
+              {providerNames.map((providerName) => (
+                <ProviderConnectionForm key={providerName} type="Login" providerName={providerName} redirectTo={redirectTo} />
+              ))}
+
+              <div className="text-center text-sm">
+                New here?{" "}
+                <Link to={redirectTo ? `/register?${encodeURIComponent(redirectTo)}` : "/register"} className="underline underline-offset-4">
+                  Create an account
+                </Link>
               </div>
             </form>
-            <ul className="mt-5 flex flex-col gap-5 border-b-2 border-t-2 border-border py-3">
-              {providerNames.map((providerName) => (
-                <li key={providerName}>
-                  <ProviderConnectionForm type="Login" providerName={providerName} redirectTo={redirectTo} />
-                </li>
-              ))}
-            </ul>
-            <div className="flex items-center justify-center gap-2 pt-6">
-              <span className="text-muted-foreground">New here?</span>
-              <Link to={redirectTo ? `/register?${encodeURIComponent(redirectTo)}` : "/register"}>Create an account</Link>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

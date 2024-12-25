@@ -7,6 +7,8 @@ import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
 import request from "@/lib/request";
 import { CodeValidateSchema, CodeValidateData } from "shared";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import Logo from "@/components/logo";
 
 // Define query parameter names
 export const emailQueryParam = "email";
@@ -43,8 +45,8 @@ export default function VerifyRoute() {
   // Define headings based on verification type
   const checkEmail = (
     <>
-      <h1 className="text-h1">Check your email</h1>
-      <p className="mt-3 text-body-md text-muted-foreground">We've sent you a code to verify your email address.</p>
+      <CardTitle className="text-xl">Check your email</CardTitle>
+      <CardDescription>We've sent you a code to verify your email address.</CardDescription>
     </>
   );
 
@@ -54,8 +56,8 @@ export default function VerifyRoute() {
     "change-email": checkEmail,
     "2fa": (
       <>
-        <h1 className="text-h1">Check your 2FA app</h1>
-        <p className="mt-3 text-body-md text-muted-foreground">Please enter your 2FA code to verify your identity.</p>
+        <CardTitle className="text-xl">Check your 2FA app</CardTitle>
+        <CardDescription>Please enter your 2FA code to verify your identity.</CardDescription>
       </>
     ),
   };
@@ -78,47 +80,55 @@ export default function VerifyRoute() {
         default:
           break;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Verification failed");
+    } catch (err: any) {
+      setError(err.message || "Verification failed");
     } finally {
       setIsPending(false);
     }
   };
 
   return (
-    <main className="container flex flex-col justify-center pb-32 pt-20">
-      <div className="text-center">{type ? headings[type] : "Invalid Verification Type"}</div>
+    <div className="flex min-h-full flex-col justify-center py-8">
+      <div className="mx-auto w-full max-w-md">
+        <Card>
+          <CardHeader>
+            <span className="flex items-center gap-2 mb-4 self-center text-2xl font-bold">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                <Logo />
+              </div>
+              Idea Forge
+            </span>
+            {type ? headings[type] : "Invalid Verification Type"}
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+              <div className="flex items-center justify-center">
+                <OTPField
+                  labelProps={{
+                    htmlFor: "code",
+                    children: "",
+                    className: "font-medium",
+                  }}
+                  inputProps={{
+                    ...register(codeQueryParam),
+                    autoComplete: "one-time-code",
+                    autoFocus: true,
+                  }}
+                  errors={errors.code?.message ? [errors.code.message] : []}
+                />
+              </div>
+              <input type="hidden" {...register(typeQueryParam)} />
+              <input type="hidden" {...register(emailQueryParam)} />
 
-      <Spacer size="xs" />
+              <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
-      <div className="mx-auto flex w-72 max-w-full flex-col justify-center gap-1">
-        <div>
-          <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
-        </div>
-        <div className="flex w-full gap-2">
-          <form onSubmit={handleSubmit(onSubmit)} className="flex-1">
-            <div className="flex items-center justify-center">
-              <OTPField
-                labelProps={{
-                  htmlFor: "code",
-                  children: "Code",
-                }}
-                inputProps={{
-                  ...register(codeQueryParam),
-                  autoComplete: "one-time-code",
-                  autoFocus: true,
-                }}
-                errors={errors.code?.message ? [errors.code.message] : []}
-              />
-            </div>
-            <input type="hidden" {...register(typeQueryParam)} />
-            <input type="hidden" {...register(emailQueryParam)} />
-            <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
-              Submit
-            </StatusButton>
-          </form>
-        </div>
+              <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
+                Submit
+              </StatusButton>
+            </form>
+          </CardContent>
+        </Card>
       </div>
-    </main>
+    </div>
   );
 }

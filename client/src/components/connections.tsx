@@ -35,7 +35,7 @@ export function ProviderConnectionForm({
   const label = providerLabels[providerName];
   const [isPending, setIsPending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsPending(true);
 
@@ -51,13 +51,13 @@ export function ProviderConnectionForm({
   };
 
   return (
-    <form className="flex items-center justify-center gap-2" onSubmit={handleSubmit}>
-      <StatusButton type="submit" className="w-full" status={isPending ? "pending" : "idle"}>
+    <div className="flex items-center justify-center gap-2" onClick={handleSubmit}>
+      <StatusButton variant="outline" type="submit" className="w-full" status={isPending ? "pending" : "idle"}>
         <div className="inline-flex items-center gap-1.5">
           {providerIcons[providerName]}
           <span>{isPending ? `${type}ing with ${label}` : `${type} with ${label}`}</span>
         </div>
       </StatusButton>
-    </form>
+    </div>
   );
 }

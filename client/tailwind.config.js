@@ -1,11 +1,18 @@
-/** @type {import('tailwindcss').Config} */
-export default {
-  darkMode: ["class"],
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+const config = {
+  darkMode: ['class'],
+  content: ['./pages/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './app/**/*.{ts,tsx}', './src/**/*.{ts,tsx}'],
+  prefix: '',
   theme: {
+    container: {
+      center: true,
+      padding: '2rem',
+      screens: {
+        '2xl': '1400px',
+      },
+    },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
+        border: 'hsl(var(--border))',
         input: {
           DEFAULT: "hsl(var(--input))",
           invalid: "hsl(var(--input-invalid))",
@@ -14,40 +21,42 @@ export default {
           DEFAULT: "hsl(var(--ring))",
           invalid: "hsl(var(--foreground-destructive))",
         },
-        background: "hsl(var(--background))",
-        foreground: {
+        background: 'hsl(var(--background))',
+         foreground: {
           DEFAULT: "hsl(var(--foreground))",
           destructive: "hsl(var(--foreground-destructive))",
         },
+        active: 'hsl(var(--active))',
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+        
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
-        sidebar: {
+         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
           primary: "hsl(var(--sidebar-primary))",
@@ -58,61 +67,88 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
-      borderColor: {
+       borderColor: {
         DEFAULT: "hsl(var(--border))",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-      fontSize: {
-        // 1rem = 16px
-        /** 80px size / 84px high / bold */
-        mega: ["5rem", { lineHeight: "5.25rem", fontWeight: "700" }],
-        /** 56px size / 62px high / bold */
-        h1: ["3.5rem", { lineHeight: "3.875rem", fontWeight: "700" }],
-        /** 40px size / 48px high / bold */
-        h2: ["2.5rem", { lineHeight: "3rem", fontWeight: "700" }],
-        /** 32px size / 36px high / bold */
-        h3: ["2rem", { lineHeight: "2.25rem", fontWeight: "700" }],
-        /** 28px size / 36px high / bold */
-        h4: ["1.75rem", { lineHeight: "2.25rem", fontWeight: "700" }],
-        /** 24px size / 32px high / bold */
-        h5: ["1.5rem", { lineHeight: "2rem", fontWeight: "700" }],
-        /** 16px size / 20px high / bold */
-        h6: ["1rem", { lineHeight: "1.25rem", fontWeight: "700" }],
-
-        /** 32px size / 36px high / normal */
-        "body-2xl": ["2rem", { lineHeight: "2.25rem" }],
-        /** 28px size / 36px high / normal */
-        "body-xl": ["1.75rem", { lineHeight: "2.25rem" }],
-        /** 24px size / 32px high / normal */
-        "body-lg": ["1.5rem", { lineHeight: "2rem" }],
-        /** 20px size / 28px high / normal */
-        "body-md": ["1.25rem", { lineHeight: "1.75rem" }],
-        /** 16px size / 20px high / normal */
-        "body-sm": ["1rem", { lineHeight: "1.25rem" }],
-        /** 14px size / 18px high / normal */
-        "body-xs": ["0.875rem", { lineHeight: "1.125rem" }],
-        /** 12px size / 16px high / normal */
-        "body-2xs": ["0.75rem", { lineHeight: "1rem" }],
-
-        /** 18px size / 24px high / semibold */
-        caption: ["1.125rem", { lineHeight: "1.5rem", fontWeight: "600" }],
-        /** 12px size / 16px high / bold */
-        button: ["0.75rem", { lineHeight: "1rem", fontWeight: "700" }],
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
       keyframes: {
-        "caret-blink": {
+         "caret-blink": {
           "0%,70%,100%": { opacity: "1" },
           "20%,50%": { opacity: "0" },
+        },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
       },
       animation: {
         "caret-blink": "caret-blink 1.25s ease-out infinite",
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            'h2, h3, h4, h5, ul, ol': {
+              'margin-top': '1em',
+              'margin-bottom': '0.6em',
+            },
+            'p, pre, blockquote': {
+              'margin-top': '0.6em',
+              'margin-bottom': '0.6em',
+            },
+            li: {
+              'margin-top': '0px',
+              'margin-bottom': '0px',
+            },
+            'li > p, li > ul, li > ol ': {
+              'margin-top': '0px',
+              'margin-bottom': '0px',
+            },
+            hr: {
+              'margin-top': '1em',
+              'margin-bottom': '1em',
+            },
+            img: {
+              'margin-top': '0.6em',
+              'margin-bottom': '0.6em',
+            },
+            table: {
+              'margin-top': '1em',
+              'margin-bottom': '1em',
+            },
+            'ul>li::marker': {
+              color: 'var(--tw-prose-body);',
+            },
+            'code::before': {
+              content: 'none',
+            },
+            'code::after': {
+              content: 'none',
+            },
+            code: {
+              'background-color': 'var(--tw-prose-pre-bg)',
+              color: 'var(--tw-prose-pre-code)',
+              padding: '0.125em 0.25em',
+              margin: '0 0.25em',
+              'border-radius': '0.25em',
+              'font-weight': 'normal',
+            },
+            '--tw-prose-invert-pre-bg': 'rgb(255 255 255 / 0.1)',
+          },
+        },
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require('tailwindcss-animate'), require('@tailwindcss/typography')],
 };
+
+export default config;

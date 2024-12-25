@@ -118,25 +118,3 @@
   }
 }
 
-/* utilities */
-
-.custom-scrollbar {
-  &::-webkit-scrollbar {
-    width: 8px; /* For vertical scrollbar */
-    height: 8px; /* For horizontal scrollbar */
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 6px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 6px;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: #ccc;
-  }
-}

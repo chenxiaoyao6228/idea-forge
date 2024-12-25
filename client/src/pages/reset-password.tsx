@@ -7,6 +7,8 @@ import { useState } from "react";
 import request from "@/lib/request";
 import { PasswordSchema } from "shared";
 import { z } from "zod";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Logo from "@/components/logo";
 
 const PasswordAndConfirmPasswordSchema = z
   .object({ password: PasswordSchema, confirmPassword: PasswordSchema })
@@ -52,8 +54,8 @@ export default function ResetPasswordPage() {
         password: data.password,
       });
       navigate("/login");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Password reset failed");
+    } catch (err: any) {
+      setError(err.message || "Password reset failed");
     } finally {
       setIsPending(false);
     }
@@ -65,45 +67,57 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="container flex flex-col justify-center pb-32 pt-20">
-      <div className="text-center">
-        <h1 className="text-h1">Password Reset</h1>
-        <p className="mt-3 text-body-md text-muted-foreground">Hi, {email}. No worries. It happens all the time.</p>
-      </div>
-      <div className="mx-auto mt-16 min-w-full max-w-sm sm:min-w-[368px]">
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Field
-            labelProps={{
-              htmlFor: "password",
-              children: "New Password",
-            }}
-            inputProps={{
-              ...register("password"),
-              type: "password",
-              autoComplete: "new-password",
-              autoFocus: true,
-            }}
-            errors={errors.password?.message ? [errors.password.message] : []}
-          />
-          <Field
-            labelProps={{
-              htmlFor: "confirmPassword",
-              children: "Confirm Password",
-            }}
-            inputProps={{
-              ...register("confirmPassword"),
-              type: "password",
-              autoComplete: "new-password",
-            }}
-            errors={errors.confirmPassword?.message ? [errors.confirmPassword.message] : []}
-          />
+    <div className="flex min-h-full flex-col justify-center py-8">
+      <div className="mx-auto w-full max-w-md">
+        <Card>
+          <CardHeader>
+            <span className="flex items-center gap-2 mb-4 self-center text-2xl font-bold">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                <Logo />
+              </div>
+              Idea Forge
+            </span>
+            <CardTitle className="text-xl">Password Reset</CardTitle>
+            <CardDescription>Hi, {email}. No worries. It happens all the time.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+              <Field
+                labelProps={{
+                  htmlFor: "password",
+                  children: "New Password",
+                  className: "font-medium",
+                }}
+                inputProps={{
+                  ...register("password"),
+                  type: "password",
+                  autoComplete: "new-password",
+                  autoFocus: true,
+                }}
+                errors={errors.password?.message ? [errors.password.message] : []}
+              />
+              <Field
+                labelProps={{
+                  htmlFor: "confirmPassword",
+                  children: "Confirm Password",
+                  className: "font-medium",
+                }}
+                inputProps={{
+                  ...register("confirmPassword"),
+                  type: "password",
+                  autoComplete: "new-password",
+                }}
+                errors={errors.confirmPassword?.message ? [errors.confirmPassword.message] : []}
+              />
 
-          <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
+              <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
-          <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
-            Reset password
-          </StatusButton>
-        </form>
+              <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
+                Reset password
+              </StatusButton>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
