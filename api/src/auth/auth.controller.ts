@@ -12,7 +12,7 @@ import { UserService } from "@/user/user.service";
 import { ApiException } from "@/_shared/model/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { VerificationService } from "./verification.service";
-import { setAuthCookies } from "@/_shared/utils/cookie";
+import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
 import { ConfigService } from "@nestjs/config";
 
 @Controller("/api/auth")
@@ -77,8 +77,10 @@ export class AuthController {
   }
 
   @Post("/logout")
-  async logout(@Req() req: any) {
+  async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     await this.authService.logoutUser(req.user.id);
+
+    clearAuthCookies(res);
 
     return { message: "Logged out successfully" };
   }

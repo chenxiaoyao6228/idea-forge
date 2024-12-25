@@ -166,6 +166,7 @@ export class FallbackMiddleware implements NestMiddleware {
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>Idea Forge</title>
+          <meta name="description" content="Powerful document tool that combines the functionality of Notion with the intelligence of AI" />
           ${_html.preload ? _html.preload : ""}
           ${_html.css ? _html.css : ""}
         </head>

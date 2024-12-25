@@ -1,5 +1,4 @@
-import React from "react";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarHeader, SidebarRail } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarRail } from "@/components/ui/sidebar";
 import Logo from "@/components/logo";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils";
@@ -8,6 +7,7 @@ import { NavBasic } from "./components/nav-basic";
 import { MyDocs } from "./components/my-docs";
 import DocDetail from "./components/doc-detail";
 import { OthersDocs } from "./components/others-docs";
+import UserSettings from "./modules/setting";
 
 export default function Doc() {
   return (
@@ -24,7 +24,9 @@ export default function Doc() {
           <OthersDocs />
           <MyDocs />
         </SidebarContent>
-        <SidebarFooter>{/* TODO: settings */}</SidebarFooter>
+        <SidebarFooter>
+          <UserSettings />
+        </SidebarFooter>
         <SidebarRail />
       </Sidebar>
       {/* content */}
