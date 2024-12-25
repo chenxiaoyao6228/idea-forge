@@ -1,13 +1,12 @@
 import { Input } from "@/components/ui/input";
+import { useCurrentDocument } from "../../store";
+import { useDocumentStore } from "../../store";
 import { Textarea } from "@/components/ui/textarea";
-import { useCurrentDocument, useDocumentStore } from "../store";
 
 export default function DocDetail() {
   const { currentDocument } = useCurrentDocument();
   const updateCurrentDocument = useDocumentStore.use.updateCurrentDocument();
   const treeData = useDocumentStore.use.treeData();
-
-  // TODO: seperate this into two components shareDocDetail and DocDetail
 
   return (
     <div className="flex flex-col gap-4 p-6">

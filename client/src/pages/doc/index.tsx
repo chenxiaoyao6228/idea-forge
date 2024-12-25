@@ -1,13 +1,24 @@
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarRail } from "@/components/ui/sidebar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarMenuItem,
+  SidebarMenu,
+  SidebarRail,
+  SidebarMenuButton,
+} from "@/components/ui/sidebar";
 import Logo from "@/components/logo";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils";
 import DocumentHeader from "./components/doc-header";
-import { NavBasic } from "./components/nav-basic";
 import { MyDocs } from "./components/my-docs";
-import DocDetail from "./components/doc-detail";
 import { OthersDocs } from "./components/others-docs";
 import UserSettings from "./modules/setting";
+import DocDetail from "./modules/detail";
+import { Link } from "react-router-dom";
+import { Icon } from "@/components/ui/icon";
 
 export default function Doc() {
   return (
@@ -18,7 +29,20 @@ export default function Doc() {
           <SidebarGroup>
             <Logo />
           </SidebarGroup>
-          <NavBasic />
+          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+            <SidebarMenu>
+              {/* navDocHome */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/doc/0">
+                    <Icon name="Home" />
+                    <span>Home</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {/* search */}
+            </SidebarMenu>
+          </SidebarGroup>
         </SidebarHeader>
         <SidebarContent className="custom-scrollbar">
           <OthersDocs />

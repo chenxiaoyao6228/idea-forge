@@ -8,22 +8,21 @@ import { Permission } from "shared";
 import { useDocumentStore } from "../store";
 import { Select, SelectValue, SelectItem, SelectTrigger, SelectContent } from "@/components/ui/select";
 import { treeUtils } from "../util";
+import { useParams } from "react-router-dom";
 
 export function ShareDocButton() {
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<Permission>("EDIT");
   const { currentDocShares, loadDocShares, shareDocument, removeShare, updateSharePermission } = useSharedDocumentStore();
-  const selectedKeys = useDocumentStore.use.selectedKeys();
   const docTree = useDocumentStore.use.treeData();
 
-  const curDocId = selectedKeys[0];
-  const node = treeUtils.findNode(docTree, curDocId);
+  const { docId: curDocId } = useParams();
+  const isMyDoc = curDocId ? treeUtils.findNode(docTree, curDocId) : null;
 
   useEffect(() => {
-    if (curDocId) {
-      loadDocShares(curDocId);
-    }
-  }, [node]);
+    if (!isMyDoc || !curDocId) return;
+    loadDocShares(curDocId);
+  }, [curDocId, isMyDoc]);
 
   const handleShare = async () => {
     if (!curDocId) return;
@@ -31,7 +30,7 @@ export function ShareDocButton() {
     setEmail("");
   };
 
-  if (!curDocId || !node) return null;
+  if (!curDocId || !isMyDoc) return null;
 
   return (
     <Popover>

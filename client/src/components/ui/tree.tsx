@@ -543,10 +543,10 @@ const TreeNode = ({
               }}
               onClick={(e) => e.stopPropagation()}
               onBlur={handleInputBlur}
-              className="flex-1 h-6 px-1"
+              className="flex-1 h-6 px-1 text-sm"
             />
           ) : (
-            <span className="flex-1 truncate user-select-none">{node.title}</span>
+            <span className="flex-1 truncate user-select-none text-sm">{node.title}</span>
           )}
         </div>
 
