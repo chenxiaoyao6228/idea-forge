@@ -71,7 +71,7 @@ api/node_modules
 # app build
 api/view
 # upload
-api/upload
+api/uploads
 
 ## env
 .env

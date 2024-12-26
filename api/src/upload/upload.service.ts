@@ -3,20 +3,51 @@ import { ConfigService } from "@nestjs/config";
 import * as COS from "cos-nodejs-sdk-v5";
 import { v4 as uuidv4 } from "uuid";
 import * as STS from "qcloud-cos-sts";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 @Injectable()
 export class CosService {
   private cos: COS;
+  private readonly isLocalStorage: boolean;
 
   constructor(private configService: ConfigService) {
-    this.cos = new COS({
-      SecretId: this.configService.get("cos.secretId"),
-      SecretKey: this.configService.get("cos.secretKey"),
-    });
+    const secretId = this.configService.get("cos.secretId");
+
+    // for fast dev only
+    this.isLocalStorage = !secretId || secretId === "your_secret_id";
+
+    if (!this.isLocalStorage) {
+      this.cos = new COS({
+        SecretId: secretId,
+        SecretKey: this.configService.get("cos.secretKey"),
+      });
+    }
   }
 
   async generateUploadCredentials(userId: number, fileType: string) {
-    const key = `uploads/${userId}/imgs/${uuidv4()}.${fileType}`;
+    const fileName = `${uuidv4()}.${fileType}`;
+    const key = `uploads/${userId}/imgs/${fileName}`;
+
+    if (this.isLocalStorage) {
+      // Ensure upload directory exists
+      const uploadDir = path.join(process.cwd(), "uploads", userId.toString(), "imgs");
+      await fs.promises.mkdir(uploadDir, { recursive: true });
+
+      const fileUrl = `http://localhost:${process.env.NEST_API_PORT}/uploads/${userId}/imgs/${fileName}`;
+
+      // Return a format compatible with COS credentials
+      return {
+        uploadUrl: `http://localhost:${process.env.NEST_API_PORT}/api/upload/local/${fileName}`,
+        fileUrl,
+        key,
+        // Add dummy values to match COS response structure
+        authorization: "local-storage",
+        securityToken: "local-storage",
+        xCosSecurityToken: "local-storage",
+      };
+    }
+
     const secretId = this.configService.get("cos.secretId");
     const secretKey = this.configService.get("cos.secretKey");
     const bucket = this.configService.get("cos.bucket");
@@ -101,33 +132,13 @@ export class CosService {
     }
   }
 
-  async getSignedUrl(key: string) {
-    return new Promise((resolve, reject) => {
-      const bucket = this.configService.get("cos.bucket");
-      const region = this.configService.get("cos.region");
-      const bucketUrl = this.configService.get("cos.bucketUrl");
+  async saveLocalFile(file: Buffer, fileName: string, userId: number) {
+    const uploadDir = path.join(process.cwd(), "uploads", userId.toString(), "imgs");
+    await fs.promises.mkdir(uploadDir, { recursive: true });
 
-      if (!bucket || !region || !bucketUrl) {
-        reject(new Error("COS bucket or region not found"));
-        return;
-      }
+    const name = path.basename(fileName);
 
-      this.cos.getObjectUrl(
-        {
-          Bucket: bucket,
-          Region: region,
-          Key: key,
-          Sign: true,
-          Expires: 3600, // Signature expiration time in seconds
-        },
-        (err, data) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(data.Url);
-        },
-      );
-    });
+    const filePath = path.join(uploadDir, name);
+    return await fs.promises.writeFile(filePath, file);
   }
 }
