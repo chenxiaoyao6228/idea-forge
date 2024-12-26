@@ -39,6 +39,13 @@ export const envSchema = z.object({
 
   /* OPTIONAL CONFIG */
   RESEND_API_KEY: z.string().optional(),
+
+  /* COS CONFIG */
+  COS_SECRET_ID: z.string().min(1),
+  COS_SECRET_KEY: z.string().min(1),
+  COS_BUCKET: z.string().min(1),
+  COS_REGION: z.string().min(1),
+  COS_BUCKET_URL: z.string().url(),
 });
 
 const clientEnvSchema = z.object({

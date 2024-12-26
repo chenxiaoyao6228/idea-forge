@@ -10,8 +10,15 @@ declare const module: any;
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: true,
-    logger: ["error", "warn", "log", "debug", "verbose"], // Configure log levels
+    cors: {
+      origin: true,
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      exposedHeaders: ["Content-Range", "X-Content-Range"],
+      maxAge: 3600,
+    },
+    logger: ["error", "warn", "log", "debug", "verbose"],
   });
 
   const configService = app.get(ConfigService);
