@@ -93,6 +93,7 @@ export function MyDocs() {
           onDrop={handleDrop}
           expandedKeys={expandedKeys}
           selectedKeys={selectedKeys}
+          showIcon={true}
           onExpand={(keys) => setExpandedKeys(keys)}
           onRename={handleRenameComplete}
           fieldNames={{

@@ -8,6 +8,7 @@ const commonDocumentSchema = z.object({
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   parentId: z.string().nullable(),
+  icon: z.string().nullable(),
   isLeaf: z.boolean(),
   position: z.number(),
 });
@@ -47,6 +48,7 @@ export type CreateDocumentDto = z.infer<typeof createDocumentSchema>;
 export const updateDocumentSchema = z.object({
   title: z.string().optional(),
   content: z.string().optional(),
+  icon: z.string().optional(),
   isStarred: z.boolean().optional(),
   parentId: z.string().nullable().optional(),
 });
@@ -125,14 +127,12 @@ export const detailDocumentSchema = commonDocumentSchema
   })
   .extend({
     content: z.string(),
-    // TODO: more detail data
   });
 
 export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;
 
 export const detailSharedDocumentSchema = commonSharedDocumentSchema.extend({
   content: z.string(),
-  // TODO: more detail data
 });
 
 export type DetailSharedDocumentResponse = z.infer<typeof detailSharedDocumentSchema>;

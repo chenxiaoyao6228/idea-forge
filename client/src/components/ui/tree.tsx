@@ -10,6 +10,7 @@ import { Checkbox } from "./checkbox";
 import { cn } from "@/lib/utils";
 import { useSpinDelay } from "spin-delay";
 import { Input } from "@/components/ui/input";
+import { Emoji } from "emoji-picker-react";
 
 type IconFn = (props: { selected: boolean; node: TreeDataNode; expanded: boolean }) => React.ReactNode;
 
@@ -22,7 +23,7 @@ export interface TreeDataNode {
   disableCheckbox?: boolean;
   isLeaf?: boolean;
   loading?: boolean;
-  icon?: IconFn | React.ReactNode | null;
+  icon?: IconFn | React.ReactNode | string | null;
   onRename?: (key: string, newTitle: string) => void;
 }
 
@@ -499,18 +500,18 @@ const TreeNode = ({
         {checkable && !node.disableCheckbox && <Checkbox checked={checked} indeterminate={indeterminate} onCheckedChange={handleCheck} className="mr-2" />}
 
         {node.isLeaf ? (
-          <Dot className="h-4 w-4 mr-1" />
+          <Dot className="h-4 w-4 " />
         ) : (
           <CollapsibleTrigger asChild>
             <div className="flex items-center min-w-0">
               {(hasChildren || canLoadData) && (
-                <div className={cn("flex items-center cursor-pointer rounded  h-4 w-4 mr-1", "hover:bg-accent/50 dark:hover:bg-accent/25")}>
+                <div className={cn("flex items-center cursor-pointer rounded  h-4 w-4 ", "hover:bg-accent/50 dark:hover:bg-accent/25")}>
                   {showLoading ? (
-                    <Loader2 className="h-4 w-4 shrink-0 mr-1 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-4 w-4 shrink-0  animate-spin text-muted-foreground" />
                   ) : switcherIcon ? (
-                    <div className={cn("shrink-0 mr-1 transition-transform duration-200", isExpanded && "rotate-90")}>{switcherIcon}</div>
+                    <div className={cn("shrink-0  transition-transform duration-200", isExpanded && "rotate-90")}>{switcherIcon}</div>
                   ) : (
-                    <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200 mr-1", isExpanded && "rotate-90")} />
+                    <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform duration-200 ", isExpanded && "rotate-90")} />
                   )}
                 </div>
               )}
@@ -520,11 +521,14 @@ const TreeNode = ({
 
         <div className="flex items-center flex-1 min-w-0 cursor-pointer" onClick={(e) => !node.disabled && onSelect(node, e)}>
           {showIcon && (
-            <div className="mr-2">
+            <div className="ml-[2px]">
               {(() => {
                 const iconProp = node.icon || treeIcon;
                 if (typeof iconProp === "function") {
                   return iconProp({ selected: isSelected, node, expanded: isExpanded });
+                }
+                if (typeof iconProp === "string") {
+                  return <Emoji unified={iconProp} size={20} />;
                 }
                 return iconProp;
               })()}
@@ -543,10 +547,10 @@ const TreeNode = ({
               }}
               onClick={(e) => e.stopPropagation()}
               onBlur={handleInputBlur}
-              className="flex-1 h-6 px-1 text-sm"
+              className="ml-[2px] flex-1 h-6 px-1 text-sm"
             />
           ) : (
-            <span className="flex-1 truncate user-select-none text-sm">{node.title}</span>
+            <span className="ml-[2px] flex-1 truncate user-select-none text-sm">{node.title}</span>
           )}
         </div>
 

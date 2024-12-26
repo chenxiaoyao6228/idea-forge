@@ -8,7 +8,7 @@ import { treeUtils } from "./util";
 
 const LAST_DOC_ID_KEY = "lastDocId";
 
-interface DocTreeDataNode extends TreeDataNode {
+export interface DocTreeDataNode extends TreeDataNode {
   content?: string;
   id: string;
 }

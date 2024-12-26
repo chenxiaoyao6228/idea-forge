@@ -6,6 +6,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Icon } from "@/components/ui/icon";
 import { treeUtils } from "../util";
 import { Separator } from "@/components/ui/separator";
+import { Emoji } from "emoji-picker-react";
+
+interface BreadcrumbItemData {
+  id: string;
+  title: string;
+  icon: string;
+}
 
 export default function DocumentBreadcrumb() {
   const treeData = useDocumentStore.use.treeData();
@@ -15,13 +22,14 @@ export default function DocumentBreadcrumb() {
 
   const getBreadcrumbItems = useCallback(() => {
     const currentNodeId = selectedKeys[0];
-    const items: Array<{ id: string; title: string }> = [];
+    const items: Array<BreadcrumbItemData> = [];
     let currentNode = treeUtils.findNode(treeData, currentNodeId);
 
     while (currentNode) {
       items.unshift({
         id: currentNode.key as string,
         title: currentNode.title as string,
+        icon: currentNode.icon as string,
       });
 
       const parentId = treeUtils.findParentKey(treeData, currentNode.key);
@@ -41,6 +49,15 @@ export default function DocumentBreadcrumb() {
 
   if (!breadcrumbItems.length) return null;
 
+  const renderBreadcrumbItem = (item: BreadcrumbItemData) => {
+    return (
+      <div className="flex items-center gap-1">
+        <Emoji unified={item.icon} size={20} />
+        {item.title}
+      </div>
+    );
+  };
+
   if (breadcrumbItems.length > 3) {
     return (
       <>
@@ -48,7 +65,7 @@ export default function DocumentBreadcrumb() {
         {/* First item */}
         <BreadcrumbItem>
           <BreadcrumbLink onClick={() => handleNavigate(breadcrumbItems[0].id)} className="cursor-pointer">
-            {breadcrumbItems[0].title}
+            {renderBreadcrumbItem(breadcrumbItems[0])}
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
@@ -62,7 +79,7 @@ export default function DocumentBreadcrumb() {
             <DropdownMenuContent align="start">
               {breadcrumbItems.slice(1, -1).map((item) => (
                 <DropdownMenuItem key={item.id} onClick={() => handleNavigate(item.id)}>
-                  {item.title}
+                  {renderBreadcrumbItem(item)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -72,7 +89,7 @@ export default function DocumentBreadcrumb() {
 
         {/* Last item */}
         <BreadcrumbItem>
-          <BreadcrumbPage>{breadcrumbItems[breadcrumbItems.length - 1].title}</BreadcrumbPage>
+          <BreadcrumbPage>{renderBreadcrumbItem(breadcrumbItems[breadcrumbItems.length - 1])}</BreadcrumbPage>
         </BreadcrumbItem>
       </>
     );
@@ -88,10 +105,10 @@ export default function DocumentBreadcrumb() {
             <Fragment key={item.id}>
               <BreadcrumbItem>
                 {index === array.length - 1 ? (
-                  <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                  <BreadcrumbPage>{renderBreadcrumbItem(item)}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink onClick={() => handleNavigate(item.id)} className="cursor-pointer">
-                    {item.title}
+                    {renderBreadcrumbItem(item)}
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>

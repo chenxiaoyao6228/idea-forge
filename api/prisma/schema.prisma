@@ -70,6 +70,7 @@ model Doc {
   parent        Doc?        @relation("ChildrenDocs", fields: [parentId], references: [id])
   parentId      String?
   children      Doc[]       @relation("ChildrenDocs")
+  icon          String?
   coverImageId  String?     @unique
   coverImage    CoverImage?
   position      Int         @default(0)

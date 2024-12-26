@@ -43,6 +43,7 @@ export class DocumentService {
     return {
       ...doc,
       isLeaf: true,
+      icon: null,
     };
   }
 
@@ -73,6 +74,7 @@ export class DocumentService {
         isArchived: true,
         content: true,
         coverImage: true,
+        icon: true,
       },
     });
 
@@ -118,7 +120,10 @@ export class DocumentService {
 
     return this.prisma.doc.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        parentId: dto.parentId === undefined ? null : dto.parentId,
+      },
     });
   }
 
@@ -208,6 +213,7 @@ export class DocumentService {
         id: true,
         title: true,
         isStarred: true,
+        icon: true,
         parentId: true,
         position: true,
         createdAt: true,
@@ -228,6 +234,7 @@ export class DocumentService {
       isArchived: doc.isArchived,
       isLeaf: doc._count.children === 0,
       parentId: doc.parentId || null,
+      icon: doc.icon || null,
     }));
   }
 

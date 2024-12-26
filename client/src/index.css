@@ -37,3 +37,17 @@ li {
     background: #ccc;
   }
 }
+
+/* custom scrollbar for third party lib */
+/* image picker */
+.epr-body {
+  @apply custom-scrollbar;
+}
+
+.smooth-image {
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -o-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  ms-interpolation-mode: nearest-neighbor;
+}
