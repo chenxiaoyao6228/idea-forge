@@ -36,6 +36,8 @@
     "prisma:generate": "npx prisma generate"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.717.0",
+    "@aws-sdk/s3-request-presigner": "^3.717.0",
     "@hocuspocus/extension-database": "^2.13.5",
     "@hocuspocus/extension-logger": "^2.13.5",
     "@hocuspocus/extension-throttle": "^2.13.6",
@@ -103,8 +105,8 @@
     "@types/express-session": "^1.18.0",
     "@types/jest": "29.2.4",
     "@types/lodash": "^4.17.13",
-    "@types/node": "18.11.18",
     "@types/multer": "^1.4.12",
+    "@types/node": "18.11.18",
     "@types/nodemailer": "^6.4.16",
     "@types/passport-github2": "^1.2.9",
     "@types/passport-google-oauth20": "^2.0.16",

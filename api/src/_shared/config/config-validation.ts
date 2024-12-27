@@ -41,11 +41,12 @@ export const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
 
   /* COS CONFIG */
-  COS_SECRET_ID: z.string().min(1),
-  COS_SECRET_KEY: z.string().min(1),
-  COS_BUCKET: z.string().min(1),
-  COS_REGION: z.string().min(1),
-  COS_BUCKET_URL: z.string().url(),
+  OSS_PROVIDER: z.enum(["minio", "cos", "oss"]),
+  OSS_SECRET_ID: z.string().min(1),
+  OSS_SECRET_KEY: z.string().min(1),
+  OSS_BUCKET: z.string().min(1),
+  OSS_REGION: z.string().min(1),
+  OSS_ENDPOINT: z.string().url(),
 });
 
 const clientEnvSchema = z.object({
