@@ -84,6 +84,8 @@ model CoverImage {
   scrollY Float
   doc     Doc    @relation(fields: [docId], references: [id])
   docId   String @unique
+  fileId  String @unique // 关联到实际文件
+  file    File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
 }
 
 model DocShare {
@@ -114,4 +116,6 @@ model File {
   contentType String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  coverImage CoverImage?
 }

@@ -55,6 +55,13 @@ export const updateDocumentSchema = z.object({
 
 export type UpdateDocumentDto = z.infer<typeof updateDocumentSchema>;
 
+export const updateCoverSchema = z.object({
+  fileId: z.string(),
+  scrollY: z.number(),
+});
+
+export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
+
 export const searchDocumentSchema = z.object({
   keyword: z.string().optional(),
   sort: z.string().default("createdAt"),
@@ -127,6 +134,13 @@ export const detailDocumentSchema = commonDocumentSchema
   })
   .extend({
     content: z.string(),
+    cover: z
+      .object({
+        scrollY: z.number(),
+        url: z.string(),
+        key: z.string(),
+      })
+      .nullable(),
   });
 
 export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;

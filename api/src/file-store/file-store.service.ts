@@ -24,15 +24,14 @@ export class FileService {
     const mediaType = validImageExts.includes(ext) ? "image" : "others";
 
     const fileName = `${uuidv4()}.${ext}`;
-    const key = `uploads/u-${userId}/${mediaType}/${fileName}`;
+    const fileKey = `uploads/u-${userId}/${mediaType}/${fileName}`;
 
     // TODO: 根据文件类型生成对应的 Content-Type
     const contentType = "image/png";
-
     // 3. 预创建记录
     const fileRecord = await this.prisma.file.create({
       data: {
-        key,
+        key: fileKey,
         status: "pending",
         contentType,
         userId: userId,
@@ -41,23 +40,27 @@ export class FileService {
     });
 
     // 4. 生成上传凭证
-    const credentials = await this.ossService.generatePresignedUrl(key, {
+    const credentials = await this.ossService.generatePresignedUrl(fileKey, {
       contentType,
     });
 
     return {
       credentials,
-      key,
+      fileKey,
+      downloadUrl: this.ossService.getFileUrl(fileKey),
+      fileId: fileRecord.id,
     };
   }
 
-  async confirmUpload(params: {
-    key: string;
-    size: number;
-    userId: number;
-  }) {
+  async confirmUpload(
+    userId: number,
+    params: {
+      fileId: string;
+      fileKey: string;
+    },
+  ) {
     // TODO:  验证文件是否真实上传
-    const isExists = await this.ossService.checkFileExists(params.key);
+    const isExists = await this.ossService.checkFileExists(params.fileKey);
 
     if (!isExists) {
       throw new NotFoundException("File not found");
@@ -66,17 +69,66 @@ export class FileService {
     // 2. 更新文件记录
     const file = await this.prisma.file.findFirstOrThrow({
       where: {
-        key: params.key,
+        key: params.fileKey,
         status: "pending",
       },
     });
 
-    return this.prisma.file.update({
+    const updateFile = await this.prisma.file.update({
       where: { id: file.id },
       data: {
         status: "active",
-        url: this.ossService.getFileUrl(params.key),
+        url: this.ossService.getFileUrl(params.fileKey),
       },
     });
+
+    return {
+      fileId: updateFile.id,
+      fileKey: updateFile.key,
+      downloadUrl: this.ossService.getFileUrl(params.fileKey),
+    };
+  }
+
+  async deleteFile(params: {
+    userId: number;
+    fileId: string;
+  }) {
+    // Verify file ownership
+    const file = await this.prisma.file.findFirst({
+      where: {
+        id: params.fileId,
+        userId: params.userId,
+      },
+    });
+
+    if (!file) {
+      throw new NotFoundException("File not found");
+    }
+
+    // Delete from storage (OSS)
+    await this.ossService.deleteFile(file.key);
+
+    // Delete from database
+    return this.prisma.file.delete({
+      where: { id: params.fileId },
+    });
+  }
+
+  async getFile(params: {
+    userId: number;
+    fileId: string;
+  }) {
+    const file = await this.prisma.file.findFirst({
+      where: {
+        id: params.fileId,
+        userId: params.userId,
+      },
+    });
+
+    if (!file) {
+      throw new NotFoundException("File not found");
+    }
+
+    return file;
   }
 }

@@ -47,6 +47,7 @@ export const envSchema = z.object({
   OSS_BUCKET: z.string().min(1),
   OSS_REGION: z.string().min(1),
   OSS_ENDPOINT: z.string().url(),
+  OSS_CDN_ENDPOINT: z.string().url().optional().nullable(),
 });
 
 const clientEnvSchema = z.object({

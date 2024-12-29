@@ -1,7 +1,8 @@
-import { Injectable, type OnModuleInit, type OnModuleDestroy } from "@nestjs/common";
+import { Injectable, type OnModuleInit, type OnModuleDestroy, Global } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import chalk from "chalk";
 
+@Global()
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   constructor() {

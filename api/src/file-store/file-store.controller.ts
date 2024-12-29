@@ -24,12 +24,11 @@ export class FileController {
   async confirmUpload(
     @GetUser() user: User,
     @Body() body: {
-      key: string;
-      size: number;
+      fileKey: string;
+      fileId: string;
     },
   ) {
-    return this.fileService.confirmUpload({
-      userId: user.id,
+    return this.fileService.confirmUpload(user.id, {
       ...body,
     });
   }

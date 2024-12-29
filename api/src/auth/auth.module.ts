@@ -15,13 +15,15 @@ import { MailService } from "@/_shared/email/mail.service";
 import { VerificationService } from "./verification.service";
 import { DocumentService } from "@/document/ document.service";
 import { JwtService } from "@nestjs/jwt";
+import { FileService } from "@/file-store/file-store.service";
+import { FileStoreModule } from "../file-store/file-store.module";
 
 @Module({
   // JwtModule.registerAsync(jwtConfig.asProvider()) - Asynchronously register JWT module using jwtConfig
   // Contains configuration for secret and signOptions (expiration time etc.)
   // ConfigModule.forFeature(jwtConfig) - Register jwtConfig as a configuration feature
   // Allows jwtConfig values to be injected throughout the module
-  imports: [JwtModule.registerAsync(jwtConfig.asProvider())],
+  imports: [JwtModule.registerAsync(jwtConfig.asProvider()), FileStoreModule],
   providers: [
     LocalStrategy,
     JwtStrategy,
@@ -34,6 +36,7 @@ import { JwtService } from "@nestjs/jwt";
     UserService,
     JwtService,
     DocumentService,
+    FileService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

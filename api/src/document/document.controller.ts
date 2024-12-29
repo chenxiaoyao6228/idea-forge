@@ -47,6 +47,21 @@ export class DocumentController {
     return this.documentService.remove(id, userId);
   }
 
+  @Post(":id/cover")
+  async updateCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: { fileId: string; scrollY: number }) {
+    return this.documentService.setCover(id, userId, dto);
+  }
+
+  @Patch(":id/cover")
+  async uploadCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: { fileId: string; scrollY: number }) {
+    return this.documentService.updateCover(id, userId, dto);
+  }
+
+  @Delete(":id/cover")
+  async deleteCover(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.removeCover(id, userId);
+  }
+
   @Post("move")
   async moveDocuments(@GetUser("id") userId: number, @Body() dto: MoveDocumentsDto) {
     return this.documentService.moveDocuments(userId, dto);

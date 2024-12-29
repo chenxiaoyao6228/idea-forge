@@ -1,7 +1,7 @@
 import request from "./request";
 
 export const uploadFile = async ({ file, ext }: { file: File; ext: string }) => {
-  const { credentials, fileId } = (await request("/api/files/credentials", {
+  const { credentials, fileKey, fileId } = (await request("/api/files/credentials", {
     method: "POST",
     data: {
       fileName: file.name,
@@ -26,12 +26,15 @@ export const uploadFile = async ({ file, ext }: { file: File; ext: string }) => 
   }
 
   // 确认上传
-  await request("/api/files/confirm", {
+  return (await request("/api/files/confirm", {
     method: "POST",
     data: {
-      key: credentials.key,
+      fileKey,
+      fileId,
     },
-  });
-
-  return credentials.url;
+  })) as {
+    fileKey: string;
+    downloadUrl: string;
+    fileId: string;
+  };
 };

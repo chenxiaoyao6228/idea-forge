@@ -1,4 +1,4 @@
-import { S3Client, ListBucketsCommand, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, ListBucketsCommand, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, CopyObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Injectable } from "@nestjs/common";
 import { OssProvider, PresignedUrlResult, PresignedUrlOptions } from "./oss.type";
@@ -88,9 +88,68 @@ export class OssService {
 
   // 获取文件访问URL
   getFileUrl(key: string): string {
-    if (this.config.cdnDomain) {
-      return `${this.config.cdnDomain}/${key}`;
+    const cdnEndpoint = this.configService.get("OSS_CDN_ENDPOINT");
+    if (cdnEndpoint) {
+      return `${cdnEndpoint}/${key}`;
     }
     return `${this.config.endpoint}/${this.config.bucket}/${key}`;
+  }
+
+  // Delete file from OSS
+  async deleteFile(key: string): Promise<void> {
+    try {
+      const command = new DeleteObjectCommand({
+        Bucket: this.config.bucket,
+        Key: key,
+      });
+
+      await this.s3Client.send(command);
+    } catch (error: any) {
+      if (error.name !== "NotFound") {
+        throw error;
+      }
+      // If file doesn't exist, we can consider delete successful
+    }
+  }
+
+  // Update/Move file in OSS (copy to new location and delete old)
+  async moveFile(oldKey: string, newKey: string): Promise<void> {
+    try {
+      // First copy the object to new location
+      const copyCommand = new CopyObjectCommand({
+        Bucket: this.config.bucket,
+        CopySource: `${this.config.bucket}/${oldKey}`,
+        Key: newKey,
+      });
+
+      await this.s3Client.send(copyCommand);
+
+      // Then delete the old object
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: this.config.bucket,
+        Key: oldKey,
+      });
+
+      await this.s3Client.send(deleteCommand);
+    } catch (error: any) {
+      throw new Error(`Failed to move file: ${error.message}`);
+    }
+  }
+
+  // Optional: Add method to update file metadata
+  async updateFileMetadata(key: string, metadata: Record<string, string>): Promise<void> {
+    try {
+      const copyCommand = new CopyObjectCommand({
+        Bucket: this.config.bucket,
+        CopySource: `${this.config.bucket}/${key}`,
+        Key: key,
+        Metadata: metadata,
+        MetadataDirective: "REPLACE",
+      });
+
+      await this.s3Client.send(copyCommand);
+    } catch (error: any) {
+      throw new Error(`Failed to update file metadata: ${error.message}`);
+    }
   }
 }
