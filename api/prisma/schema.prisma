@@ -79,13 +79,14 @@ model Doc {
 }
 
 model CoverImage {
-  id      String @id @default(cuid())
-  url     String
-  scrollY Float
-  doc     Doc    @relation(fields: [docId], references: [id])
-  docId   String @unique
-  fileId  String @unique // 关联到实际文件
-  file    File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  id       String  @id @default(cuid())
+  url      String
+  scrollY  Float
+  doc      Doc     @relation(fields: [docId], references: [id])
+  docId    String  @unique
+  fileId   String  @unique // 关联到实际文件
+  file     File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  isPreset Boolean @default(false)
 }
 
 model DocShare {

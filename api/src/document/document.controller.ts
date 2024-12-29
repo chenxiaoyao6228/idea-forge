@@ -47,9 +47,13 @@ export class DocumentController {
     return this.documentService.remove(id, userId);
   }
 
-  @Post(":id/cover")
-  async updateCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: { fileId: string; scrollY: number }) {
-    return this.documentService.setCover(id, userId, dto);
+  // @Post(":id/cover")
+  // async updateCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: { fileId: string; scrollY: number }) {
+  //   return this.documentService.setCover(id, userId, dto);
+  // }
+  @Post(":id/generate-cover")
+  async generateDefaultCover(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.generateDefaultCover(id, userId);
   }
 
   @Patch(":id/cover")

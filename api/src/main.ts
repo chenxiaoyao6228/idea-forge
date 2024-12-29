@@ -5,8 +5,6 @@ import * as session from "express-session";
 import * as cookieParser from "cookie-parser";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { ConfigService } from "@nestjs/config";
-import * as path from "node:path";
-import * as express from "express";
 declare const module: any;
 
 async function bootstrap() {
@@ -21,13 +19,6 @@ async function bootstrap() {
     },
     logger: ["error", "warn", "log", "debug", "verbose"],
   });
-
-  // TODO: move to upload module
-  if (process.env.NODE_ENV === "development") {
-    app.useStaticAssets(path.join(process.cwd(), "uploads"), {
-      prefix: "/uploads",
-    });
-  }
 
   const configService = app.get(ConfigService);
 

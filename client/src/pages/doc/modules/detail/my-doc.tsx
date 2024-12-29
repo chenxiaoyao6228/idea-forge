@@ -2,6 +2,8 @@ import { useCurrentDocument } from "../../store";
 import { useDocumentStore } from "../../store";
 import { Textarea } from "@/components/ui/textarea";
 import { Toolbar } from "./toolbar";
+import Cover from "./cover";
+import { getDefaultCoverUrl } from "./cover/utils";
 
 export default function DocDetail() {
   const { currentDocument } = useCurrentDocument();
@@ -10,8 +12,11 @@ export default function DocDetail() {
 
   if (!currentDocument) return null;
 
+  const coverImageUrl = currentDocument?.coverImage?.url || "";
+
   return (
     <div className="pb-40">
+      {<Cover url={coverImageUrl} />}
       <div className="md:max-w-3xl lg:max-w-4xl mx-auto">
         <Toolbar doc={currentDocument} preview={false} />
         <Textarea

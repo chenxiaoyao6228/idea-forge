@@ -59,4 +59,9 @@ export const documentApi = {
   },
 
   moveDocuments: (dto: MoveDocumentsDto) => request.post<MoveDocumentsDto, CommonDocumentResponse[]>("/api/documents/move", dto),
+
+  generateDefaultCover: (id: string) => request.post<null, CommonDocumentResponse>(`/api/documents/${id}/generate-cover`),
+  updateCover: (id: string, dto: { fileId?: string; scrollY?: number }) =>
+    request.post<{ fileId?: string; scrollY?: number }, CommonDocumentResponse>(`/api/documents/${id}/cover`, dto),
+  removeCover: (id: string) => request.delete<null, CommonDocumentResponse>(`/api/documents/${id}/cover`),
 };

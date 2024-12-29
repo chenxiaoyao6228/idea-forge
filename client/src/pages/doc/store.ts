@@ -9,8 +9,8 @@ import { treeUtils } from "./util";
 const LAST_DOC_ID_KEY = "lastDocId";
 
 export interface DocTreeDataNode extends TreeDataNode {
+  id?: string;
   content?: string;
-  id: string;
 }
 
 interface DocumentTreeState {
@@ -34,6 +34,9 @@ interface DocumentTreeState {
   updateCurrentDocument: (update: UpdateDocumentDto) => void;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
   setLastDocId: (id: string) => void;
+  generateDefaultCover: (id: string) => Promise<void>;
+  updateCover: (id: string, dto: { fileId?: string; scrollY?: number }) => Promise<void>;
+  removeCover: (id: string) => Promise<void>;
 }
 
 const store = create<DocumentTreeState>()(
@@ -262,6 +265,21 @@ const store = create<DocumentTreeState>()(
       setLastDocId: (id) => {
         localStorage.setItem(LAST_DOC_ID_KEY, id);
         set({ lastDocId: id });
+      },
+
+      generateDefaultCover: async (id) => {
+        const res = (await documentApi.generateDefaultCover(id)) as any;
+        set((state) => ({
+          treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({ ...node, coverImage: res })),
+        }));
+      },
+
+      updateCover: async (id, dto) => {
+        return await documentApi.updateCover(id, dto);
+      },
+
+      removeCover: async (id) => {
+        return await documentApi.removeCover(id);
       },
     }),
     { name: "document-tree-store" },

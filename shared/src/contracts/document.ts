@@ -134,7 +134,7 @@ export const detailDocumentSchema = commonDocumentSchema
   })
   .extend({
     content: z.string(),
-    cover: z
+    coverImage: z
       .object({
         scrollY: z.number(),
         url: z.string(),

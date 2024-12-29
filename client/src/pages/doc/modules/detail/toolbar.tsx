@@ -5,6 +5,7 @@ import { ImageIcon, Smile, X } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
 import { IconPicker } from "./icon-picker";
 import { Emoji } from "emoji-picker-react";
+import { useCoverImageStore } from "./cover/coverImageStore";
 
 interface ToolbarProps {
   doc: DocTreeDataNode;
@@ -73,7 +74,8 @@ export const Toolbar = ({ doc, preview }: ToolbarProps) => {
   const inputRef = useRef<ElementRef<"textarea">>(null);
   const { isEditing, setIsEditing, value, setValue, onInput } = useDocumentTitle(doc);
   const updateDocument = useDocumentStore.use.updateDocument();
-
+  const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
+  const generateDefaultCover = useDocumentStore.use.generateDefaultCover();
   const enableInput = () => {
     if (preview) return;
 
@@ -115,7 +117,7 @@ export const Toolbar = ({ doc, preview }: ToolbarProps) => {
         )}
 
         {doc.id && (
-          <Button onClick={() => {}} className="text-muted-foreground text-xs" variant="outline" size="sm">
+          <Button onClick={() => generateDefaultCover(doc.key)} className="text-muted-foreground text-xs" variant="outline" size="sm">
             <ImageIcon className="h-4 w-4 mr-2" /> Add cover
           </Button>
         )}

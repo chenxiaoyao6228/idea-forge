@@ -6,7 +6,8 @@
 
 */
 -- AlterTable
-ALTER TABLE "CoverImage" ADD COLUMN     "fileId" TEXT NOT NULL;
+ALTER TABLE "CoverImage" ADD COLUMN     "fileId" TEXT NOT NULL,
+ADD COLUMN     "isPreset" BOOLEAN NOT NULL DEFAULT false;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CoverImage_fileId_key" ON "CoverImage"("fileId");

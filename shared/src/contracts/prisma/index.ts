@@ -20,7 +20,7 @@ export const ConnectionScalarFieldEnumSchema = z.enum(['id','providerName','prov
 
 export const DocScalarFieldEnumSchema = z.enum(['id','title','content','contentBinary','isArchived','isStarred','createdAt','updatedAt','ownerId','parentId','icon','coverImageId','position']);
 
-export const CoverImageScalarFieldEnumSchema = z.enum(['id','url','scrollY','docId','fileId']);
+export const CoverImageScalarFieldEnumSchema = z.enum(['id','url','scrollY','docId','fileId','isPreset']);
 
 export const DocShareScalarFieldEnumSchema = z.enum(['id','docId','authorId','userId','permission','noticeType','createdAt','updatedAt']);
 
@@ -111,6 +111,7 @@ export const CoverImageSchema = z.object({
   scrollY: z.number(),
   docId: z.string(),
   fileId: z.string(),
+  isPreset: z.boolean(),
 })
 
 export type CoverImage = z.infer<typeof CoverImageSchema>
@@ -310,6 +311,7 @@ export const CoverImageSelectSchema: z.ZodType<Prisma.CoverImageSelect> = z.obje
   scrollY: z.boolean().optional(),
   docId: z.boolean().optional(),
   fileId: z.boolean().optional(),
+  isPreset: z.boolean().optional(),
   doc: z.union([z.boolean(),z.lazy(() => DocArgsSchema)]).optional(),
   file: z.union([z.boolean(),z.lazy(() => FileArgsSchema)]).optional(),
 }).strict()
@@ -728,6 +730,7 @@ export const CoverImageWhereInputSchema: z.ZodType<Prisma.CoverImageWhereInput> 
   scrollY: z.union([ z.lazy(() => FloatFilterSchema),z.number() ]).optional(),
   docId: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
   fileId: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  isPreset: z.union([ z.lazy(() => BoolFilterSchema),z.boolean() ]).optional(),
   doc: z.union([ z.lazy(() => DocRelationFilterSchema),z.lazy(() => DocWhereInputSchema) ]).optional(),
   file: z.union([ z.lazy(() => FileRelationFilterSchema),z.lazy(() => FileWhereInputSchema) ]).optional(),
 }).strict();
@@ -738,6 +741,7 @@ export const CoverImageOrderByWithRelationInputSchema: z.ZodType<Prisma.CoverIma
   scrollY: z.lazy(() => SortOrderSchema).optional(),
   docId: z.lazy(() => SortOrderSchema).optional(),
   fileId: z.lazy(() => SortOrderSchema).optional(),
+  isPreset: z.lazy(() => SortOrderSchema).optional(),
   doc: z.lazy(() => DocOrderByWithRelationInputSchema).optional(),
   file: z.lazy(() => FileOrderByWithRelationInputSchema).optional()
 }).strict();
@@ -779,6 +783,7 @@ export const CoverImageWhereUniqueInputSchema: z.ZodType<Prisma.CoverImageWhereU
   NOT: z.union([ z.lazy(() => CoverImageWhereInputSchema),z.lazy(() => CoverImageWhereInputSchema).array() ]).optional(),
   url: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
   scrollY: z.union([ z.lazy(() => FloatFilterSchema),z.number() ]).optional(),
+  isPreset: z.union([ z.lazy(() => BoolFilterSchema),z.boolean() ]).optional(),
   doc: z.union([ z.lazy(() => DocRelationFilterSchema),z.lazy(() => DocWhereInputSchema) ]).optional(),
   file: z.union([ z.lazy(() => FileRelationFilterSchema),z.lazy(() => FileWhereInputSchema) ]).optional(),
 }).strict());
@@ -789,6 +794,7 @@ export const CoverImageOrderByWithAggregationInputSchema: z.ZodType<Prisma.Cover
   scrollY: z.lazy(() => SortOrderSchema).optional(),
   docId: z.lazy(() => SortOrderSchema).optional(),
   fileId: z.lazy(() => SortOrderSchema).optional(),
+  isPreset: z.lazy(() => SortOrderSchema).optional(),
   _count: z.lazy(() => CoverImageCountOrderByAggregateInputSchema).optional(),
   _avg: z.lazy(() => CoverImageAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => CoverImageMaxOrderByAggregateInputSchema).optional(),
@@ -805,6 +811,7 @@ export const CoverImageScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Co
   scrollY: z.union([ z.lazy(() => FloatWithAggregatesFilterSchema),z.number() ]).optional(),
   docId: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
   fileId: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  isPreset: z.union([ z.lazy(() => BoolWithAggregatesFilterSchema),z.boolean() ]).optional(),
 }).strict();
 
 export const DocShareWhereInputSchema: z.ZodType<Prisma.DocShareWhereInput> = z.object({
@@ -1317,6 +1324,7 @@ export const CoverImageCreateInputSchema: z.ZodType<Prisma.CoverImageCreateInput
   id: z.string().cuid().optional(),
   url: z.string(),
   scrollY: z.number(),
+  isPreset: z.boolean().optional(),
   doc: z.lazy(() => DocCreateNestedOneWithoutCoverImageInputSchema),
   file: z.lazy(() => FileCreateNestedOneWithoutCoverImageInputSchema)
 }).strict();
@@ -1326,13 +1334,15 @@ export const CoverImageUncheckedCreateInputSchema: z.ZodType<Prisma.CoverImageUn
   url: z.string(),
   scrollY: z.number(),
   docId: z.string(),
-  fileId: z.string()
+  fileId: z.string(),
+  isPreset: z.boolean().optional()
 }).strict();
 
 export const CoverImageUpdateInputSchema: z.ZodType<Prisma.CoverImageUpdateInput> = z.object({
   id: z.union([ z.string().cuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   url: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   scrollY: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
+  isPreset: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   doc: z.lazy(() => DocUpdateOneRequiredWithoutCoverImageNestedInputSchema).optional(),
   file: z.lazy(() => FileUpdateOneRequiredWithoutCoverImageNestedInputSchema).optional()
 }).strict();
@@ -1343,6 +1353,7 @@ export const CoverImageUncheckedUpdateInputSchema: z.ZodType<Prisma.CoverImageUn
   scrollY: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
   docId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   fileId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  isPreset: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const CoverImageCreateManyInputSchema: z.ZodType<Prisma.CoverImageCreateManyInput> = z.object({
@@ -1350,13 +1361,15 @@ export const CoverImageCreateManyInputSchema: z.ZodType<Prisma.CoverImageCreateM
   url: z.string(),
   scrollY: z.number(),
   docId: z.string(),
-  fileId: z.string()
+  fileId: z.string(),
+  isPreset: z.boolean().optional()
 }).strict();
 
 export const CoverImageUpdateManyMutationInputSchema: z.ZodType<Prisma.CoverImageUpdateManyMutationInput> = z.object({
   id: z.union([ z.string().cuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   url: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   scrollY: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
+  isPreset: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const CoverImageUncheckedUpdateManyInputSchema: z.ZodType<Prisma.CoverImageUncheckedUpdateManyInput> = z.object({
@@ -1365,6 +1378,7 @@ export const CoverImageUncheckedUpdateManyInputSchema: z.ZodType<Prisma.CoverIma
   scrollY: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
   docId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   fileId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  isPreset: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const DocShareCreateInputSchema: z.ZodType<Prisma.DocShareCreateInput> = z.object({
@@ -1957,7 +1971,8 @@ export const CoverImageCountOrderByAggregateInputSchema: z.ZodType<Prisma.CoverI
   url: z.lazy(() => SortOrderSchema).optional(),
   scrollY: z.lazy(() => SortOrderSchema).optional(),
   docId: z.lazy(() => SortOrderSchema).optional(),
-  fileId: z.lazy(() => SortOrderSchema).optional()
+  fileId: z.lazy(() => SortOrderSchema).optional(),
+  isPreset: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const CoverImageAvgOrderByAggregateInputSchema: z.ZodType<Prisma.CoverImageAvgOrderByAggregateInput> = z.object({
@@ -1969,7 +1984,8 @@ export const CoverImageMaxOrderByAggregateInputSchema: z.ZodType<Prisma.CoverIma
   url: z.lazy(() => SortOrderSchema).optional(),
   scrollY: z.lazy(() => SortOrderSchema).optional(),
   docId: z.lazy(() => SortOrderSchema).optional(),
-  fileId: z.lazy(() => SortOrderSchema).optional()
+  fileId: z.lazy(() => SortOrderSchema).optional(),
+  isPreset: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const CoverImageMinOrderByAggregateInputSchema: z.ZodType<Prisma.CoverImageMinOrderByAggregateInput> = z.object({
@@ -1977,7 +1993,8 @@ export const CoverImageMinOrderByAggregateInputSchema: z.ZodType<Prisma.CoverIma
   url: z.lazy(() => SortOrderSchema).optional(),
   scrollY: z.lazy(() => SortOrderSchema).optional(),
   docId: z.lazy(() => SortOrderSchema).optional(),
-  fileId: z.lazy(() => SortOrderSchema).optional()
+  fileId: z.lazy(() => SortOrderSchema).optional(),
+  isPreset: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const CoverImageSumOrderByAggregateInputSchema: z.ZodType<Prisma.CoverImageSumOrderByAggregateInput> = z.object({
@@ -3504,6 +3521,7 @@ export const CoverImageCreateWithoutDocInputSchema: z.ZodType<Prisma.CoverImageC
   id: z.string().cuid().optional(),
   url: z.string(),
   scrollY: z.number(),
+  isPreset: z.boolean().optional(),
   file: z.lazy(() => FileCreateNestedOneWithoutCoverImageInputSchema)
 }).strict();
 
@@ -3511,7 +3529,8 @@ export const CoverImageUncheckedCreateWithoutDocInputSchema: z.ZodType<Prisma.Co
   id: z.string().cuid().optional(),
   url: z.string(),
   scrollY: z.number(),
-  fileId: z.string()
+  fileId: z.string(),
+  isPreset: z.boolean().optional()
 }).strict();
 
 export const CoverImageCreateOrConnectWithoutDocInputSchema: z.ZodType<Prisma.CoverImageCreateOrConnectWithoutDocInput> = z.object({
@@ -3671,6 +3690,7 @@ export const CoverImageUpdateWithoutDocInputSchema: z.ZodType<Prisma.CoverImageU
   id: z.union([ z.string().cuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   url: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   scrollY: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
+  isPreset: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   file: z.lazy(() => FileUpdateOneRequiredWithoutCoverImageNestedInputSchema).optional()
 }).strict();
 
@@ -3679,6 +3699,7 @@ export const CoverImageUncheckedUpdateWithoutDocInputSchema: z.ZodType<Prisma.Co
   url: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   scrollY: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
   fileId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  isPreset: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const DocShareUpsertWithWhereUniqueWithoutDocInputSchema: z.ZodType<Prisma.DocShareUpsertWithWhereUniqueWithoutDocInput> = z.object({
@@ -4143,6 +4164,7 @@ export const CoverImageCreateWithoutFileInputSchema: z.ZodType<Prisma.CoverImage
   id: z.string().cuid().optional(),
   url: z.string(),
   scrollY: z.number(),
+  isPreset: z.boolean().optional(),
   doc: z.lazy(() => DocCreateNestedOneWithoutCoverImageInputSchema)
 }).strict();
 
@@ -4150,7 +4172,8 @@ export const CoverImageUncheckedCreateWithoutFileInputSchema: z.ZodType<Prisma.C
   id: z.string().cuid().optional(),
   url: z.string(),
   scrollY: z.number(),
-  docId: z.string()
+  docId: z.string(),
+  isPreset: z.boolean().optional()
 }).strict();
 
 export const CoverImageCreateOrConnectWithoutFileInputSchema: z.ZodType<Prisma.CoverImageCreateOrConnectWithoutFileInput> = z.object({
@@ -4217,6 +4240,7 @@ export const CoverImageUpdateWithoutFileInputSchema: z.ZodType<Prisma.CoverImage
   id: z.union([ z.string().cuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   url: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   scrollY: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
+  isPreset: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   doc: z.lazy(() => DocUpdateOneRequiredWithoutCoverImageNestedInputSchema).optional()
 }).strict();
 
@@ -4225,6 +4249,7 @@ export const CoverImageUncheckedUpdateWithoutFileInputSchema: z.ZodType<Prisma.C
   url: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   scrollY: z.union([ z.number(),z.lazy(() => FloatFieldUpdateOperationsInputSchema) ]).optional(),
   docId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  isPreset: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const ConnectionCreateManyUserInputSchema: z.ZodType<Prisma.ConnectionCreateManyUserInput> = z.object({
