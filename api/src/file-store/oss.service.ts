@@ -1,6 +1,6 @@
-import { S3Client, ListBucketsCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, ListBucketsCommand, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { OssProvider, PresignedUrlResult, PresignedUrlOptions } from "./oss.type";
 import { OssConfig } from "./oss.type";
 import { ConfigService } from "@nestjs/config";
@@ -10,10 +10,7 @@ export class OssService {
   private s3Client: S3Client;
   private config: OssConfig;
 
-  constructor(
-    private configService: ConfigService,
-    private logger: Logger,
-  ) {
+  constructor(private configService: ConfigService) {
     this.initializeClient();
   }
 
@@ -69,6 +66,24 @@ export class OssService {
         "Content-Type": options.contentType,
       },
     };
+  }
+
+  // Check if a file exists in the bucket
+  async checkFileExists(key: string): Promise<boolean> {
+    try {
+      const command = new HeadObjectCommand({
+        Bucket: this.config.bucket,
+        Key: key,
+      });
+
+      await this.s3Client.send(command);
+      return true;
+    } catch (error: any) {
+      if (error.name === "NotFound") {
+        return false;
+      }
+      throw error;
+    }
   }
 
   // 获取文件访问URL

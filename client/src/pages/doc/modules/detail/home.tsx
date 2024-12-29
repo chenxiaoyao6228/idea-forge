@@ -4,7 +4,7 @@ export default function DocHome() {
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const fileUrl = await uploadFile(file, "jpg");
+    const fileUrl = await uploadFile({ file, ext: "jpg" });
     console.log(fileUrl);
   };
   return (

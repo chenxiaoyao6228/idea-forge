@@ -33,6 +33,7 @@ model User {
   docs               Doc[]
   sharedDocs         DocShare[]   @relation("SharedToUser")
   DocShare           DocShare[]
+  File               File[]
 }
 
 model Password {
@@ -100,4 +101,17 @@ model DocShare {
   updatedAt  DateTime @updatedAt
 
   @@unique([docId, userId])
+}
+
+model File {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  url         String   @default("")
+  status      String   @default("pending") // pending/active/deleted
+  size        Int      @default(0)
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  contentType String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -16,7 +16,7 @@ import { ServeStaticModule } from "@nestjs/serve-static";
 import { join } from "node:path";
 import { FallbackMiddleware } from "./_shared/middlewares/fallback.middleware";
 import { ConfigsModule } from "./_shared/config/config.module";
-import { UploadModule } from "./upload/upload.module";
+import { FileStoreModule } from "./file-store/file-store.module";
 
 @Module({
   controllers: [AppController],
@@ -50,7 +50,7 @@ import { UploadModule } from "./upload/upload.module";
     UserModule,
     MailModule,
     DocumentModule,
-    UploadModule,
+    FileStoreModule,
   ],
   providers: [
     {
