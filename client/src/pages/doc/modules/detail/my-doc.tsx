@@ -3,7 +3,6 @@ import { useDocumentStore } from "../../store";
 import { Textarea } from "@/components/ui/textarea";
 import { Toolbar } from "./toolbar";
 import Cover from "./cover";
-import { getDefaultCoverUrl } from "./cover/utils";
 
 export default function DocDetail() {
   const { currentDocument } = useCurrentDocument();
