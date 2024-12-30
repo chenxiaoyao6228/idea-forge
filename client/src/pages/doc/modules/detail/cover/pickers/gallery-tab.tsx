@@ -3,9 +3,10 @@ import { PRESET_CATEGORIES } from "../../constants";
 
 interface GalleryTabProps {
   onSelect: (dto: UpdateCoverDto) => Promise<void>;
+  onClose: () => void;
 }
 
-export function GalleryTab({ onSelect }: GalleryTabProps) {
+export function GalleryTab({ onSelect, onClose }: GalleryTabProps) {
   return (
     <div className="space-y-6">
       {PRESET_CATEGORIES.map((category) => (

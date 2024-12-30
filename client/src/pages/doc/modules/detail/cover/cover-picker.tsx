@@ -4,11 +4,12 @@ import { GalleryTab } from "./pickers/gallery-tab";
 import { UploadTab } from "./pickers/upload-tab";
 import { LinkTab } from "./pickers/link-tab";
 import { useOutsideClick } from "@/hooks/use-outside-click";
+import { UpdateCoverDto } from "shared";
 
 interface CoverPickerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (imageUrl: string) => Promise<void>;
+  onSelect: (dto: UpdateCoverDto) => Promise<void>;
   onRemove: () => Promise<void>;
 }
 
@@ -42,13 +43,13 @@ export function CoverPicker({ isOpen, onClose, onSelect, onRemove }: CoverPicker
 
           <div className="p-4 h-[500px] overflow-y-auto">
             <TabsContent value="gallery">
-              <GalleryTab onSelect={onSelect} />
+              <GalleryTab onSelect={onSelect} onClose={onClose} />
             </TabsContent>
             <TabsContent value="upload">
-              <UploadTab onSelect={onSelect} />
+              <UploadTab onSelect={onSelect} onClose={onClose} />
             </TabsContent>
             <TabsContent value="link">
-              <LinkTab onSelect={onSelect} />
+              <LinkTab onSelect={onSelect} onClose={onClose} />
             </TabsContent>
           </div>
         </Tabs>
