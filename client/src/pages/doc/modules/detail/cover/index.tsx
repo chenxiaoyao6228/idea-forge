@@ -1,23 +1,24 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useCurrentDocument } from "@/pages/doc/store";
+import { useCurrentDocument, useDocumentStore } from "@/pages/doc/store";
 import { CoverPicker } from "./cover-picker";
 import { useState } from "react";
 import { useCoverImageStore } from "./coverImageStore";
+import { UpdateCoverDto } from "shared";
 
 export default function Cover({ url, scrollY }: { url: string; scrollY?: number }) {
   const { currentDocument } = useCurrentDocument();
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
-
+  const { updateCover } = useDocumentStore();
   if (!currentDocument || !currentDocument?.coverImage) return null;
 
-  const handleImageSelect = async (imageUrl: string) => {
-    console.log("imageUrl", imageUrl);
+  const handleImageSelect = async (dto: UpdateCoverDto) => {
+    await updateCover(currentDocument.key, dto);
   };
 
   const handleRemoveCover = async () => {
-    console.log("remove cover");
+    // await removeCover(currentDocument.key);
   };
 
   const handleChangeCover = () => {

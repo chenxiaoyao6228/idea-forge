@@ -3,17 +3,13 @@ import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./docum
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { DEFAULT_NEW_DOC_TITLE } from "@/_shared/constants/common";
 import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
-import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse } from "shared";
+import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse, UpdateCoverDto } from "shared";
 import { MoveDocumentsDto } from "shared";
 import { FileService } from "@/file-store/file-store.service";
-import { v4 as uuidv4 } from "uuid";
-import { PRESET_COVERS } from "./constant";
 const POSITION_GAP = 1024; // Define position gap
 
 @Injectable()
 export class DocumentService {
-  private readonly DEFAULT_COVERS = PRESET_COVERS;
-
   constructor(
     private prisma: PrismaService,
     private fileService: FileService,
@@ -76,13 +72,7 @@ export class DocumentService {
         coverImage: {
           select: {
             scrollY: true,
-            file: {
-              select: {
-                url: true,
-                key: true,
-                contentType: true,
-              },
-            },
+            url: true,
           },
         },
       },
@@ -96,8 +86,7 @@ export class DocumentService {
       coverImage: doc.coverImage
         ? {
             scrollY: doc.coverImage.scrollY,
-            url: doc.coverImage.file.url,
-            key: doc.coverImage.file.key,
+            url: doc.coverImage.url,
           }
         : null,
     };
@@ -465,81 +454,34 @@ export class DocumentService {
     return this.isDescendant(parentId, child.parentId);
   }
 
-  async generateDefaultCover(docId: string, userId: number) {
-    // 1. 验证文档所有权
+  async updateCover(docId: string, userId: number, dto: UpdateCoverDto) {
+    // 1. 验证文档和封面存在
     const doc = await this.prisma.doc.findFirst({
       where: { id: docId, ownerId: userId },
       include: { coverImage: true },
     });
     if (!doc) throw new NotFoundException();
 
-    // 2. 如果已有封面，先删除
-    if (doc.coverImage) {
-      await this.removeCover(docId, userId);
-    }
-
-    // 3. 随机选择一个预设封面
-    const randomCover = this.DEFAULT_COVERS[Math.floor(Math.random() * this.DEFAULT_COVERS.length)];
-    const key = uuidv4();
-    const id = uuidv4();
-
-    // 4. 查找或创建预设文件记录
-    const file = await this.prisma.file.upsert({
-      where: { id },
-      create: {
-        id,
-        key,
-        url: randomCover.url,
-        contentType: "image/jpeg",
-        userId: userId,
-        status: "active",
-      },
-      update: {}, // 如果已存在则不更新
-    });
-
-    // 5. 创建新封面
-    return this.prisma.coverImage.create({
-      data: {
-        scrollY: 0,
-        fileId: file.id,
-        docId: docId,
-        isPreset: true,
-        url: file.url,
-      },
-      include: {
-        file: true,
-      },
-    });
-  }
-
-  async updateCover(docId: string, userId: number, dto: { fileId?: string; scrollY?: number }) {
-    // 1. 验证文档和封面存在
-    const doc = await this.prisma.doc.findFirst({
-      where: { id: docId, ownerId: userId },
-      include: {
-        coverImage: {
-          include: {
-            file: true,
-          },
+    // 2. 如果没有封面，创建新封面
+    if (!doc.coverImage) {
+      if (!dto.url) throw new BadRequestException("URL is required for new cover");
+      return this.prisma.coverImage.create({
+        data: {
+          url: dto.url,
+          scrollY: dto.scrollY || 0,
+          docId: docId,
+          isPreset: dto.isPreset || false,
         },
-      },
-    });
-    if (!doc || !doc.coverImage) throw new NotFoundException();
-
-    // 2. 如果更新文件，且旧文件不是预设封面，则删除旧封面文件
-    if (dto.fileId && !doc.coverImage.isPreset) {
-      await this.fileService.deleteFile({
-        userId,
-        fileId: doc.coverImage.fileId,
       });
     }
 
-    // 3. 更新封面
+    // 3. 更新现有封面
     return this.prisma.coverImage.update({
       where: { docId },
       data: {
-        ...(dto.fileId && { fileId: dto.fileId }),
+        ...(dto.url && { url: dto.url }),
         ...(dto.scrollY !== undefined && { scrollY: dto.scrollY }),
+        ...(dto.isPreset !== undefined && { isPreset: dto.isPreset }),
       },
     });
   }
@@ -552,15 +494,9 @@ export class DocumentService {
     });
     if (!doc || !doc.coverImage) throw new NotFoundException();
 
-    // 2. 删除封面（文件会通过 Cascade 自动删除）
+    // 2. 删除封面
     await this.prisma.coverImage.delete({
       where: { docId },
-    });
-
-    // 3. 可选：删除实际文件
-    await this.fileService.deleteFile({
-      userId,
-      fileId: doc.coverImage.fileId,
     });
   }
 }

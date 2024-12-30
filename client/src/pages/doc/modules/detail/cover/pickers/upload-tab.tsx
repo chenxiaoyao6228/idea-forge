@@ -1,5 +1,7 @@
+import { UpdateCoverDto } from "shared";
+
 interface UploadTabProps {
-  onSelect: (imageUrl: string) => Promise<void>;
+  onSelect: (dto: UpdateCoverDto) => Promise<void>;
 }
 
 export function UploadTab({ onSelect }: UploadTabProps) {

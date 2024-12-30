@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestj
 import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto } from "./document.dto";
 import { DocumentService } from "./ document.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
+import { UpdateCoverDto } from "shared/dist/types/src/contracts/document";
 
 @Controller("/api/documents")
 export class DocumentController {
@@ -47,17 +48,8 @@ export class DocumentController {
     return this.documentService.remove(id, userId);
   }
 
-  // @Post(":id/cover")
-  // async updateCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: { fileId: string; scrollY: number }) {
-  //   return this.documentService.setCover(id, userId, dto);
-  // }
-  @Post(":id/generate-cover")
-  async generateDefaultCover(@GetUser("id") userId: number, @Param("id") id: string) {
-    return this.documentService.generateDefaultCover(id, userId);
-  }
-
   @Patch(":id/cover")
-  async uploadCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: { fileId: string; scrollY: number }) {
+  async uploadCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: UpdateCoverDto) {
     return this.documentService.updateCover(id, userId, dto);
   }
 

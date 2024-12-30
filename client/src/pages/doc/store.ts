@@ -5,6 +5,7 @@ import { documentApi } from "@/apis/document";
 import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
 import createSelectors from "@/stores/utils/createSelector";
 import { treeUtils } from "./util";
+import { PRESET_CATEGORIES } from "./modules/detail/constants";
 
 const LAST_DOC_ID_KEY = "lastDocId";
 
@@ -268,10 +269,39 @@ const store = create<DocumentTreeState>()(
       },
 
       generateDefaultCover: async (id) => {
-        const res = (await documentApi.generateDefaultCover(id)) as any;
-        set((state) => ({
-          treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({ ...node, coverImage: res })),
-        }));
+        try {
+          // 1. 从 PRESET_CATEGORIES 中随机选择一个封面
+          const allPresetCovers = PRESET_CATEGORIES.flatMap((category) => category.items);
+          const randomCover = allPresetCovers[Math.floor(Math.random() * allPresetCovers.length)];
+
+          if (!randomCover) {
+            throw new Error("No preset covers available");
+          }
+
+          // 2. 使用 updateCover 接口更新封面
+          const response = await documentApi.updateCover(id, {
+            url: randomCover.url,
+            scrollY: 0,
+            isPreset: true,
+          });
+
+          // 3. 更新当前文档的封面信息
+          set((state) => ({
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              coverImage: {
+                url: randomCover.url,
+                scrollY: 0,
+                isPreset: true,
+              },
+            })),
+          }));
+
+          return response;
+        } catch (error) {
+          console.error("Failed to generate default cover:", error);
+          throw error;
+        }
       },
 
       updateCover: async (id, dto) => {

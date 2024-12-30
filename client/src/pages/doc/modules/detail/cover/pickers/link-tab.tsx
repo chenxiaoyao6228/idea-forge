@@ -1,5 +1,7 @@
+import { UpdateCoverDto } from "shared";
+
 interface LinkTabProps {
-  onSelect: (imageUrl: string) => Promise<void>;
+  onSelect: (dto: UpdateCoverDto) => Promise<void>;
 }
 
 export function LinkTab({ onSelect }: LinkTabProps) {

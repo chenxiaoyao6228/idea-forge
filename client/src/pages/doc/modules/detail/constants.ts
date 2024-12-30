@@ -22,7 +22,7 @@ export const PRESET_CATEGORIES = [
     items: [
       { url: "/images/cover/The MET Museum – Patterns/met_william_morris_1877_willow.jpg", id: "met_william_morris_1877_willow" },
       { url: "/images/cover/The MET Museum – Patterns/met_silk_kashan_carpet.jpg", id: "met_silk_kashan_carpet" },
-      { url: "/images/cover/The MET Museum – Patterns/met_silk_kashan_carpet.jpg", id: "met_silk_kashan_carpet" },
+      { url: "/images/cover/The MET Museum – Patterns/met_william_morris_1875.jpg", id: "met_william_morris_1875" },
       { url: "/images/cover/The MET Museum – Patterns/met_william_morris_1878.jpg", id: "met_william_morris_1878" },
     ],
   },
