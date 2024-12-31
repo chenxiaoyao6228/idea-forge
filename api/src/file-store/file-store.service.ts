@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { OssService } from "./oss.service";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
@@ -18,7 +18,7 @@ export class FileService {
       ext: string;
     },
   ) {
-    // TODO:  权限检查, 配额检查
+    // TODO: Permission check, quota check
     const { ext } = params;
 
     const mediaType = validImageExts.includes(ext) ? "image" : "others";
@@ -26,9 +26,9 @@ export class FileService {
     const fileName = `${uuidv4()}.${ext}`;
     const fileKey = `uploads/u-${userId}/${mediaType}/${fileName}`;
 
-    // TODO: 根据文件类型生成对应的 Content-Type
+    // TODO: Generate corresponding Content-Type based on file type
     const contentType = "image/png";
-    // 3. 预创建记录
+    // 3. Pre-create record
     const fileRecord = await this.prisma.file.create({
       data: {
         key: fileKey,
@@ -39,7 +39,7 @@ export class FileService {
       },
     });
 
-    // 4. 生成上传凭证
+    // 4. Generate upload credentials
     const credentials = await this.ossService.generatePresignedUrl(fileKey, {
       contentType,
     });
@@ -59,14 +59,14 @@ export class FileService {
       fileKey: string;
     },
   ) {
-    // TODO:  验证文件是否真实上传
+    // TODO: Verify if the file is actually uploaded
     const isExists = await this.ossService.checkFileExists(params.fileKey);
 
     if (!isExists) {
       throw new NotFoundException("File not found");
     }
 
-    // 2. 更新文件记录
+    // 2. Update file record
     const file = await this.prisma.file.findFirstOrThrow({
       where: {
         key: params.fileKey,
@@ -87,6 +87,42 @@ export class FileService {
       fileKey: updateFile.key,
       downloadUrl: this.ossService.getFileUrl(params.fileKey),
     };
+  }
+
+  async uploadFile(params: {
+    userId: number;
+    file: Express.Multer.File;
+  }) {
+    const { file, userId } = params;
+    const ext = file.mimetype.split("/")[1];
+    const fileName = `${uuidv4()}.${ext}`;
+    const fileKey = `uploads/u-${userId}/image/${fileName}`;
+
+    try {
+      // 1. Upload directly to OSS
+      await this.ossService.uploadFile(fileKey, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+      // 2. Create file record
+      await this.prisma.file.create({
+        data: {
+          key: fileKey,
+          status: "active",
+          contentType: file.mimetype,
+          userId: userId,
+          size: file.size,
+          url: this.ossService.getFileUrl(fileKey),
+        },
+      });
+
+      return {
+        downloadUrl: this.ossService.getFileUrl(fileKey),
+      };
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      throw new BadRequestException("Failed to upload file");
+    }
   }
 
   async deleteFile(params: {
@@ -130,5 +166,40 @@ export class FileService {
     }
 
     return file;
+  }
+
+  async proxyImage(userId: number, imageUrl: string) {
+    try {
+      // 1. Download original image
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      const extension = contentType?.split("/")[1] || "jpg";
+      const filename = `proxy-image-${uuidv4()}.${extension}`;
+
+      // 2. Get file content
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      const file = {
+        buffer,
+        originalname: filename,
+        mimetype: contentType || "image/jpeg",
+        size: buffer.length,
+      } as Express.Multer.File;
+
+      // 3. Upload to file storage
+      const uploadResult = await this.uploadFile({
+        userId,
+        file,
+      });
+
+      return uploadResult;
+    } catch (error) {
+      console.error("Error proxying image:", error);
+      throw new BadRequestException("Failed to proxy image");
+    }
   }
 }

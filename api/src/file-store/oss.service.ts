@@ -152,4 +152,16 @@ export class OssService {
       throw new Error(`Failed to update file metadata: ${error.message}`);
     }
   }
+
+  // Upload file to OSS, for proxy-image api
+  async uploadFile(key: string, file: Buffer, options: { contentType: string }) {
+    const command = new PutObjectCommand({
+      Bucket: this.config.bucket,
+      Key: key,
+      Body: file,
+      ContentType: options.contentType,
+    });
+
+    return await this.s3Client.send(command);
+  }
 }

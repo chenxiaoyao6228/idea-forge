@@ -1,9 +1,76 @@
+import { Field } from "@/components/forms";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { fileApi } from "@/apis/file";
+import { useState } from "react";
 import { UpdateCoverDto } from "shared";
+
+const schema = z.object({
+  url: z.string().url("Please enter a valid URL"),
+});
+
+type FormData = z.infer<typeof schema>;
 
 interface LinkTabProps {
   onSelect: (dto: UpdateCoverDto) => Promise<void>;
+  onClose: () => void;
 }
 
-export function LinkTab({ onSelect }: LinkTabProps) {
-  return <div>LinkTab</div>;
+export function LinkTab({ onSelect, onClose }: LinkTabProps) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      url: "",
+    },
+  });
+
+  const onFormSubmit = async (values: FormData) => {
+    try {
+      setIsLoading(true);
+      const { downloadUrl } = (await fileApi.proxyImage(values.url)) as any;
+      await onSelect({ url: downloadUrl, isPreset: false });
+      onClose();
+    } catch (err) {
+      form.setError("url", {
+        message: "Failed to load image. Please check the URL and try again.",
+      });
+      console.error("Error loading image:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-4">
+      <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4">
+        <Field
+          labelProps={{
+            children: "Image URL",
+            className: "sr-only",
+          }}
+          inputProps={{
+            placeholder: "Paste an image link...",
+            ...form.register("url"),
+          }}
+          errors={form.formState.errors.url?.message ? [form.formState.errors.url?.message] : []}
+        />
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <div className="flex items-center space-x-2">
+              <Spinner className="h-4 w-4" />
+              <span>Loading...</span>
+            </div>
+          ) : (
+            "Submit"
+          )}
+        </Button>
+      </form>
+      <p className="mt-4 text-sm text-gray-500 text-center">Works with images from the web.</p>
+    </div>
+  );
 }

@@ -305,11 +305,41 @@ const store = create<DocumentTreeState>()(
       },
 
       updateCover: async (id, dto) => {
-        return await documentApi.updateCover(id, dto);
+        try {
+          const response = await documentApi.updateCover(id, dto);
+
+          // Update store after API call succeeds
+          set((state) => ({
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              coverImage: dto,
+            })),
+          }));
+
+          return response;
+        } catch (error) {
+          console.error("Failed to update cover:", error);
+          throw error;
+        }
       },
 
       removeCover: async (id) => {
-        return await documentApi.removeCover(id);
+        try {
+          const response = await documentApi.removeCover(id);
+
+          // Update store after API call succeeds
+          set((state) => ({
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              coverImage: null,
+            })),
+          }));
+
+          return response;
+        } catch (error) {
+          console.error("Failed to remove cover:", error);
+          throw error;
+        }
       },
     }),
     { name: "document-tree-store" },

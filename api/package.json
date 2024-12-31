@@ -8,9 +8,8 @@
   "scripts": {
     "build": "nest build",
     "start": "NODE_ENV=production nest start",
-    "generate-preset-covers": "ts-node scripts/generate-preset-covers.ts",
     "predev": "chmod +x scripts/start-docker.sh && ./scripts/start-docker.sh",
-    "dev": "npm run generate-preset-covers && npm run prisma:dev && npm run start:debug",
+    "dev": "npm run prisma:dev && npm run start:debug",
     "start:debug": "NODE_ENV=development nest start --debug 9333 --watch --preserveWatchOutput",
     "dev:studio": "concurrently \"npm run start:debug\" \"npm run prisma:studio\"",
     "email:dev": "email preview ./src/_shared/email/templates",

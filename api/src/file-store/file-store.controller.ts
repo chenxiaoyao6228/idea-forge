@@ -32,4 +32,9 @@ export class FileController {
       ...body,
     });
   }
+
+  @Post("proxy-image")
+  async proxyImage(@GetUser() user: User, @Body() body: { imageUrl: string }) {
+    return this.fileService.proxyImage(user.id, body.imageUrl);
+  }
 }
