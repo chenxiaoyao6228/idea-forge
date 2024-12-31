@@ -11,12 +11,10 @@ export default function DocDetail() {
 
   if (!currentDocument) return null;
 
-  const coverImageUrl = currentDocument?.coverImage?.url || "";
-
   return (
     <div className="pb-40">
-      {<Cover url={coverImageUrl} />}
-      <div className="md:max-w-3xl lg:max-w-4xl mx-auto">
+      {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} />}
+      <div className="md:max-w-3xl lg:max-w-4xl mx-auto ">
         <Toolbar doc={currentDocument} preview={false} />
         <Textarea
           value={JSON.stringify(treeData, null, 2) || ""}

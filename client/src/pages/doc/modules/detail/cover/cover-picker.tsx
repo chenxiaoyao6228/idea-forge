@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GalleryTab } from "./pickers/gallery-tab";
 import { UploadTab } from "./pickers/upload-tab";
 import { LinkTab } from "./pickers/link-tab";
-import { useOutsideClick } from "@/hooks/use-outside-click";
+import { useClickAway } from "react-use";
 import { UpdateCoverDto } from "shared";
+import { Trash2 } from "lucide-react";
 
 interface CoverPickerProps {
   isOpen: boolean;
@@ -15,11 +17,13 @@ interface CoverPickerProps {
 
 export function CoverPicker({ isOpen, onClose, onSelect, onRemove }: CoverPickerProps) {
   const [selectedTab, setSelectedTab] = useState("gallery");
-  const ref = useOutsideClick(onClose);
+  const ref = useRef(null);
+
+  useClickAway(ref, onClose);
 
   if (!isOpen) return null;
 
-  return (
+  const content = (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div ref={ref} className="bg-white rounded-lg w-[640px] max-h-[80vh] overflow-hidden">
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
@@ -37,7 +41,7 @@ export function CoverPicker({ isOpen, onClose, onSelect, onRemove }: CoverPicker
                 onClose();
               }}
             >
-              Remove
+              <Trash2 className="h-4 w-4 mr-[-10px] text-red-500" />
             </TabsTrigger>
           </TabsList>
 
@@ -56,4 +60,6 @@ export function CoverPicker({ isOpen, onClose, onSelect, onRemove }: CoverPicker
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 }

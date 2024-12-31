@@ -495,7 +495,7 @@ export class DocumentService {
     if (!doc || !doc.coverImage) throw new NotFoundException();
 
     // 2. 删除封面
-    await this.prisma.coverImage.delete({
+    return await this.prisma.coverImage.delete({
       where: { docId },
     });
   }

@@ -10,8 +10,12 @@ import { PRESET_CATEGORIES } from "./modules/detail/constants";
 const LAST_DOC_ID_KEY = "lastDocId";
 
 export interface DocTreeDataNode extends TreeDataNode {
-  id?: string;
+  id: string;
   content?: string;
+  coverImage?: {
+    url: string;
+    scrollY: number;
+  };
 }
 
 interface DocumentTreeState {
@@ -36,7 +40,7 @@ interface DocumentTreeState {
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
   setLastDocId: (id: string) => void;
   generateDefaultCover: (id: string) => Promise<void>;
-  updateCover: (id: string, dto: { fileId?: string; scrollY?: number }) => Promise<void>;
+  updateCover: (id: string, dto: { url?: string; scrollY?: number }) => Promise<void>;
   removeCover: (id: string) => Promise<void>;
 }
 
@@ -286,10 +290,12 @@ const store = create<DocumentTreeState>()(
           });
 
           // 3. 更新当前文档的封面信息
+          // TODO: extend document type
           set((state) => ({
             treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
               ...node,
               coverImage: {
+                id: response.id,
                 url: randomCover.url,
                 scrollY: 0,
                 isPreset: true,
@@ -312,7 +318,10 @@ const store = create<DocumentTreeState>()(
           set((state) => ({
             treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
               ...node,
-              coverImage: dto,
+              coverImage: {
+                ...node.coverImage,
+                ...dto,
+              },
             })),
           }));
 
@@ -325,7 +334,7 @@ const store = create<DocumentTreeState>()(
 
       removeCover: async (id) => {
         try {
-          const response = await documentApi.removeCover(id);
+          await documentApi.removeCover(id);
 
           // Update store after API call succeeds
           set((state) => ({
@@ -334,8 +343,6 @@ const store = create<DocumentTreeState>()(
               coverImage: null,
             })),
           }));
-
-          return response;
         } catch (error) {
           console.error("Failed to remove cover:", error);
           throw error;
