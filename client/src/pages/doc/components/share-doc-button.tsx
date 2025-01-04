@@ -15,14 +15,15 @@ export function ShareDocButton() {
   const [permission, setPermission] = useState<Permission>("EDIT");
   const { currentDocShares, loadDocShares, shareDocument, removeShare, updateSharePermission } = useSharedDocumentStore();
   const docTree = useDocumentStore.use.treeData();
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const { docId: curDocId } = useParams();
   const isMyDoc = curDocId ? treeUtils.findNode(docTree, curDocId) : null;
 
   useEffect(() => {
-    if (!isMyDoc || !curDocId) return;
+    if (!isMyDoc || !curDocId || !isShareDialogOpen) return;
     loadDocShares(curDocId);
-  }, [curDocId, isMyDoc]);
+  }, [curDocId, isMyDoc, isShareDialogOpen]);
 
   const handleShare = async () => {
     if (!curDocId) return;
@@ -33,7 +34,7 @@ export function ShareDocButton() {
   if (!curDocId || !isMyDoc) return null;
 
   return (
-    <Popover>
+    <Popover open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2 mr-1">
           <ShareIcon className="w-4 h-4" />

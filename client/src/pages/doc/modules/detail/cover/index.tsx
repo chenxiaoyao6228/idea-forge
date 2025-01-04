@@ -83,6 +83,12 @@ export default function Cover({ cover }: CoverProps) {
   };
 
   useEffect(() => {
+    if (cover.url) {
+      setImagePosition(cover.scrollY);
+    }
+  }, [cover.url]);
+
+  useEffect(() => {
     const handlePointerUp = (e: PointerEvent) => {
       e.stopPropagation();
       setStartY(0);
