@@ -11,11 +11,10 @@ import { useParams } from "react-router-dom";
 const LAST_DOC_ID_KEY = "lastDocId";
 
 export interface DocTreeDataNode extends TreeDataNode {
-  id: string;
   content?: string;
   coverImage?: {
-    url: string;
-    scrollY: number;
+    url?: string;
+    scrollY?: number;
   };
 }
 
@@ -144,25 +143,53 @@ const store = create<DocumentTreeState>()(
       },
 
       deleteDocument: async (id) => {
+        // Find parent before deletion to determine navigation target
         const parentKey = treeUtils.findParentKey(get().treeData, id);
 
-        const updatedTreeData = treeUtils.removeTreeNode(get().treeData, id);
-
-        set({ treeData: updatedTreeData });
+        // Remove document from tree and update state
+        const updatedTree = treeUtils.removeTreeNode(get().treeData, id);
+        set({ treeData: updatedTree });
 
         await documentApi.delete(id);
 
+        // If document had a parent, refresh parent's children and navigate to parent
         if (parentKey) {
-          const data = await documentApi.getChildren(parentKey);
+          const fetchedChildren = await documentApi.getChildren(parentKey);
+          const newExpandedKeys =
+            fetchedChildren.length > 0 ? [...new Set([...get().expandedKeys, parentKey])] : get().expandedKeys.filter((key) => key !== parentKey);
+
+          // Update parent node with fresh children data
           set((state) => ({
             treeData: treeUtils.updateTreeNodes(state.treeData, parentKey, (node) => ({
               ...node,
-              children: treeUtils.mergeTreeData(node.children || [], data.map(treeUtils.convertToTreeNode)),
+              children: treeUtils.mergeTreeData(node.children || [], fetchedChildren.map(treeUtils.convertToTreeNode)),
+              expandedKeys: newExpandedKeys,
+              isLeaf: fetchedChildren.length === 0,
             })),
           }));
+
+          return parentKey;
         }
 
-        return parentKey;
+        // Handle root level document deletion
+        const remainingSiblings = parentKey ? treeUtils.findNode(updatedTree, parentKey)?.children || [] : updatedTree;
+
+        // If there are remaining documents, navigate to first sibling
+        if (remainingSiblings.length > 0) {
+          return remainingSiblings[0].key;
+        }
+
+        // If no documents remain, create a new empty document
+        const newDoc = await documentApi.create({
+          title: "Untitled",
+          content: "",
+          parentId: null,
+        });
+        const newNode = treeUtils.convertToTreeNode(newDoc);
+
+        set({ treeData: [...updatedTree, newNode] });
+
+        return newNode.key;
       },
 
       updateDocument: async (id, update) => {
@@ -250,9 +277,25 @@ const store = create<DocumentTreeState>()(
             });
           } else {
             // Move within same level
-            set((state) => ({
-              treeData: treeUtils.mergeTreeData(state.treeData, result.map(treeUtils.convertToTreeNode)),
-            }));
+            set((state) => {
+              const parentId = treeUtils.findParentKey(state.treeData, id);
+              if (parentId) {
+                // If has parent, update parent's children
+                return {
+                  treeData: treeUtils.updateTreeNodes(state.treeData, parentId, (node) => ({
+                    ...node,
+                    children: treeUtils.mergeTreeData(node.children || [], result.map(treeUtils.convertToTreeNode)),
+                  })),
+                };
+              }
+              // If at root level
+              return {
+                treeData: treeUtils.mergeTreeData(
+                  state.treeData.filter((node) => !result.some((r) => r.id === node.key)),
+                  result.map(treeUtils.convertToTreeNode),
+                ),
+              };
+            });
           }
         } catch (error) {
           console.error("Failed to move documents:", error);

@@ -57,8 +57,9 @@ export function MyDocs() {
 
     // not allow drop to self
     if (dragKey === dropKey) return;
+
     // not allow to drop to the same parent
-    if (dragParentId === dropKey) return;
+    // if (dragParentId === dropKey) return;
 
     try {
       await moveDocuments({

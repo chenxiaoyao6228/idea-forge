@@ -11,6 +11,7 @@ import type {
   ShareDocumentDto,
   RemoveShareDto,
   UpdateCoverDto,
+  DetailDocumentResponse,
 } from "shared";
 
 export const documentApi = {
@@ -40,7 +41,7 @@ export const documentApi = {
   },
 
   getDocument: async (id: string) => {
-    return request.get<null, CommonDocumentResponse>(`/api/documents/${id}`);
+    return request.get<null, DetailDocumentResponse>(`/api/documents/${id}`);
   },
 
   create: async (data: CreateDocumentDto) => {

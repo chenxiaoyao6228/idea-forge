@@ -1,75 +1,80 @@
-import { TreeDataNode } from "@/components/ui/tree";
 import { CommonDocumentResponse } from "shared";
+import { DocTreeDataNode } from "./store";
 
 export const treeUtils = {
-  findParentKey: (nodes: TreeDataNode[], targetKey: string): string | null => {
+  findParentKey: (nodes: DocTreeDataNode[], targetKey: string): string | null => {
     for (const node of nodes) {
       if (node.children?.some((child) => child.key === targetKey)) {
         return node.key as string;
       }
       if (node.children) {
-        const parentKey = treeUtils.findParentKey(node.children, targetKey);
+        const parentKey = treeUtils.findParentKey(node.children as DocTreeDataNode[], targetKey);
         if (parentKey) return parentKey;
       }
     }
     return null;
   },
 
-  updateTreeNodes: (nodes: TreeDataNode[], key: string | null, updater: (node: TreeDataNode) => TreeDataNode): TreeDataNode[] => {
+  updateTreeNodes: (nodes: DocTreeDataNode[], key: string | null, updater: (node: DocTreeDataNode) => DocTreeDataNode): DocTreeDataNode[] => {
     return nodes.map((node) => {
       if (node.key === key) {
         return updater(node);
       }
       if (node.children) {
-        return { ...node, children: treeUtils.updateTreeNodes(node.children, key, updater) };
+        return { ...node, children: treeUtils.updateTreeNodes(node.children as DocTreeDataNode[], key, updater) };
       }
       return node;
     });
   },
 
-  removeTreeNode: (nodes: TreeDataNode[], key: string): TreeDataNode[] => {
+  removeTreeNode: (nodes: DocTreeDataNode[], key: string): DocTreeDataNode[] => {
     return nodes.filter((node) => {
       if (node.key === key) return false;
       if (node.children) {
-        node.children = treeUtils.removeTreeNode(node.children, key);
+        node.children = treeUtils.removeTreeNode(node.children as DocTreeDataNode[], key);
       }
       return true;
     });
   },
 
-  convertToTreeNode: (doc: CommonDocumentResponse): TreeDataNode => ({
+  convertToTreeNode: (doc: CommonDocumentResponse): DocTreeDataNode => ({
     ...doc,
     key: doc.id,
     children: doc.isLeaf ? undefined : [],
   }),
 
-  mergeTreeData: (oldNodes: TreeDataNode[], newNodes: TreeDataNode[]): TreeDataNode[] => {
+  mergeTreeData: (oldNodes: DocTreeDataNode[], newNodes: DocTreeDataNode[]): DocTreeDataNode[] => {
+    // Create a map of existing nodes for faster lookup
+    const oldNodesMap = new Map(oldNodes.map((node) => [node.key, node]));
+
     return newNodes.map((newNode) => {
-      const existingNode = oldNodes.find((old) => old.key === newNode.key);
-      if (existingNode?.children?.length) {
+      const existingNode = oldNodesMap.get(newNode.key);
+      if (existingNode) {
+        // Preserve existing node's children and other properties
         return {
+          ...existingNode,
           ...newNode,
-          children: existingNode.children,
+          children: existingNode.children || newNode.children,
         };
       }
       return newNode;
     });
   },
 
-  findNode: (nodes: TreeDataNode[], key: string): TreeDataNode | null => {
+  findNode: (nodes: DocTreeDataNode[], key: string): DocTreeDataNode | null => {
     for (const node of nodes) {
       if (node.key === key) return node;
       if (node.children) {
-        const foundNode = treeUtils.findNode(node.children, key);
+        const foundNode = treeUtils.findNode(node.children as DocTreeDataNode[], key);
         if (foundNode) return foundNode;
       }
     }
     return null;
   },
 
-  buildTree: (flatDocs: CommonDocumentResponse[]): { nodes: TreeDataNode[]; ancestors: string[] } => {
-    const nodeMap: Record<string, TreeDataNode> = {};
-    const nodes: TreeDataNode[] = [];
+  buildTree: (flatDocs: CommonDocumentResponse[]): { nodes: DocTreeDataNode[]; ancestors: string[] } => {
+    const nodeMap: Record<string, DocTreeDataNode> = {};
+    const nodes: DocTreeDataNode[] = [];
     const ancestors: string[] = [];
 
     // First pass: Create all nodes

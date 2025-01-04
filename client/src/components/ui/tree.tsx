@@ -15,6 +15,7 @@ import { Emoji } from "emoji-picker-react";
 type IconFn = (props: { selected: boolean; node: TreeDataNode; expanded: boolean }) => React.ReactNode;
 
 export interface TreeDataNode {
+  id: string;
   title: string;
   key: string;
   pos?: string;
