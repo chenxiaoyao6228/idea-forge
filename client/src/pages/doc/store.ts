@@ -26,7 +26,7 @@ interface DocumentTreeState {
   lastDocId: string | null;
 
   // actions
-  getCurrentDocument: () => CommonDocumentResponse | null;
+  getCurrentDocument: () => DocTreeDataNode | null;
   setExpandedKeys: (keys: string[]) => void;
   setSelectedKeys: (keys: string[]) => void;
   setCurrentDocument: (doc: DocTreeDataNode) => void;
@@ -60,6 +60,12 @@ const store = create<DocumentTreeState>()(
         if (keys.length > 0) {
           get().setLastDocId(keys[0]);
         }
+      },
+
+      getCurrentDocument: () => {
+        const curId = get().selectedKeys[0];
+        if (!curId) return null;
+        return treeUtils.findNode(get().treeData, curId) as DocTreeDataNode;
       },
 
       updateCurrentDocument: async (update) => {
@@ -108,7 +114,11 @@ const store = create<DocumentTreeState>()(
         try {
           const doc = await documentApi.getDocument(id);
           set((state) => ({
-            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({ ...node, ...doc })),
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              ...doc,
+              coverImage: doc.coverImage ? { ...doc.coverImage } : node.coverImage,
+            })),
           }));
         } catch (error) {
           console.error("Failed to load current document:", error);
@@ -285,7 +295,7 @@ const store = create<DocumentTreeState>()(
           // 2. 使用 updateCover 接口更新封面
           const response = await documentApi.updateCover(id, {
             url: randomCover.url,
-            scrollY: 0,
+            scrollY: 50,
             isPreset: true,
           });
 

@@ -12,13 +12,15 @@ interface CoverProps {
   };
 }
 
+const CONTAINER_HEIGHT_VH = 30;
+
 export default function Cover({ cover }: CoverProps) {
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
   const { currentDocument } = useCurrentDocument();
   const updateCover = useDocumentStore.use.updateCover();
   const removeCover = useDocumentStore.use.removeCover();
-  const [imagePosition, setImagePosition] = useState(cover.scrollY || 0);
+  const [imagePosition, setImagePosition] = useState(cover.scrollY || 50);
   const [startY, setStartY] = useState(0);
   const imageRef = useRef<HTMLImageElement>(null);
 
@@ -36,23 +38,8 @@ export default function Cover({ cover }: CoverProps) {
     setIsPickerOpen(true);
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handleStartRepositioning = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (isRepositioning) {
-      setStartY(e.clientY - imagePosition);
-    }
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    if (isRepositioning && e.buttons === 1) {
-      const newPosition = e.clientY - startY;
-      const maxPosition = imageRef.current ? imageRef.current.offsetHeight - 300 : 0;
-      setImagePosition(Math.max(Math.min(newPosition, 0), -maxPosition));
-    }
-  };
-
-  const handleStartRepositioning = () => {
     setIsRepositioning(true);
   };
 
@@ -66,8 +53,33 @@ export default function Cover({ cover }: CoverProps) {
   };
 
   const handleCancelRepositioning = () => {
-    setIsRepositioning(false);
-    setImagePosition(scrollY || 0);
+    if (isRepositioning) {
+      setIsRepositioning(false);
+      setImagePosition(cover.scrollY);
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (isRepositioning) {
+      setStartY(e.clientY);
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (isRepositioning && e.buttons === 1) {
+      const containerHeight = window.innerHeight * (CONTAINER_HEIGHT_VH / 100);
+
+      const deltaY = e.clientY - startY;
+
+      const percentageDelta = (deltaY / containerHeight) * -100;
+
+      const newPosition = Math.max(0, Math.min(100, imagePosition + percentageDelta));
+
+      setImagePosition(newPosition);
+      setStartY(e.clientY);
+    }
   };
 
   useEffect(() => {
@@ -89,7 +101,7 @@ export default function Cover({ cover }: CoverProps) {
     <div
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
-      className={`sticky z-1000 left-0  w-full h-[30vh]  flex-shrink-0 group ${isRepositioning ? "cursor-move" : "cursor-default"}`}
+      className={`sticky z-1000 left-0  w-full h-[30vh] user-select-none  flex-shrink-0 group ${isRepositioning ? "cursor-move" : "cursor-default"}`}
     >
       {/* image */}
       <div className="cover-image-container relative inset-0 will-change-transform h-full overflow-hidden">
@@ -97,10 +109,10 @@ export default function Cover({ cover }: CoverProps) {
           ref={imageRef}
           src={url}
           alt="cover"
-          className="absolute inset-0 w-full h-auto object-cover transition-transform duration-200 ease-out"
+          className="absolute left-0 top-0 w-full h-full object-cover transition-transform duration-200 ease-out"
           style={{
             userSelect: isRepositioning ? "none" : "auto",
-            objectPosition: `center ${imagePosition}px`,
+            objectPosition: `center ${imagePosition}%`,
             imageRendering: "crisp-edges",
             imageResolution: "300dpi",
           }}
