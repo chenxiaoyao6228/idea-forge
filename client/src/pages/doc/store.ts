@@ -5,59 +5,56 @@ import { documentApi } from "@/apis/document";
 import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
 import createSelectors from "@/stores/utils/createSelector";
 import { treeUtils } from "./util";
+import { PRESET_CATEGORIES } from "./modules/detail/constants";
+import { useParams } from "react-router-dom";
 
 const LAST_DOC_ID_KEY = "lastDocId";
 
 export interface DocTreeDataNode extends TreeDataNode {
   content?: string;
-  id: string;
+  coverImage?: {
+    url?: string;
+    scrollY?: number;
+  };
 }
 
 interface DocumentTreeState {
   expandedKeys: string[];
-  selectedKeys: string[];
   loading: boolean;
   treeData: DocTreeDataNode[];
   lastDocId: string | null;
 
   // actions
-  getCurrentDocument: () => CommonDocumentResponse | null;
+  getCurrentDocument: (curDocId: string) => DocTreeDataNode | null;
   setExpandedKeys: (keys: string[]) => void;
   setSelectedKeys: (keys: string[]) => void;
   setCurrentDocument: (doc: DocTreeDataNode) => void;
   loadChildren: (key: string | null) => Promise<void>;
   createDocument: (parentId: string | null, title: string) => Promise<string>;
-  deleteDocument: (id: string) => Promise<void>;
+  deleteDocument: (id: string) => Promise<string | null>;
   moveDocuments: (data: MoveDocumentsDto) => Promise<void>;
   loadCurrentDocument: (id: string) => Promise<void>;
   loadNestedTree: (key: string | null) => Promise<void>;
-  updateCurrentDocument: (update: UpdateDocumentDto) => void;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
   setLastDocId: (id: string) => void;
+  generateDefaultCover: (id: string) => Promise<void>;
+  updateCover: (id: string, dto: { url?: string; scrollY?: number }) => Promise<void>;
+  removeCover: (id: string) => Promise<void>;
 }
 
 const store = create<DocumentTreeState>()(
   devtools(
     (set, get) => ({
       expandedKeys: [],
-      selectedKeys: [],
       treeData: [],
       loading: false,
       lastDocId: localStorage.getItem(LAST_DOC_ID_KEY),
 
       setExpandedKeys: (keys) => set({ expandedKeys: keys }),
 
-      setSelectedKeys: (keys) => {
-        set({ selectedKeys: keys });
-        if (keys.length > 0) {
-          get().setLastDocId(keys[0]);
-        }
-      },
-
-      updateCurrentDocument: async (update) => {
-        const curId = get().selectedKeys[0];
-        if (!curId) return;
-        await get().updateDocument(curId, update);
+      getCurrentDocument: (curDocId) => {
+        if (!curDocId) return null;
+        return treeUtils.findNode(get().treeData, curDocId) as DocTreeDataNode;
       },
 
       loadNestedTree: async (key = null) => {
@@ -96,11 +93,15 @@ const store = create<DocumentTreeState>()(
       },
 
       loadCurrentDocument: async (id) => {
-        set({ loading: true, selectedKeys: [id] });
+        set({ loading: true });
         try {
           const doc = await documentApi.getDocument(id);
           set((state) => ({
-            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({ ...node, ...doc })),
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              ...doc,
+              coverImage: doc.coverImage ? { ...doc.coverImage } : node.coverImage,
+            })),
           }));
         } catch (error) {
           console.error("Failed to load current document:", error);
@@ -125,7 +126,6 @@ const store = create<DocumentTreeState>()(
             return {
               treeData: [...state.treeData, newNode],
               expandedKeys: newExpandedKeys,
-              selectedKeys: [newNode.key],
             };
           }
 
@@ -136,7 +136,6 @@ const store = create<DocumentTreeState>()(
               isLeaf: false,
             })),
             expandedKeys: newExpandedKeys,
-            selectedKeys: [newNode.key],
           };
         });
 
@@ -144,24 +143,53 @@ const store = create<DocumentTreeState>()(
       },
 
       deleteDocument: async (id) => {
+        // Find parent before deletion to determine navigation target
         const parentKey = treeUtils.findParentKey(get().treeData, id);
 
-        set((state) => ({
-          treeData: treeUtils.removeTreeNode(state.treeData, id),
-          selectedKeys: state.selectedKeys.includes(id) && parentKey ? [parentKey] : state.selectedKeys.filter((k) => k !== id),
-        }));
+        // Remove document from tree and update state
+        const updatedTree = treeUtils.removeTreeNode(get().treeData, id);
+        set({ treeData: updatedTree });
 
         await documentApi.delete(id);
 
+        // If document had a parent, refresh parent's children and navigate to parent
         if (parentKey) {
-          const data = await documentApi.getTree(parentKey);
+          const fetchedChildren = await documentApi.getChildren(parentKey);
+          const newExpandedKeys =
+            fetchedChildren.length > 0 ? [...new Set([...get().expandedKeys, parentKey])] : get().expandedKeys.filter((key) => key !== parentKey);
+
+          // Update parent node with fresh children data
           set((state) => ({
             treeData: treeUtils.updateTreeNodes(state.treeData, parentKey, (node) => ({
               ...node,
-              children: treeUtils.mergeTreeData(node.children || [], data.map(treeUtils.convertToTreeNode)),
+              children: treeUtils.mergeTreeData(node.children || [], fetchedChildren.map(treeUtils.convertToTreeNode)),
+              expandedKeys: newExpandedKeys,
+              isLeaf: fetchedChildren.length === 0,
             })),
           }));
+
+          return parentKey;
         }
+
+        // Handle root level document deletion
+        const remainingSiblings = parentKey ? treeUtils.findNode(updatedTree, parentKey)?.children || [] : updatedTree;
+
+        // If there are remaining documents, navigate to first sibling
+        if (remainingSiblings.length > 0) {
+          return remainingSiblings[0].key;
+        }
+
+        // If no documents remain, create a new empty document
+        const newDoc = await documentApi.create({
+          title: "Untitled",
+          content: "",
+          parentId: null,
+        });
+        const newNode = treeUtils.convertToTreeNode(newDoc);
+
+        set({ treeData: [...updatedTree, newNode] });
+
+        return newNode.key;
       },
 
       updateDocument: async (id, update) => {
@@ -249,9 +277,25 @@ const store = create<DocumentTreeState>()(
             });
           } else {
             // Move within same level
-            set((state) => ({
-              treeData: treeUtils.mergeTreeData(state.treeData, result.map(treeUtils.convertToTreeNode)),
-            }));
+            set((state) => {
+              const parentId = treeUtils.findParentKey(state.treeData, id);
+              if (parentId) {
+                // If has parent, update parent's children
+                return {
+                  treeData: treeUtils.updateTreeNodes(state.treeData, parentId, (node) => ({
+                    ...node,
+                    children: treeUtils.mergeTreeData(node.children || [], result.map(treeUtils.convertToTreeNode)),
+                  })),
+                };
+              }
+              // If at root level
+              return {
+                treeData: treeUtils.mergeTreeData(
+                  state.treeData.filter((node) => !result.some((r) => r.id === node.key)),
+                  result.map(treeUtils.convertToTreeNode),
+                ),
+              };
+            });
           }
         } catch (error) {
           console.error("Failed to move documents:", error);
@@ -263,6 +307,83 @@ const store = create<DocumentTreeState>()(
         localStorage.setItem(LAST_DOC_ID_KEY, id);
         set({ lastDocId: id });
       },
+
+      generateDefaultCover: async (id) => {
+        try {
+          // 1. 从 PRESET_CATEGORIES 中随机选择一个封面
+          const allPresetCovers = PRESET_CATEGORIES.flatMap((category) => category.items);
+          const randomCover = allPresetCovers[Math.floor(Math.random() * allPresetCovers.length)];
+
+          if (!randomCover) {
+            throw new Error("No preset covers available");
+          }
+
+          // 2. 使用 updateCover 接口更新封面
+          const response = await documentApi.updateCover(id, {
+            url: randomCover.url,
+            scrollY: 50,
+            isPreset: true,
+          });
+
+          // 3. 更新当前文档的封面信息
+          // TODO: extend document type
+          set((state) => ({
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              coverImage: {
+                id: response.id,
+                url: randomCover.url,
+                scrollY: 50,
+                isPreset: true,
+              },
+            })),
+          }));
+
+          return response;
+        } catch (error) {
+          console.error("Failed to generate default cover:", error);
+          throw error;
+        }
+      },
+
+      updateCover: async (id, dto) => {
+        try {
+          const response = await documentApi.updateCover(id, dto);
+
+          // Update store after API call succeeds
+          set((state) => ({
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              coverImage: {
+                ...node.coverImage,
+                ...dto,
+              },
+            })),
+          }));
+
+          return response;
+        } catch (error) {
+          console.error("Failed to update cover:", error);
+          throw error;
+        }
+      },
+
+      removeCover: async (id) => {
+        try {
+          await documentApi.removeCover(id);
+
+          // Update store after API call succeeds
+          set((state) => ({
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              coverImage: null,
+            })),
+          }));
+        } catch (error) {
+          console.error("Failed to remove cover:", error);
+          throw error;
+        }
+      },
     }),
     { name: "document-tree-store" },
   ),
@@ -271,8 +392,8 @@ const store = create<DocumentTreeState>()(
 export const useDocumentStore = createSelectors(store);
 
 export const useCurrentDocument = (): { currentDocument: DocTreeDataNode | null } => {
-  const curId = useDocumentStore.getState().selectedKeys[0];
-  if (!curId) return { currentDocument: null };
-  const currentDocument = treeUtils.findNode(useDocumentStore.getState().treeData, curId) as DocTreeDataNode;
+  const { docId: curDocId } = useParams();
+  if (!curDocId) return { currentDocument: null };
+  const currentDocument = treeUtils.findNode(useDocumentStore.getState().treeData, curDocId) as DocTreeDataNode;
   return { currentDocument };
 };

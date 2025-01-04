@@ -19,8 +19,11 @@ import UserSettings from "./modules/setting";
 import DocDetail from "./modules/detail";
 import { Link } from "react-router-dom";
 import { Icon } from "@/components/ui/icon";
+import { useParams } from "react-router-dom";
 
 export default function Doc() {
+  const { docId: curDocId } = useParams();
+
   return (
     <SidebarProvider>
       {/* sidebar */}

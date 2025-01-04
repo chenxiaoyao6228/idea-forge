@@ -55,6 +55,6 @@
   },
   "files": {
     "include": ["client/src/**", "api/src/**", "shared/**"],
-    "ignore": ["node_modules", "dist", "build", "coverage", "client/src/assets/_icons-spritesheet-auto-generated/**"]
+    "ignore": ["node_modules", "dist", "build", "coverage", "client/src/assets/_icons-spritesheet-auto-generated/**", "shared/src/contracts/prisma/**"]
   }
 }

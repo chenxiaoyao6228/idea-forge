@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/icon";
 import { treeUtils } from "../util";
 import { Separator } from "@/components/ui/separator";
 import { Emoji } from "emoji-picker-react";
+import { useParams } from "react-router-dom";
 
 interface BreadcrumbItemData {
   id: string;
@@ -15,15 +16,14 @@ interface BreadcrumbItemData {
 }
 
 export default function DocumentBreadcrumb() {
+  const { docId: curDocId } = useParams();
   const treeData = useDocumentStore.use.treeData();
-  const selectedKeys = useDocumentStore.use.selectedKeys();
 
   const navigate = useNavigate();
 
   const getBreadcrumbItems = useCallback(() => {
-    const currentNodeId = selectedKeys[0];
     const items: Array<BreadcrumbItemData> = [];
-    let currentNode = treeUtils.findNode(treeData, currentNodeId);
+    let currentNode = curDocId ? treeUtils.findNode(treeData, curDocId) : null;
 
     while (currentNode) {
       items.unshift({
@@ -39,7 +39,7 @@ export default function DocumentBreadcrumb() {
     }
 
     return items;
-  }, [selectedKeys, treeData]);
+  }, [curDocId, treeData]);
 
   const breadcrumbItems = getBreadcrumbItems();
 

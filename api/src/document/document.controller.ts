@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestj
 import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto } from "./document.dto";
 import { DocumentService } from "./ document.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
+import { UpdateCoverDto } from "shared/dist/types/src/contracts/document";
 
 @Controller("/api/documents")
 export class DocumentController {
@@ -45,6 +46,16 @@ export class DocumentController {
   @Delete(":id")
   remove(@GetUser("id") userId: number, @Param("id") id: string) {
     return this.documentService.remove(id, userId);
+  }
+
+  @Patch(":id/cover")
+  async uploadCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: UpdateCoverDto) {
+    return this.documentService.updateCover(id, userId, dto);
+  }
+
+  @Delete(":id/cover")
+  async deleteCover(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.removeCover(id, userId);
   }
 
   @Post("move")

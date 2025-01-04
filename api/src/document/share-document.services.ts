@@ -29,6 +29,7 @@ export class ShareDocumentService {
             email: true,
           },
         },
+        coverImage: true,
       },
       orderBy: {
         updatedAt: "desc",

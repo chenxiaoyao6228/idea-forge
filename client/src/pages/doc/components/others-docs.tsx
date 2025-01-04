@@ -4,8 +4,10 @@ import { Tree, TreeDataNode } from "@/components/ui/tree";
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
 import { useSharedDocumentStore } from "../shared-store";
 import { useEffect } from "react";
+import { useParams } from "react-router-dom";
 
 export function OthersDocs() {
+  const { docId: curDocId } = useParams();
   const sharedTreeData = useSharedDocumentStore.use.sharedTreeData();
   const expandedKeys = useSharedDocumentStore.use.expandedKeys();
   const setSelectedKeys = useSharedDocumentStore.use.setSelectedKeys();
@@ -26,12 +28,11 @@ export function OthersDocs() {
   }, []);
 
   // Get document ID from URL
-  const docId = window.location.pathname.split("/").pop();
   useEffect(() => {
-    if (docId) {
-      setSelectedKeys([docId]);
+    if (curDocId) {
+      setSelectedKeys([curDocId]);
     }
-  }, [docId]);
+  }, [curDocId]);
 
   if (!sharedTreeData.length) return null;
 

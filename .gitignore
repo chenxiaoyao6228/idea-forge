@@ -40,6 +40,7 @@ lerna-debug.log*
 !.vscode/tasks.json
 !.vscode/launch.json
 .idea
+.cursorrules
 .DS_Store
 *.suo
 *.ntvs*
@@ -70,10 +71,12 @@ client/dist
 api/node_modules
 # app build
 api/view
-
+# upload
+api/uploads
 
 ## env
 .env
 .env.local
 .env.test
 .env.production
+

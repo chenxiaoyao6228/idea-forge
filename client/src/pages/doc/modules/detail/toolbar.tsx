@@ -5,6 +5,7 @@ import { ImageIcon, Smile, X } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
 import { IconPicker } from "./icon-picker";
 import { Emoji } from "emoji-picker-react";
+import { useCoverImageStore } from "./cover/coverImageStore";
 
 interface ToolbarProps {
   doc: DocTreeDataNode;
@@ -42,14 +43,20 @@ const useDocumentTitle = (doc: DocTreeDataNode) => {
 const IconSection = ({ doc, preview, onIconSelect, onRemoveIcon }: IconSectionProps) => {
   if (!doc.icon) return null;
 
+  const coverImage = doc.coverImage;
+
   const emoji = doc.icon as string;
 
   if (preview) {
-    return <Emoji unified={emoji} size={64} />;
+    return (
+      <div className={`${coverImage ? "-mt-6" : "mt-6"}`}>
+        <Emoji unified={emoji} size={64} />
+      </div>
+    );
   }
 
   return (
-    <div className="flex items-center gap-x-2 group/icon pt-6">
+    <div className={`${coverImage ? "-mt-6" : "mt-6"} inline-flex items-center gap-x-2 group/icon `}>
       <IconPicker onChange={onIconSelect}>
         <Emoji unified={emoji} size={64} />
       </IconPicker>
@@ -66,14 +73,15 @@ const IconSection = ({ doc, preview, onIconSelect, onRemoveIcon }: IconSectionPr
 };
 
 const STYLES = {
-  title: "text-5xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF]",
+  title: "text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF]",
 } as const;
 
 export const Toolbar = ({ doc, preview }: ToolbarProps) => {
   const inputRef = useRef<ElementRef<"textarea">>(null);
   const { isEditing, setIsEditing, value, setValue, onInput } = useDocumentTitle(doc);
   const updateDocument = useDocumentStore.use.updateDocument();
-
+  const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
+  const generateDefaultCover = useDocumentStore.use.generateDefaultCover();
   const enableInput = () => {
     if (preview) return;
 
@@ -98,14 +106,14 @@ export const Toolbar = ({ doc, preview }: ToolbarProps) => {
   };
 
   const onRemoveIcon = () => {
-    updateDocument(doc.id, { icon: undefined });
+    updateDocument(doc.id, { icon: "" });
   };
 
   return (
     <div className="pl-[54px] group relative">
       <IconSection doc={doc} preview={preview} onIconSelect={onIconSelect} onRemoveIcon={onRemoveIcon} />
 
-      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-x-1 py-4">
+      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-x-1 py-2">
         {!doc.icon && !preview && (
           <IconPicker asChild onChange={onIconSelect}>
             <Button className="text-muted-foreground text-xs" variant="outline" size="sm">
@@ -114,8 +122,8 @@ export const Toolbar = ({ doc, preview }: ToolbarProps) => {
           </IconPicker>
         )}
 
-        {doc.id && (
-          <Button onClick={() => {}} className="text-muted-foreground text-xs" variant="outline" size="sm">
+        {doc.id && !doc?.coverImage && (
+          <Button onClick={() => generateDefaultCover(doc.key)} className="text-muted-foreground text-xs" variant="outline" size="sm">
             <ImageIcon className="h-4 w-4 mr-2" /> Add cover
           </Button>
         )}

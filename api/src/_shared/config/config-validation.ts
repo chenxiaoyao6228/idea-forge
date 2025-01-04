@@ -39,6 +39,15 @@ export const envSchema = z.object({
 
   /* OPTIONAL CONFIG */
   RESEND_API_KEY: z.string().optional(),
+
+  /* COS CONFIG */
+  OSS_PROVIDER: z.enum(["minio", "cos", "oss"]),
+  OSS_SECRET_ID: z.string().min(1),
+  OSS_SECRET_KEY: z.string().min(1),
+  OSS_BUCKET: z.string().min(1),
+  OSS_REGION: z.string().min(1),
+  OSS_ENDPOINT: z.string().url(),
+  OSS_CDN_ENDPOINT: z.string().url().optional().nullable(),
 });
 
 const clientEnvSchema = z.object({

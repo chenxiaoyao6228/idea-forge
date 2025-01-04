@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -9,37 +9,33 @@ import { useDocumentStore } from "../store";
 import { AddDocButton } from "./add-doc-button";
 import { logger } from "@/lib/logger";
 import { treeUtils } from "../util";
-
 export function MyDocs() {
   const navigate = useNavigate();
-
+  const { docId: curDocId } = useParams();
   const treeData = useDocumentStore.use.treeData();
   const expandedKeys = useDocumentStore.use.expandedKeys();
-  const selectedKeys = useDocumentStore.use.selectedKeys();
   const loadChildren = useDocumentStore.use.loadChildren();
   const loadNestedTree = useDocumentStore.use.loadNestedTree();
   const setExpandedKeys = useDocumentStore.use.setExpandedKeys();
-  const setSelectedKeys = useDocumentStore.use.setSelectedKeys();
   const moveDocuments = useDocumentStore.use.moveDocuments();
   const deleteDocument = useDocumentStore.use.deleteDocument();
   const updateDocument = useDocumentStore.use.updateDocument();
   const loadCurrentDocument = useDocumentStore.use.loadCurrentDocument();
 
-  // load nested tree when page load
-  const docId = window.location.pathname.split("/").pop();
+  const [isTreeLoaded, setIsTreeLoaded] = useState(false);
+
   useEffect(() => {
-    loadNestedTree(docId || null);
+    loadNestedTree(curDocId || null).then(() => {
+      setIsTreeLoaded(true);
+    });
   }, []);
 
-  // select document when url change
-
   useEffect(() => {
-    // Get document ID from URL
-    if (docId) {
-      loadCurrentDocument(docId);
-      setSelectedKeys([docId]);
+    // Only load current document when tree is loaded and we have a docId
+    if (isTreeLoaded && curDocId) {
+      loadCurrentDocument(curDocId);
     }
-  }, [docId]);
+  }, [curDocId, isTreeLoaded]);
 
   const handleSelect = (keys: string[], { node }: { node: TreeDataNode }) => {
     navigate(`/doc/${node.key}`);
@@ -61,8 +57,9 @@ export function MyDocs() {
 
     // not allow drop to self
     if (dragKey === dropKey) return;
+
     // not allow to drop to the same parent
-    if (dragParentId === dropKey) return;
+    // if (dragParentId === dropKey) return;
 
     try {
       await moveDocuments({
@@ -73,6 +70,13 @@ export function MyDocs() {
     } catch (error) {
       console.error("Failed to move document:", error);
       // TODO: add error toast
+    }
+  };
+
+  const handleDeleteDoc = async (id: string) => {
+    const parentKey = await deleteDocument(id);
+    if (parentKey) {
+      navigate(`/doc/${parentKey}`);
     }
   };
 
@@ -92,7 +96,7 @@ export function MyDocs() {
           onDragEnter={handleDragEnter}
           onDrop={handleDrop}
           expandedKeys={expandedKeys}
-          selectedKeys={selectedKeys}
+          selectedKeys={curDocId ? [curDocId] : []}
           showIcon={true}
           onExpand={(keys) => setExpandedKeys(keys)}
           onRename={handleRenameComplete}
@@ -122,7 +126,7 @@ export function MyDocs() {
                   >
                     Rename
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive" onClick={() => deleteDocument(node.key)}>
+                  <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteDoc(node.key)}>
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>

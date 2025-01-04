@@ -32,6 +32,12 @@ const commonSharedDocumentSchema = commonDocumentSchema
     }),
     permission: z.enum(permission).optional(),
     noticeType: z.enum(noticeType).optional(),
+    coverImage: z
+      .object({
+        scrollY: z.number(),
+        url: z.string(),
+      })
+      .nullable(),
   });
 
 export type CommonSharedDocumentResponse = z.infer<typeof commonSharedDocumentSchema>;
@@ -117,6 +123,14 @@ export const removeShareSchema = z.object({
 
 export type RemoveShareDto = z.infer<typeof removeShareSchema>;
 
+export const updateCoverSchema = z.object({
+  url: z.string().optional(),
+  scrollY: z.number().optional(),
+  isPreset: z.boolean().optional(),
+});
+
+export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
+
 //  ============== response ==============
 export interface CreateDocumentResponse extends CommonDocumentResponse {}
 export interface UpdateDocumentResponse extends CommonDocumentResponse {}
@@ -127,6 +141,12 @@ export const detailDocumentSchema = commonDocumentSchema
   })
   .extend({
     content: z.string(),
+    coverImage: z
+      .object({
+        scrollY: z.number(),
+        url: z.string(),
+      })
+      .nullable(),
   });
 
 export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;
