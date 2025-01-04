@@ -4,12 +4,10 @@ import { Tree, TreeDataNode } from "@/components/ui/tree";
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
 import { useSharedDocumentStore } from "../shared-store";
 import { useEffect } from "react";
+import { useParams } from "react-router-dom";
 
-interface Props {
-  curDocId?: string;
-}
-
-export function OthersDocs({ curDocId }: Props) {
+export function OthersDocs() {
+  const { docId: curDocId } = useParams();
   const sharedTreeData = useSharedDocumentStore.use.sharedTreeData();
   const expandedKeys = useSharedDocumentStore.use.expandedKeys();
   const setSelectedKeys = useSharedDocumentStore.use.setSelectedKeys();

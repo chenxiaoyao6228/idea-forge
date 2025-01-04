@@ -48,8 +48,8 @@ export default function Doc() {
           </SidebarGroup>
         </SidebarHeader>
         <SidebarContent className="custom-scrollbar">
-          <OthersDocs curDocId={curDocId} />
-          <MyDocs curDocId={curDocId} />
+          <OthersDocs />
+          <MyDocs />
         </SidebarContent>
         <SidebarFooter>
           <UserSettings />
@@ -59,7 +59,7 @@ export default function Doc() {
       {/* content */}
       <SidebarInset className={cn("h-full relative")}>
         <DocumentHeader />
-        <DocDetail curDocId={curDocId} />
+        <DocDetail />
       </SidebarInset>
     </SidebarProvider>
   );

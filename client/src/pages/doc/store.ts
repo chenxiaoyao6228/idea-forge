@@ -6,6 +6,7 @@ import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "sha
 import createSelectors from "@/stores/utils/createSelector";
 import { treeUtils } from "./util";
 import { PRESET_CATEGORIES } from "./modules/detail/constants";
+import { useParams } from "react-router-dom";
 
 const LAST_DOC_ID_KEY = "lastDocId";
 
@@ -20,23 +21,21 @@ export interface DocTreeDataNode extends TreeDataNode {
 
 interface DocumentTreeState {
   expandedKeys: string[];
-  selectedKeys: string[];
   loading: boolean;
   treeData: DocTreeDataNode[];
   lastDocId: string | null;
 
   // actions
-  getCurrentDocument: () => DocTreeDataNode | null;
+  getCurrentDocument: (curDocId: string) => DocTreeDataNode | null;
   setExpandedKeys: (keys: string[]) => void;
   setSelectedKeys: (keys: string[]) => void;
   setCurrentDocument: (doc: DocTreeDataNode) => void;
   loadChildren: (key: string | null) => Promise<void>;
   createDocument: (parentId: string | null, title: string) => Promise<string>;
-  deleteDocument: (id: string) => Promise<void>;
+  deleteDocument: (id: string) => Promise<string | null>;
   moveDocuments: (data: MoveDocumentsDto) => Promise<void>;
   loadCurrentDocument: (id: string) => Promise<void>;
   loadNestedTree: (key: string | null) => Promise<void>;
-  updateCurrentDocument: (update: UpdateDocumentDto) => void;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
   setLastDocId: (id: string) => void;
   generateDefaultCover: (id: string) => Promise<void>;
@@ -48,30 +47,15 @@ const store = create<DocumentTreeState>()(
   devtools(
     (set, get) => ({
       expandedKeys: [],
-      selectedKeys: [],
       treeData: [],
       loading: false,
       lastDocId: localStorage.getItem(LAST_DOC_ID_KEY),
 
       setExpandedKeys: (keys) => set({ expandedKeys: keys }),
 
-      setSelectedKeys: (keys) => {
-        set({ selectedKeys: keys });
-        if (keys.length > 0) {
-          get().setLastDocId(keys[0]);
-        }
-      },
-
-      getCurrentDocument: () => {
-        const curId = get().selectedKeys[0];
-        if (!curId) return null;
-        return treeUtils.findNode(get().treeData, curId) as DocTreeDataNode;
-      },
-
-      updateCurrentDocument: async (update) => {
-        const curId = get().selectedKeys[0];
-        if (!curId) return;
-        await get().updateDocument(curId, update);
+      getCurrentDocument: (curDocId) => {
+        if (!curDocId) return null;
+        return treeUtils.findNode(get().treeData, curDocId) as DocTreeDataNode;
       },
 
       loadNestedTree: async (key = null) => {
@@ -110,7 +94,7 @@ const store = create<DocumentTreeState>()(
       },
 
       loadCurrentDocument: async (id) => {
-        set({ loading: true, selectedKeys: [id] });
+        set({ loading: true });
         try {
           const doc = await documentApi.getDocument(id);
           set((state) => ({
@@ -143,7 +127,6 @@ const store = create<DocumentTreeState>()(
             return {
               treeData: [...state.treeData, newNode],
               expandedKeys: newExpandedKeys,
-              selectedKeys: [newNode.key],
             };
           }
 
@@ -154,7 +137,6 @@ const store = create<DocumentTreeState>()(
               isLeaf: false,
             })),
             expandedKeys: newExpandedKeys,
-            selectedKeys: [newNode.key],
           };
         });
 
@@ -164,15 +146,14 @@ const store = create<DocumentTreeState>()(
       deleteDocument: async (id) => {
         const parentKey = treeUtils.findParentKey(get().treeData, id);
 
-        set((state) => ({
-          treeData: treeUtils.removeTreeNode(state.treeData, id),
-          selectedKeys: state.selectedKeys.includes(id) && parentKey ? [parentKey] : state.selectedKeys.filter((k) => k !== id),
-        }));
+        const updatedTreeData = treeUtils.removeTreeNode(get().treeData, id);
+
+        set({ treeData: updatedTreeData });
 
         await documentApi.delete(id);
 
         if (parentKey) {
-          const data = await documentApi.getTree(parentKey);
+          const data = await documentApi.getChildren(parentKey);
           set((state) => ({
             treeData: treeUtils.updateTreeNodes(state.treeData, parentKey, (node) => ({
               ...node,
@@ -180,6 +161,8 @@ const store = create<DocumentTreeState>()(
             })),
           }));
         }
+
+        return parentKey;
       },
 
       updateDocument: async (id, update) => {
@@ -307,7 +290,7 @@ const store = create<DocumentTreeState>()(
               coverImage: {
                 id: response.id,
                 url: randomCover.url,
-                scrollY: 0,
+                scrollY: 50,
                 isPreset: true,
               },
             })),
@@ -366,8 +349,8 @@ const store = create<DocumentTreeState>()(
 export const useDocumentStore = createSelectors(store);
 
 export const useCurrentDocument = (): { currentDocument: DocTreeDataNode | null } => {
-  const curId = useDocumentStore.getState().selectedKeys[0];
-  if (!curId) return { currentDocument: null };
-  const currentDocument = treeUtils.findNode(useDocumentStore.getState().treeData, curId) as DocTreeDataNode;
+  const { docId: curDocId } = useParams();
+  if (!curDocId) return { currentDocument: null };
+  const currentDocument = treeUtils.findNode(useDocumentStore.getState().treeData, curDocId) as DocTreeDataNode;
   return { currentDocument };
 };

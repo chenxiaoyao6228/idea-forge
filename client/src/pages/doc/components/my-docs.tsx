@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -9,17 +9,11 @@ import { useDocumentStore } from "../store";
 import { AddDocButton } from "./add-doc-button";
 import { logger } from "@/lib/logger";
 import { treeUtils } from "../util";
-
-interface Props {
-  curDocId?: string;
-}
-
-export function MyDocs({ curDocId }: Props) {
+export function MyDocs() {
   const navigate = useNavigate();
-
+  const { docId: curDocId } = useParams();
   const treeData = useDocumentStore.use.treeData();
   const expandedKeys = useDocumentStore.use.expandedKeys();
-  const selectedKeys = useDocumentStore.use.selectedKeys();
   const loadChildren = useDocumentStore.use.loadChildren();
   const loadNestedTree = useDocumentStore.use.loadNestedTree();
   const setExpandedKeys = useDocumentStore.use.setExpandedKeys();
@@ -27,7 +21,6 @@ export function MyDocs({ curDocId }: Props) {
   const deleteDocument = useDocumentStore.use.deleteDocument();
   const updateDocument = useDocumentStore.use.updateDocument();
   const loadCurrentDocument = useDocumentStore.use.loadCurrentDocument();
-  const setSelectedKeys = useDocumentStore.use.setSelectedKeys();
 
   const [isTreeLoaded, setIsTreeLoaded] = useState(false);
 
@@ -41,7 +34,6 @@ export function MyDocs({ curDocId }: Props) {
     // Only load current document when tree is loaded and we have a docId
     if (isTreeLoaded && curDocId) {
       loadCurrentDocument(curDocId);
-      setSelectedKeys([curDocId]);
     }
   }, [curDocId, isTreeLoaded]);
 
@@ -80,6 +72,13 @@ export function MyDocs({ curDocId }: Props) {
     }
   };
 
+  const handleDeleteDoc = async (id: string) => {
+    const parentKey = await deleteDocument(id);
+    if (parentKey) {
+      navigate(`/doc/${parentKey}`);
+    }
+  };
+
   return (
     <SidebarGroup>
       <div className="flex items-center justify-between group/label">
@@ -96,7 +95,7 @@ export function MyDocs({ curDocId }: Props) {
           onDragEnter={handleDragEnter}
           onDrop={handleDrop}
           expandedKeys={expandedKeys}
-          selectedKeys={selectedKeys}
+          selectedKeys={curDocId ? [curDocId] : []}
           showIcon={true}
           onExpand={(keys) => setExpandedKeys(keys)}
           onRename={handleRenameComplete}
@@ -126,7 +125,7 @@ export function MyDocs({ curDocId }: Props) {
                   >
                     Rename
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive" onClick={() => deleteDocument(node.key)}>
+                  <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteDoc(node.key)}>
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
