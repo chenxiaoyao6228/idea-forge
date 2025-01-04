@@ -82,6 +82,42 @@ if [ $ELAPSED -gt $TIMEOUT ]; then
     exit 1
 fi
 
+# Wait for MinIO to be ready
+echo "⏳ Waiting for MinIO to be ready..."
+ELAPSED=0
+until curl -s http://localhost:9000/minio/health/live > /dev/null || [ $ELAPSED -gt $TIMEOUT ]; do
+    sleep 5
+    ELAPSED=$((ELAPSED + 5))
+done
+
+if [ $ELAPSED -gt $TIMEOUT ]; then
+    echo "❌ MinIO startup timeout"
+    echo "💡 Please check Docker container status:"
+    docker ps
+    exit 1
+fi
+
+# Create default bucket in MinIO
+echo "📦 Creating default MinIO bucket..."
+BUCKET_NAME="assets-idea-forge-dev"
+
+# Configure and create bucket using root credentials
+docker run --rm --network host \
+    -e MC_HOST_local=http://minioadmin:minioadmin@localhost:9000 \
+    minio/mc mb --ignore-existing local/$BUCKET_NAME
+
+# Set bucket policy to public (allow read access)
+docker run --rm --network host \
+    -e MC_HOST_local=http://minioadmin:minioadmin@localhost:9000 \
+    minio/mc anonymous set download local/$BUCKET_NAME
+
+if [ $? -eq 0 ]; then
+    echo "✅ MinIO bucket '$BUCKET_NAME' created and configured successfully"
+else
+    echo "❌ Failed to create/configure MinIO bucket"
+    exit 1
+fi
+
 # Apply migrations
 echo "🔄 Applying migrations..."
 

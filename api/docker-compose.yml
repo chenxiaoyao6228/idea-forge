@@ -19,6 +19,19 @@ services:
     volumes:
       - ideaforge_redis_data:/data
 
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000" # API port
+      - "9001:9001" # Console port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - ideaforge_minio_data:/data
+    command: server --console-address ":9001" /data
+
 volumes:
   ideaforge_postgres_data:
   ideaforge_redis_data:
+  ideaforge_minio_data:
