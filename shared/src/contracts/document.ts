@@ -32,6 +32,12 @@ const commonSharedDocumentSchema = commonDocumentSchema
     }),
     permission: z.enum(permission).optional(),
     noticeType: z.enum(noticeType).optional(),
+    coverImage: z
+      .object({
+        scrollY: z.number(),
+        url: z.string(),
+      })
+      .nullable(),
   });
 
 export type CommonSharedDocumentResponse = z.infer<typeof commonSharedDocumentSchema>;

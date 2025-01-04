@@ -7,13 +7,20 @@ import createSelectors from "@/stores/utils/createSelector";
 
 interface SharedDocTreeDataNode extends TreeDataNode {
   content?: string;
+  coverImage?: {
+    url?: string;
+    scrollY?: number;
+  };
 }
 
 interface SharedStoreState {
+  sharedDocList: CommonSharedDocumentResponse[];
   sharedTreeData: SharedDocTreeDataNode[];
   expandedKeys: string[];
   selectedKeys: string[];
   loadSharedDocuments: () => Promise<void>;
+  getCurrentSharedDoc: (docId: string) => SharedDocTreeDataNode | null;
+  setSharedDocList: (list: CommonSharedDocumentResponse[]) => void;
   setExpandedKeys: (keys: string[]) => void;
   setSelectedKeys: (keys: string[]) => void;
 
@@ -28,12 +35,19 @@ interface SharedStoreState {
 const store = create<SharedStoreState>()(
   devtools((set, get) => ({
     sharedTreeData: [],
+    sharedDocList: [],
+    setSharedDocList: (list) => set({ sharedDocList: list }),
     expandedKeys: [],
     selectedKeys: [],
     setExpandedKeys: (keys) => set({ expandedKeys: keys }),
     setSelectedKeys: (keys) => {
       set({ selectedKeys: keys });
     },
+
+    getCurrentSharedDoc: (docId: string) => {
+      return get().sharedDocList.find((doc) => doc.id === docId) || null;
+    },
+
     loadSharedDocuments: async () => {
       const response = await documentApi.getSharedDocuments();
 
@@ -42,8 +56,10 @@ const store = create<SharedStoreState>()(
         const authorNode = acc.find((node) => node.title === authorName);
 
         const docNode: SharedDocTreeDataNode = {
+          id: doc.id,
           key: doc.id,
           title: doc.title,
+          coverImage: doc.coverImage || undefined,
           isLeaf: true,
           children: [],
         };
@@ -52,8 +68,10 @@ const store = create<SharedStoreState>()(
           authorNode.children?.push(docNode);
         } else {
           acc.push({
+            id: doc.id,
             key: authorName,
             title: authorName,
+            coverImage: doc.coverImage || undefined,
             isLeaf: false,
             children: [docNode],
           });
@@ -62,7 +80,7 @@ const store = create<SharedStoreState>()(
         return acc;
       }, []);
 
-      set({ sharedTreeData: treeData });
+      set({ sharedTreeData: treeData, sharedDocList: response });
     },
 
     // doc shares

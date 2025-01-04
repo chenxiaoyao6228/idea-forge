@@ -10,11 +10,12 @@ interface CoverProps {
     url: string;
     scrollY: number;
   };
+  preview?: boolean;
 }
 
 const CONTAINER_HEIGHT_VH = 30;
 
-export default function Cover({ cover }: CoverProps) {
+export default function Cover({ cover, preview: isPreview = false }: CoverProps) {
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
   const { currentDocument } = useCurrentDocument();
@@ -107,7 +108,7 @@ export default function Cover({ cover }: CoverProps) {
     <div
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
-      className={`sticky z-1000 left-0  w-full h-[30vh] user-select-none  flex-shrink-0 group ${isRepositioning ? "cursor-move" : "cursor-default"}`}
+      className={`sticky z-1000 left-0 w-full h-[30vh] user-select-none flex-shrink-0 group ${isRepositioning ? "cursor-move" : "cursor-default"}`}
     >
       {/* image */}
       <div className="cover-image-container relative inset-0 will-change-transform h-full overflow-hidden">
@@ -126,61 +127,66 @@ export default function Cover({ cover }: CoverProps) {
         />
       </div>
 
-      {/* buttons group */}
-      <div className="absolute left-0 right-0 bottom-0 z-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <div className="box-border h-10 flex justify-end items-center mx-24">
-          <div className="btn-group flex">
-            {isRepositioning ? (
-              <>
-                <button
-                  className="cursor-pointer text-xs px-3 py-1 text-white rounded-l-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors"
-                  onClick={handleSavePosition}
-                >
-                  Save position
-                </button>
-                <button
-                  className="cursor-pointer text-xs px-3 py-1 text-white rounded-r-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors border-l border-white border-opacity-20"
-                  onClick={handleCancelRepositioning}
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  className="cursor-pointer text-xs px-3 py-1 text-white rounded-l-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors"
-                  onClick={handleChangeCover}
-                >
-                  Change cover
-                </button>
-                <button
-                  className="cursor-pointer text-xs px-3 py-1 text-white  bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors border-l border-white border-opacity-20"
-                  onClick={handleStartRepositioning}
-                >
-                  Reposition
-                </button>
-                <button
-                  className="cursor-pointer text-xs px-3 py-1 text-white rounded-r-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors border-l border-white border-opacity-20"
-                  onClick={handleRemoveCover}
-                >
-                  Remove
-                </button>
-              </>
-            )}
+      {/* Only show buttons and positioning tip if not in preview mode */}
+      {!isPreview && (
+        <>
+          {/* buttons group */}
+          <div className="absolute left-0 right-0 bottom-0 z-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div className="box-border h-10 flex justify-end items-center mx-24">
+              <div className="btn-group flex">
+                {isRepositioning ? (
+                  <>
+                    <button
+                      className="cursor-pointer text-xs px-3 py-1 text-white rounded-l-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors"
+                      onClick={handleSavePosition}
+                    >
+                      Save position
+                    </button>
+                    <button
+                      className="cursor-pointer text-xs px-3 py-1 text-white rounded-r-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors border-l border-white border-opacity-20"
+                      onClick={handleCancelRepositioning}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="cursor-pointer text-xs px-3 py-1 text-white rounded-l-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors"
+                      onClick={handleChangeCover}
+                    >
+                      Change cover
+                    </button>
+                    <button
+                      className="cursor-pointer text-xs px-3 py-1 text-white  bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors border-l border-white border-opacity-20"
+                      onClick={handleStartRepositioning}
+                    >
+                      Reposition
+                    </button>
+                    <button
+                      className="cursor-pointer text-xs px-3 py-1 text-white rounded-r-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors border-l border-white border-opacity-20"
+                      onClick={handleRemoveCover}
+                    >
+                      Remove
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* positioning handler tip */}
-      {isRepositioning && (
-        <div className="tip absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-          <div className="text-xs px-3 py-1 text-white rounded-r-sm bg-gray-300 bg-opacity-30 border-l border-white border-opacity-20">
-            Drag image to reposition
-          </div>
-        </div>
+          {/* positioning handler tip */}
+          {isRepositioning && (
+            <div className="tip absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+              <div className="text-xs px-3 py-1 text-white rounded-r-sm bg-gray-300 bg-opacity-30 border-l border-white border-opacity-20">
+                Drag image to reposition
+              </div>
+            </div>
+          )}
+
+          <CoverPicker isOpen={isPickerOpen} onClose={() => setIsPickerOpen(false)} onSelect={handleImageSelect} onRemove={handleRemoveCover} />
+        </>
       )}
-
-      <CoverPicker isOpen={isPickerOpen} onClose={() => setIsPickerOpen(false)} onSelect={handleImageSelect} onRemove={handleRemoveCover} />
     </div>
   );
 }
