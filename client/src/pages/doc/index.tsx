@@ -19,8 +19,11 @@ import UserSettings from "./modules/setting";
 import DocDetail from "./modules/detail";
 import { Link } from "react-router-dom";
 import { Icon } from "@/components/ui/icon";
+import { useParams } from "react-router-dom";
 
 export default function Doc() {
+  const { docId: curDocId } = useParams();
+
   return (
     <SidebarProvider>
       {/* sidebar */}
@@ -45,8 +48,8 @@ export default function Doc() {
           </SidebarGroup>
         </SidebarHeader>
         <SidebarContent className="custom-scrollbar">
-          <OthersDocs />
-          <MyDocs />
+          <OthersDocs curDocId={curDocId} />
+          <MyDocs curDocId={curDocId} />
         </SidebarContent>
         <SidebarFooter>
           <UserSettings />
@@ -56,7 +59,7 @@ export default function Doc() {
       {/* content */}
       <SidebarInset className={cn("h-full relative")}>
         <DocumentHeader />
-        <DocDetail />
+        <DocDetail curDocId={curDocId} />
       </SidebarInset>
     </SidebarProvider>
   );

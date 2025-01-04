@@ -2,14 +2,16 @@ import { useDocumentStore } from "../../store";
 import DocHome from "./home";
 import ShareDoc from "./share-doc";
 import MyDoc from "./my-doc";
-import { useParams } from "react-router-dom";
 import { treeUtils } from "../../util";
 
-export default function DocDetail() {
-  const { docId } = useParams();
+interface Props {
+  curDocId?: string;
+}
+
+export default function DocDetail({ curDocId }: Props) {
   const treeData = useDocumentStore.use.treeData();
-  const isMyDoc = docId ? treeUtils.findNode(treeData, docId) : null;
-  const isHomeDoc = docId === "0";
+  const isMyDoc = curDocId ? treeUtils.findNode(treeData, curDocId) : null;
+  const isHomeDoc = curDocId === "0";
   const isShareDoc = !isMyDoc && !isHomeDoc;
 
   if (isHomeDoc) return <DocHome />;

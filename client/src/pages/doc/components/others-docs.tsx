@@ -5,7 +5,11 @@ import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/si
 import { useSharedDocumentStore } from "../shared-store";
 import { useEffect } from "react";
 
-export function OthersDocs() {
+interface Props {
+  curDocId?: string;
+}
+
+export function OthersDocs({ curDocId }: Props) {
   const sharedTreeData = useSharedDocumentStore.use.sharedTreeData();
   const expandedKeys = useSharedDocumentStore.use.expandedKeys();
   const setSelectedKeys = useSharedDocumentStore.use.setSelectedKeys();
@@ -26,12 +30,11 @@ export function OthersDocs() {
   }, []);
 
   // Get document ID from URL
-  const docId = window.location.pathname.split("/").pop();
   useEffect(() => {
-    if (docId) {
-      setSelectedKeys([docId]);
+    if (curDocId) {
+      setSelectedKeys([curDocId]);
     }
-  }, [docId]);
+  }, [curDocId]);
 
   if (!sharedTreeData.length) return null;
 
