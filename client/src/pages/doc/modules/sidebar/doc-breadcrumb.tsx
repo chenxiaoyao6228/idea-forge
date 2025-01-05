@@ -1,10 +1,10 @@
-import { useDocumentStore } from "../store";
+import { useDocumentStore } from "../../stores/store";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/ui/icon";
-import { treeUtils } from "../util";
+import { treeUtils } from "../../util";
 import { Separator } from "@/components/ui/separator";
 import { Emoji } from "emoji-picker-react";
 import { useParams } from "react-router-dom";

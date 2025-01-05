@@ -1,10 +1,16 @@
 {
-  "name": "nest-react-vite-starter",
-  "description": "Nest.js + React + Vite Starter",
-  "keywords": ["nest", "react", "vite", "starter", "type-safe", "monorepo", "tailwind", "shadcn"],
+  "name": "idea-forge",
+  "description": "Powerful document tool that combines the functionality of Notion with the intelligence of AI",
+  "keywords": [
+    "notion",
+    "ai",
+    "document",
+    "collaboration",
+    "tool"
+  ],
   "author": "YorkChan",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "main": "index.js",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
@@ -25,9 +31,8 @@
     "lint:fix": "turbo lint --continue -- --write",
     "pinstall": "find client api  -name \"node_modules\" -type d -exec rm -rf {} + && pnpm install --force",
     "removeLocks": "find . -name 'pnpm-lock.yaml' -type f -delete",
-    "setup": "cd ./api && sh setup.sh"
+    "setup": "cd ./api && npm run setup"
   },
-
   "devDependencies": {
     "concurrently": "^8.2.2",
     "@biomejs/biome": "^1.9.2",

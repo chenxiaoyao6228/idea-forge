@@ -4,11 +4,11 @@ import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
 import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
 import createSelectors from "@/stores/utils/createSelector";
-import { treeUtils } from "./util";
-import { PRESET_CATEGORIES } from "./modules/detail/constants";
+import { treeUtils } from "../util";
+import { PRESET_CATEGORIES } from "../modules/detail/constants";
 import { useParams } from "react-router-dom";
 
-const LAST_DOC_ID_KEY = "lastDocId";
+const LAST_DOC_ID_KEY = "last-doc-id";
 
 export interface DocTreeDataNode extends TreeDataNode {
   content?: string;
@@ -198,7 +198,10 @@ const store = create<DocumentTreeState>()(
           await documentApi.update(id, update);
 
           set((state) => ({
-            treeData: treeUtils.updateTreeNodes(get().treeData, id, (node) => ({ ...node, ...update })),
+            treeData: treeUtils.updateTreeNodes(get().treeData, id, (node) => ({
+              ...node,
+              ...update,
+            })),
           }));
         } catch (error) {
           console.error("Failed to update document:", error);
@@ -291,7 +294,7 @@ const store = create<DocumentTreeState>()(
               // If at root level
               return {
                 treeData: treeUtils.mergeTreeData(
-                  state.treeData.filter((node) => !result.some((r) => r.id === node.key)),
+                  state.treeData.filter((node) => !result.some((r: any) => r.id === node.key)),
                   result.map(treeUtils.convertToTreeNode),
                 ),
               };
@@ -376,7 +379,7 @@ const store = create<DocumentTreeState>()(
           set((state) => ({
             treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
               ...node,
-              coverImage: null,
+              coverImage: undefined,
             })),
           }));
         } catch (error) {
@@ -391,7 +394,9 @@ const store = create<DocumentTreeState>()(
 
 export const useDocumentStore = createSelectors(store);
 
-export const useCurrentDocument = (): { currentDocument: DocTreeDataNode | null } => {
+export const useCurrentDocument = (): {
+  currentDocument: DocTreeDataNode | null;
+} => {
   const { docId: curDocId } = useParams();
   if (!curDocId) return { currentDocument: null };
   const currentDocument = treeUtils.findNode(useDocumentStore.getState().treeData, curDocId) as DocTreeDataNode;

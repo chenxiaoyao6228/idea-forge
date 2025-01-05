@@ -1,5 +1,5 @@
 import { CommonDocumentResponse } from "shared";
-import { DocTreeDataNode } from "./store";
+import { DocTreeDataNode } from "./stores/store";
 
 export const treeUtils = {
   findParentKey: (nodes: DocTreeDataNode[], targetKey: string): string | null => {
@@ -21,7 +21,10 @@ export const treeUtils = {
         return updater(node);
       }
       if (node.children) {
-        return { ...node, children: treeUtils.updateTreeNodes(node.children as DocTreeDataNode[], key, updater) };
+        return {
+          ...node,
+          children: treeUtils.updateTreeNodes(node.children as DocTreeDataNode[], key, updater),
+        };
       }
       return node;
     });

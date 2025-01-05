@@ -1,5 +1,5 @@
 import React, { ElementRef, useRef, useState } from "react";
-import { DocTreeDataNode, useDocumentStore } from "../../store";
+import { DocTreeDataNode, useDocumentStore } from "../../stores/store";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Smile, X } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";

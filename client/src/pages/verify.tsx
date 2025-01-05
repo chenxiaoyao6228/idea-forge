@@ -2,9 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ErrorList, OTPField } from "@/components/forms";
-import { Spacer } from "@/components/spacer";
 import { StatusButton } from "@/components/ui/status-button";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import request from "@/lib/request";
 import { CodeValidateSchema, CodeValidateData } from "shared";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -33,6 +32,7 @@ export default function VerifyRoute() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    setValue,
   } = useForm<CodeValidateData>({
     resolver: zodResolver(CodeValidateSchema),
     defaultValues: {
@@ -41,6 +41,13 @@ export default function VerifyRoute() {
       type,
     },
   });
+
+  const handleOTPChange = useCallback(
+    (value: string) => {
+      setValue(codeQueryParam, value);
+    },
+    [setValue],
+  );
 
   // Define headings based on verification type
   const checkEmail = (
@@ -110,7 +117,7 @@ export default function VerifyRoute() {
                     className: "font-medium",
                   }}
                   inputProps={{
-                    ...register(codeQueryParam),
+                    onChange: handleOTPChange,
                     autoComplete: "one-time-code",
                     autoFocus: true,
                   }}

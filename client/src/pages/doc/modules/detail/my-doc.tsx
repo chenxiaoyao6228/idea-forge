@@ -1,5 +1,5 @@
-import { useCurrentDocument } from "../../store";
-import { useDocumentStore } from "../../store";
+import { useCurrentDocument } from "../../stores/store";
+import { useDocumentStore } from "../../stores/store";
 import { Textarea } from "@/components/ui/textarea";
 import { Toolbar } from "./toolbar";
 import Cover from "./cover";
