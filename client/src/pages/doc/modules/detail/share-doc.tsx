@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { Toolbar } from "./toolbar";
 import { useSharedDocumentStore } from "../../stores/shared-store";
+import TiptapEditor from "../editor";
 
 export default function ShareDoc() {
   const { docId: curDocId } = useParams();
@@ -19,6 +20,7 @@ export default function ShareDoc() {
       {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} preview={true} />}
       <div className="md:max-w-3xl lg:max-w-4xl mx-auto ">
         <Toolbar doc={currentDocument} preview={true} />
+        <TiptapEditor id={currentDocument.id} />
       </div>
     </div>
   );
