@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useDocumentStore } from "../doc/store";
+import { useDocumentStore } from "../doc/stores/store";
 import Slogan from "./slogan";
 import { User, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";

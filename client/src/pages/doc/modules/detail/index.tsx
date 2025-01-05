@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useDocumentStore } from "../../store";
+import { useDocumentStore } from "../../stores/store";
 import DocHome from "./home";
 import ShareDoc from "./share-doc";
 import MyDoc from "./my-doc";

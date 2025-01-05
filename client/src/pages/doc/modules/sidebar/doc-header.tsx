@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { useDocumentStore } from "../store";
+import { useDocumentStore } from "../../stores/store";
 import DocumentBreadcrumb from "./doc-breadcrumb";
 import { ShareDocButton } from "./share-doc-button";
 

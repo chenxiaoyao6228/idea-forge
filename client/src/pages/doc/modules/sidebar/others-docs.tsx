@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Tree, TreeDataNode } from "@/components/ui/tree";
 
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
-import { useSharedDocumentStore } from "../shared-store";
+import { useSharedDocumentStore } from "../../stores/shared-store";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 

@@ -12,9 +12,9 @@ import {
 import Logo from "@/components/logo";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils";
-import DocumentHeader from "./components/doc-header";
-import { MyDocs } from "./components/my-docs";
-import { OthersDocs } from "./components/others-docs";
+import DocumentHeader from "./modules/sidebar/doc-header";
+import { MyDocs } from "./modules/sidebar/my-docs";
+import { OthersDocs } from "./modules/sidebar/others-docs";
 import UserSettings from "./modules/setting";
 import DocDetail from "./modules/detail";
 import { Link } from "react-router-dom";
@@ -22,8 +22,6 @@ import { Icon } from "@/components/ui/icon";
 import { useParams } from "react-router-dom";
 
 export default function Doc() {
-  const { docId: curDocId } = useParams();
-
   return (
     <SidebarProvider>
       {/* sidebar */}
@@ -32,9 +30,9 @@ export default function Doc() {
           <SidebarGroup>
             <Logo />
           </SidebarGroup>
-          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          {/* <SidebarGroup className="group-data-[collapsible=icon]:hidden">
             <SidebarMenu>
-              {/* navDocHome */}
+            
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link to="/doc/0">
@@ -43,9 +41,9 @@ export default function Doc() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {/* search */}
+    
             </SidebarMenu>
-          </SidebarGroup>
+          </SidebarGroup> */}
         </SidebarHeader>
         <SidebarContent className="custom-scrollbar">
           <OthersDocs />

@@ -3,7 +3,7 @@ import Cover from "./cover";
 import { useParams } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { Toolbar } from "./toolbar";
-import { useSharedDocumentStore } from "../../shared-store";
+import { useSharedDocumentStore } from "../../stores/shared-store";
 
 export default function ShareDoc() {
   const { docId: curDocId } = useParams();

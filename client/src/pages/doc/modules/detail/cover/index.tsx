@@ -1,21 +1,21 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCurrentDocument, useDocumentStore } from "@/pages/doc/store";
+import { useCurrentDocument, useDocumentStore } from "@/pages/doc/stores/store";
 import { CoverPicker } from "./cover-picker";
 import { useState, useRef, useEffect } from "react";
 import { useCoverImageStore } from "./coverImageStore";
 import { UpdateCoverDto } from "shared";
 
 interface CoverProps {
-  cover: {
-    url: string;
-    scrollY: number;
+  cover?: {
+    url?: string;
+    scrollY?: number;
   };
   preview?: boolean;
 }
 
 const CONTAINER_HEIGHT_VH = 30;
 
-export default function Cover({ cover, preview: isPreview = false }: CoverProps) {
+export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPreview = false }: CoverProps) {
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
   const { currentDocument } = useCurrentDocument();
@@ -56,7 +56,7 @@ export default function Cover({ cover, preview: isPreview = false }: CoverProps)
   const handleCancelRepositioning = () => {
     if (isRepositioning) {
       setIsRepositioning(false);
-      setImagePosition(cover.scrollY);
+      setImagePosition(scrollY);
     }
   };
 
@@ -85,7 +85,7 @@ export default function Cover({ cover, preview: isPreview = false }: CoverProps)
 
   useEffect(() => {
     if (cover.url) {
-      setImagePosition(cover.scrollY);
+      setImagePosition(scrollY);
     }
   }, [cover.url]);
 
