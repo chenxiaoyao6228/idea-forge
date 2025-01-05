@@ -41,7 +41,7 @@
     "@hocuspocus/extension-database": "^2.13.5",
     "@hocuspocus/extension-logger": "^2.13.5",
     "@hocuspocus/extension-throttle": "^2.13.6",
-    "@hocuspocus/server": "^2.13.5",
+    "@hocuspocus/server": "^2.14.0",
     "@hocuspocus/transformer": "^2.13.5",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.3.0",

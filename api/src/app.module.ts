@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { FallbackMiddleware } from "./_shared/middlewares/fallback.middleware";
 import { ConfigsModule } from "./_shared/config/config.module";
 import { FileStoreModule } from "./file-store/file-store.module";
+import { CollaborationModule } from "./collaboration/collaboration.module";
 
 @Module({
   controllers: [AppController],
@@ -51,6 +52,7 @@ import { FileStoreModule } from "./file-store/file-store.module";
     MailModule,
     DocumentModule,
     FileStoreModule,
+    CollaborationModule,
   ],
   providers: [
     {

@@ -12,9 +12,11 @@ export default function DocDetail() {
   const isHomeDoc = curDocId === "0";
   const isShareDoc = !isMyDoc && !isHomeDoc;
 
-  if (isHomeDoc) return <DocHome />;
-  if (isMyDoc) return <MyDoc />;
-  if (isShareDoc) return <ShareDoc />;
-
-  return null;
+  return (
+    <div className="flex-auto overflow-y-auto border border-blue-500">
+      {isHomeDoc && <DocHome />}
+      {isMyDoc && <MyDoc />}
+      {isShareDoc && <ShareDoc />}
+    </div>
+  );
 }

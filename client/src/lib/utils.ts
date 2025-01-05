@@ -16,3 +16,5 @@ export function mergeButtonRefs<T extends HTMLButtonElement>(refs: Array<React.M
     }
   };
 }
+
+export const getRandomElement = (list: any) => list[Math.floor(Math.random() * list.length)];
