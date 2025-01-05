@@ -1,12 +1,12 @@
 import "./index.css";
 import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { useCollaborationProvider } from "./hooks/useCollaborationProvider";
 import { getRandomElement } from "@/lib/utils";
 import useUserStore from "@/stores/user";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
+import { extensions } from "./extensions";
 
 interface Props {
   id: string;
@@ -23,8 +23,14 @@ export default function TiptapEditor({ id }: Props) {
   const provider = useCollaborationProvider(id, user);
 
   const editor = useEditor({
+    editorProps: {
+      attributes: {
+        // class:
+        //   "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none",
+      },
+    },
     extensions: [
-      StarterKit,
+      ...extensions,
       Collaboration.configure({
         document: provider.document,
       }),
