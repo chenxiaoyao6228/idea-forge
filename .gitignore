@@ -80,3 +80,5 @@ api/uploads
 .env.test
 .env.production
 
+## npmrc
+.npmrc
