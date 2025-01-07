@@ -19,8 +19,8 @@ import { useSidebarResize } from "@/hooks/use-sidebar-resize";
 import { cn, mergeButtonRefs } from "@/lib/utils";
 
 import { Icon } from "./icon";
-const SIDEBAR_COOKIE_NAME = "sidebar:state";
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const SIDEBAR_STORAGE_KEY = "sidebar:state";
+const SIDEBAR_WIDTH_STORAGE_KEY = "sidebar:width";
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
@@ -63,21 +63,30 @@ const SidebarProvider = React.forwardRef<
     defaultOpen?: boolean;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
-    //* new prop for default width
     defaultWidth?: string;
   }
 >(({ defaultOpen = true, open: openProp, onOpenChange: setOpenProp, className, style, children, defaultWidth = SIDEBAR_WIDTH, ...props }, ref) => {
   const isMobile = useIsMobile();
-  //* new state for sidebar width
-  const [width, setWidth] = React.useState(defaultWidth);
+
+  // Load initial states from localStorage
+  const [width, setWidth] = React.useState(() => {
+    if (typeof window === "undefined") return defaultWidth;
+    return localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY) || defaultWidth;
+  });
+
   const [openMobile, setOpenMobile] = React.useState(false);
-  //* new state for tracking is dragging rail
   const [isDraggingRail, setIsDraggingRail] = React.useState(false);
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen);
+  // Load initial open state from localStorage
+  const [_open, _setOpen] = React.useState(() => {
+    if (typeof window === "undefined") return defaultOpen;
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    return stored ? stored === "true" : defaultOpen;
+  });
+
   const open = openProp ?? _open;
+
+  // Update setOpen to use localStorage
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value;
@@ -86,12 +95,15 @@ const SidebarProvider = React.forwardRef<
       } else {
         _setOpen(openState);
       }
-
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(openState));
     },
     [setOpenProp, open],
   );
+
+  // Save width to localStorage when it changes
+  React.useEffect(() => {
+    localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, width);
+  }, [width]);
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
