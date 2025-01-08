@@ -99,6 +99,8 @@
 
     input[type="checkbox"] {
       @apply cursor-pointer;
+      width: 1rem;
+      height: 1rem;
     }
 
     ul[data-type="taskList"] {

@@ -5,9 +5,10 @@ import BasicMenu from "./basic-menu";
 import type { MenuProps } from "../type";
 import AlignMenu from "./align-menu";
 import ContentTypeMenu from "./content-type-menu";
+import SetLinkMenu from "./set-link-menu";
 
 export default function TextMenu(props: MenuProps) {
-  const { editor } = props;
+  const { editor, containerRef } = props;
 
   if (editor == null) return;
 
@@ -21,13 +22,14 @@ export default function TextMenu(props: MenuProps) {
   return (
     <BubbleMenu
       editor={editor}
-      tippyOptions={{ duration: 100, moveTransition: "transform 0.2s ease-out" }}
+      tippyOptions={{ duration: 100, moveTransition: "transform 0.2s ease-out", appendTo: () => containerRef?.current || document.body }}
       updateDelay={100}
       shouldShow={() => shouldShow(editor)}
     >
       <Wrapper>
         <ContentTypeMenu editor={editor} />
         <BasicMenu editor={editor} />
+        <SetLinkMenu editor={editor} containerRef={containerRef} />
         <AlignMenu editor={editor} />
       </Wrapper>
     </BubbleMenu>
