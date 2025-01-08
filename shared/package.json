@@ -18,5 +18,8 @@
   "devDependencies": {
     "@prisma/client": "^5.18.0",
     "@types/node": "18.11.18"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
   }
 }

@@ -1,5 +1,5 @@
 import "./index.css";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { useCollaborationProvider } from "./hooks/useCollaborationProvider";
@@ -7,7 +7,7 @@ import { getRandomElement } from "@/lib/utils";
 import useUserStore from "@/stores/user";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
-
+import BubbleMenus from "./bubble-menus";
 interface Props {
   id: string;
 }
@@ -25,8 +25,7 @@ export default function TiptapEditor({ id }: Props) {
   const editor = useEditor({
     editorProps: {
       attributes: {
-        // class:
-        //   "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none",
+        class: "min-h-96 prose dark:prose-invert focus:outline-none max-w-none",
       },
     },
     extensions: [
@@ -41,11 +40,12 @@ export default function TiptapEditor({ id }: Props) {
     ],
   });
 
-  if (!user) return null;
+  if (!user || !editor) return null;
 
   return (
-    <div className="editor-container px-4 md:col-[2] w-full mx-auto mt-2 border border-blue-500">
+    <div className="editor-container px-4 md:col-[2] w-full mx-auto mt-2">
       <EditorContent editor={editor} className="w-full" />
+      <BubbleMenus editor={editor} />
     </div>
   );
 }

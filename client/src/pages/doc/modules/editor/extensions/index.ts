@@ -1,6 +1,7 @@
 import { History } from "@tiptap/extension-history";
 import Placeholder from "@tiptap/extension-placeholder";
 import Typography from "@tiptap/extension-typography";
+import TextAlign from "@tiptap/extension-text-align";
 
 // custom extensions
 import { HardBreak } from "./hard-break";
@@ -42,6 +43,14 @@ const nodes = [
 
 const marks = [Bold, Italic, Strike, Underline, Subscript, Superscript];
 
-const _extensions = [Typography, Placeholder.configure({ placeholder: "Write something..." }), Markdown, History];
+const _extensions = [
+  Typography,
+  TextAlign.configure({
+    types: ["heading", "paragraph"],
+  }),
+  Placeholder.configure({ placeholder: "Write something..." }),
+  Markdown,
+  History,
+];
 
 export const extensions = [...nodes, ...marks, ..._extensions];
