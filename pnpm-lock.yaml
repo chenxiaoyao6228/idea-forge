@@ -615,6 +615,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.16(ts-node@10.9.2(@types/node@18.11.18)(typescript@5.6.3)))
+      tippy.js:
+        specifier: ^6.3.7
+        version: 6.3.7
       typed.js:
         specifier: ^2.1.0
         version: 2.1.0
