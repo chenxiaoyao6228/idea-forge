@@ -23,6 +23,7 @@ import { TaskList } from "./task-list";
 import { TaskItem } from "./task-item";
 import { Markdown } from "./markdown";
 import { Link } from "./link";
+import { CustomKeys } from "./custom-keys";
 
 const nodes = [
   Document,
@@ -60,6 +61,7 @@ const _extensions = [
     types: ["heading", "paragraph"],
   }),
   Placeholder.configure({ placeholder: "Write something..." }),
+  CustomKeys,
 ];
 
 export const extensions = [...nodes, ...marks, ..._extensions];
