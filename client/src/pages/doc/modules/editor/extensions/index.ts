@@ -1,4 +1,3 @@
-import { History } from "@tiptap/extension-history";
 import Placeholder from "@tiptap/extension-placeholder";
 import Typography from "@tiptap/extension-typography";
 import TextAlign from "@tiptap/extension-text-align";
@@ -23,6 +22,7 @@ import { OrderedList } from "./ordered-list";
 import { TaskList } from "./task-list";
 import { TaskItem } from "./task-item";
 import { Markdown } from "./markdown";
+import { Link } from "./link";
 
 const nodes = [
   Document,
@@ -41,16 +41,25 @@ const nodes = [
   HorizontalRule,
 ];
 
-const marks = [Bold, Italic, Strike, Underline, Subscript, Superscript];
+const marks = [
+  Bold,
+  Italic,
+  Strike,
+  Underline,
+  Subscript,
+  Superscript,
+  Link.configure({
+    openOnClick: false,
+  }),
+];
 
 const _extensions = [
+  Markdown,
   Typography,
   TextAlign.configure({
     types: ["heading", "paragraph"],
   }),
   Placeholder.configure({ placeholder: "Write something..." }),
-  Markdown,
-  History,
 ];
 
 export const extensions = [...nodes, ...marks, ..._extensions];

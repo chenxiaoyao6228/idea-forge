@@ -12,7 +12,7 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
       document: doc,
       token: "", // Add your auth token here if needed
       onAwarenessUpdate: ({ states }) => {
-        console.log("Collaboration awareness updated:", states);
+        // console.log("Collaboration awareness updated:", states);
       },
       onClose: () => {
         console.log("Connection closed");

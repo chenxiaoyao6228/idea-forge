@@ -8,11 +8,14 @@ import useUserStore from "@/stores/user";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
+import { useRef } from "react";
+
 interface Props {
   id: string;
 }
 
 export default function TiptapEditor({ id }: Props) {
+  const menuContainerRef = useRef(null);
   const { userInfo } = useUserStore();
 
   const user = {
@@ -38,14 +41,17 @@ export default function TiptapEditor({ id }: Props) {
         user,
       }),
     ],
+    onUpdate: ({ editor }) => {
+      console.log("Editor content:", editor.getJSON());
+    },
   });
 
   if (!user || !editor) return null;
 
   return (
-    <div className="editor-container px-4 md:col-[2] w-full mx-auto mt-2">
+    <div className="editor-container px-4 md:col-[2] w-full mx-auto mt-2" ref={menuContainerRef}>
       <EditorContent editor={editor} className="w-full" />
-      <BubbleMenus editor={editor} />
+      <BubbleMenus editor={editor} containerRef={menuContainerRef} />
     </div>
   );
 }

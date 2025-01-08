@@ -6,7 +6,7 @@ import type { EditorView } from "@tiptap/pm/view";
 
 export interface MenuProps {
   editor: Editor | null;
-  appendTo?: React.RefObject<any>;
+  containerRef: React.RefObject<HTMLElement>;
 }
 
 export interface ShouldShowProps {
@@ -20,5 +20,5 @@ export interface ShouldShowProps {
 
 export interface MenuProps {
   editor: Editor | null;
-  appendTo?: React.RefObject<any>;
+  containerRef: React.RefObject<HTMLElement>;
 }
