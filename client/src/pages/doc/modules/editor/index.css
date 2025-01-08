@@ -90,7 +90,7 @@
     @apply flex;
 
     > label {
-      @apply grow-0 shrink-0 flex-auto mt-0 mr-2 select-none;
+      @apply grow-0 shrink-0 flex-auto mt-0 mr-2 select-none flex items-center;
     }
 
     > div {
@@ -101,6 +101,7 @@
       @apply cursor-pointer;
       width: 1rem;
       height: 1rem;
+      border: 1px solid red;
     }
 
     ul[data-type="taskList"] {

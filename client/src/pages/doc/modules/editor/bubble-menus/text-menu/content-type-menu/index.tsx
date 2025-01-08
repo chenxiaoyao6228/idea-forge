@@ -28,30 +28,32 @@ export default function ContentTypeMenu(props: IProps) {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72 rounded-lg p-1 shadow-lg" align="start">
-        {options.map((op) => (
-          <Button
-            key={op.id}
-            disabled={op.disabled()}
-            variant="ghost"
-            size="lg"
-            onClick={op.onClick}
-            className={`
-              flex w-full items-start gap-2 rounded-md px-3 py-1.5 text-left 
+        <div className="grid gap-1">
+          {options.map((op) => (
+            <Button
+              key={op.id}
+              disabled={op.disabled()}
+              variant="ghost"
+              size="lg"
+              onClick={op.onClick}
+              className={`
+              h-11 flex w-full items-start gap-2 rounded-md px-2 py-2 text-left 
               ${op.isActive() ? "bg-secondary/80" : "hover:bg-secondary/80"} 
               ${op.disabled() ? "opacity-50" : ""}
             `}
-            tabIndex={-1}
-          >
-            <div className="mt-0.5 text-muted-foreground">
-              <op.Icon />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium leading-none">{op.label}</p>
-              {op.description && <p className="mt-1 text-xs text-muted-foreground">{op.description}</p>}
-            </div>
-            {op.isActive() && <div className="ml-2 text-sm text-primary">✓</div>}
-          </Button>
-        ))}
+              tabIndex={-1}
+            >
+              <div className="mt-0.5 text-muted-foreground">
+                <op.Icon />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium leading-none">{op.label}</p>
+                {op.description && <p className="mt-1 text-xs text-muted-foreground">{op.description}</p>}
+              </div>
+              {op.isActive() && <div className="ml-2 text-sm text-primary">✓</div>}
+            </Button>
+          ))}
+        </div>
       </PopoverContent>
     </Popover>
   );

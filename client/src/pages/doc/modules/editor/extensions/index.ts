@@ -24,6 +24,7 @@ import { TaskItem } from "./task-item";
 import { Markdown } from "./markdown";
 import { Link } from "./link";
 import { CustomKeys } from "./custom-keys";
+import { SlashCommands } from "./slash-commands";
 
 const nodes = [
   Document,
@@ -62,6 +63,7 @@ const _extensions = [
   }),
   Placeholder.configure({ placeholder: "Write something..." }),
   CustomKeys,
+  SlashCommands,
 ];
 
 export const extensions = [...nodes, ...marks, ..._extensions];
