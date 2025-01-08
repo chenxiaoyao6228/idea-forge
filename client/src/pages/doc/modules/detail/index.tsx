@@ -13,7 +13,7 @@ export default function DocDetail() {
   const isShareDoc = !isMyDoc && !isHomeDoc;
 
   return (
-    <div className="flex-auto overflow-y-auto border border-blue-500">
+    <div className="flex-auto overflow-y-auto">
       {isHomeDoc && <DocHome />}
       {isMyDoc && <MyDoc />}
       {isShareDoc && <ShareDoc />}
