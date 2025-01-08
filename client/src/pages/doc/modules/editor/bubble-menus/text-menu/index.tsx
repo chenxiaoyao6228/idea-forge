@@ -1,9 +1,10 @@
 import { BubbleMenu, BubbleMenuProps, Editor } from "@tiptap/react";
 import Wrapper from "../bubble-menu-wrapper";
 import { hasSelectedText } from "../../utils/text";
-import BasicMenu from "./basic";
+import BasicMenu from "./basic-menu";
 import type { MenuProps } from "../type";
 import AlignMenu from "./align-menu";
+import ContentTypeMenu from "./content-type-menu";
 
 export default function TextMenu(props: MenuProps) {
   const { editor } = props;
@@ -25,6 +26,7 @@ export default function TextMenu(props: MenuProps) {
       shouldShow={() => shouldShow(editor)}
     >
       <Wrapper>
+        <ContentTypeMenu editor={editor} />
         <BasicMenu editor={editor} />
         <AlignMenu editor={editor} />
       </Wrapper>
