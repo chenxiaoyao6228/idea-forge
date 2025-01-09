@@ -26,6 +26,10 @@ export const documentApi = {
   updateSharePermission: (id: string, data: UpdateSharePermissionDto) =>
     request.patch<UpdateSharePermissionDto, DocSharesResponse>(`/api/share-documents/${id}`, data),
 
+  getLatestDocument: async () => {
+    return request.get<null, CommonDocumentResponse>(`/api/documents/latest`);
+  },
+
   getChildren: async (parentId?: string | null) => {
     const searchParams = new URLSearchParams();
     if (parentId) searchParams.set("parentId", parentId);

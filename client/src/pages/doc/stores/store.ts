@@ -25,7 +25,6 @@ interface DocumentTreeState {
   lastDocId: string | null;
 
   // actions
-  getCurrentDocument: (curDocId: string) => DocTreeDataNode | null;
   setExpandedKeys: (keys: string[]) => void;
   setSelectedKeys: (keys: string[]) => void;
   setCurrentDocument: (doc: DocTreeDataNode) => void;
@@ -51,11 +50,6 @@ const store = create<DocumentTreeState>()(
       lastDocId: localStorage.getItem(LAST_DOC_ID_KEY),
 
       setExpandedKeys: (keys) => set({ expandedKeys: keys }),
-
-      getCurrentDocument: (curDocId) => {
-        if (!curDocId) return null;
-        return treeUtils.findNode(get().treeData, curDocId) as DocTreeDataNode;
-      },
 
       loadNestedTree: async (key = null) => {
         set({ loading: true });

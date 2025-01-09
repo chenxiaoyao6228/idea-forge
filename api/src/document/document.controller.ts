@@ -25,7 +25,7 @@ export class DocumentController {
 
   @Get("latest")
   findLatest(@GetUser("id") userId: number) {
-    return this.documentService.findLatest(userId);
+    return this.documentService.findLatestOrCreate(userId);
   }
 
   @Get(":id")

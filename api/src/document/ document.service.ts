@@ -168,8 +168,8 @@ export class DocumentService {
     }
   }
 
-  async findLatest(ownerId: number) {
-    const doc = await this.prisma.doc.findFirst({
+  async findLatestOrCreate(ownerId: number) {
+    let doc = await this.prisma.doc.findFirst({
       where: {
         ownerId,
         isArchived: false,
@@ -179,7 +179,18 @@ export class DocumentService {
       },
     });
 
-    console.log("doc", doc);
+    if (!doc) {
+      // Create a new document if none exists
+      doc = await this.prisma.doc.create({
+        data: {
+          title: "Untitled",
+          ownerId,
+          content: "",
+          position: 0,
+        },
+      });
+    }
+
     return doc;
   }
 
