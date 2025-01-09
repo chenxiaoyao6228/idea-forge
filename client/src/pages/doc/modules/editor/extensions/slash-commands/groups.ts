@@ -1,5 +1,4 @@
-import { Editor } from "@tiptap/core";
-import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Code, Minus, Table, Image, Link, LayoutGrid } from "lucide-react";
+import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout } from "lucide-react";
 import type { CommandGroup } from "./types";
 
 export const commandGroups: CommandGroup[] = [
@@ -99,6 +98,24 @@ export const commandGroups: CommandGroup[] = [
         Icon: Link,
         command: ({ editor }) => {
           editor.chain().focus().setLink({ href: "" }).run();
+        },
+      },
+      {
+        name: "codeBlock",
+        label: "CodeBlock ",
+        Icon: SquareCode,
+        description: "Code block with syntax highlighting",
+        command: ({ editor }) => {
+          editor.chain().focus().setCodeBlock().run();
+        },
+      },
+      {
+        name: "mermaid",
+        label: "Mermaid Diagram",
+        Icon: Sprout,
+        description: "Insert a Mermaid diagram",
+        command: ({ editor }) => {
+          editor.chain().focus().setCodeBlock({ language: "mermaid" }).run();
         },
       },
     ],

@@ -25,6 +25,8 @@ import { Markdown } from "./markdown";
 import { Link } from "./link";
 import { CustomKeys } from "./custom-keys";
 import { SlashCommands } from "./slash-commands";
+import { CodeBlock } from "./code-block";
+import { Code } from "./code";
 
 const nodes = [
   Document,
@@ -41,6 +43,13 @@ const nodes = [
   }),
   HardBreak,
   HorizontalRule,
+  Code.configure({
+    HTMLAttributes: {
+      class: "rounded-md bg-gray-700 dark:bg-gray-200 px-1.5 py-1 font-mono font-medium",
+      spellcheck: "false",
+    },
+  }),
+  CodeBlock,
 ];
 
 const marks = [
