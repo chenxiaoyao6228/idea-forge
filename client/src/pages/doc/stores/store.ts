@@ -7,6 +7,7 @@ import createSelectors from "@/stores/utils/createSelector";
 import { treeUtils } from "../util";
 import { PRESET_CATEGORIES } from "../modules/detail/constants";
 import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 const LAST_DOC_ID_KEY = "last-doc-id";
 
@@ -32,7 +33,6 @@ interface DocumentTreeState {
   createDocument: (parentId: string | null, title: string) => Promise<string>;
   deleteDocument: (id: string) => Promise<string | null>;
   moveDocuments: (data: MoveDocumentsDto) => Promise<void>;
-  loadCurrentDocument: (id: string) => Promise<void>;
   loadNestedTree: (key: string | null) => Promise<void>;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
   setLastDocId: (id: string) => void;
@@ -82,24 +82,6 @@ const store = create<DocumentTreeState>()(
           }));
         } catch (error) {
           console.error("Failed to load children:", error);
-          set({ loading: false });
-        }
-      },
-
-      loadCurrentDocument: async (id) => {
-        set({ loading: true });
-        try {
-          const doc = await documentApi.getDocument(id);
-          set((state) => ({
-            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
-              ...node,
-              ...doc,
-              coverImage: doc.coverImage ? { ...doc.coverImage } : node.coverImage,
-            })),
-          }));
-        } catch (error) {
-          console.error("Failed to load current document:", error);
-        } finally {
           set({ loading: false });
         }
       },
@@ -388,11 +370,31 @@ const store = create<DocumentTreeState>()(
 
 export const useDocumentStore = createSelectors(store);
 
-export const useCurrentDocument = (): {
-  currentDocument: DocTreeDataNode | null;
-} => {
-  const { docId: curDocId } = useParams();
-  if (!curDocId) return { currentDocument: null };
-  const currentDocument = treeUtils.findNode(useDocumentStore.getState().treeData, curDocId) as DocTreeDataNode;
-  return { currentDocument };
-};
+export function useCurrentDocument() {
+  const { docId } = useParams();
+  const treeData = useDocumentStore.use.treeData();
+
+  const { data: currentDocument, isLoading } = useQuery({
+    queryKey: ["document", docId],
+    queryFn: async () => {
+      if (!docId) return null;
+      const doc = await documentApi.getDocument(docId);
+      useDocumentStore.setState((state) => ({
+        treeData: treeUtils.updateTreeNodes(state.treeData, docId, (node) => ({
+          ...node,
+          ...doc,
+          coverImage: doc.coverImage ? { ...doc.coverImage } : node.coverImage,
+        })),
+      }));
+      return doc;
+    },
+    enabled: !!docId,
+    placeholderData: (previousData) => previousData,
+  });
+
+  // Return both the document from tree and loading state
+  return {
+    currentDocument: currentDocument ?? (docId ? (treeUtils.findNode(treeData, docId) as DocTreeDataNode) : null),
+    isLoading,
+  };
+}

@@ -18,7 +18,7 @@ const CONTAINER_HEIGHT_VH = 30;
 export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPreview = false }: CoverProps) {
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
-  const { currentDocument } = useCurrentDocument();
+  const { currentDocument, isLoading } = useCurrentDocument();
   const updateCover = useDocumentStore.use.updateCover();
   const removeCover = useDocumentStore.use.removeCover();
   const [imagePosition, setImagePosition] = useState(cover.scrollY || 50);
@@ -26,7 +26,7 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPre
   const imageRef = useRef<HTMLImageElement>(null);
 
   const handleImageSelect = async (dto: UpdateCoverDto) => {
-    await updateCover(currentDocument!.key, dto);
+    await updateCover(currentDocument!.id, dto);
   };
 
   const url = cover.url;
@@ -110,6 +110,7 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPre
       onPointerMove={handlePointerMove}
       className={`sticky z-1000 left-0 w-full h-[30vh] user-select-none flex-shrink-0 group ${isRepositioning ? "cursor-move" : "cursor-default"}`}
     >
+      {isLoading && <Cover.Skeleton />}
       {/* image */}
       <div className="cover-image-container relative inset-0 will-change-transform h-full overflow-hidden">
         <img
@@ -192,5 +193,5 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPre
 }
 
 Cover.Skeleton = function CoverSkeleton() {
-  return <Skeleton className="w-full h-[12vh]" />;
+  return <Skeleton className="w-full h-full" />;
 };

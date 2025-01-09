@@ -9,6 +9,7 @@ import { useDocumentStore } from "../../stores/store";
 import { AddDocButton } from "./add-doc-button";
 import { logger } from "@/lib/logger";
 import { treeUtils } from "../../util";
+
 export function MyDocs() {
   const navigate = useNavigate();
   const { docId: curDocId } = useParams();
@@ -20,22 +21,10 @@ export function MyDocs() {
   const moveDocuments = useDocumentStore.use.moveDocuments();
   const deleteDocument = useDocumentStore.use.deleteDocument();
   const updateDocument = useDocumentStore.use.updateDocument();
-  const loadCurrentDocument = useDocumentStore.use.loadCurrentDocument();
-
-  const [isTreeLoaded, setIsTreeLoaded] = useState(false);
 
   useEffect(() => {
-    loadNestedTree(curDocId || null).then(() => {
-      setIsTreeLoaded(true);
-    });
+    loadNestedTree(curDocId || null);
   }, []);
-
-  useEffect(() => {
-    // Only load current document when tree is loaded and we have a docId
-    if (isTreeLoaded && curDocId) {
-      loadCurrentDocument(curDocId);
-    }
-  }, [curDocId, isTreeLoaded]);
 
   const handleSelect = (keys: string[], { node }: { node: TreeDataNode }) => {
     navigate(`/doc/${node.key}`);
