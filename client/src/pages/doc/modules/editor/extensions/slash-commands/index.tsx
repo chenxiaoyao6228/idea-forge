@@ -28,18 +28,14 @@ export const SlashCommands = Extension.create({
           const isParagraph = $from.parent.type.name === "paragraph"; // Check if in paragraph
           const isStartOfNode = $from.parent.textContent?.charAt(0) === "/"; // Check if at start of node
 
-          // Check if inside a column
-          const isInColumn = editor.isActive("columns");
-
           // Check content after slash to avoid consecutive spaces
           const afterContent = $from.parent.textContent?.substring($from.parent.textContent.indexOf("/"));
           const isValidAfterContent = !afterContent?.endsWith("  ");
 
           // Combined conditions:
-          // 1. Either at root level paragraph start
-          // 2. Or at paragraph start within a column
-          // 3. And content format is valid
-          return ((isRootDepth && isParagraph && isStartOfNode) || (isInColumn && isParagraph && isStartOfNode)) && isValidAfterContent;
+          // 1. Must be at root level paragraph start
+          // 2. Content format must be valid
+          return isRootDepth && isParagraph && isStartOfNode && isValidAfterContent;
         },
         command: ({ editor, range, props }) => {
           const { view, state } = editor;
