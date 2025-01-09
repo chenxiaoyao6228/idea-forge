@@ -10,7 +10,7 @@
   ],
   "author": "YorkChan",
   "license": "MIT",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "index.js",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
