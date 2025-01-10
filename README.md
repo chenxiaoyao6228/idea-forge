@@ -13,6 +13,8 @@ Register and log in to the Tiptap website at https://tiptap.dev/, then visit htt
 Create a `.npmrc` file in the root directory of the project with the following content:
 
 ```bash
+link-workspace-packages=true 
+
 @tiptap-pro:registry=https://registry.tiptap.dev/
 //registry.tiptap.dev/:_authToken={your_token}
 ```

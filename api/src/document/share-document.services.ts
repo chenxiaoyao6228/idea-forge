@@ -1,13 +1,6 @@
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import {
-  CommonSharedDocumentResponse,
-  DocSharesResponse,
-  Permission,
-  RemoveShareDto,
-  ShareDocumentDto,
-  UpdateSharePermissionDto,
-} from "shared/dist/types/src/contracts/document";
+import { CommonSharedDocumentResponse, DocSharesResponse, Permission, RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "shared";
 
 @Injectable()
 export class ShareDocumentService {

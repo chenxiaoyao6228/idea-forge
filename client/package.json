@@ -112,7 +112,7 @@
     "remark-gfm": "^4.0.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
-    "shared": "*",
+    "shared": "workspace:*",
     "sonner": "^1.7.1",
     "spin-delay": "^2.0.1",
     "tailwind-merge": "^2.5.5",

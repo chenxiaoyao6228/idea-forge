@@ -189,8 +189,8 @@ importers:
         specifier: ^7.2.0
         version: 7.8.1
       shared:
-        specifier: '*'
-        version: 0.2.0
+        specifier: workspace:*
+        version: link:../shared
       snakecase-keys:
         specifier: ^8.0.1
         version: 8.0.1
@@ -622,8 +622,8 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0
       shared:
-        specifier: '*'
-        version: 0.2.0
+        specifier: workspace:*
+        version: link:../shared
       sonner:
         specifier: ^1.7.1
         version: 1.7.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -752,6 +752,15 @@ importers:
       '@types/node':
         specifier: 18.11.18
         version: 18.11.18
+      concurrently:
+        specifier: ^8.0.0
+        version: 8.2.2
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      typescript:
+        specifier: ^4.7.4
+        version: 4.9.5
 
 packages:
 
@@ -4695,9 +4704,6 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
-  bintrees@0.0.10:
-    resolution: {integrity: sha512-BkR37mfNUjTN36dENR1V6BlW8rqzpJnqCBhe2ZtWXJ1UgTVPHIlWSfYX7Ap/FlAgl7XWRr3mG4eR2LFnezBG1g==}
-
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
 
@@ -4756,16 +4762,6 @@ packages:
 
   bser@2.1.1:
     resolution: {integrity: sha512-gQxTNE/GAfIIrmHLUE3oJyp5FO6HRBfhjnw4/wMmA63ZGDJnWBmgY/lyQBpnDUkGmAhbSe39tx2d/iTOAfglwQ==}
-
-  bson@0.1.8:
-    resolution: {integrity: sha512-Zen/6PF3Mox895jY2kVBC8m/zbApUgUoGwQ7p+UqdcByls5aYNgE4CrpXgycsPcMio+wto6nRvhJlJuZr5hxBw==}
-    engines: {node: '>=0.6.19'}
-    deprecated: Fixed a critical issue with BSON serialization documented in CVE-2019-2391, see https://bit.ly/2KcpXdo for more details
-
-  bson@0.1.9:
-    resolution: {integrity: sha512-HlvXnohuuxlb/AzILVZFgGBO7658NPddPn1Q8PRC6ANHoPZKJotU0WG9+PoMjO7ZFM/e+jKbqOstXJLyIhSOgA==}
-    engines: {node: '>=0.6.19'}
-    deprecated: Fixed a critical issue with BSON serialization documented in CVE-2019-2391, see https://bit.ly/2KcpXdo for more details
 
   buffer-crc32@1.0.0:
     resolution: {integrity: sha512-Db1SbgBS/fg/392AblrMJk97KggmvYhr4pB5ZIMTWtaivCPMWLkmb7m21cJvpvgK+J3nsU2CmmixNBZx4vFj/w==}
@@ -7456,11 +7452,6 @@ packages:
   mlly@1.7.3:
     resolution: {integrity: sha512-xUsx5n/mN0uQf4V548PKQ+YShA4/IW0KI1dZhrNrPCLG+xizETbHTkOa1f8/xut9JRPp8kQuMnz0oqwkTiLo/A==}
 
-  mongodb@1.2.14:
-    resolution: {integrity: sha512-6e+wAdsDC8LXAiDd8hyvs3PelKsJC/zIuNehU3FeI4JidhoYW2CG3jGTshg9MI8UKPrcyB8sqY0blpRFPYPLSg==}
-    engines: {node: '>=0.6.19'}
-    deprecated: Please upgrade to 2.2.19 or higher
-
   ms@2.0.0:
     resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
 
@@ -7581,10 +7572,6 @@ packages:
 
   node-releases@2.0.18:
     resolution: {integrity: sha512-d9VeXT4SJ7ZeOqGX6R5EM022wpL+eWPooLI+5UpWn2jCT1aosUQEhQP214x33Wkwx3JQMvIm+tIoVOdodFS40g==}
-
-  node-uuid@1.3.3:
-    resolution: {integrity: sha512-xKQtL5imfvX6PvUmgJyU/XaNT/l8tKvs+sJ6KLOmIzk/H8+sm7uE80QlPmmu3l1uirvRL3kZqtJPWoQBWT9gQw==}
-    deprecated: Use uuid module instead
 
   nodemailer@6.9.16:
     resolution: {integrity: sha512-psAuZdTIRN08HKVd/E8ObdV6NO7NTBY3KsC30F7M4H1OnmLCUNaS56FpYxyb26zWLSyYF9Ozch9KYHhHegsiOQ==}
@@ -8529,6 +8516,10 @@ packages:
     deprecated: Rimraf versions prior to v4 are no longer supported
     hasBin: true
 
+  rimraf@5.0.10:
+    resolution: {integrity: sha512-l0OE8wL34P4nJH/H2ffoaniAokM2qSmrtXHmlpvYr5AVVX8msAyW0l8NVJFDxlSK4u3Uh/f41cQheDVdnYijwQ==}
+    hasBin: true
+
   robust-predicates@3.0.2:
     resolution: {integrity: sha512-IXgzBWvWQwE6PrDI05OvmXUIruQTcoMDzRsOd5CDvHCVLcLHMTSYvOK5Cm46kWqlV3yAbuSpBZdJ5oP5OUoStg==}
 
@@ -8650,11 +8641,6 @@ packages:
 
   setprototypeof@1.2.0:
     resolution: {integrity: sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==}
-
-  shared@0.2.0:
-    resolution: {integrity: sha512-nRBVf7KHFkU4vmiKAhTaJUm8miFMcU6b5I98U71Kk6uu1RIBeRwWivnMXEQOQxTxObPhOSIQSBhuIT+O/urG3A==}
-    bundledDependencies:
-      - rsvp
 
   shebang-command@1.2.0:
     resolution: {integrity: sha512-EV3L1+UQWGor21OmnvojK36mhg+TyIKDh3iFBKBohr5xeXIhNBcx8oWdgkTEEQ+BEFFYdLRuqMfd5L84N1V5Vg==}
@@ -9316,9 +9302,6 @@ packages:
 
   underscore.string@3.3.6:
     resolution: {integrity: sha512-VoC83HWXmCrF6rgkyxS9GHv8W9Q5nhMKho+OadDJGzL2oDYbYEppBaCMH6pFlwLeqj2QS+hhkw2kpXkSdD1JxQ==}
-
-  underscore@1.4.4:
-    resolution: {integrity: sha512-ZqGrAgaqqZM7LGRzNjLnw5elevWb5M8LEoDMadxIW3OWbcv72wMMgKdwOKpd5Fqxe8choLD8HN3iSj3TUh/giQ==}
 
   undici@6.21.0:
     resolution: {integrity: sha512-BUgJXc752Kou3oOIuU1i+yZZypyZRqNPW0vqoMPl8VaoalSfeR0D8/t4iAS3yirs79SSMTxTag+ZC86uswv+Cw==}
@@ -14480,8 +14463,6 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  bintrees@0.0.10: {}
-
   bl@4.1.0:
     dependencies:
       buffer: 5.7.1
@@ -14572,10 +14553,6 @@ snapshots:
   bser@2.1.1:
     dependencies:
       node-int64: 0.4.0
-
-  bson@0.1.8: {}
-
-  bson@0.1.9: {}
 
   buffer-crc32@1.0.0: {}
 
@@ -17964,10 +17941,6 @@ snapshots:
       pkg-types: 1.3.0
       ufo: 1.5.4
 
-  mongodb@1.2.14:
-    dependencies:
-      bson: 0.1.8
-
   ms@2.0.0: {}
 
   ms@2.1.3: {}
@@ -18084,8 +18057,6 @@ snapshots:
   node-int64@0.4.0: {}
 
   node-releases@2.0.18: {}
-
-  node-uuid@1.3.3: {}
 
   nodemailer@6.9.16: {}
 
@@ -19201,6 +19172,10 @@ snapshots:
     dependencies:
       glob: 7.2.3
 
+  rimraf@5.0.10:
+    dependencies:
+      glob: 10.4.5
+
   robust-predicates@3.0.2: {}
 
   rollup@4.28.1:
@@ -19348,14 +19323,6 @@ snapshots:
   set-harmonic-interval@1.0.1: {}
 
   setprototypeof@1.2.0: {}
-
-  shared@0.2.0:
-    dependencies:
-      bintrees: 0.0.10
-      bson: 0.1.9
-      mongodb: 1.2.14
-      node-uuid: 1.3.3
-      underscore: 1.4.4
 
   shebang-command@1.2.0:
     dependencies:
@@ -20082,8 +20049,6 @@ snapshots:
     dependencies:
       sprintf-js: 1.1.3
       util-deprecate: 1.0.2
-
-  underscore@1.4.4: {}
 
   undici@6.21.0: {}
 

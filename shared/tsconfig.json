@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "strict": true,
-    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "skipLibCheck": true,
@@ -11,10 +10,11 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
-    "rootDir": ".",
+    "rootDir": "src",
     "outDir": "./dist/esm",
     "declarationDir": "./dist/types",
     "module": "ESNext"
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

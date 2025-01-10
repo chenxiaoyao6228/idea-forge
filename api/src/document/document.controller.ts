@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestj
 import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto } from "./document.dto";
 import { DocumentService } from "./ document.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
-import { UpdateCoverDto } from "shared/dist/types/src/contracts/document";
+import { UpdateCoverDto } from "shared";
 
 @Controller("/api/documents")
 export class DocumentController {
