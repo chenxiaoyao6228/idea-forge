@@ -1,3 +1,7 @@
+// vscode does not support local settings override, so we have to use example settings.json as a boilerplate
+// you can add some local settings in settings.json, like files.exclude to exclude some files from vscode
+//  see:  https://github.com/microsoft/vscode/issues/37519
+
 {
   "[javascript][javascriptreact][typescript][typescriptreact][less][sass][scss][css][json][jsonc][html]": {
     "editor.defaultFormatter": "biomejs.biome"
@@ -25,5 +29,5 @@
 		"node:stream/consumers",
 		"node:test",
 		"node:console"
-	],
+	]
 }

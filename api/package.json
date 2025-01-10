@@ -2,9 +2,7 @@
   "name": "api",
   "version": "0.0.1",
   "description": "",
-  "author": "",
   "private": true,
-  "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
     "start": "NODE_ENV=production nest start",

@@ -31,7 +31,7 @@
     "lint:fix": "turbo lint --continue -- --write",
     "pinstall": "find client api  -name \"node_modules\" -type d -exec rm -rf {} + && pnpm install --force",
     "removeLocks": "find . -name 'pnpm-lock.yaml' -type f -delete",
-    "setup": "cd ./api && npm run setup"
+    "setup": "node scripts/setup-vscode.js && cd ./api && npm run setup"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

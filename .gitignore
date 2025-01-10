@@ -34,11 +34,7 @@ lerna-debug.log*
 .env.production.local
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
+.vscode/settings.json
 .idea
 .cursorrules
 .DS_Store
