@@ -51,7 +51,7 @@ importers:
         specifier: ^2.13.5
         version: 2.14.0(y-protocols@1.0.6(yjs@13.6.20))(yjs@13.6.20)
       '@hocuspocus/extension-throttle':
-        specifier: ^2.13.6
+        specifier: ^2.14.0
         version: 2.14.0(y-protocols@1.0.6(yjs@13.6.20))(yjs@13.6.20)
       '@hocuspocus/server':
         specifier: ^2.14.0
