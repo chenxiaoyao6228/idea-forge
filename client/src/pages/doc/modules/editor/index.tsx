@@ -9,6 +9,8 @@ import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
 import { useRef } from "react";
+import { useEditorStore } from "@/pages/doc/stores/editor-store";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   id: string;
@@ -17,9 +19,12 @@ interface Props {
 export default function TiptapEditor({ id }: Props) {
   const menuContainerRef = useRef(null);
   const { userInfo } = useUserStore();
+  const { status } = useEditorStore();
 
   const user = {
     name: userInfo?.displayName || (userInfo?.email as string),
+    email: userInfo?.email,
+    avatar: userInfo?.imageUrl,
     color: getRandomElement(COLLABORATE_EDIT_USER_COLORS),
   };
 
@@ -41,12 +46,32 @@ export default function TiptapEditor({ id }: Props) {
         user,
       }),
     ],
+    onCreate: ({ editor }) => {
+      console.log("Editor created:", editor);
+    },
     onUpdate: ({ editor }) => {
       console.log("Editor content:", editor.getJSON());
     },
   });
 
   if (!user || !editor) return null;
+
+  if (status === "connecting") {
+    return (
+      <div className="space-y-2 mx-10">
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-full" />
+      </div>
+    );
+  }
+
+  if (status === "disconnected") {
+    return (
+      <div className="mx-10">
+        <p className="text-sm text-muted-foreground text-red-500">Collaborative editing service connection failed. Please refresh the page and try again.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="editor-container px-4 md:col-[2] w-full mx-auto mt-2" ref={menuContainerRef}>
