@@ -123,7 +123,7 @@ export const Toolbar = ({ doc, preview }: ToolbarProps) => {
         )}
 
         {doc.id && !doc?.coverImage && (
-          <Button onClick={() => generateDefaultCover(doc.key)} className="text-muted-foreground text-xs" variant="outline" size="sm">
+          <Button onClick={() => generateDefaultCover(doc.id)} className="text-muted-foreground text-xs" variant="outline" size="sm">
             <ImageIcon className="h-4 w-4 mr-2" /> Add cover
           </Button>
         )}

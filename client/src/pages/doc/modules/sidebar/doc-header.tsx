@@ -3,9 +3,9 @@ import { Separator } from "@/components/ui/separator.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { useDocumentStore } from "../../stores/store";
 import DocumentBreadcrumb from "./doc-breadcrumb";
 import { ShareDocButton } from "./share-doc-button";
+import { CollabUsers } from "@/pages/doc/components/collab-users";
 
 export default function DocumentHeader() {
   return (
@@ -27,7 +27,8 @@ export default function DocumentHeader() {
         <DocumentBreadcrumb />
       </div>
       {/* right */}
-      <div className="mr-2 sm:mr-4">
+      <div className="flex items-center mr-2 sm:mr-4 ">
+        <CollabUsers className="mr-2" />
         <ShareDocButton />
         <ThemeSwitcher />
       </div>
