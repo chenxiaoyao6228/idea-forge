@@ -4,6 +4,8 @@ import { CoverPicker } from "./cover-picker";
 import { useState, useRef, useEffect } from "react";
 import { useCoverImageStore } from "./coverImageStore";
 import { UpdateCoverDto } from "shared";
+import { useImageLoading } from "@/hooks/use-image-loading";
+import { cn } from "@/lib/utils";
 
 interface CoverProps {
   cover?: {
@@ -25,6 +27,7 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPre
   const [imagePosition, setImagePosition] = useState(cover.scrollY || 50);
   const [startY, setStartY] = useState(0);
   const imageRef = useRef<HTMLImageElement>(null);
+  const { isLoading: isCoverImgLoading, handleImageLoad } = useImageLoading();
 
   const handleImageSelect = async (dto: UpdateCoverDto) => {
     if (!currentDocument) return;
@@ -111,14 +114,19 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPre
       onPointerMove={handlePointerMove}
       className={`sticky z-1000 left-0 w-full h-[30vh] user-select-none flex-shrink-0 group ${isRepositioning ? "cursor-move" : "cursor-default"}`}
     >
-      {isCurrentDocLoading && <Cover.Skeleton />}
+      {(isCurrentDocLoading || isCoverImgLoading) && <Cover.Skeleton />}
       {/* image */}
       <div className="cover-image-container relative inset-0 will-change-transform h-full overflow-hidden">
         <img
           ref={imageRef}
+          onLoad={handleImageLoad}
           src={url}
           alt="cover"
-          className="absolute left-0 top-0 w-full h-full object-cover transition-transform duration-200 ease-out"
+          className={cn(
+            "absolute left-0 top-0 w-full h-full object-cover transition-transform duration-200 ease-out",
+            isCoverImgLoading && "opacity-0",
+            !isCoverImgLoading && "opacity-100",
+          )}
           style={{
             userSelect: isRepositioning ? "none" : "auto",
             objectPosition: `center ${imagePosition}%`,
