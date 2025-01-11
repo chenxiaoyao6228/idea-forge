@@ -1,17 +1,18 @@
 import { useParams } from "react-router-dom";
-import { useCurrentDocument } from "../../stores/store";
 import DocHome from "./home";
 import ShareDoc from "./share-doc";
 import MyDoc from "./my-doc";
 import Loading from "@/components/loading";
+import { useDocumentStore } from "../../stores/store";
 
 export default function DocDetail() {
   const { docId } = useParams();
-  const { currentDocument, isLoading } = useCurrentDocument();
+  const currentDocument = useDocumentStore.use.currentDocument();
+  const isCurrentDocLoading = useDocumentStore.use.isCurrentDocLoading();
   const isHomeDoc = docId === "0";
   const isShareDoc = !currentDocument && !isHomeDoc;
 
-  if (isLoading) {
+  if (isCurrentDocLoading) {
     return <Loading />;
   }
 

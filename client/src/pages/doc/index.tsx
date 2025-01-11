@@ -20,8 +20,17 @@ import DocDetail from "./modules/detail";
 import { Link } from "react-router-dom";
 import { Icon } from "@/components/ui/icon";
 import { useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { useDocumentStore } from "./stores/store";
 
 export default function Doc() {
+  const { docId } = useParams();
+  const setCurrentDocId = useDocumentStore.use.setCurrentDocId();
+
+  useEffect(() => {
+    setCurrentDocId(docId || null);
+  }, [docId, setCurrentDocId]);
+
   return (
     <SidebarProvider>
       {/* sidebar */}

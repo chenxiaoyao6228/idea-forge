@@ -1,12 +1,10 @@
-import { useCurrentDocument } from "../../stores/store";
 import { useDocumentStore } from "../../stores/store";
-import { Textarea } from "@/components/ui/textarea";
 import { Toolbar } from "./toolbar";
 import Cover from "./cover";
 import TiptapEditor from "../editor";
 
 export default function DocDetail() {
-  const { currentDocument } = useCurrentDocument();
+  const currentDocument = useDocumentStore.use.currentDocument();
 
   if (!currentDocument) return null;
 

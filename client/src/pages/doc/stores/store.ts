@@ -2,12 +2,10 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
-import { CommonDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
+import { MoveDocumentsDto, UpdateDocumentDto } from "shared";
 import createSelectors from "@/stores/utils/createSelector";
 import { treeUtils } from "../util";
 import { PRESET_CATEGORIES } from "../modules/detail/constants";
-import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 
 const LAST_DOC_ID_KEY = "last-doc-id";
 
@@ -24,6 +22,9 @@ interface DocumentTreeState {
   loading: boolean;
   treeData: DocTreeDataNode[];
   lastDocId: string | null;
+  currentDocId: string | null;
+  currentDocument: DocTreeDataNode | null;
+  isCurrentDocLoading: boolean;
 
   // actions
   setExpandedKeys: (keys: string[]) => void;
@@ -39,6 +40,8 @@ interface DocumentTreeState {
   generateDefaultCover: (id: string) => Promise<void>;
   updateCover: (id: string, dto: { url?: string; scrollY?: number }) => Promise<void>;
   removeCover: (id: string) => Promise<void>;
+  setCurrentDocId: (id: string | null) => void;
+  fetchCurrentDocument: (id: string) => Promise<void>;
 }
 
 const store = create<DocumentTreeState>()(
@@ -48,6 +51,9 @@ const store = create<DocumentTreeState>()(
       treeData: [],
       loading: false,
       lastDocId: localStorage.getItem(LAST_DOC_ID_KEY),
+      currentDocId: null,
+      currentDocument: null,
+      isCurrentDocLoading: false,
 
       setExpandedKeys: (keys) => set({ expandedKeys: keys }),
 
@@ -173,12 +179,26 @@ const store = create<DocumentTreeState>()(
           set({ loading: true });
           await documentApi.update(id, update);
 
-          set((state) => ({
-            treeData: treeUtils.updateTreeNodes(get().treeData, id, (node) => ({
-              ...node,
+          set((state) => {
+            const updates = {
               ...update,
-            })),
-          }));
+            };
+
+            // Update both treeData and currentDocument if this is the current document
+            return {
+              treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+                ...node,
+                ...updates,
+              })),
+              currentDocument:
+                state.currentDocId === id
+                  ? {
+                      ...state.currentDocument,
+                      ...updates,
+                    }
+                  : state.currentDocument,
+            };
+          });
         } catch (error) {
           console.error("Failed to update document:", error);
         } finally {
@@ -276,6 +296,12 @@ const store = create<DocumentTreeState>()(
               };
             });
           }
+
+          // After successful move, if the moved document was current, refresh it
+          const currentDocId = get().currentDocId;
+          if (currentDocId === id) {
+            await get().fetchCurrentDocument(id);
+          }
         } catch (error) {
           console.error("Failed to move documents:", error);
           throw error;
@@ -289,34 +315,41 @@ const store = create<DocumentTreeState>()(
 
       generateDefaultCover: async (id) => {
         try {
-          // 1. 从 PRESET_CATEGORIES 中随机选择一个封面
           const allPresetCovers = PRESET_CATEGORIES.flatMap((category) => category.items);
           const randomCover = allPresetCovers[Math.floor(Math.random() * allPresetCovers.length)];
 
-          if (!randomCover) {
-            throw new Error("No preset covers available");
-          }
+          if (!randomCover) throw new Error("No preset covers available");
 
-          // 2. 使用 updateCover 接口更新封面
           const response = await documentApi.updateCover(id, {
             url: randomCover.url,
             scrollY: 50,
             isPreset: true,
           });
 
-          // 3. 更新当前文档的封面信息
-          // TODO: extend document type
-          set((state) => ({
-            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
-              ...node,
+          set((state) => {
+            const coverUpdate = {
               coverImage: {
                 id: response.id,
                 url: randomCover.url,
                 scrollY: 50,
                 isPreset: true,
               },
-            })),
-          }));
+            };
+
+            return {
+              treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+                ...node,
+                ...coverUpdate,
+              })),
+              currentDocument:
+                state.currentDocId === id
+                  ? {
+                      ...state.currentDocument,
+                      ...coverUpdate,
+                    }
+                  : state.currentDocument,
+            };
+          });
 
           return response;
         } catch (error) {
@@ -329,16 +362,28 @@ const store = create<DocumentTreeState>()(
         try {
           const response = await documentApi.updateCover(id, dto);
 
-          // Update store after API call succeeds
-          set((state) => ({
-            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
-              ...node,
+          set((state) => {
+            const coverUpdate = {
               coverImage: {
-                ...node.coverImage,
+                ...state.currentDocument?.coverImage,
                 ...dto,
               },
-            })),
-          }));
+            };
+
+            return {
+              treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+                ...node,
+                ...coverUpdate,
+              })),
+              currentDocument:
+                state.currentDocId === id
+                  ? {
+                      ...state.currentDocument,
+                      ...coverUpdate,
+                    }
+                  : state.currentDocument,
+            };
+          });
 
           return response;
         } catch (error) {
@@ -351,16 +396,46 @@ const store = create<DocumentTreeState>()(
         try {
           await documentApi.removeCover(id);
 
-          // Update store after API call succeeds
           set((state) => ({
             treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
               ...node,
               coverImage: undefined,
             })),
+            currentDocument:
+              state.currentDocId === id
+                ? {
+                    ...state.currentDocument,
+                    coverImage: undefined,
+                  }
+                : state.currentDocument,
           }));
         } catch (error) {
           console.error("Failed to remove cover:", error);
           throw error;
+        }
+      },
+
+      setCurrentDocId: (id) => {
+        set({ currentDocId: id });
+        if (id) get().fetchCurrentDocument(id);
+      },
+
+      fetchCurrentDocument: async (id) => {
+        set({ isCurrentDocLoading: true });
+        try {
+          const doc = await documentApi.getDocument(id);
+          set((state) => ({
+            currentDocument: doc,
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              ...doc,
+              coverImage: doc.coverImage ? { ...doc.coverImage } : node.coverImage,
+            })),
+            isCurrentDocLoading: false,
+          }));
+        } catch (error) {
+          console.error("Failed to fetch document:", error);
+          set({ isCurrentDocLoading: false });
         }
       },
     }),
@@ -369,32 +444,3 @@ const store = create<DocumentTreeState>()(
 );
 
 export const useDocumentStore = createSelectors(store);
-
-export function useCurrentDocument() {
-  const { docId } = useParams();
-  const treeData = useDocumentStore.use.treeData();
-
-  const { data: currentDocument, isLoading } = useQuery({
-    queryKey: ["document", docId],
-    queryFn: async () => {
-      if (!docId) return null;
-      const doc = await documentApi.getDocument(docId);
-      useDocumentStore.setState((state) => ({
-        treeData: treeUtils.updateTreeNodes(state.treeData, docId, (node) => ({
-          ...node,
-          ...doc,
-          coverImage: doc.coverImage ? { ...doc.coverImage } : node.coverImage,
-        })),
-      }));
-      return doc;
-    },
-    enabled: !!docId,
-    placeholderData: (previousData) => previousData,
-  });
-
-  // Return both the document from tree and loading state
-  return {
-    currentDocument: currentDocument ?? (docId ? (treeUtils.findNode(treeData, docId) as DocTreeDataNode) : null),
-    isLoading,
-  };
-}

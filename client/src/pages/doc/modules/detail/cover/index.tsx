@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCurrentDocument, useDocumentStore } from "@/pages/doc/stores/store";
+import { useDocumentStore } from "@/pages/doc/stores/store";
 import { CoverPicker } from "./cover-picker";
 import { useState, useRef, useEffect } from "react";
 import { useCoverImageStore } from "./coverImageStore";
@@ -18,7 +18,8 @@ const CONTAINER_HEIGHT_VH = 30;
 export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPreview = false }: CoverProps) {
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
-  const { currentDocument, isLoading } = useCurrentDocument();
+  const currentDocument = useDocumentStore.use.currentDocument();
+  const isCurrentDocLoading = useDocumentStore.use.isCurrentDocLoading();
   const updateCover = useDocumentStore.use.updateCover();
   const removeCover = useDocumentStore.use.removeCover();
   const [imagePosition, setImagePosition] = useState(cover.scrollY || 50);
@@ -26,13 +27,15 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPre
   const imageRef = useRef<HTMLImageElement>(null);
 
   const handleImageSelect = async (dto: UpdateCoverDto) => {
-    await updateCover(currentDocument!.id, dto);
+    if (!currentDocument) return;
+    await updateCover(currentDocument.id, dto);
   };
 
   const url = cover.url;
 
   const handleRemoveCover = async () => {
-    await removeCover(currentDocument!.key);
+    if (!currentDocument) return;
+    await removeCover(currentDocument.id);
   };
 
   const handleChangeCover = () => {
@@ -45,19 +48,17 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPre
   };
 
   const handleSavePosition = async () => {
-    if (currentDocument) {
-      await updateCover(currentDocument.key, {
-        scrollY: imagePosition,
-      });
-      setIsRepositioning(false);
-    }
+    if (!currentDocument) return;
+    await updateCover(currentDocument.id, {
+      scrollY: imagePosition,
+    });
+    setIsRepositioning(false);
   };
 
   const handleCancelRepositioning = () => {
-    if (isRepositioning) {
-      setIsRepositioning(false);
-      setImagePosition(scrollY);
-    }
+    if (!currentDocument) return;
+    setIsRepositioning(false);
+    setImagePosition(scrollY);
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -110,7 +111,7 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPre
       onPointerMove={handlePointerMove}
       className={`sticky z-1000 left-0 w-full h-[30vh] user-select-none flex-shrink-0 group ${isRepositioning ? "cursor-move" : "cursor-default"}`}
     >
-      {isLoading && <Cover.Skeleton />}
+      {isCurrentDocLoading && <Cover.Skeleton />}
       {/* image */}
       <div className="cover-image-container relative inset-0 will-change-transform h-full overflow-hidden">
         <img
