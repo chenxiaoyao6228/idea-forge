@@ -123,6 +123,7 @@
     "unist-builder": "^4.0.0",
     "unist-util-visit": "^5.0.0",
     "uuid": "^11.0.3",
+    "y-indexeddb": "^9.0.12",
     "yjs": "^13.6.20",
     "zod": "^3.23.8",
     "zustand": "^5.0.2"

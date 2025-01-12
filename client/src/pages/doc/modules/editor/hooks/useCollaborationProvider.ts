@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
+import { IndexeddbPersistence } from "y-indexeddb";
 import { CollaborationStatus, useEditorStore } from "../../../stores/editor-store";
 
 export function useCollaborationProvider(documentId: string, user: { name: string; color: string; email?: string }) {
@@ -8,6 +9,8 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
 
   const provider = useMemo(() => {
     const doc = new Y.Doc();
+
+    new IndexeddbPersistence(documentId, doc);
 
     const provider = new HocuspocusProvider({
       url: "ws://localhost:5001/collaboration",
