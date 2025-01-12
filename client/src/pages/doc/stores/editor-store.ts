@@ -3,12 +3,13 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 
 export type DocumentStatus = "loading" | "connecting" | "collaborating" | "offline" | "error";
 
-interface CollabUser {
+export interface CollabUser {
   clientId?: string;
   name: string;
   email?: string;
   avatar?: string;
   color: string;
+  lastActive: string;
 }
 
 interface DocumentState {

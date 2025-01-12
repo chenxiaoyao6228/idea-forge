@@ -8,7 +8,7 @@ import useUserStore from "@/stores/user";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { useCurrentDocumentState } from "@/pages/doc/stores/editor-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -26,12 +26,15 @@ export default function TiptapEditor({ id }: Props) {
 
   const { status, error, lastSyncedAt, pendingChanges, isIndexedDBLoaded } = currentDocument || {};
 
-  const user = {
-    name: userInfo?.displayName || (userInfo?.email as string),
-    email: userInfo?.email,
-    avatar: userInfo?.imageUrl,
-    color: getRandomElement(COLLABORATE_EDIT_USER_COLORS),
-  };
+  const user = useMemo(
+    () => ({
+      name: userInfo?.displayName || (userInfo?.email as string),
+      email: userInfo?.email,
+      avatar: userInfo?.imageUrl,
+      color: getRandomElement(COLLABORATE_EDIT_USER_COLORS),
+    }),
+    [userInfo],
+  );
 
   const provider = useCollaborationProvider(id, user);
 

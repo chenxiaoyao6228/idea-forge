@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
-import { useEditorStore } from "../../../stores/editor-store";
+import { CollabUser, useEditorStore } from "../../../stores/editor-store";
 
 const CONNECTION_TIMEOUT = 10000;
 
@@ -43,14 +43,24 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
       name: documentId,
       document: doc,
       onAwarenessUpdate: ({ states }) => {
-        const activeUsers = states.map((state) => ({
-          clientId: state.clientId.toString(),
-          name: state.user?.name || "Anonymous",
-          email: state.user?.email,
-          avatar: state.user?.avatar,
-          color: state.user?.color || "#000000",
-        }));
-        setCollaborationState(documentId, { activeUsers });
+        const userMap = new Map<string, CollabUser>();
+
+        states.forEach((state) => {
+          const userId = state.user?.email || state.clientId.toString();
+
+          userMap.set(userId, {
+            clientId: state.clientId.toString(),
+            name: state.user?.name || "Anonymous",
+            email: state.user?.email,
+            avatar: state.user?.avatar,
+            color: state.user?.color || "#000000",
+            lastActive: new Date().toISOString(),
+          });
+        });
+
+        setCollaborationState(documentId, {
+          activeUsers: Array.from(userMap.values()),
+        });
       },
       onConnect: () => {
         setCollaborationState(documentId, {
