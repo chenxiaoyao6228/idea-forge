@@ -110,7 +110,7 @@ export const Toolbar = ({ doc, preview }: ToolbarProps) => {
   };
 
   return (
-    <div className="pl-[54px] group relative">
+    <div className="group relative">
       <IconSection doc={doc} preview={preview} onIconSelect={onIconSelect} onRemoveIcon={onRemoveIcon} />
 
       <div className="opacity-0 group-hover:opacity-100 flex items-center gap-x-1 py-2">

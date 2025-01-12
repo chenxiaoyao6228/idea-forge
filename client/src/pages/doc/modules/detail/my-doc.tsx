@@ -11,7 +11,7 @@ export default function DocDetail() {
   return (
     <div className="pb-40">
       {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} />}
-      <div className="md:max-w-3xl lg:max-w-4xl mx-auto ">
+      <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10">
         <Toolbar doc={currentDocument} preview={false} />
         <TiptapEditor id={currentDocument.id} />
       </div>

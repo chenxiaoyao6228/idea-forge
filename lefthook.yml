@@ -4,7 +4,7 @@
 #   https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
 
 pre-commit:
-  parallel: true
+  parallel: false
   commands:
     format:
       glob: "*.{js,ts,jsx,tsx,json}"

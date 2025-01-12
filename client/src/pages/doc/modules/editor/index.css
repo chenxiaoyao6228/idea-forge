@@ -5,8 +5,6 @@
     margin-top: 0;
   }
 
-  @apply mx-10;
-
   .selection {
     @apply inline;
   }
