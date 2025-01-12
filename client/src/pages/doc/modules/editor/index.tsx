@@ -9,8 +9,11 @@ import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
 import { useRef } from "react";
-import { useEditorStore } from "@/pages/doc/stores/editor-store";
+import { useCurrentDocumentState } from "@/pages/doc/stores/editor-store";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, WifiOff } from "lucide-react";
 
 interface Props {
   id: string;
@@ -19,7 +22,9 @@ interface Props {
 export default function TiptapEditor({ id }: Props) {
   const menuContainerRef = useRef(null);
   const { userInfo } = useUserStore();
-  const { status } = useEditorStore();
+  const currentDocument = useCurrentDocumentState();
+
+  const { status, error, lastSyncedAt, pendingChanges, isIndexedDBLoaded } = currentDocument || {};
 
   const user = {
     name: userInfo?.displayName || (userInfo?.email as string),
@@ -54,29 +59,74 @@ export default function TiptapEditor({ id }: Props) {
     },
   });
 
+  // 渲染状态提示
+  const renderStatusBanner = () => {
+    switch (status) {
+      case "loading":
+        return (
+          <div className="space-y-2 ">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-full" />
+          </div>
+        );
+
+      case "connecting":
+        // the user do not need to see this as long as the user can edit, right?
+        return null;
+      // return (
+      //   <div className="bg-muted p-2 rounded-md mb-2">
+      //     <p className="text-sm text-muted-foreground flex items-center">
+      //       <RefreshCw className="animate-spin h-4 w-4 mr-2" />
+      //       Connecting to collaboration server...
+      //     </p>
+      //   </div>
+      // );
+
+      case "offline":
+        return (
+          <Alert className="mb-2">
+            <AlertTitle className="flex items-center">
+              <WifiOff className="h-4 w-4 mr-2" />
+              Offline Editing Mode
+            </AlertTitle>
+            <AlertDescription>
+              {pendingChanges ? "Changes are being saved locally and will sync when you're back online." : "You're working offline but can continue editing."}
+              {lastSyncedAt && <p className="text-xs text-muted-foreground mt-1">Last synced: {new Date(lastSyncedAt).toLocaleString()}</p>}
+            </AlertDescription>
+          </Alert>
+        );
+
+      case "error":
+        return (
+          <Alert variant="destructive" className="mb-2">
+            <AlertTitle>Connection Error</AlertTitle>
+            <AlertDescription>
+              {error}
+              <Button variant="outline" className="mt-2" onClick={() => window.location.reload()}>
+                <RefreshCw className="mr-2" />
+                Retry Connection
+              </Button>
+            </AlertDescription>
+          </Alert>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   if (!user || !editor) return null;
 
-  if (status === "connecting") {
-    return (
-      <div className="space-y-2 mx-10">
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-6 w-full" />
-      </div>
-    );
-  }
-
-  if (status === "disconnected") {
-    return (
-      <div className="mx-10">
-        <p className="text-sm text-muted-foreground text-red-500">Collaborative editing service connection failed. Please refresh the page and try again.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="editor-container px-4 md:col-[2] w-full mx-auto mt-2" ref={menuContainerRef}>
-      <EditorContent editor={editor} className="w-full" />
-      <BubbleMenus editor={editor} containerRef={menuContainerRef} />
+    <div className="editor-container md:col-[2] w-full mx-auto mt-2" ref={menuContainerRef}>
+      {renderStatusBanner()}
+
+      {status !== "loading" && (
+        <>
+          <EditorContent editor={editor} className="w-full" />
+          <BubbleMenus editor={editor} containerRef={menuContainerRef} />
+        </>
+      )}
     </div>
   );
 }

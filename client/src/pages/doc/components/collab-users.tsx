@@ -1,16 +1,17 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
-import { useEditorStore } from "@/pages/doc/stores/editor-store";
+import { useCurrentDocumentState, useEditorStore } from "@/pages/doc/stores/editor-store";
 
 export function CollabUsers({
   className,
 }: {
   className?: string;
 }) {
-  const { activeUsers } = useEditorStore();
+  const currentDocument = useCurrentDocumentState();
+  const { activeUsers, status } = currentDocument || {};
 
-  if (!activeUsers.length) return null;
+  if (!activeUsers?.length || status !== "collaborating") return null;
 
   return (
     <div className={cn("ml-5 flex -space-x-2", className)}>

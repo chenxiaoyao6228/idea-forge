@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 
-export type CollaborationStatus = "connecting" | "connected" | "disconnected";
+export type DocumentStatus = "loading" | "connecting" | "collaborating" | "offline" | "error";
 
 interface CollabUser {
   clientId?: string;
@@ -11,22 +11,69 @@ interface CollabUser {
   color: string;
 }
 
-interface EditorState {
-  provider: HocuspocusProvider | null;
-  isConnected: boolean;
-  isSynced: boolean;
-  status: CollaborationStatus;
+interface DocumentState {
+  status: DocumentStatus;
+  error?: string;
   activeUsers: CollabUser[];
-  setProvider: (provider: HocuspocusProvider) => void;
-  setCollaborationState: (state: Partial<EditorState>) => void;
+  pendingChanges: boolean;
+  lastSyncedAt?: Date;
+  isIndexedDBLoaded: boolean;
+  provider: HocuspocusProvider | null;
 }
 
-export const useEditorStore = create<EditorState>((set) => ({
-  provider: null,
-  isConnected: false,
-  isSynced: false,
-  status: "connecting",
+interface EditorState {
+  documents: Record<string, DocumentState>;
+  currentDocumentId: string | null;
+  setProvider: (documentId: string, provider: HocuspocusProvider) => void;
+  setCollaborationState: (documentId: string, state: Partial<DocumentState>) => void;
+  resetDocumentState: (documentId: string) => void;
+  setCurrentDocument: (documentId: string) => void;
+}
+
+const initialDocumentState: DocumentState = {
+  status: "loading",
   activeUsers: [],
-  setProvider: (provider) => set({ provider }),
-  setCollaborationState: (state) => set((prev) => ({ ...prev, ...state })),
+  error: undefined,
+  pendingChanges: false,
+  lastSyncedAt: undefined,
+  isIndexedDBLoaded: false,
+  provider: null,
+};
+
+export const useEditorStore = create<EditorState>((set) => ({
+  documents: {},
+  currentDocumentId: null,
+  setProvider: (documentId, provider) =>
+    set((state) => ({
+      documents: {
+        ...state.documents,
+        [documentId]: {
+          ...(state.documents[documentId] || initialDocumentState),
+          provider,
+        },
+      },
+    })),
+  setCollaborationState: (documentId, newState) =>
+    set((state) => ({
+      documents: {
+        ...state.documents,
+        [documentId]: {
+          ...(state.documents[documentId] || initialDocumentState),
+          ...newState,
+        },
+      },
+    })),
+  resetDocumentState: (documentId) =>
+    set((state) => ({
+      documents: {
+        ...state.documents,
+        [documentId]: { ...initialDocumentState },
+      },
+    })),
+  setCurrentDocument: (documentId) => set({ currentDocumentId: documentId }),
 }));
+
+export function useCurrentDocumentState() {
+  const { currentDocumentId, documents } = useEditorStore();
+  return currentDocumentId ? documents[currentDocumentId] : null;
+}
