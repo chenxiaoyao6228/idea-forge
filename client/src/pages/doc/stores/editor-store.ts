@@ -1,7 +1,14 @@
 import { create } from "zustand";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 
-export type DocumentStatus = "loading" | "connecting" | "collaborating" | "offline" | "error";
+export type DocumentStatus =
+  | "loading" // Initial state
+  | "connecting" // Connecting to server
+  | "collaborating" // Connected and synced
+  | "offline" // Offline mode
+  | "error" // Error state
+  | "unauthorized" // No permission
+  | "readonly"; // Read-only mode
 
 export interface CollabUser {
   clientId?: string;

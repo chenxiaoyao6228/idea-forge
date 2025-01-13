@@ -1,12 +1,8 @@
 import { authApi } from "@/apis/auth";
 import { create } from "zustand";
+import { UserResponseData } from "shared";
 
-export interface UserInfo {
-  id: number;
-  email: string;
-  displayName: string;
-  imageUrl: string;
-}
+export interface UserInfo extends UserResponseData {}
 
 interface UserStoreState {
   loading: boolean;

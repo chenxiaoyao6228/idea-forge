@@ -10,6 +10,9 @@ export default function DocDetail() {
   const currentDocument = useDocumentStore.use.currentDocument();
   const isCurrentDocLoading = useDocumentStore.use.isCurrentDocLoading();
   const isHomeDoc = docId === "0";
+
+  // FIXME: this is not a good way to check if it is a shared doc
+  // doc might not exist in the store
   const isShareDoc = !currentDocument && !isHomeDoc;
 
   if (isCurrentDocLoading) {

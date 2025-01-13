@@ -14,6 +14,7 @@ import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { VerificationService } from "./verification.service";
 import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
 import { ConfigService } from "@nestjs/config";
+import { UserResponseData } from "shared";
 
 @Controller("/api/auth")
 export class AuthController {
@@ -68,7 +69,7 @@ export class AuthController {
   @Public()
   @UseGuards(JwtRefreshAuthGuard)
   @Post("/refresh")
-  async refreshToken(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+  async refreshToken(@Req() req: any, @Res({ passthrough: true }) res: Response): Promise<UserResponseData> {
     const { accessToken, refreshToken, user } = await this.authService.refreshToken(req.user);
 
     setAuthCookies(res, accessToken, refreshToken);

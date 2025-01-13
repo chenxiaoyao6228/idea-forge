@@ -12,7 +12,7 @@ import { User } from "@prisma/client";
 import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { VerificationService } from "./verification.service";
 import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto } from "./auth.dto";
-import { AuthResponse, LoginResponseData } from "shared";
+import { AuthResponse, LoginResponseData, UserResponseData } from "shared";
 import { DocumentService } from "@/document/ document.service";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 import { UserStatus } from "shared";
@@ -82,7 +82,7 @@ export class AuthService {
         displayName: user.displayName ?? undefined,
         imageUrl: user.imageUrl ?? undefined,
       },
-      accessToken,
+      accessToken, // return to controller to set cookie
       refreshToken,
     };
   }
@@ -241,17 +241,28 @@ export class AuthService {
     return currentUser;
   }
 
-  async refreshToken(user: User) {
+  async refreshToken(user: User): Promise<{ accessToken: string; refreshToken: string; user: UserResponseData }> {
     const { accessToken, refreshToken } = await this.generateJWTToken(user.id);
 
     const hashedRefreshToken = await hash(refreshToken);
 
     await this.userService.updateHashedRefreshToken(user.id, hashedRefreshToken);
 
+    const userInfo = await this.userService.getUserById(user.id);
+
+    if (!userInfo) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
     return {
       accessToken,
       refreshToken,
-      user,
+      user: {
+        id: userInfo.id,
+        email: userInfo.email,
+        ...(userInfo.displayName ? { displayName: userInfo.displayName } : {}),
+        ...(userInfo.imageUrl ? { imageUrl: userInfo.imageUrl } : {}),
+      },
     };
   }
 

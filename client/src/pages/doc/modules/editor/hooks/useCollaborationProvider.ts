@@ -3,6 +3,7 @@ import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
 import { CollabUser, useEditorStore } from "../../../stores/editor-store";
+import { getEnvVariable } from "@/lib/env";
 
 const CONNECTION_TIMEOUT = 10000;
 
@@ -27,6 +28,7 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
     setCollaborationState(documentId, {
       activeUsers: [],
       isIndexedDBLoaded: false,
+      status: "loading",
     });
 
     const indexeddbProvider = new IndexeddbPersistence(documentId, doc);
@@ -42,6 +44,13 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
       url: "ws://localhost:5001/collaboration",
       name: documentId,
       document: doc,
+      token: getEnvVariable("COLLAB_TOKEN"),
+      onAuthenticationFailed: ({ reason }) => {
+        setCollaborationState(documentId, {
+          status: "unauthorized",
+          error: reason || "You don't have permission to access this document",
+        });
+      },
       onAwarenessUpdate: ({ states }) => {
         const userMap = new Map<string, CollabUser>();
 
@@ -78,7 +87,7 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
       onClose: () => {
         setCollaborationState(documentId, {
           status: "offline",
-          error: "Connection closed unexpectedly",
+          error: "Disconnected from server",
         });
       },
       onSynced: ({ state }) => {
