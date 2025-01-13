@@ -123,14 +123,16 @@ export type AuthResponseType =
   | "EMAIL_CONFLICT" // Logged in user binding new account
   | "ERROR"; // Other errors
 
+export interface UserResponseData {
+  id: number;
+  email?: string;
+  displayName?: string;
+  imageUrl?: string;
+}
+
 export interface LoginResponseData {
-  user?: {
-    id: number;
-    email?: string;
-    displayName?: string;
-    imageUrl?: string;
-  };
-  accessToken?: string;
+  user?: UserResponseData;
+  accessToken?: string; // oauth return accessToken
   refreshToken?: string;
 }
 

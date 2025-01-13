@@ -85,6 +85,14 @@ export default function TiptapEditor({ id }: Props) {
       //   </div>
       // );
 
+      case "unauthorized":
+        return (
+          <Alert variant="destructive" className="mb-2">
+            <AlertTitle>Access Denied</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        );
+
       case "offline":
         return (
           <Alert className="mb-2">

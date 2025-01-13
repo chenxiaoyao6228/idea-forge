@@ -1,5 +1,6 @@
 interface ClientEnv {
   CLIENT_APP_URL: string;
+  COLLAB_TOKEN: string;
 }
 
 export const getEnvVariable = <K extends keyof ClientEnv>(key: K): ClientEnv[K] => {

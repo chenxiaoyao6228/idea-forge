@@ -9,6 +9,8 @@ import { AuthService } from "@/auth/auth.service";
 import { UserService } from "@/user/user.service";
 import { setAuthCookies } from "@/_shared/utils/cookie";
 import { ClientEnv } from "@/_shared/config/config-validation";
+import { UserResponseData } from "shared";
+import { CollaborationService } from "@/collaboration/collaboration.service";
 
 interface Manifest {
   preload: string | null;
@@ -25,12 +27,11 @@ export class FallbackMiddleware implements NestMiddleware {
   private static readonly STACK_FRAME_PATH = "/__open-stack-frame-in-editor";
   private manifestCache: Manifest | null = null;
   constructor(
-    @Inject(jwtConfig.KEY)
-    private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly collaborationService: CollaborationService,
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -122,16 +123,20 @@ export class FallbackMiddleware implements NestMiddleware {
       }
     };
 
-    const createEnvScript = () => {
+    const createEnvScript = async () => {
       // Filter only CLIENT_ prefixed variables
       const clientEnv = Object.entries(process.env)
         .filter(([key]) => key.startsWith("CLIENT_"))
         .reduce((acc, [key, value]) => Object.assign(acc, { [key]: value }), {} as Partial<ClientEnv>);
 
+      if (userInfo?.id) {
+        const collabToken = await this.collaborationService.generateCollabToken(userInfo.id);
+        clientEnv.COLLAB_TOKEN = collabToken;
+      }
+
       return `
         <script>
-          window.__ENV__ = ${JSON.stringify(clientEnv)};
-          Object.freeze(window.__ENV__);
+          window.__ENV__ = decodeHtml('${JSON.stringify(clientEnv)}');
           console.log("clientEnv", window.__ENV__);
         </script>
       `;
@@ -158,6 +163,7 @@ export class FallbackMiddleware implements NestMiddleware {
     };
 
     const _html = isDev ? createDevHTML() : createProdHTML();
+    const envScript = await createEnvScript();
 
     const html = `
       <!DOCTYPE html>
@@ -173,7 +179,7 @@ export class FallbackMiddleware implements NestMiddleware {
         <body>
           <div id="root"></div>
           ${createUserInfoScript()}
-          ${createEnvScript()}
+          ${envScript}
           ${_html.js}
         </body>
       </html>
@@ -182,7 +188,7 @@ export class FallbackMiddleware implements NestMiddleware {
     return html;
   }
 
-  private async getUserInfo(req: Request, res: Response) {
+  private async getUserInfo(req: Request, res: Response): Promise<UserResponseData | null> {
     const { accessToken, refreshToken } = req.cookies;
 
     if (!accessToken || !refreshToken) {
@@ -190,15 +196,25 @@ export class FallbackMiddleware implements NestMiddleware {
     }
 
     try {
+      const jwtConfig = this.configService.get("jwt");
       const payload = this.jwtService.verify(accessToken, {
-        secret: this.jwtConfiguration.secret,
+        secret: jwtConfig.secret,
       });
-      return await this.userService.getUserById(payload.sub);
+      const user = await this.userService.getUserById(payload.sub);
+      if (!user) return null;
+      return {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName || "",
+        imageUrl: user.imageUrl || "",
+        accessToken,
+      };
     } catch (error) {
       if ((error as any).name === "TokenExpiredError" && refreshToken) {
         try {
+          const jwtConfig = this.configService.get("jwt");
           const refreshPayload = this.jwtService.verify(refreshToken, {
-            secret: this.jwtConfiguration.secret,
+            secret: jwtConfig.secret,
           });
 
           const user = await this.userService.getUserById(refreshPayload.sub);
@@ -208,7 +224,13 @@ export class FallbackMiddleware implements NestMiddleware {
 
             setAuthCookies(res, newAccessToken, newRefreshToken);
 
-            return user;
+            return {
+              id: user.id,
+              email: user.email,
+              displayName: user.displayName || "",
+              imageUrl: user.imageUrl || "",
+              accessToken: newAccessToken,
+            };
           }
         } catch (refreshError) {
           console.log("Failed to refresh token:", refreshError);

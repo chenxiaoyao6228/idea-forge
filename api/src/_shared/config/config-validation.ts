@@ -39,6 +39,7 @@ export const envSchema = z.object({
 
   /* OPTIONAL CONFIG */
   RESEND_API_KEY: z.string().optional(),
+  COLLAB_SECRET_KEY: z.string().min(1),
 
   /* COS CONFIG */
   OSS_PROVIDER: z.enum(["minio", "cos", "oss"]),
@@ -53,6 +54,7 @@ export const envSchema = z.object({
 const clientEnvSchema = z.object({
   /* CLIENT CONFIG */
   CLIENT_APP_URL: z.string().url(),
+  COLLAB_TOKEN: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;

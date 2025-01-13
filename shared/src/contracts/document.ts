@@ -16,7 +16,7 @@ const commonDocumentSchema = z.object({
 export type CommonDocumentResponse = z.infer<typeof commonDocumentSchema>;
 
 const noticeType = ["NEW", "UPDATE", "NONE"] as const;
-const permission = ["EDIT", "READ"] as const;
+const permission = ["EDIT", "READ", "NONE"] as const;
 
 export type Permission = (typeof permission)[number];
 export type NoticeType = (typeof noticeType)[number];
