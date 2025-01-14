@@ -1,4 +1,4 @@
-import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout } from "lucide-react";
+import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout, Image } from "lucide-react";
 import type { CommandGroup } from "./types";
 
 export const commandGroups: CommandGroup[] = [
@@ -116,6 +116,16 @@ export const commandGroups: CommandGroup[] = [
         description: "Insert a Mermaid diagram",
         command: ({ editor }) => {
           editor.chain().focus().setCodeBlock({ language: "mermaid" }).run();
+        },
+      },
+      {
+        name: "image",
+        label: "Image",
+        Icon: Image,
+        description: "Insert an image",
+        aliases: ["img"],
+        command: ({ editor }) => {
+          editor.chain().focus().setImageBlock({ src: "http://localhost:5000/images/cover/James%20Webb%20Telescope/nasa_robert_stewart_spacewalk.jpg" }).run();
         },
       },
     ],

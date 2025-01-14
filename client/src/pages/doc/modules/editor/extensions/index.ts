@@ -28,6 +28,7 @@ import { CustomKeys } from "./custom-keys";
 import { SlashCommands } from "./slash-commands";
 import { CodeBlock } from "./code-block";
 import { Code } from "./code";
+import ImageBlock from "./image-block";
 
 const nodes = [
   Document,
@@ -51,6 +52,7 @@ const nodes = [
     },
   }),
   CodeBlock,
+  ImageBlock,
 ];
 
 const marks = [
