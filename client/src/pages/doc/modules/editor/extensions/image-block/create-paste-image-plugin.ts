@@ -1,0 +1,71 @@
+import { uploadFile } from "@/lib/upload";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Editor } from "@tiptap/react";
+
+const DEFAULT_PLACEHOLDER =
+  "data:image/jpeg;base64,/9j/4QAYRXhpZgAASUkqAAgAAAAAAAAAAAAAAP/sABFEdWNreQABAAQAAAA8AAD/4QMqaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjUtYzAyMSA3OS4xNTQ5MTEsIDIwMTMvMTAvMjktMTE6NDc6MTYgICAgICAgICI+IDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bXA6Q3JlYXRvclRvb2w9IkFkb2JlIFBob3Rvc2hvcCBDQyAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6RjE3MEU5RTVEQzJGMTFFNEE4RDE4MjJDM0UyMzRFOTEiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6RjE3MEU5RTZEQzJGMTFFNEE4RDE4MjJDM0UyMzRFOTEiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpGMTcwRTlFM0RDMkYxMUU0QThEMTgyMkMzRTIzNEU5MSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpGMTcwRTlFNERDMkYxMUU0QThEMTgyMkMzRTIzNEU5MSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Pv/uACZBZG9iZQBkwAAAAAEDABUEAwYKDQAACGcAAAlFAAAPBgAAEM3/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rhpK4aSuGkrhpCQuBwifBbf43rwBPAE8ATwBPAE8ATwBPAE8ATwBPAEWuJ5h/vz/2gAIAQIDAT8h/wCaT//aAAgBAwMBPyH/AJpP/9oADAMBAAIRAxEAABD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD9/wD/AP8A/wD7/wD/AP8A/wD/AP8A/wD/AP8A7/8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wBt/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/sn/APf/AP8A/wD/AP8A/wD/AP8A/wD/AP8A9t/s/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wDZJ/8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/APJJL/8A/wD/AP8A/wD/AP8A/wD/AP8A+SSST/8A/wD/AP8A/wD/AP8A/wD/AP8Askkkk/8A/wD/AP8A/wD/AP8A/wD/AP8A7/8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD9v/8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8Af/8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/9oACAEBAwE/EP8AfT9sQxuwuMHRPAw8DDwMPAw8DDwMPAw8DDwMPAw8DAxeKS4/q/CGbuJEcxODbeX9XS46Kx2IECkFlXHrgh+u66666666665NisSIi8V5b1FX5tiQQdrY3eRcylosrdLW3DHL2mEIux58zo/o7DvRFX5piMGBxZX25Tf1GQxdc7fg7g4TdiHW3FmRQYJmtOTt7DvRFX5tiQQd74WeZdylosaXC0vxxz9pjCLsefI6G0CvdegdYqlLrirmst0BmcE4icpkUGCZrTk7Ow70RV+b8G5QVKviZ7AK916B1iqUuuKua7bdAZnBOInKZFBgma05M7DvRFX5tvpwnQPn0zzKLBMhryYAFcrqnf1iqUuuKua/iAhQABxLmz7k7DvRFX5tnpwnQPn0z/Td2HeiKvzSlcv13dh3oir80ZBcETo/quuuuuuuuuxYIxDMtxZ2HeiHPuOF0FkfVxih7Fi6NvVF/XdddddddddcuFlywC/PAIBmKCzC61+rfeqO+pV31Ku+pV31Ku+pV31Ku+pV31Ku+pV31Ku+pwdlYD/Q/wB+f//aAAgBAgMBPxD/AJpP/9oACAEDAwE/EP8Amk//2Q==";
+
+export function createPasteImagePlugin({
+  editor,
+}: {
+  editor: Editor;
+}) {
+  return new Plugin({
+    key: new PluginKey("imagePasteHandlerPlugin"),
+    props: {
+      handlePaste: (view, event) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const imageItems = items.filter((item) => item.type.startsWith("image"));
+
+        if (!imageItems.length) return false;
+
+        event.preventDefault();
+
+        imageItems.forEach(async (imageItem) => {
+          const file = imageItem.getAsFile();
+          if (!file) return;
+
+          // Create temporary ID for tracking this upload
+          const tempId = `upload-${Date.now()}`;
+
+          // Create preview URL if possible
+          const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : DEFAULT_PLACEHOLDER;
+
+          // Insert image with preview URL and temp ID
+          editor.commands.setImageBlock({
+            src: previewUrl,
+            uploadId: tempId,
+            isUploading: true,
+          });
+
+          try {
+            const ext = file.name.split(".").pop() || "png";
+            const { downloadUrl } = await uploadFile({ file, ext });
+
+            // Update the image with final URL
+            editor.state.doc.descendants((node, pos) => {
+              if (node.type.name === "imageBlock" && node.attrs.uploadId === tempId) {
+                editor.commands.command(({ tr }) => {
+                  tr.setNodeMarkup(pos, undefined, {
+                    src: downloadUrl,
+                    uploadId: null,
+                    isUploading: false,
+                  });
+                  return true;
+                });
+              }
+            });
+          } catch (error) {
+            console.error("Failed to upload pasted image:", error);
+            // Optionally remove failed upload
+          } finally {
+            // Cleanup preview URL
+            URL.revokeObjectURL(previewUrl);
+          }
+        });
+
+        return true;
+      },
+    },
+  });
+}
