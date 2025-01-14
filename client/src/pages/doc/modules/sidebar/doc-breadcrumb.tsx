@@ -1,4 +1,4 @@
-import { useDocumentStore } from "../../stores/store";
+import { useDocumentStore } from "../../stores/doc-store";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

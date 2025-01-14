@@ -1,5 +1,5 @@
 import React, { ElementRef, useRef, useState } from "react";
-import { DocTreeDataNode, useDocumentStore } from "../../stores/store";
+import { DocTreeDataNode, useDocumentStore } from "../../stores/doc-store";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Smile, X } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
@@ -9,12 +9,12 @@ import { useCoverImageStore } from "./cover/coverImageStore";
 
 interface ToolbarProps {
   doc: DocTreeDataNode;
-  preview?: boolean;
+  editable: boolean;
 }
 
 interface IconSectionProps {
   doc: DocTreeDataNode;
-  preview?: boolean;
+  editable: boolean;
   onIconSelect: (icon: string) => void;
   onRemoveIcon: () => void;
 }
@@ -40,14 +40,14 @@ const useDocumentTitle = (doc: DocTreeDataNode) => {
   };
 };
 
-const IconSection = ({ doc, preview, onIconSelect, onRemoveIcon }: IconSectionProps) => {
+const IconSection = ({ doc, editable, onIconSelect, onRemoveIcon }: IconSectionProps) => {
   if (!doc.icon) return null;
 
   const coverImage = doc.coverImage;
 
   const emoji = doc.icon as string;
 
-  if (preview) {
+  if (!editable) {
     return (
       <div className={`${coverImage ? "-mt-6" : "mt-6"}`}>
         <Emoji unified={emoji} size={64} />
@@ -76,14 +76,14 @@ const STYLES = {
   title: "text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF]",
 } as const;
 
-export const Toolbar = ({ doc, preview }: ToolbarProps) => {
+export const Toolbar = ({ doc, editable }: ToolbarProps) => {
   const inputRef = useRef<ElementRef<"textarea">>(null);
   const { isEditing, setIsEditing, value, setValue, onInput } = useDocumentTitle(doc);
   const updateDocument = useDocumentStore.use.updateDocument();
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const generateDefaultCover = useDocumentStore.use.generateDefaultCover();
   const enableInput = () => {
-    if (preview) return;
+    if (!editable) return;
 
     setIsEditing(true);
     setTimeout(() => {
@@ -111,10 +111,10 @@ export const Toolbar = ({ doc, preview }: ToolbarProps) => {
 
   return (
     <div className="group relative">
-      <IconSection doc={doc} preview={preview} onIconSelect={onIconSelect} onRemoveIcon={onRemoveIcon} />
+      <IconSection doc={doc} editable={editable} onIconSelect={onIconSelect} onRemoveIcon={onRemoveIcon} />
 
       <div className="opacity-0 group-hover:opacity-100 flex items-center gap-x-1 py-2">
-        {!doc.icon && !preview && (
+        {!doc.icon && editable && (
           <IconPicker asChild onChange={onIconSelect}>
             <Button className="text-muted-foreground text-xs" variant="outline" size="sm">
               <Smile className="h-4 w-4 mr-2" /> Add icon
@@ -129,7 +129,7 @@ export const Toolbar = ({ doc, preview }: ToolbarProps) => {
         )}
       </div>
 
-      {isEditing && !preview ? (
+      {isEditing && editable ? (
         <TextareaAutosize
           ref={inputRef}
           onBlur={disableInput}

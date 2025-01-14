@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Tree, TreeDataNode, TreeProps } from "@/components/ui/tree";
 import { MoreHorizontalIcon } from "lucide-react";
-import { useDocumentStore } from "../../stores/store";
+import { useDocumentStore } from "../../stores/doc-store";
 import { AddDocButton } from "./add-doc-button";
 import { logger } from "@/lib/logger";
 import { treeUtils } from "../../util";

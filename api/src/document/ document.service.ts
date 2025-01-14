@@ -3,9 +3,10 @@ import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./docum
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { DEFAULT_NEW_DOC_TITLE } from "@/_shared/constants/common";
 import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
-import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse, UpdateCoverDto } from "shared";
+import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse, Permission, UpdateCoverDto } from "shared";
 import { MoveDocumentsDto } from "shared";
 import { FileService } from "@/file-store/file-store.service";
+import { pick } from "lodash";
 const POSITION_GAP = 1024; // Define position gap
 
 @Injectable()
@@ -51,45 +52,70 @@ export class DocumentService {
     });
   }
 
-  async findOne(id: string, ownerId: number): Promise<DetailDocumentResponse> {
-    const doc = await this.prisma.doc.findFirst({
-      where: {
-        id,
-        ownerId,
-        isArchived: false,
-      },
-      select: {
-        id: true,
-        title: true,
-        isStarred: true,
-        parentId: true,
-        position: true,
-        createdAt: true,
-        updatedAt: true,
-        isArchived: true,
-        content: true,
-        icon: true,
-        coverImage: {
-          select: {
-            scrollY: true,
-            url: true,
+  async findOne(id: string, userId: number): Promise<DetailDocumentResponse> {
+    try {
+      const doc = await this.prisma.doc.findFirst({
+        where: {
+          id,
+          OR: [
+            { ownerId: userId },
+            {
+              sharedWith: {
+                some: {
+                  userId,
+                },
+              },
+            },
+          ],
+          isArchived: false,
+        },
+        select: {
+          id: true,
+          title: true,
+          isStarred: true,
+          parentId: true,
+          position: true,
+          createdAt: true,
+          updatedAt: true,
+          isArchived: true,
+          content: true,
+          icon: true,
+          ownerId: true,
+          coverImage: {
+            select: {
+              scrollY: true,
+              url: true,
+            },
+          },
+          sharedWith: {
+            where: {
+              userId,
+            },
+            select: {
+              permission: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!doc) throw new NotFoundException("Document not found");
+      if (!doc) throw new NotFoundException("Document not found");
 
-    // 转换响应格式
-    return {
-      ...doc,
-      coverImage: doc.coverImage
-        ? {
-            scrollY: doc.coverImage.scrollY,
-            url: doc.coverImage.url,
-          }
-        : null,
-    };
+      const isMyDoc = doc.ownerId === userId;
+
+      return {
+        ...pick(doc, ["id", "ownerId", "title", "isStarred", "parentId", "position", "createdAt", "updatedAt", "isArchived", "content", "icon"]),
+        coverImage: doc.coverImage
+          ? {
+              scrollY: doc.coverImage.scrollY,
+              url: doc.coverImage.url,
+            }
+          : null,
+        permission: isMyDoc ? "EDIT" : (doc.sharedWith[0]?.permission as Permission),
+      };
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   }
 
   async update(id: string, userId: number, dto: UpdateDocumentDto) {

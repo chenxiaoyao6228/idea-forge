@@ -7,11 +7,14 @@ import { getEnvVariable } from "@/lib/env";
 
 const CONNECTION_TIMEOUT = 10000;
 
-export function useCollaborationProvider(documentId: string, user: { name: string; color: string; email?: string }) {
+export function useCollaborationProvider(documentId: string, user: { name: string; color: string; email?: string }, editable: boolean) {
   const { setProvider, setCollaborationState, resetDocumentState, setCurrentDocument } = useEditorStore();
   const timeoutRef = useRef<any>();
 
   useEffect(() => {
+    if (!editable) {
+      return;
+    }
     setCurrentDocument(documentId);
     return () => {
       if (timeoutRef.current) {
@@ -19,7 +22,7 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
       }
       resetDocumentState(documentId);
     };
-  }, [documentId]);
+  }, [documentId, editable]);
 
   const provider = useMemo(() => {
     const doc = new Y.Doc();
@@ -108,10 +111,13 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
 
     setProvider(documentId, provider);
     return provider;
-  }, [documentId]);
+  }, [documentId, editable]);
 
   // Handle connection timeout
   useEffect(() => {
+    if (!editable) {
+      return;
+    }
     timeoutRef.current = setTimeout(() => {
       if (provider.status !== "connected") {
         setCollaborationState(documentId, {
@@ -126,7 +132,7 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [provider, documentId]);
+  }, [provider, documentId, editable]);
 
   // Cleanup
   useEffect(() => {

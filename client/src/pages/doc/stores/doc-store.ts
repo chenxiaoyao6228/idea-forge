@@ -15,6 +15,8 @@ export interface DocTreeDataNode extends TreeDataNode {
     url?: string;
     scrollY?: number;
   };
+  permission?: "NONE" | "EDIT" | "READ";
+  ownerId: number;
 }
 
 interface DocumentTreeState {
@@ -24,6 +26,7 @@ interface DocumentTreeState {
   lastDocId: string | null;
   currentDocId: string | null;
   currentDocument: DocTreeDataNode | null;
+  currentDocLoadingError: string | null;
   isCurrentDocLoading: boolean;
 
   // actions
@@ -53,6 +56,7 @@ const store = create<DocumentTreeState>()(
       lastDocId: localStorage.getItem(LAST_DOC_ID_KEY),
       currentDocId: null,
       currentDocument: null,
+      currentDocLoadingError: null,
       isCurrentDocLoading: false,
 
       setExpandedKeys: (keys) => set({ expandedKeys: keys }),
@@ -429,12 +433,17 @@ const store = create<DocumentTreeState>()(
             treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
               ...node,
               ...doc,
+              key: id,
               coverImage: doc.coverImage ? { ...doc.coverImage } : node.coverImage,
             })),
             isCurrentDocLoading: false,
+            currentDocLoadingError: null,
           }));
-        } catch (error) {
-          console.error("Failed to fetch document:", error);
+        } catch (error: any) {
+          if (error.status === 404) {
+            console.error("Failed to fetch document:", error);
+            set({ isCurrentDocLoading: false, currentDocument: null, currentDocLoadingError: "You are not authorized to access this document" });
+          }
           set({ isCurrentDocLoading: false });
         }
       },

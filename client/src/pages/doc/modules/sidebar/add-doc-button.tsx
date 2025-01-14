@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
-import { useDocumentStore } from "../../stores/store";
+import { useDocumentStore } from "../../stores/doc-store";
 import { useNavigate } from "react-router-dom";
 
 interface AddDocButtonProps {

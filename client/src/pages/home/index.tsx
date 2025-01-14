@@ -7,7 +7,7 @@ import HomeNav from "./nav";
 import HomeLogo from "@/assets/imgs/home-logo.png";
 import { documentApi } from "@/apis/document";
 import { useEffect, useState } from "react";
-import { useDocumentStore } from "../doc/stores/store";
+import { useDocumentStore } from "../doc/stores/doc-store";
 
 export default function Home() {
   return (
