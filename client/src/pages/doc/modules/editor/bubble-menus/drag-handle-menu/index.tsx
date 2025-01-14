@@ -4,6 +4,7 @@ import DragHandle from "@tiptap-pro/extension-drag-handle-react";
 import type { MenuProps } from "../type";
 import { Editor } from "@tiptap/react";
 import DragButton from "./drag-button";
+import InsertNodeButton from "./insert-button";
 
 export default function DragHandleMenu(props: MenuProps) {
   const { editor } = props;
@@ -32,6 +33,7 @@ export default function DragHandleMenu(props: MenuProps) {
       }}
     >
       <div className="flex items-center gap-2">
+        <InsertNodeButton editor={editor} currentNode={currentNode} currentNodePos={currentNodePos} />
         <DragButton editor={editor} currentNode={currentNode} currentNodePos={currentNodePos} />
       </div>
     </DragHandle>
