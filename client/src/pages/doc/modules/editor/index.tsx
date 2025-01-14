@@ -64,7 +64,6 @@ export default function TiptapEditor({ id, editable = true }: Props) {
     },
   });
 
-  // 渲染状态提示
   const renderStatusBanner = () => {
     switch (status) {
       case "loading":

@@ -1,5 +1,6 @@
 /* common */
 .tiptap > * {
+  @apply mx-10;
   /* other */
   :first-child {
     margin-top: 0;
@@ -108,7 +109,6 @@
     }
   }
 }
-
 
 /* image block */
 .tiptap {
