@@ -6,10 +6,12 @@ import { Toolbar } from "./toolbar";
 import Cover from "./cover";
 import TiptapEditor from "../editor";
 import useUserStore from "@/stores/user";
+import { getEnvVariable } from "@/lib/env";
 
 export default function DocDetail() {
   const { docId } = useParams();
   const userId = useUserStore((s) => s.userInfo?.id);
+  const collabToken = useUserStore((s) => s.userInfo?.collabToken);
   const currentDocument = useDocumentStore.use.currentDocument();
   const isCurrentDocLoading = useDocumentStore.use.isCurrentDocLoading();
   const currentDocLoadingError = useDocumentStore.use.currentDocLoadingError();
@@ -48,7 +50,7 @@ export default function DocDetail() {
         {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={isMyDoc} />}
         <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10">
           <Toolbar doc={currentDocument} editable={isMyDoc} />
-          <TiptapEditor id={currentDocument.id} editable={hasEditPermission} />
+          <TiptapEditor id={currentDocument.id} editable={hasEditPermission} collabToken={collabToken} collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")} />
         </div>
       </div>
     </div>

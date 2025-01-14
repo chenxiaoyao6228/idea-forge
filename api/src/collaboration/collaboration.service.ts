@@ -131,7 +131,7 @@ export class CollaborationService implements OnModuleInit {
 
     this.hocuspocus = new Hocuspocus({
       name: "/collaboration",
-      port: 5001,
+      port: this.configService.get("NEST_API_WS_PORT"),
       debounce: 5000,
       maxDebounce: 30000,
       quiet: true,

@@ -6,6 +6,7 @@ export const envSchema = z.object({
   /* APP CONFIG */
   NODE_ENV: Environment,
   NEST_API_PORT: z.string().min(1).regex(/^\d+$/),
+  NEST_API_WS_PORT: z.string().min(1).regex(/^\d+$/),
 
   /* DATABASE CONFIG */
   DATABASE_URL: z.string().min(1),
@@ -55,6 +56,7 @@ const clientEnvSchema = z.object({
   /* CLIENT CONFIG */
   CLIENT_APP_URL: z.string().url(),
   COLLAB_TOKEN: z.string().min(1),
+  CLIENT_COLLAB_WS_URL: z.string().url(),
 });
 
 export type Env = z.infer<typeof envSchema>;

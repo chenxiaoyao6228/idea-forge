@@ -7,7 +7,14 @@ import { getEnvVariable } from "@/lib/env";
 
 const CONNECTION_TIMEOUT = 10000;
 
-export function useCollaborationProvider(documentId: string, user: { name: string; color: string; email?: string }, editable: boolean) {
+interface Props {
+  documentId: string;
+  user: { name: string; color: string; email?: string };
+  editable: boolean;
+  collabWsUrl: string;
+}
+
+export function useCollaborationProvider({ documentId, user, editable, collabWsUrl }: Props) {
   const { setProvider, setCollaborationState, resetDocumentState, setCurrentDocument } = useEditorStore();
   const timeoutRef = useRef<any>();
 
@@ -44,7 +51,7 @@ export function useCollaborationProvider(documentId: string, user: { name: strin
     });
 
     const provider = new HocuspocusProvider({
-      url: "ws://localhost:5001/collaboration",
+      url: collabWsUrl,
       name: documentId,
       document: doc,
       token: getEnvVariable("COLLAB_TOKEN"),
