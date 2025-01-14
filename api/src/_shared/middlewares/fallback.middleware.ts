@@ -123,16 +123,11 @@ export class FallbackMiddleware implements NestMiddleware {
       }
     };
 
-    const createEnvScript = async () => {
+    const createEnvScript = () => {
       // Filter only CLIENT_ prefixed variables
       const clientEnv = Object.entries(process.env)
         .filter(([key]) => key.startsWith("CLIENT_"))
         .reduce((acc, [key, value]) => Object.assign(acc, { [key]: value }), {} as Partial<ClientEnv>);
-
-      if (userInfo?.id) {
-        const collabToken = await this.collaborationService.generateCollabToken(userInfo.id);
-        clientEnv.COLLAB_TOKEN = collabToken;
-      }
 
       return `
         <script>
@@ -142,19 +137,15 @@ export class FallbackMiddleware implements NestMiddleware {
       `;
     };
 
-    const createUserInfoScript = () => {
+    const createUserInfoScript = async () => {
       if (!needAuth) return "";
 
+      if (userInfo?.id) {
+        const collabToken = await this.collaborationService.generateCollabToken(userInfo.id);
+        userInfo.collabToken = collabToken;
+      }
+
       return `
-        <script>
-          function decodeHtml(str) {
-            try {
-              return JSON.parse(new DOMParser().parseFromString(str, 'text/html').documentElement.textContent);
-            } catch (err) {
-              return '';
-            }
-          }
-        </script>
         <script id="userHook">
           window._userInfo = decodeHtml('${JSON.stringify(userInfo)}');
           console.log("userInfo", window._userInfo);
@@ -163,7 +154,7 @@ export class FallbackMiddleware implements NestMiddleware {
     };
 
     const _html = isDev ? createDevHTML() : createProdHTML();
-    const envScript = await createEnvScript();
+    const userInfoScript = await createUserInfoScript();
 
     const html = `
       <!DOCTYPE html>
@@ -175,11 +166,20 @@ export class FallbackMiddleware implements NestMiddleware {
           <meta name="description" content="Powerful document tool that combines the functionality of Notion with the intelligence of AI" />
           ${_html.preload ? _html.preload : ""}
           ${_html.css ? _html.css : ""}
+           <script>
+            function decodeHtml(str) {
+              try {
+                return JSON.parse(new DOMParser().parseFromString(str, 'text/html').documentElement.textContent);
+              } catch (err) {
+                return '';
+              }
+            }
+          </script>
         </head>
         <body>
           <div id="root"></div>
-          ${createUserInfoScript()}
-          ${envScript}
+          ${userInfoScript}
+          ${createEnvScript()}
           ${_html.js}
         </body>
       </html>

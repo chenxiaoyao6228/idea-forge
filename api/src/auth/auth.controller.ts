@@ -51,7 +51,9 @@ export class AuthController {
 
     setAuthCookies(res, accessToken, refreshToken);
 
-    return user;
+    return {
+      user,
+    };
   }
 
   @Public()

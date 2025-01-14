@@ -33,6 +33,10 @@ export default function DocDetail() {
     return null;
   }
 
+  if (!collabToken) {
+    return null;
+  }
+
   const permission = currentDocument.permission;
   const hasNoPermission = permission === "NONE";
   const hasEditPermission = permission === "EDIT";

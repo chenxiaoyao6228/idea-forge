@@ -18,8 +18,8 @@ import { RefreshCw, WifiOff } from "lucide-react";
 interface Props {
   id: string;
   editable: boolean;
-  collabToken?: string;
-  collabWsUrl?: string;
+  collabToken: string;
+  collabWsUrl: string;
 }
 
 export default function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) {

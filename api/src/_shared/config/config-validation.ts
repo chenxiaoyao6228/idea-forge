@@ -55,7 +55,6 @@ export const envSchema = z.object({
 const clientEnvSchema = z.object({
   /* CLIENT CONFIG */
   CLIENT_APP_URL: z.string().url(),
-  COLLAB_TOKEN: z.string().min(1),
   CLIENT_COLLAB_WS_URL: z.string().url(),
 });
 

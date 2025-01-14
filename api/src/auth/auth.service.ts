@@ -16,6 +16,7 @@ import { AuthResponse, LoginResponseData, UserResponseData } from "shared";
 import { DocumentService } from "@/document/ document.service";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 import { UserStatus } from "shared";
+import { CollaborationService } from "@/collaboration/collaboration.service";
 
 @Injectable()
 export class AuthService {
@@ -27,6 +28,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly verificationService: VerificationService,
     private readonly documentService: DocumentService,
+    private readonly collaborationService: CollaborationService,
   ) {}
 
   @Inject(refreshJwtConfig.KEY)
@@ -75,12 +77,21 @@ export class AuthService {
 
     await this.userService.updateHashedRefreshToken(user.id, hashedRefreshToken);
 
+    const collabToken = await this.collaborationService.generateCollabToken(user.id);
+
+    const userInfo = await this.userService.getUserById(user.id);
+
+    if (!userInfo) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
     return {
       user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName ?? undefined,
-        imageUrl: user.imageUrl ?? undefined,
+        id: userInfo.id,
+        email: userInfo.email,
+        displayName: userInfo.displayName ?? undefined,
+        imageUrl: userInfo.imageUrl ?? undefined,
+        collabToken,
       },
       accessToken, // return to controller to set cookie
       refreshToken,
@@ -303,12 +314,14 @@ export class AuthService {
 
     if (connection) {
       const { accessToken, refreshToken } = await this.generateJWTToken(connection.user.id);
+      const collabToken = await this.collaborationService.generateCollabToken(connection.user.id);
       return {
         type: "EXISTING_USER",
         data: {
           user: {
             id: connection.user.id,
             email: connection.user.email,
+            collabToken,
           },
           accessToken,
           refreshToken,
@@ -358,6 +371,7 @@ export class AuthService {
     await this.documentService.createDefault(newUser.id);
 
     const { accessToken, refreshToken } = await this.generateJWTToken(newUser.id);
+    const collabToken = await this.collaborationService.generateCollabToken(newUser.id);
 
     return {
       type: "NEW_USER",
@@ -366,6 +380,7 @@ export class AuthService {
           id: newUser.id,
           email,
           displayName,
+          collabToken,
         },
         accessToken,
         refreshToken,

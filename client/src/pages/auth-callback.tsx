@@ -10,6 +10,8 @@ export default function AuthCallbackPage() {
   const type = searchParams.get("type") as AuthResponseType;
   const data = JSON.parse(searchParams.get("data") ?? "{}") as AuthResponseData;
 
+  console.log("---AuthCallbackPage-----", data);
+
   useEffect(() => {
     switch (type) {
       case "NEW_USER":

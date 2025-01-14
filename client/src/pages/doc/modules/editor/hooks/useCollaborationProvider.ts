@@ -12,9 +12,10 @@ interface Props {
   user: { name: string; color: string; email?: string };
   editable: boolean;
   collabWsUrl: string;
+  collabToken: string;
 }
 
-export function useCollaborationProvider({ documentId, user, editable, collabWsUrl }: Props) {
+export function useCollaborationProvider({ documentId, user, editable, collabWsUrl, collabToken }: Props) {
   const { setProvider, setCollaborationState, resetDocumentState, setCurrentDocument } = useEditorStore();
   const timeoutRef = useRef<any>();
 
@@ -54,7 +55,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       url: collabWsUrl,
       name: documentId,
       document: doc,
-      token: getEnvVariable("COLLAB_TOKEN"),
+      token: collabToken,
       onAuthenticationFailed: ({ reason }) => {
         setCollaborationState(documentId, {
           status: "unauthorized",

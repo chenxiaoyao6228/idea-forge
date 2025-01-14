@@ -128,6 +128,7 @@ export interface UserResponseData {
   email?: string;
   displayName?: string;
   imageUrl?: string;
+  collabToken?: string;
 }
 
 export interface LoginResponseData {

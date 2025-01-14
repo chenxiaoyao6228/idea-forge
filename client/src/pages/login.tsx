@@ -13,6 +13,7 @@ import Logo from "@/components/logo";
 import { ErrorList, Field } from "@/components/forms";
 import { Label } from "@/components/ui/label";
 import { StatusButton } from "@/components/status-button";
+import { authApi } from "@/apis/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -38,8 +39,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginData) => {
     setIsPending(true);
     try {
-      const user = await request.post<LoginData, UserInfo>("/api/auth/login", data);
-      setUserInfo(user);
+      const response = await authApi.login(data);
+      if (!response.user) {
+        throw new Error("Login failed");
+      }
+      setUserInfo(response.user);
       navigate(redirectTo || "/");
     } catch (err: any) {
       setError(err.message || "Login failed");
