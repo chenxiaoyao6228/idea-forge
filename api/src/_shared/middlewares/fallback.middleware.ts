@@ -207,7 +207,6 @@ export class FallbackMiddleware implements NestMiddleware {
         email: user.email,
         displayName: user.displayName || "",
         imageUrl: user.imageUrl || "",
-        accessToken,
       };
     } catch (error) {
       if ((error as any).name === "TokenExpiredError" && refreshToken) {
@@ -229,7 +228,6 @@ export class FallbackMiddleware implements NestMiddleware {
               email: user.email,
               displayName: user.displayName || "",
               imageUrl: user.imageUrl || "",
-              accessToken: newAccessToken,
             };
           }
         } catch (refreshError) {

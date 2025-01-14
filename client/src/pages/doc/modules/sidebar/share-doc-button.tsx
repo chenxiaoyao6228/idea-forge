@@ -5,7 +5,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { ShareIcon } from "lucide-react";
 import { useSharedDocumentStore } from "../../stores/shared-store";
 import { Permission } from "shared";
-import { useDocumentStore } from "../../stores/store";
+import { useDocumentStore } from "../../stores/doc-store";
 import { Select, SelectValue, SelectItem, SelectTrigger, SelectContent } from "@/components/ui/select";
 import { treeUtils } from "../../util";
 import { useParams } from "react-router-dom";

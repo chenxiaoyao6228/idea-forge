@@ -21,7 +21,7 @@ import { Link } from "react-router-dom";
 import { Icon } from "@/components/ui/icon";
 import { useParams } from "react-router-dom";
 import { useEffect } from "react";
-import { useDocumentStore } from "./stores/store";
+import { useDocumentStore } from "./stores/doc-store";
 
 export default function Doc() {
   const { docId } = useParams();

@@ -17,9 +17,10 @@ import { RefreshCw, WifiOff } from "lucide-react";
 
 interface Props {
   id: string;
+  editable: boolean;
 }
 
-export default function TiptapEditor({ id }: Props) {
+export default function TiptapEditor({ id, editable = true }: Props) {
   const menuContainerRef = useRef(null);
   const { userInfo } = useUserStore();
   const currentDocument = useCurrentDocumentState();
@@ -36,7 +37,7 @@ export default function TiptapEditor({ id }: Props) {
     [userInfo],
   );
 
-  const provider = useCollaborationProvider(id, user);
+  const provider = useCollaborationProvider(id, user, editable);
 
   const editor = useEditor({
     editorProps: {
@@ -44,6 +45,7 @@ export default function TiptapEditor({ id }: Props) {
         class: "min-h-96 prose dark:prose-invert focus:outline-none max-w-none",
       },
     },
+    editable,
     extensions: [
       ...extensions,
       Collaboration.configure({

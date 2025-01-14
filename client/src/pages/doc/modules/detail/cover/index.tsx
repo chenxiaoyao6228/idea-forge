@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDocumentStore } from "@/pages/doc/stores/store";
+import { useDocumentStore } from "@/pages/doc/stores/doc-store";
 import { CoverPicker } from "./cover-picker";
 import { useState, useRef, useEffect } from "react";
 import { useCoverImageStore } from "./coverImageStore";
@@ -12,12 +12,12 @@ interface CoverProps {
     url?: string;
     scrollY?: number;
   };
-  preview?: boolean;
+  editable?: boolean;
 }
 
 const CONTAINER_HEIGHT_VH = 30;
 
-export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPreview = false }: CoverProps) {
+export default function Cover({ cover = { url: "", scrollY: 50 }, editable = false }: CoverProps) {
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
   const currentDocument = useDocumentStore.use.currentDocument();
@@ -138,7 +138,7 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, preview: isPre
       </div>
 
       {/* Only show buttons and positioning tip if not in preview mode */}
-      {!isPreview && (
+      {editable && (
         <>
           {/* buttons group */}
           <div className="absolute left-0 right-0 bottom-0 z-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

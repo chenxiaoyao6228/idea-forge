@@ -147,6 +147,7 @@ export const detailDocumentSchema = commonDocumentSchema
         url: z.string(),
       })
       .nullable(),
+    permission: z.enum(permission),
   });
 
 export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;
