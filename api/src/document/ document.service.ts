@@ -169,6 +169,11 @@ export class DocumentService {
     // Find and archive all child documents recursively
     await this.archiveChildren(id, ownerId);
 
+    // Delete all shares for this document
+    await this.prisma.docShare.deleteMany({
+      where: { docId: id },
+    });
+
     // Archive the document itself
     return this.prisma.doc.update({
       where: { id },
@@ -187,6 +192,12 @@ export class DocumentService {
 
     for (const child of children) {
       await this.archiveChildren(child.id, ownerId); // Recursively archive child documents
+
+      // Delete shares for child document
+      await this.prisma.docShare.deleteMany({
+        where: { docId: child.id },
+      });
+
       await this.prisma.doc.update({
         where: { id: child.id },
         data: { isArchived: true },
