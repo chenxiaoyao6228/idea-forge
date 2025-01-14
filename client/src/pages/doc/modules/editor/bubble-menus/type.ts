@@ -5,7 +5,7 @@ import type { EditorState } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 
 export interface MenuProps {
-  editor: Editor | null;
+  editor: Editor;
   containerRef: React.RefObject<HTMLElement>;
 }
 
@@ -19,6 +19,6 @@ export interface ShouldShowProps {
 }
 
 export interface MenuProps {
-  editor: Editor | null;
+  editor: Editor;
   containerRef: React.RefObject<HTMLElement>;
 }

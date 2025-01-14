@@ -1,6 +1,7 @@
 import Placeholder from "@tiptap/extension-placeholder";
 import Typography from "@tiptap/extension-typography";
 import TextAlign from "@tiptap/extension-text-align";
+import { Dropcursor } from "@tiptap/extension-dropcursor";
 
 // custom extensions
 import { HardBreak } from "./hard-break";
@@ -73,6 +74,10 @@ const _extensions = [
   Placeholder.configure({ placeholder: "Write something..." }),
   CustomKeys,
   SlashCommands,
+  Dropcursor.configure({
+    width: 2,
+    class: "ProseMirror-dropcursor border-black",
+  }),
 ];
 
 export const extensions = [...nodes, ...marks, ..._extensions];
