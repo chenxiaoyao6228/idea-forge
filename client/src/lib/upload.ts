@@ -1,4 +1,5 @@
 import request from "./request";
+import { delay } from "./utils";
 
 export const uploadFile = async ({ file, ext }: { file: File; ext: string }) => {
   const { credentials, fileKey, fileId } = (await request("/api/files/credentials", {
@@ -9,13 +10,13 @@ export const uploadFile = async ({ file, ext }: { file: File; ext: string }) => 
     },
   })) as any;
 
-  // 修改上传请求配置
+  // Configure upload request
   const uploadRes = await fetch(credentials.url, {
     method: "PUT",
     body: file,
     headers: {
       ...credentials.headers,
-      // 确保 Content-Type 正确设置
+      // Ensure Content-Type is set correctly
       "Content-Type": file.type || "application/octet-stream",
     },
     mode: "cors",
@@ -25,7 +26,9 @@ export const uploadFile = async ({ file, ext }: { file: File; ext: string }) => 
     throw new Error(`Upload failed: ${uploadRes.status} ${uploadRes.statusText}`);
   }
 
-  // 确认上传
+  // await delay(5000);
+
+  // Confirm upload
   return (await request("/api/files/confirm", {
     method: "POST",
     data: {

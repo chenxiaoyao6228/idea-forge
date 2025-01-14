@@ -3,11 +3,12 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 import { mergeAttributes, type Range } from "@tiptap/core";
 import ImageBlockView from "./image-block-view";
 import { unwrap, wrap } from "../markdown/plugins/wrap";
+import { createPasteImagePlugin } from "./create-paste-image-plugin";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     imageBlock: {
-      setImageBlock: (attributes: { src: string }) => ReturnType;
+      setImageBlock: (attributes: { src: string; uploadId?: string; isUploading?: boolean }) => ReturnType;
     };
   }
 }
@@ -29,6 +30,16 @@ const ImageBlock = TImage.extend({
         renderHTML: (attributes) => ({
           src: attributes.src,
         }),
+      },
+      uploadId: {
+        default: null,
+        parseHTML: () => null,
+        renderHTML: () => ({}),
+      },
+      isUploading: {
+        default: false,
+        parseHTML: () => false,
+        renderHTML: () => ({}),
       },
       alt: {
         default: undefined,
@@ -87,7 +98,7 @@ const ImageBlock = TImage.extend({
         ({ commands }) => {
           return commands.insertContent({
             type: "imageBlock",
-            attrs: { src: attrs.src },
+            attrs: { src: attrs.src, uploadId: attrs.uploadId, isUploading: attrs.isUploading },
           });
         },
     };
@@ -95,6 +106,10 @@ const ImageBlock = TImage.extend({
 
   addNodeView() {
     return ReactNodeViewRenderer(ImageBlockView);
+  },
+
+  addProseMirrorPlugins() {
+    return [createPasteImagePlugin({ editor: this.editor })];
   },
 });
 
