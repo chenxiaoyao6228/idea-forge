@@ -110,8 +110,38 @@
   }
 }
 
-/* image block */
+/* image block && image uploading */
 .tiptap {
+  /* image uploading */
+  .image-uploading {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+
+    &::before {
+      content: "";
+      box-sizing: border-box;
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 3px solid rgba(104, 206, 248, 0.1);
+      border-top: 3px solid #68cef8;
+      border-right: 3px solid #68cef8;
+      z-index: 1;
+      animation: spinner 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    img {
+      filter: blur(5px);
+      opacity: 0.3;
+      transition: all 0.3s ease;
+    }
+  }
+
+  /* image block */
   .node-imageBlock {
     @apply my-2;
 
@@ -123,23 +153,10 @@
       outline: 3px solid #68cef8;
     }
   }
+
   .ProseMirror-selectednode {
     img {
       outline: 3px solid #68cef8;
-    }
-  }
-
-  .node-imageUpload {
-    @apply rounded border-2 border-dotted border-black border-opacity-10 p-2 dark:border-neutral-500 my-2;
-    transition: border 160ms cubic-bezier(0.45, 0.05, 0.55, 0.95);
-
-    &:hover {
-      @apply border-opacity-30;
-    }
-
-    &:has(.is-active),
-    &.has-focus {
-      @apply border-opacity-40;
     }
   }
 }
@@ -403,5 +420,11 @@
   .line-number::before {
     counter-increment: line;
     content: counter(line);
+  }
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
   }
 }

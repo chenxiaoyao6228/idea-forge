@@ -125,7 +125,7 @@ export const commandGroups: CommandGroup[] = [
         description: "Insert an image",
         aliases: ["img"],
         command: ({ editor }) => {
-          editor.chain().focus().setImageBlock({ src: "http://localhost:5000/images/cover/James%20Webb%20Telescope/nasa_robert_stewart_spacewalk.jpg" }).run();
+          editor.chain().focus().insertLocalImage().run();
         },
       },
     ],
