@@ -66,7 +66,10 @@ export default function ImageBlockView({ node, updateAttributes }: ImageBlockVie
     const editorWidth = document.querySelector(".ProseMirror")?.clientWidth ?? 0;
     if (!editorWidth) return;
 
-    const newWidth = Math.min(width, editorWidth);
+    const editorWidthWithoutMargin = editorWidth - 40 * 2;
+
+    // Take mx-10 into account
+    const newWidth = Math.min(width, editorWidthWithoutMargin);
     const newHeight = newWidth / aspectRatio;
 
     setSize({
