@@ -1,11 +1,15 @@
 import request from "./request";
 import { delay } from "./utils";
+import { compressImage } from "./image";
 
 export const uploadFile = async ({ file, ext }: { file: File; ext: string }) => {
+  // Compress file before upload
+  const compressedFile = await compressImage(file);
+
   const { credentials, fileKey, fileId } = (await request("/api/files/credentials", {
     method: "POST",
     data: {
-      fileName: file.name,
+      fileName: compressedFile.name,
       ext,
     },
   })) as any;
@@ -13,11 +17,11 @@ export const uploadFile = async ({ file, ext }: { file: File; ext: string }) => 
   // Configure upload request
   const uploadRes = await fetch(credentials.url, {
     method: "PUT",
-    body: file,
+    body: compressedFile,
     headers: {
       ...credentials.headers,
       // Ensure Content-Type is set correctly
-      "Content-Type": file.type || "application/octet-stream",
+      "Content-Type": compressedFile.type || "application/octet-stream",
     },
     mode: "cors",
   });
