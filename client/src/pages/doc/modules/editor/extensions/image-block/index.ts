@@ -12,8 +12,9 @@ import { v4 as uuidv4 } from "uuid";
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     imageBlock: {
-      setImageBlock: (attributes: { src: string }) => ReturnType;
+      setImageBlock: (attributes: { src: string; alignment?: string }) => ReturnType;
       insertLocalImage: () => ReturnType;
+      setImageAlignment: (alignment: "left" | "center" | "right") => ReturnType;
     };
   }
 }
@@ -41,6 +42,14 @@ const ImageBlock = TImage.extend({
         parseHTML: (element) => element.getAttribute("alt"),
         renderHTML: (attributes) => ({
           alt: attributes.alt,
+        }),
+      },
+      alignment: {
+        default: "center",
+        parseHTML: (element) => element.getAttribute("data-alignment") || "center",
+        renderHTML: (attributes) => ({
+          "data-alignment": attributes.alignment,
+          class: `image-align-${attributes.alignment}`,
         }),
       },
     };
@@ -94,8 +103,18 @@ const ImageBlock = TImage.extend({
         ({ commands }) => {
           return commands.insertContent({
             type: "imageBlock",
-            attrs: { src: attrs.src },
+            attrs: {
+              src: attrs.src,
+              alignment: attrs.alignment || "center",
+            },
           });
+        },
+
+      setImageAlignment:
+        (alignment) =>
+        ({ commands, editor }) => {
+          if (!editor.isActive("imageBlock")) return false;
+          return commands.updateAttributes("imageBlock", { alignment });
         },
 
       insertLocalImage:
