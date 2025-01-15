@@ -9,6 +9,7 @@ import { uploadFile } from "@/lib/upload";
 import { findPlaceholder, createPlaceholderPlugin } from "./plugins/create-placeholder-plugin";
 import { v4 as uuidv4 } from "uuid";
 import { getImageDimensionsFromFile } from "@/lib/image";
+import { calculateInitialSize } from "./util";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -188,9 +189,12 @@ const ImageBlock = TImage.extend({
               const previewUrl = URL.createObjectURL(file);
               const id = uuidv4();
 
-              const { width, height } = await getImageDimensionsFromFile(file);
+              const { width: originalWidth, height: originalHeight } = await getImageDimensionsFromFile(file);
+              const aspectRatio = originalWidth / originalHeight;
 
-              const aspectRatio = width / height;
+              const editorWidth = (document.querySelector(".ProseMirror")?.clientWidth ?? 0) - 80;
+
+              const { width, height } = calculateInitialSize(originalWidth, originalHeight, editorWidth);
 
               const tr = view.state.tr;
               if (!tr.selection.empty) tr.deleteSelection();

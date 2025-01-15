@@ -4,6 +4,7 @@ import { Editor } from "@tiptap/react";
 import { findPlaceholder } from "./create-placeholder-plugin";
 import { v4 as uuidv4 } from "uuid";
 import { getImageDimensionsFromFile } from "@/lib/image";
+import { calculateInitialSize } from "../util";
 
 export function createPasteImagePlugin({
   editor,
@@ -32,8 +33,11 @@ export function createPasteImagePlugin({
 
           const previewUrl = URL.createObjectURL(file);
 
-          const { width, height } = await getImageDimensionsFromFile(file);
-          const aspectRatio = width / height;
+          const { width: originalWidth, height: originalHeight } = await getImageDimensionsFromFile(file);
+          const aspectRatio = originalWidth / originalHeight;
+
+          const editorWidth = (document.querySelector(".ProseMirror")?.clientWidth ?? 0) - 80;
+          const { width, height } = calculateInitialSize(originalWidth, originalHeight, editorWidth);
 
           const tr = view.state.tr;
           tr.setMeta(placeholderPlugin, {
@@ -53,7 +57,16 @@ export function createPasteImagePlugin({
 
             view.dispatch(
               view.state.tr
-                .replaceWith(pos, pos, editor.schema.nodes.imageBlock.create({ src: downloadUrl, width, height, aspectRatio }))
+                .replaceWith(
+                  pos,
+                  pos,
+                  editor.schema.nodes.imageBlock.create({
+                    src: downloadUrl,
+                    width,
+                    height,
+                    aspectRatio,
+                  }),
+                )
                 .setMeta(placeholderPlugin, { remove: { id } }),
             );
           } catch (error) {
