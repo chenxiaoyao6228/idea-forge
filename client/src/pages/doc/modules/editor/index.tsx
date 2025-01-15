@@ -58,6 +58,14 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
         user,
       }),
     ],
+    // onTransaction: ({ transaction, editor }) => {
+    //   console.log("Transaction:", {
+    //     time: new Date().toISOString(),
+    //     docChanged: transaction.docChanged,
+    //     steps: transaction.steps.map((step) => step.toJSON()),
+    //     selection: transaction.selection.toJSON(),
+    //   });
+    // },
     onCreate: ({ editor }) => {
       console.log("Editor created:", editor);
     },

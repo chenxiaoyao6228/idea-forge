@@ -8,13 +8,25 @@ import { fileOpen } from "@/lib/filesystem";
 import { uploadFile } from "@/lib/upload";
 import { findPlaceholder, createPlaceholderPlugin } from "./plugins/create-placeholder-plugin";
 import { v4 as uuidv4 } from "uuid";
+import { getImageDimensionsFromFile } from "@/lib/image";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     imageBlock: {
-      setImageBlock: (attributes: { src: string; alignment?: string }) => ReturnType;
+      setImageBlock: (attributes: {
+        src: string;
+        alignment?: string;
+        width?: number;
+        height?: number;
+        aspectRatio?: number;
+      }) => ReturnType;
       insertLocalImage: () => ReturnType;
       setImageAlignment: (alignment: "left" | "center" | "right") => ReturnType;
+      setImageSize: (size: {
+        width: number;
+        height: number;
+        aspectRatio?: number;
+      }) => ReturnType;
     };
   }
 }
@@ -50,6 +62,38 @@ const ImageBlock = TImage.extend({
         renderHTML: (attributes) => ({
           "data-alignment": attributes.alignment,
           class: `image-align-${attributes.alignment}`,
+        }),
+      },
+      width: {
+        default: null,
+        parseHTML: (element) => {
+          const width = element.getAttribute("width");
+          return width ? Number.parseInt(width, 10) : null;
+        },
+        renderHTML: (attributes) => ({
+          width: attributes.width,
+          style: `width: ${attributes.width}px`,
+        }),
+      },
+      height: {
+        default: null,
+        parseHTML: (element) => {
+          const height = element.getAttribute("height");
+          return height ? Number.parseInt(height, 10) : null;
+        },
+        renderHTML: (attributes) => ({
+          height: attributes.height,
+          style: `height: ${attributes.height}px`,
+        }),
+      },
+      aspectRatio: {
+        default: null,
+        parseHTML: (element) => {
+          const ratio = element.getAttribute("data-aspect-ratio");
+          return ratio ? Number.parseFloat(ratio) : null;
+        },
+        renderHTML: (attributes) => ({
+          "data-aspect-ratio": attributes.aspectRatio,
         }),
       },
     };
@@ -106,6 +150,9 @@ const ImageBlock = TImage.extend({
             attrs: {
               src: attrs.src,
               alignment: attrs.alignment || "center",
+              width: attrs.width,
+              height: attrs.height,
+              aspectRatio: attrs.aspectRatio,
             },
           });
         },
@@ -115,6 +162,17 @@ const ImageBlock = TImage.extend({
         ({ commands, editor }) => {
           if (!editor.isActive("imageBlock")) return false;
           return commands.updateAttributes("imageBlock", { alignment });
+        },
+
+      setImageSize:
+        (size) =>
+        ({ commands, editor }) => {
+          if (!editor.isActive("imageBlock")) return false;
+          return commands.updateAttributes("imageBlock", {
+            width: size.width,
+            height: size.height,
+            aspectRatio: size.aspectRatio,
+          });
         },
 
       insertLocalImage:
@@ -130,6 +188,10 @@ const ImageBlock = TImage.extend({
               const previewUrl = URL.createObjectURL(file);
               const id = uuidv4();
 
+              const { width, height } = await getImageDimensionsFromFile(file);
+
+              const aspectRatio = width / height;
+
               const tr = view.state.tr;
               if (!tr.selection.empty) tr.deleteSelection();
               tr.setMeta(this.storage.placeholderPlugin, {
@@ -141,13 +203,27 @@ const ImageBlock = TImage.extend({
               });
               view.dispatch(tr);
 
-              const { downloadUrl } = await uploadFile({ file, ext: file.name.split(".").pop() || "png" });
+              const { downloadUrl } = await uploadFile({
+                file,
+                ext: file.name.split(".").pop() || "png",
+              });
 
               const pos = findPlaceholder(this.storage.placeholderPlugin, view.state, id);
               if (pos == null) return;
 
               view.dispatch(
-                view.state.tr.replaceWith(pos, pos, this.type.create({ src: downloadUrl })).setMeta(this.storage.placeholderPlugin, { remove: { id } }),
+                view.state.tr
+                  .replaceWith(
+                    pos,
+                    pos,
+                    this.type.create({
+                      src: downloadUrl,
+                      width,
+                      height,
+                      aspectRatio,
+                    }),
+                  )
+                  .setMeta(this.storage.placeholderPlugin, { remove: { id } }),
               );
             } catch (error) {
               console.error("Error uploading image:", error);
