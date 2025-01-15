@@ -14,14 +14,36 @@ export async function getImageDimensionsFromFile(file: File) {
 export async function getImageDimensionsFromUrl(url: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.src = url;
+
+    // Add crossOrigin attribute for CORS images
+    img.crossOrigin = "anonymous";
+
     img.onload = () => {
       resolve({ width: img.width, height: img.height });
     };
+
     img.onerror = () => {
       reject(new Error(`Failed to load image from URL: ${url}`));
     };
+
+    img.src = url;
   });
+}
+
+export async function preloadImage(src: string) {
+  try {
+    const dimensions = await getImageDimensionsFromUrl(src);
+    return {
+      dimensions,
+      success: true,
+    };
+  } catch (error) {
+    console.error("Error preloading image:", error);
+    return {
+      dimensions: { width: 0, height: 0 },
+      success: false,
+    };
+  }
 }
 
 interface CompressionOptions {
