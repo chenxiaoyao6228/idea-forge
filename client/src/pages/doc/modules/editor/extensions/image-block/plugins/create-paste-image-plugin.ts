@@ -3,6 +3,7 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Editor } from "@tiptap/react";
 import { findPlaceholder } from "./create-placeholder-plugin";
 import { v4 as uuidv4 } from "uuid";
+import { getImageDimensionsFromFile } from "@/lib/image";
 
 export function createPasteImagePlugin({
   editor,
@@ -31,6 +32,9 @@ export function createPasteImagePlugin({
 
           const previewUrl = URL.createObjectURL(file);
 
+          const { width, height } = await getImageDimensionsFromFile(file);
+          const aspectRatio = width / height;
+
           const tr = view.state.tr;
           tr.setMeta(placeholderPlugin, {
             add: {
@@ -48,7 +52,9 @@ export function createPasteImagePlugin({
             if (pos == null) return;
 
             view.dispatch(
-              view.state.tr.replaceWith(pos, pos, editor.schema.nodes.imageBlock.create({ src: downloadUrl })).setMeta(placeholderPlugin, { remove: { id } }),
+              view.state.tr
+                .replaceWith(pos, pos, editor.schema.nodes.imageBlock.create({ src: downloadUrl, width, height, aspectRatio }))
+                .setMeta(placeholderPlugin, { remove: { id } }),
             );
           } catch (error) {
             console.error("Failed to upload pasted image:", error);
