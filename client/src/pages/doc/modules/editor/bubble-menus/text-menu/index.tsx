@@ -27,10 +27,15 @@ export default function TextMenu(props: MenuProps) {
       shouldShow={() => shouldShow(editor)}
     >
       <Wrapper>
-        <ContentTypeMenu editor={editor} />
-        <BasicMenu editor={editor} />
-        <SetLinkMenu editor={editor} containerRef={containerRef} />
-        <AlignMenu editor={editor} />
+        <div className="flex items-center gap-1">
+          <ContentTypeMenu editor={editor} />
+          <div className="w-px h-4 bg-border mx-1" />
+          <BasicMenu editor={editor} />
+          <div className="w-px h-4 bg-border mx-1" />
+          <SetLinkMenu editor={editor} containerRef={containerRef} />
+          <div className="w-px h-4 bg-border mx-1" />
+          <AlignMenu editor={editor} />
+        </div>
       </Wrapper>
     </BubbleMenu>
   );
