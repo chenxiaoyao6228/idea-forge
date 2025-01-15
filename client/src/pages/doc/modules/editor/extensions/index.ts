@@ -2,6 +2,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Typography from "@tiptap/extension-typography";
 import TextAlign from "@tiptap/extension-text-align";
 import { Dropcursor } from "@tiptap/extension-dropcursor";
+import Focus from "@tiptap/extension-focus";
 
 // custom extensions
 import { HardBreak } from "./hard-break";
@@ -79,6 +80,10 @@ const _extensions = [
   Dropcursor.configure({
     width: 2,
     class: "ProseMirror-dropcursor border-black",
+  }),
+  Focus.configure({
+    className: "has-focus",
+    mode: "all",
   }),
 ];
 

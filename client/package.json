@@ -52,7 +52,7 @@
     "@tiptap/extension-collaboration-cursor": "^2.4.0",
     "@tiptap/extension-document": "^2.9.1",
     "@tiptap/extension-dropcursor": "^2.9.1",
-    "@tiptap/extension-focus": "^2.8.0",
+    "@tiptap/extension-focus": "^2.11.0",
     "@tiptap/extension-gapcursor": "^2.9.1",
     "@tiptap/extension-hard-break": "^2.9.1",
     "@tiptap/extension-heading": "^2.9.1",
