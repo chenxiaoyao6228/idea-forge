@@ -44,7 +44,7 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
   const editor = useEditor({
     editorProps: {
       attributes: {
-        class: "min-h-96 prose dark:prose-invert focus:outline-none max-w-none",
+        class: "min-h-96 prose dark:prose-invert focus:outline-none max-w-none pb-40",
       },
     },
     editable,

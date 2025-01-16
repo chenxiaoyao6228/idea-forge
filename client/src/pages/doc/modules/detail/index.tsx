@@ -49,13 +49,11 @@ export default function DocDetail() {
 
   return (
     <div className="flex-auto overflow-y-auto">
-      <div className="pb-40">
-        {/* TODO: use yjs-zustand to allow multiple user edit  title , cover and icon */}
-        {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={isMyDoc} />}
-        <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10">
-          <Toolbar doc={currentDocument} editable={isMyDoc} />
-          <TiptapEditor id={currentDocument.id} editable={hasEditPermission} collabToken={collabToken} collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")} />
-        </div>
+      {/* TODO: use yjs-zustand to allow multiple user edit  title , cover and icon */}
+      {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={isMyDoc} />}
+      <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10">
+        <Toolbar doc={currentDocument} editable={isMyDoc} />
+        <TiptapEditor id={currentDocument.id} editable={hasEditPermission} collabToken={collabToken} collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")} />
       </div>
     </div>
   );

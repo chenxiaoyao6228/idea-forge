@@ -1,3 +1,5 @@
+export const EDITOR_PADDING_BOTTOM = 200;
+
 export const COLLABORATE_EDIT_USER_COLORS = [
   "#958DF1",
   "#F98181",

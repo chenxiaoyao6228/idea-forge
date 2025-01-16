@@ -110,7 +110,7 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
   };
 
   return (
-    <div className="group relative">
+    <div className="group relative mx-10">
       <IconSection doc={doc} editable={editable} onIconSelect={onIconSelect} onRemoveIcon={onRemoveIcon} />
 
       <div className="opacity-0 group-hover:opacity-100 flex items-center gap-x-1 py-2">

@@ -32,6 +32,7 @@ import { Code } from "./code";
 import ImageBlock from "./image-block";
 import { Selection } from "./selection";
 import { Table, TableCell, TableHeader, TableRow } from "./table";
+import AddParagraph from "./paragraph/plugins/add-paragraph";
 
 const nodes = [
   Document,
@@ -95,6 +96,7 @@ const _extensions = [
     mode: "all",
   }),
   Selection,
+  AddParagraph,
 ];
 
 export const extensions = [...nodes, ...marks, ..._extensions];
