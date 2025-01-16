@@ -30,6 +30,7 @@ import { SlashCommands } from "./slash-commands";
 import { CodeBlock } from "./code-block";
 import { Code } from "./code";
 import ImageBlock from "./image-block";
+import { Selection } from "./selection";
 import { Table, TableCell, TableHeader, TableRow } from "./table";
 
 const nodes = [
@@ -93,6 +94,7 @@ const _extensions = [
     className: "has-focus",
     mode: "all",
   }),
+  Selection,
 ];
 
 export const extensions = [...nodes, ...marks, ..._extensions];

@@ -3,8 +3,8 @@ import type { CommandGroup } from "./types";
 
 export const commandGroups: CommandGroup[] = [
   {
-    name: "format",
-    title: "Basic Formatting",
+    name: "block",
+    title: "Basic Block",
     commands: [
       {
         name: "heading1",
@@ -75,12 +75,7 @@ export const commandGroups: CommandGroup[] = [
           editor.chain().focus().setBlockquote().run();
         },
       },
-    ],
-  },
-  {
-    name: "insert",
-    title: "Insert",
-    commands: [
+
       {
         name: "image",
         label: "Image",
