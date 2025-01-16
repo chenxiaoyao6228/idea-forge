@@ -70,7 +70,7 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
       console.log("Editor created:", editor);
     },
     onUpdate: ({ editor }) => {
-      console.log("Editor content:", editor.getJSON());
+      // console.log("Editor content:", editor.getJSON());
     },
   });
 

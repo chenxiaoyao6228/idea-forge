@@ -1,10 +1,10 @@
-import { Editor } from "@tiptap/react";
 import TextMenu from "./text-menu";
 import LinkMenu from "./link-menu";
 import type { MenuProps } from "./type";
 import CodeBlockMenu from "./code-block-menu";
 import DragHandleMenu from "./drag-handle-menu";
 import ImageBlockMenu from "./image-block-menu";
+import { TableMenu } from "./table-menu";
 
 export default function BubbleMenus(props: MenuProps) {
   const { editor, containerRef } = props;
@@ -18,6 +18,7 @@ export default function BubbleMenus(props: MenuProps) {
       <LinkMenu editor={editor} containerRef={containerRef} />
       <CodeBlockMenu editor={editor} containerRef={containerRef} />
       <ImageBlockMenu editor={editor} containerRef={containerRef} />
+      <TableMenu editor={editor} containerRef={containerRef} />
     </>
   );
 }

@@ -30,6 +30,7 @@ import { SlashCommands } from "./slash-commands";
 import { CodeBlock } from "./code-block";
 import { Code } from "./code";
 import ImageBlock from "./image-block";
+import { Table, TableCell, TableHeader, TableRow } from "./table";
 
 const nodes = [
   Document,
@@ -54,6 +55,13 @@ const nodes = [
   }),
   CodeBlock,
   ImageBlock,
+  Table.configure({
+    resizable: true,
+    lastColumnResizable: false,
+  }),
+  TableCell,
+  TableRow,
+  TableHeader,
 ];
 
 const marks = [

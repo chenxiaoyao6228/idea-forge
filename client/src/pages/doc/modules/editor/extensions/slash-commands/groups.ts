@@ -1,4 +1,4 @@
-import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout, Image } from "lucide-react";
+import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout, Image, Table } from "lucide-react";
 import type { CommandGroup } from "./types";
 
 export const commandGroups: CommandGroup[] = [
@@ -82,6 +82,46 @@ export const commandGroups: CommandGroup[] = [
     title: "Insert",
     commands: [
       {
+        name: "image",
+        label: "Image",
+        Icon: Image,
+        description: "Insert an image",
+        aliases: ["img"],
+        command: ({ editor }) => {
+          editor.chain().focus().insertLocalImage().run();
+        },
+      },
+      {
+        name: "mermaid",
+        label: "Mermaid Diagram",
+        Icon: Sprout,
+        description: "Insert a Mermaid diagram",
+        command: ({ editor }) => {
+          editor.chain().focus().setCodeBlock({ language: "mermaid" }).run();
+        },
+      },
+      {
+        name: "codeBlock",
+        label: "CodeBlock ",
+        Icon: SquareCode,
+        aliases: ["code"],
+        description: "Code block with syntax highlighting",
+        command: ({ editor }) => {
+          editor.chain().focus().setCodeBlock().run();
+        },
+      },
+
+      {
+        name: "table",
+        label: "Table",
+        Icon: Table,
+        description: "Insert a table",
+        command: ({ editor }) => {
+          editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: false }).run();
+        },
+      },
+
+      {
         name: "horizontalRule",
         label: "Horizontal Line",
         description: "Add a horizontal divider",
@@ -98,34 +138,6 @@ export const commandGroups: CommandGroup[] = [
         Icon: Link,
         command: ({ editor }) => {
           editor.chain().focus().setLink({ href: "" }).run();
-        },
-      },
-      {
-        name: "codeBlock",
-        label: "CodeBlock ",
-        Icon: SquareCode,
-        description: "Code block with syntax highlighting",
-        command: ({ editor }) => {
-          editor.chain().focus().setCodeBlock().run();
-        },
-      },
-      {
-        name: "mermaid",
-        label: "Mermaid Diagram",
-        Icon: Sprout,
-        description: "Insert a Mermaid diagram",
-        command: ({ editor }) => {
-          editor.chain().focus().setCodeBlock({ language: "mermaid" }).run();
-        },
-      },
-      {
-        name: "image",
-        label: "Image",
-        Icon: Image,
-        description: "Insert an image",
-        aliases: ["img"],
-        command: ({ editor }) => {
-          editor.chain().focus().insertLocalImage().run();
         },
       },
     ],
