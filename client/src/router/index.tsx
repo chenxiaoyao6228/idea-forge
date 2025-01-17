@@ -18,6 +18,7 @@ const ForgotPassword = React.lazy(() => import(/* webpackChunkName: "ForgotPassw
 const ResetPassword = React.lazy(() => import(/* webpackChunkName: "ResetPassword" */ "@/pages/reset-password"));
 const AuthCallback = React.lazy(() => import(/* webpackChunkName: "AuthCallback" */ "@/pages/auth-callback"));
 const Doc = React.lazy(() => import(/* webpackChunkName: "Doc" */ "@/pages/doc"));
+const TestAI = React.lazy(() => import(/* webpackChunkName: "TestAI" */ "@/pages/test-ai"));
 
 // Routes that require authentication
 const AuthRouteConfig: IRouteObject = {
@@ -30,6 +31,10 @@ const AuthRouteConfig: IRouteObject = {
     {
       path: "doc/:docId",
       element: LazyBoundary(Doc),
+    },
+    {
+      path: "test-ai",
+      element: LazyBoundary(TestAI),
     },
   ],
 };
