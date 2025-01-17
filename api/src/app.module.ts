@@ -18,6 +18,7 @@ import { FallbackMiddleware } from "./_shared/middlewares/fallback.middleware";
 import { ConfigsModule } from "./_shared/config/config.module";
 import { FileStoreModule } from "./file-store/file-store.module";
 import { CollaborationModule } from "./collaboration/collaboration.module";
+import { AIModule } from "./ai/ai.module";
 
 @Module({
   controllers: [AppController],
@@ -53,6 +54,7 @@ import { CollaborationModule } from "./collaboration/collaboration.module";
     DocumentModule,
     FileStoreModule,
     CollaborationModule,
+    AIModule,
   ],
   providers: [
     {
