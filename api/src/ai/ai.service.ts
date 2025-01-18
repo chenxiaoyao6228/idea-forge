@@ -97,4 +97,46 @@ export class AIProviderService implements OnModuleInit {
     tryProvider(0);
     return subject.asObservable();
   }
+
+  async streamCompletionMock(prompt: string): Promise<Observable<StreamResponse>> {
+    const subject = new Subject<StreamResponse>();
+
+    // Helper to generate random text of specified length
+    function generateRandomText(length: number): string {
+      const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!? ";
+      return Array.from({ length }, () => characters.charAt(Math.floor(Math.random() * characters.length))).join("");
+    }
+
+    // Generate random text between 300-1000 characters
+    const totalLength = Math.floor(Math.random() * (1000 - 300 + 1)) + 300;
+    const text = generateRandomText(totalLength);
+
+    // Calculate chunk size to spread over 5 seconds (assuming ~20 chunks)
+    const numberOfChunks = 20;
+    const chunkSize = Math.ceil(totalLength / numberOfChunks);
+    const delayBetweenChunks = 5000 / numberOfChunks;
+
+    // Simulate streaming with chunks
+    (async () => {
+      const mockProvider = this.activeProviders[0] || {
+        id: "mock-provider",
+        name: "Mock Provider",
+      };
+
+      for (let i = 0; i < text.length; i += chunkSize) {
+        const chunk = text.slice(i, i + chunkSize);
+        await new Promise((resolve) => setTimeout(resolve, delayBetweenChunks));
+
+        subject.next({
+          id: mockProvider.id,
+          content: chunk,
+          provider: mockProvider.name,
+        });
+      }
+
+      subject.complete();
+    })();
+
+    return subject.asObservable();
+  }
 }

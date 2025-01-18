@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, WifiOff } from "lucide-react";
+import AIPanel from "./ai-panel";
 
 interface Props {
   id: string;
@@ -140,13 +141,14 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
   if (!user || !editor) return null;
 
   return (
-    <div className="editor-container md:col-[2] w-full mx-auto mt-2" ref={menuContainerRef}>
+    <div className="editor-container relative md:col-[2] w-full mx-auto mt-2" ref={menuContainerRef}>
       {renderStatusBanner()}
 
       {status !== "loading" && (
         <>
           <EditorContent editor={editor} className="w-full" />
           <BubbleMenus editor={editor} containerRef={menuContainerRef} />
+          <AIPanel editor={editor} />
         </>
       )}
     </div>
