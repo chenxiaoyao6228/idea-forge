@@ -8,6 +8,7 @@ import { AIPresetActions } from "./preset-actions";
 import AIResult from "./result";
 import ConfirmButtons from "./confirm-buttons";
 import { useAIPanelStore } from "./ai-panel-store";
+import scrollIntoView from "scroll-into-view-if-needed";
 
 interface AIPanelProps {
   editor: Editor;
@@ -72,39 +73,32 @@ export default function AIPanel({ editor }: AIPanelProps) {
       if (!editorContainer) return;
 
       const editorRect = editorContainer.getBoundingClientRect();
-
-      // Get DOM position of selected text
       const view = editor.view;
       const start = view.coordsAtPos(from);
       const end = view.coordsAtPos(to);
-
-      // Calculate center position of selected area (relative to viewport)
       const bottom = Math.max(start.bottom, end.bottom);
 
-      // Set panel position, considering scroll position
+      // Set panel position
       const panel = panelRef.current;
-      const panelRect = panel.getBoundingClientRect();
-
-      // Ensure panel doesn't exceed editor boundaries
-      const viewportHeight = window.innerHeight;
-
-      // Constrain panel within editor container
       const left = editorRect.left;
-      let top = bottom + window.scrollY + 10; // 10px below selected text
-
-      // Vertical boundary check
-      if (top + panelRect.height > viewportHeight + window.scrollY) {
-        // If not enough space below, show panel above selected text
-        top = start.top + window.scrollY - panelRect.height - 10;
-      }
+      const top = bottom + window.scrollY + 10;
 
       panel.style.position = "absolute";
       panel.style.left = `${left}px`;
       panel.style.top = `${top}px`;
       panel.style.width = `${editorRect.width}px`;
-      panel.style.transform = "none"; // Remove the transform since we're using exact positioning
+      panel.style.transform = "none";
 
       setVisible(true);
+
+      // Scroll panel into view if it has content
+      if (result || isStreaming) {
+        scrollIntoView(panel, {
+          scrollMode: "if-needed",
+          block: "nearest",
+          behavior: "smooth",
+        });
+      }
     }
 
     editor.on("selectionUpdate", updatePanelPosition);
@@ -125,6 +119,17 @@ export default function AIPanel({ editor }: AIPanelProps) {
       window.removeEventListener("resize", updatePanelPosition);
     };
   }, [editor, setVisible, isVisible]);
+
+  // Add effect to handle panel visibility and scrolling
+  useEffect(() => {
+    if (isVisible && panelRef.current && (result || isStreaming)) {
+      scrollIntoView(panelRef.current, {
+        scrollMode: "if-needed",
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [isVisible, result, isStreaming]);
 
   if (!portalContainer) return null;
 
