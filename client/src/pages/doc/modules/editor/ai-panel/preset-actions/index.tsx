@@ -1,15 +1,16 @@
 import { MenuSquare, MoreHorizontal, PenLine, ListTree, FileText, Brain, Languages, HelpCircle, BugOff, MicVocal } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import ActionItem from "../action-item";
+import { useAIPanelStore } from "../ai-panel-store";
 
 export function AIPresetActions() {
-  const isEmptySelection = false;
+  const hasSelection = useAIPanelStore.use.hasSelection();
 
-  if (isEmptySelection) {
-    return <EmptySelectionActions />;
+  if (hasSelection) {
+    return <SelectedTextActions />;
   }
 
-  return <SelectedTextActions />;
+  return <EmptySelectionActions />;
 }
 
 function EmptySelectionActions() {

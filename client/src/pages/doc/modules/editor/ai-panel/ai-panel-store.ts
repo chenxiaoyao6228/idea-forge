@@ -83,7 +83,7 @@ export const store = create<AIPanelState>((set, get) => ({
         message,
         action: {
           label: "Retry",
-          handler: () => state.startProcessing(state.prompt),
+          handler: () => get().startStream(state.prompt),
         },
       },
     });
@@ -91,6 +91,9 @@ export const store = create<AIPanelState>((set, get) => ({
 
   reset: () => {
     set({
+      hasSelection: false,
+      isVisible: false,
+      isInputFocused: false,
       isThinking: false,
       isStreaming: false,
       result: "",
