@@ -1,4 +1,5 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Editor } from "@tiptap/core";
@@ -13,6 +14,8 @@ interface AIPanelProps {
 }
 
 export default function AIPanel({ editor }: AIPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const isVisible = useAIPanelStore.use.isVisible();
   const isInputFocused = useAIPanelStore.use.isInputFocused();
   const isThinking = useAIPanelStore.use.isThinking();
@@ -39,10 +42,105 @@ export default function AIPanel({ editor }: AIPanelProps) {
   const placeholder = isThinking ? "AI is thinking..." : isStreaming ? "AI is writing..." : "Ask AI anything...";
   const isEmptyPrompt = !prompt.trim();
 
-  return (
+  // Create portal container on mount
+  useEffect(() => {
+    const container = document.createElement("div");
+    container.className = "ai-panel-portal";
+    document.body.appendChild(container);
+    setPortalContainer(container);
+
+    return () => {
+      document.body.removeChild(container);
+    };
+  }, []);
+
+  // Listen for selection changes and update panel position
+  useEffect(() => {
+    function updatePanelPosition() {
+      if (!editor || !panelRef.current) return;
+
+      const selection = editor.state.selection;
+      const { from, to } = selection;
+
+      if (from === to) {
+        setVisible(false);
+        return;
+      }
+
+      // Get editor container position info
+      const editorContainer = document.getElementById("EDITOR-CONTAINER");
+      if (!editorContainer) return;
+
+      const editorRect = editorContainer.getBoundingClientRect();
+
+      // Get DOM position of selected text
+      const view = editor.view;
+      const start = view.coordsAtPos(from);
+      const end = view.coordsAtPos(to);
+
+      // Calculate center position of selected area (relative to viewport)
+      const bottom = Math.max(start.bottom, end.bottom);
+
+      // Set panel position, considering scroll position
+      const panel = panelRef.current;
+      const panelRect = panel.getBoundingClientRect();
+
+      // Ensure panel doesn't exceed editor boundaries
+      const viewportHeight = window.innerHeight;
+
+      // Constrain panel within editor container
+      const left = editorRect.left;
+      let top = bottom + window.scrollY + 10; // 10px below selected text
+
+      // Vertical boundary check
+      if (top + panelRect.height > viewportHeight + window.scrollY) {
+        // If not enough space below, show panel above selected text
+        top = start.top + window.scrollY - panelRect.height - 10;
+      }
+
+      panel.style.position = "absolute";
+      panel.style.left = `${left}px`;
+      panel.style.top = `${top}px`;
+      panel.style.width = `${editorRect.width}px`;
+      panel.style.transform = "none"; // Remove the transform since we're using exact positioning
+
+      setVisible(true);
+    }
+
+    editor.on("selectionUpdate", updatePanelPosition);
+
+    // Add scroll event listener
+    const handleScroll = () => {
+      if (isVisible) {
+        updatePanelPosition();
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", updatePanelPosition);
+
+    return () => {
+      editor.off("selectionUpdate", updatePanelPosition);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", updatePanelPosition);
+    };
+  }, [editor, setVisible, isVisible]);
+
+  if (!portalContainer) return null;
+
+  return createPortal(
     <div
-      className="ai-panel absolute bottom-[0px] left-0 right-0 mx-10 mt-2 bg-background dark:bg-background rounded-md"
-      style={{ display: isVisible ? "block" : "none" }}
+      ref={panelRef}
+      className="ai-panel bg-background dark:bg-background rounded-md shadow-lg"
+      style={{
+        display: isVisible ? "block" : "none",
+        zIndex: 50,
+        position: "absolute",
+        visibility: isVisible ? "visible" : "hidden",
+        opacity: isVisible ? 1 : 0,
+        transition: "opacity 0.2s ease-in-out",
+        // Remove maxWidth and width constraints since we're using editor width
+      }}
     >
       {/* ai-result */}
       {(result || error) && <AIResult result={result} error={error} />}
@@ -74,6 +172,7 @@ export default function AIPanel({ editor }: AIPanelProps) {
 
       {/* confirm-buttons */}
       {!isStreaming && result && <ConfirmButtons />}
-    </div>
+    </div>,
+    portalContainer,
   );
 }
