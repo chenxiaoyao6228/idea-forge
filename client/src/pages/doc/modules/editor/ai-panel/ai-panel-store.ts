@@ -105,15 +105,28 @@ export const store = create<AIPanelState>((set, get) => ({
   confirmResult: () => {
     const { editor, result } = get();
     if (editor && result) {
-      editor.commands.insertContent(result);
+      // If the result contains multiple lines, insert each line and enter a new line after each line
+      if (result.includes("\n")) {
+        const lines = result.split("\n");
+        lines.forEach((line) => {
+          if (!line) {
+            return;
+          }
+          editor.commands.insertContent(line);
+          if (line !== lines[lines.length - 1]) {
+            editor.commands.enter();
+          }
+        });
+      } else {
+        // If the result is a single line, insert it and enter a new line
+        editor.commands.insertContent(result);
+      }
       get().reset();
-      set({ isVisible: false });
     }
   },
 
   cancelResult: () => {
     get().reset();
-    set({ isVisible: false });
   },
 
   startStream: async (prompt: string) => {
