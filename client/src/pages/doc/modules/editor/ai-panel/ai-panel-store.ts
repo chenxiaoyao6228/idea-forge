@@ -6,6 +6,7 @@ import createSelectors from "@/stores/utils/createSelector";
 interface AIPanelState {
   eventSourceService: EventSourceService;
   // View States
+  hasSelection: boolean;
   isVisible: boolean;
   isInputFocused: boolean;
 
@@ -31,6 +32,7 @@ interface AIPanelState {
 
   // Actions
   setVisible: (visible: boolean) => void;
+  setHasSelection: (hasSelection: boolean) => void;
   setInputFocused: (focused: boolean) => void;
   setPrompt: (prompt: string) => void;
   setEditor: (editor: Editor) => void;
@@ -50,7 +52,8 @@ interface AIPanelState {
 export const store = create<AIPanelState>((set, get) => ({
   eventSourceService: new EventSourceService(),
   // Initial States
-  isVisible: true,
+  isVisible: false,
+  hasSelection: false,
   isInputFocused: false,
   prompt: "",
   isThinking: false,
@@ -61,6 +64,7 @@ export const store = create<AIPanelState>((set, get) => ({
 
   // Basic Actions
   setVisible: (visible) => set({ isVisible: visible }),
+  setHasSelection: (hasSelection) => set({ hasSelection }),
   setInputFocused: (focused) => set({ isInputFocused: focused }),
   setPrompt: (prompt) => set({ prompt }),
   setEditor: (editor) => set({ editor }),

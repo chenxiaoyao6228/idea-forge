@@ -9,6 +9,7 @@ import AIResult from "./result";
 import ConfirmButtons from "./confirm-buttons";
 import { useAIPanelStore } from "./ai-panel-store";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { useClickAway } from "react-use";
 
 interface AIPanelProps {
   editor: Editor;
@@ -22,6 +23,8 @@ export default function AIPanel({ editor }: AIPanelProps) {
   const isThinking = useAIPanelStore.use.isThinking();
   const isStreaming = useAIPanelStore.use.isStreaming();
   const prompt = useAIPanelStore.use.prompt();
+  const hasSelection = useAIPanelStore.use.hasSelection();
+  const setHasSelection = useAIPanelStore.use.setHasSelection();
   const result = useAIPanelStore.use.result();
   const error = useAIPanelStore.use.error();
   const setVisible = useAIPanelStore.use.setVisible();
@@ -55,70 +58,90 @@ export default function AIPanel({ editor }: AIPanelProps) {
     };
   }, []);
 
-  // Listen for selection changes and update panel position
-  useEffect(() => {
-    function updatePanelPosition() {
-      if (!editor || !panelRef.current) return;
+  function updatePanelPosition() {
+    if (!editor || !panelRef.current) return;
 
+    const selection = editor.state.selection;
+    const { from, to } = selection;
+
+    // Get editor container position info
+    const editorContainer = document.getElementById("EDITOR-CONTAINER");
+    if (!editorContainer) return;
+
+    const editorRect = editorContainer.getBoundingClientRect();
+    const view = editor.view;
+    const start = view.coordsAtPos(from);
+    const end = view.coordsAtPos(to);
+    const bottom = Math.max(start.bottom, end.bottom);
+
+    // Set panel position
+    const panel = panelRef.current;
+    const left = editorRect.left;
+    const top = bottom + window.scrollY + 10;
+
+    panel.style.position = "absolute";
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+    panel.style.width = `${editorRect.width}px`;
+  }
+
+  // Update position when panel becomes visible
+  useEffect(() => {
+    if (isVisible) {
+      updatePanelPosition();
+
+      // Focus input
+      const input = panelRef.current?.querySelector("input");
+      if (input) {
+        input.focus();
+      }
+
+      // Let the panel render first
+      setTimeout(() => {
+        const panel = document.querySelector(".ai-panel");
+        if (panel) {
+          scrollIntoView(panel, {
+            scrollMode: "if-needed",
+            block: "nearest",
+            behavior: "smooth",
+          });
+        }
+      }, 0);
+    }
+  }, [isVisible]);
+
+  // Hide panel when clicking away
+  useClickAway(panelRef, () => {
+    setVisible(false);
+  });
+
+  // Update panel position when editor changes
+  useEffect(() => {
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition);
+    return () => {
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition);
+    };
+  }, [editor, updatePanelPosition]);
+
+  // Update hasSelection when selection changes
+  useEffect(() => {
+    window.addEventListener("selectionchange", () => {
       const selection = editor.state.selection;
       const { from, to } = selection;
 
       if (from === to) {
-        setVisible(false);
-        return;
+        setHasSelection(false);
+      } else {
+        setHasSelection(true);
       }
-
-      // Get editor container position info
-      const editorContainer = document.getElementById("EDITOR-CONTAINER");
-      if (!editorContainer) return;
-
-      const editorRect = editorContainer.getBoundingClientRect();
-      const view = editor.view;
-      const start = view.coordsAtPos(from);
-      const end = view.coordsAtPos(to);
-      const bottom = Math.max(start.bottom, end.bottom);
-
-      // Set panel position
-      const panel = panelRef.current;
-      const left = editorRect.left;
-      const top = bottom + window.scrollY + 10;
-
-      panel.style.position = "absolute";
-      panel.style.left = `${left}px`;
-      panel.style.top = `${top}px`;
-      panel.style.width = `${editorRect.width}px`;
-      panel.style.transform = "none";
-
-      setVisible(true);
-
-      // Scroll panel into view if it has content
-      if (result || isStreaming) {
-        scrollIntoView(panel, {
-          scrollMode: "if-needed",
-          block: "nearest",
-          behavior: "smooth",
-        });
-      }
-    }
-
-    editor.on("selectionUpdate", updatePanelPosition);
-
-    // Add scroll event listener
-    const handleScroll = () => {
-      if (isVisible) {
-        updatePanelPosition();
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, true);
-    window.addEventListener("resize", updatePanelPosition);
+    });
 
     return () => {
-      editor.off("selectionUpdate", updatePanelPosition);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("selectionchange", () => {});
     };
-  }, [editor, setVisible, isVisible]);
+  }, [editor, setHasSelection]);
 
   // Add effect to handle panel visibility and scrolling
   useEffect(() => {

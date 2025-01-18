@@ -3,7 +3,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import ActionItem from "../action-item";
 
 export function AIPresetActions() {
-  const isEmptySelection = true;
+  const isEmptySelection = false;
 
   if (isEmptySelection) {
     return <EmptySelectionActions />;

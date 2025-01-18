@@ -6,6 +6,7 @@ import type { MenuProps } from "../type";
 import AlignMenu from "./align-menu";
 import ContentTypeMenu from "./content-type-menu";
 import SetLinkMenu from "./set-link-menu";
+import AIMenu from "./ai-menu";
 
 export default function TextMenu(props: MenuProps) {
   const { editor, containerRef } = props;
@@ -28,6 +29,8 @@ export default function TextMenu(props: MenuProps) {
     >
       <Wrapper>
         <div className="flex items-center gap-1">
+          <AIMenu editor={editor} />
+          <div className="w-px h-4 bg-border mx-1" />
           <ContentTypeMenu editor={editor} />
           <div className="w-px h-4 bg-border mx-1" />
           <BasicMenu editor={editor} />
