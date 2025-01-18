@@ -32,6 +32,7 @@ export default function AIPanel({ editor }: AIPanelProps) {
   const setPrompt = useAIPanelStore.use.setPrompt();
   const setEditor = useAIPanelStore.use.setEditor();
   const startStream = useAIPanelStore.use.startStream();
+  const reset = useAIPanelStore.use.reset();
 
   // Set editor on mount
   useEffect(() => {
@@ -80,9 +81,9 @@ export default function AIPanel({ editor }: AIPanelProps) {
     const top = bottom + window.scrollY + 10;
 
     panel.style.position = "absolute";
-    panel.style.left = `${left}px`;
+    panel.style.left = `${left + 40}px`;
     panel.style.top = `${top}px`;
-    panel.style.width = `${editorRect.width}px`;
+    panel.style.width = `${editorRect.width - 80}px`;
   }
 
   // Update position when panel becomes visible
@@ -112,7 +113,7 @@ export default function AIPanel({ editor }: AIPanelProps) {
 
   // Hide panel when clicking away
   useClickAway(panelRef, () => {
-    setVisible(false);
+    reset();
   });
 
   // Update panel position when editor changes
@@ -154,12 +155,36 @@ export default function AIPanel({ editor }: AIPanelProps) {
     }
   }, [isVisible, result, isStreaming]);
 
+  // Listen to keyboard space key
+  useEffect(() => {
+    function fn(event: KeyboardEvent) {
+      if (!editor?.view) return;
+      // Not space or tab key
+      if (event.key !== " " && event.code !== "Tab") return;
+      if (editor == null) return;
+      const selection = editor.state.selection;
+      if (!selection.empty) return; // selection is not empty
+      const node = selection.$anchor.node();
+      if (node?.isTextblock && node.textContent?.trim() === "") {
+        // selected an empty line
+        event.preventDefault(); // prevent default space input
+        setHasSelection(false);
+        setVisible(true);
+      }
+    }
+    editor.view.dom.addEventListener("keydown", fn);
+
+    return () => {
+      editor.view.dom.removeEventListener("keydown", fn);
+    };
+  }, [editor, setVisible]);
+
   if (!portalContainer) return null;
 
   return createPortal(
     <div
       ref={panelRef}
-      className="ai-panel bg-background dark:bg-background rounded-md shadow-lg"
+      className="ai-panel  dark:bg-background rounded-md "
       style={{
         display: isVisible ? "block" : "none",
         zIndex: 50,
