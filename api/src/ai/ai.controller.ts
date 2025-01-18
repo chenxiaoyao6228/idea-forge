@@ -4,7 +4,7 @@ import { AIProviderService } from "./ai.service";
 
 const EventStreamContentType = "text/event-stream";
 
-@Controller("ai")
+@Controller("api/ai")
 export class AIController {
   constructor(private readonly aiProviderService: AIProviderService) {}
 
@@ -20,7 +20,7 @@ export class AIController {
     response.setHeader("Cache-Control", "no-cache");
     response.setHeader("Connection", "keep-alive");
 
-    const stream = await this.aiProviderService.streamCompletion(body.prompt);
+    const stream = await this.aiProviderService.streamCompletionMock(body.prompt);
 
     const subscription = stream.subscribe({
       next: (data) => {
