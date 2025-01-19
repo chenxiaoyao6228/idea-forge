@@ -6,6 +6,7 @@ import TextareaAutosize from "react-textarea-autosize";
 import { IconPicker } from "./icon-picker";
 import { Emoji } from "emoji-picker-react";
 import { useCoverImageStore } from "./cover/coverImageStore";
+import { DOCUMENT_TITLE_ID } from "../editor/constant";
 
 interface ToolbarProps {
   doc: DocTreeDataNode;
@@ -137,9 +138,10 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
           value={value}
           onChange={(e) => onInput(e.target.value)}
           className={`${STYLES.title} bg-transparent resize-none`}
+          id={DOCUMENT_TITLE_ID}
         />
       ) : (
-        <div onClick={enableInput} className={`${STYLES.title} pb-[11.5px]`}>
+        <div onClick={enableInput} className={`${STYLES.title} pb-[11.5px]`} id={DOCUMENT_TITLE_ID}>
           {doc.title}
         </div>
       )}

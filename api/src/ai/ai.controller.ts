@@ -1,26 +1,24 @@
 import { Controller, Post, Body, Headers, Res, HttpStatus } from "@nestjs/common";
 import { Response } from "express";
 import { AIProviderService } from "./ai.service";
-
-const EventStreamContentType = "text/event-stream";
+import { AIStreamRequest } from "shared";
 
 @Controller("api/ai")
 export class AIController {
   constructor(private readonly aiProviderService: AIProviderService) {}
 
   @Post("stream")
-  async streamCompletion(@Body() body: { prompt: string }, @Headers("authorization") auth: string, @Res() response: Response) {
-    if (!body.prompt) {
-      response.status(HttpStatus.BAD_REQUEST).send({ error: "Prompt is required" });
+  async streamCompletion(@Body() request: AIStreamRequest, @Headers("authorization") auth: string, @Res() response: Response) {
+    if (!request.messages?.length) {
+      response.status(HttpStatus.BAD_REQUEST).send({ error: "Messages are required" });
       return;
     }
-
     // Set SSE headers
-    response.setHeader("Content-Type", EventStreamContentType);
+    response.setHeader("Content-Type", "text/event-stream");
     response.setHeader("Cache-Control", "no-cache");
     response.setHeader("Connection", "keep-alive");
 
-    const stream = await this.aiProviderService.streamCompletionMock(body.prompt);
+    const stream = await this.aiProviderService.streamCompletion(request);
 
     const subscription = stream.subscribe({
       next: (data) => {

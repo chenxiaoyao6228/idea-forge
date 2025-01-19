@@ -3,7 +3,7 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-interface AIResultProps {
+interface AIResultPanelProps {
   result?: string;
   error?: {
     message: string;
@@ -16,7 +16,7 @@ interface AIResultProps {
   className?: string;
 }
 
-export default function AIResult({ result, error, className }: AIResultProps) {
+export default function AIResultPanel({ result, error, className }: AIResultPanelProps) {
   if (error) {
     return (
       <Alert variant="destructive" className="mb-4">

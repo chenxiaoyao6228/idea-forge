@@ -3,6 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import OpenAI from "openai";
 import { AIProviderConfig, StreamResponse } from "./ai.type";
 import { Subject, Observable } from "rxjs";
+import { AIStreamResponse, AIStreamRequest, ChatMessage } from "shared";
+import { faker } from "@faker-js/faker";
 
 @Injectable()
 export class AIProviderService implements OnModuleInit {
@@ -45,8 +47,8 @@ export class AIProviderService implements OnModuleInit {
     this.activeProviders.sort((a, b) => a.priority - b.priority);
   }
 
-  async streamCompletion(prompt: string): Promise<Observable<StreamResponse>> {
-    const subject = new Subject<StreamResponse>();
+  async streamCompletion(request: AIStreamRequest): Promise<Observable<AIStreamResponse>> {
+    const subject = new Subject<AIStreamResponse>();
 
     const tryProvider = async (providerIndex: number) => {
       if (providerIndex >= this.activeProviders.length) {
@@ -61,18 +63,14 @@ export class AIProviderService implements OnModuleInit {
       try {
         const stream = await client.chat.completions.create({
           model: provider.model,
-          messages: [
-            { role: "system", content: "You are a helpful assistant." },
-            { role: "user", content: prompt },
-          ],
+          messages: request.messages,
           stream: true,
-          temperature: 0.7,
-          max_tokens: 2000,
+          temperature: request.options?.temperature ?? 0.7,
+          max_tokens: request.options?.max_tokens ?? 1000,
         });
 
         for await (const chunk of stream) {
           const content = chunk.choices[0]?.delta?.content || "";
-          console.log("content", content);
           if (content) {
             subject.next({
               id: provider.id,
@@ -85,11 +83,6 @@ export class AIProviderService implements OnModuleInit {
         subject.complete();
       } catch (error: any) {
         this.logger.error(`Provider ${provider.id} failed:`, error);
-        this.logger.error(`Error details:`, {
-          message: error.message,
-          code: error.code,
-          type: error.type,
-        });
         await tryProvider(providerIndex + 1);
       }
     };
@@ -98,23 +91,50 @@ export class AIProviderService implements OnModuleInit {
     return subject.asObservable();
   }
 
-  async streamCompletionMock(prompt: string): Promise<Observable<StreamResponse>> {
-    const subject = new Subject<StreamResponse>();
+  async streamCompletionMock(request: AIStreamRequest): Promise<Observable<AIStreamResponse>> {
+    const subject = new Subject<AIStreamResponse>();
 
-    // Helper to generate random text of specified length
-    function generateRandomText(length: number): string {
-      const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!? ";
-      return Array.from({ length }, () => characters.charAt(Math.floor(Math.random() * characters.length))).join("");
+    // Helper to generate meaningful mock response based on message type
+    function generateMockResponse(messages: ChatMessage[]): string {
+      const systemMessage = messages.find((msg) => msg.role === "system")?.content || "";
+      const userMessage = messages.find((msg) => msg.role === "user")?.content || "";
+
+      // Generate different types of content based on the context
+      if (systemMessage.includes("translator")) {
+        return faker.lorem.paragraphs(3, "\n\n");
+      }
+
+      if (systemMessage.includes("summarizer")) {
+        return faker.lorem.paragraph(5);
+      }
+
+      if (systemMessage.includes("outline")) {
+        return [
+          "1. " + faker.lorem.sentence(),
+          "   1.1. " + faker.lorem.sentence(),
+          "   1.2. " + faker.lorem.sentence(),
+          "2. " + faker.lorem.sentence(),
+          "   2.1. " + faker.lorem.sentence(),
+          "3. " + faker.lorem.sentence(),
+        ].join("\n");
+      }
+
+      if (systemMessage.includes("idea generator")) {
+        return ["• " + faker.lorem.sentence(), "• " + faker.lorem.sentence(), "• " + faker.lorem.sentence(), "• " + faker.lorem.sentence()].join("\n\n");
+      }
+
+      // Default response
+      return faker.lorem.paragraphs(4, "\n\n");
     }
 
-    // Generate random text between 300-1000 characters
-    const totalLength = Math.floor(Math.random() * (1000 - 300 + 1)) + 300;
-    const text = generateRandomText(totalLength);
+    // Generate mock response
+    const responseText = generateMockResponse(request.messages);
 
-    // Calculate chunk size to spread over 5 seconds (assuming ~20 chunks)
+    // Calculate streaming parameters
     const numberOfChunks = 20;
-    const chunkSize = Math.ceil(totalLength / numberOfChunks);
+    const chunkSize = Math.ceil(responseText.length / numberOfChunks);
     const delayBetweenChunks = 5000 / numberOfChunks;
+    // const delayBetweenChunks = 1000 / numberOfChunks;
 
     // Simulate streaming with chunks
     (async () => {
@@ -123,8 +143,8 @@ export class AIProviderService implements OnModuleInit {
         name: "Mock Provider",
       };
 
-      for (let i = 0; i < text.length; i += chunkSize) {
-        const chunk = text.slice(i, i + chunkSize);
+      for (let i = 0; i < responseText.length; i += chunkSize) {
+        const chunk = responseText.slice(i, i + chunkSize);
         await new Promise((resolve) => setTimeout(resolve, delayBetweenChunks));
 
         subject.next({

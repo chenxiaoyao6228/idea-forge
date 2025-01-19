@@ -141,7 +141,7 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
   if (!user || !editor) return null;
 
   return (
-    <div id="EDITOR-CONTAINER" className="editor-container relative md:col-[2] w-full mx-auto mt-2 border border-blue-500" ref={menuContainerRef}>
+    <div id="EDITOR-CONTAINER" className="editor-container relative md:col-[2] w-full mx-auto mt-2 " ref={menuContainerRef}>
       {renderStatusBanner()}
 
       {status !== "loading" && (
