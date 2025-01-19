@@ -1,15 +1,13 @@
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Editor } from "@tiptap/core";
-import { Send, WandSparkles, Loader2 } from "lucide-react";
-import { AIPresetActions } from "./preset-actions";
-import AIResult from "./result";
+import { AIPresetPrompts } from "./preset-prompts";
+import AIResultPanel from "./result-panel";
 import ConfirmButtons from "./confirm-buttons";
 import { useAIPanelStore } from "./ai-panel-store";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { useClickAway } from "react-use";
+import { UserPrompt } from "./user-prompt";
 
 interface AIPanelProps {
   editor: Editor;
@@ -19,33 +17,20 @@ export default function AIPanel({ editor }: AIPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const isVisible = useAIPanelStore.use.isVisible();
-  const isInputFocused = useAIPanelStore.use.isInputFocused();
   const isThinking = useAIPanelStore.use.isThinking();
   const isStreaming = useAIPanelStore.use.isStreaming();
-  const prompt = useAIPanelStore.use.prompt();
-  const hasSelection = useAIPanelStore.use.hasSelection();
   const setHasSelection = useAIPanelStore.use.setHasSelection();
+  const prompt = useAIPanelStore.use.prompt();
   const result = useAIPanelStore.use.result();
   const error = useAIPanelStore.use.error();
   const setVisible = useAIPanelStore.use.setVisible();
-  const setInputFocused = useAIPanelStore.use.setInputFocused();
-  const setPrompt = useAIPanelStore.use.setPrompt();
   const setEditor = useAIPanelStore.use.setEditor();
-  const startStream = useAIPanelStore.use.startStream();
   const reset = useAIPanelStore.use.reset();
 
   // Set editor on mount
   useEffect(() => {
     setEditor(editor);
   }, [editor, setEditor]);
-
-  const handleSubmit = useCallback(async () => {
-    if (!prompt.trim()) return;
-    await startStream(prompt);
-  }, [prompt, startStream]);
-
-  const placeholder = isThinking ? "AI is thinking..." : isStreaming ? "AI is writing..." : "Ask AI anything...";
-  const isEmptyPrompt = !prompt.trim();
 
   // Create portal container on mount
   useEffect(() => {
@@ -184,7 +169,7 @@ export default function AIPanel({ editor }: AIPanelProps) {
   return createPortal(
     <div
       ref={panelRef}
-      className="ai-panel  dark:bg-background rounded-md "
+      className="ai-panel dark:bg-background rounded-md"
       style={{
         display: isVisible ? "block" : "none",
         zIndex: 50,
@@ -192,36 +177,16 @@ export default function AIPanel({ editor }: AIPanelProps) {
         visibility: isVisible ? "visible" : "hidden",
         opacity: isVisible ? 1 : 0,
         transition: "opacity 0.2s ease-in-out",
-        // Remove maxWidth and width constraints since we're using editor width
       }}
     >
       {/* ai-result */}
-      {(result || error) && <AIResult result={result} error={error} />}
+      {(result || error) && <AIResultPanel result={result} error={error} />}
 
-      {/* ai-input */}
-      <div className="ai-panel-input flex items-center w-full rounded-md border bg-popover dark:bg-popover p-0.5 text-popover-foreground dark:text-popover-foreground">
-        <WandSparkles className="mx-2.5 w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
-        <Input
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder={placeholder}
-          className="flex-1 px-0 border-none focus-visible:ring-0 focus-visible:ring-offset-0"
-          onFocus={() => setInputFocused(true)}
-          onBlur={() => setInputFocused(false)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              handleSubmit();
-            }
-          }}
-          disabled={isThinking}
-        />
-        <Button size="icon" variant="ghost" onClick={handleSubmit} disabled={isEmptyPrompt || isThinking || isStreaming}>
-          {isThinking || isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </Button>
-      </div>
+      {/* user prompt */}
+      <UserPrompt />
 
       {/* ai-preset-actions */}
-      {isInputFocused && !isThinking && isEmptyPrompt && !result && <AIPresetActions />}
+      {!isThinking && !prompt.trim() && !result && <AIPresetPrompts />}
 
       {/* confirm-buttons */}
       {!isStreaming && result && <ConfirmButtons />}
