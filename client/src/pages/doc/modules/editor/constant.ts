@@ -1,5 +1,5 @@
 export const EDITOR_PADDING_BOTTOM = 200;
-export const MAX_CONTEXT_LENGTH = 600;
+export const MAX_CONTEXT_LENGTH = 1000;
 export const DOCUMENT_TITLE_ID = "titap-document-title";
 
 export const COLLABORATE_EDIT_USER_COLORS = [
