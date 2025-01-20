@@ -94,37 +94,71 @@ export class AIProviderService implements OnModuleInit {
   async streamCompletionMock(request: AIStreamRequest): Promise<Observable<AIStreamResponse>> {
     const subject = new Subject<AIStreamResponse>();
 
-    // Helper to generate meaningful mock response based on message type
     function generateMockResponse(messages: ChatMessage[]): string {
       const systemMessage = messages.find((msg) => msg.role === "system")?.content || "";
       const userMessage = messages.find((msg) => msg.role === "user")?.content || "";
 
-      // Generate different types of content based on the context
+      // Generate different types of markdown content based on the context
       if (systemMessage.includes("translator")) {
-        return faker.lorem.paragraphs(3, "\n\n");
+        return [`> Original Text\n`, `${faker.lorem.paragraph()}\n\n`, `### Translated Version\n`, faker.lorem.paragraphs(2, "\n\n")].join("\n");
       }
 
       if (systemMessage.includes("summarizer")) {
-        return faker.lorem.paragraph(5);
+        return [
+          `## Summary\n`,
+          faker.lorem.paragraph(3),
+          `\n### Key Points\n`,
+          `- ${faker.lorem.sentence()}`,
+          `- ${faker.lorem.sentence()}`,
+          `- ${faker.lorem.sentence()}\n`,
+        ].join("\n");
       }
 
       if (systemMessage.includes("outline")) {
         return [
-          "1. " + faker.lorem.sentence(),
-          "   1.1. " + faker.lorem.sentence(),
-          "   1.2. " + faker.lorem.sentence(),
-          "2. " + faker.lorem.sentence(),
-          "   2.1. " + faker.lorem.sentence(),
-          "3. " + faker.lorem.sentence(),
+          `# Document Outline\n`,
+          `## 1. ${faker.lorem.sentence()}`,
+          `   - ${faker.lorem.sentence()}`,
+          `   - ${faker.lorem.sentence()}`,
+          `## 2. ${faker.lorem.sentence()}`,
+          `   ### 2.1. ${faker.lorem.sentence()}`,
+          `   - ${faker.lorem.sentence()}`,
+          `## 3. ${faker.lorem.sentence()}`,
         ].join("\n");
       }
 
       if (systemMessage.includes("idea generator")) {
-        return ["• " + faker.lorem.sentence(), "• " + faker.lorem.sentence(), "• " + faker.lorem.sentence(), "• " + faker.lorem.sentence()].join("\n\n");
+        return [
+          `# Generated Ideas\n`,
+          `## Main Concepts\n`,
+          `1. **${faker.lorem.sentence()}**`,
+          `   - ${faker.lorem.sentence()}`,
+          `   - ${faker.lorem.sentence()}\n`,
+          `2. **${faker.lorem.sentence()}**`,
+          `   - ${faker.lorem.sentence()}`,
+          `   - \`${faker.lorem.words(3)}\`\n`,
+          `## Additional Suggestions\n`,
+          `> ${faker.lorem.paragraph()}`,
+        ].join("\n");
       }
 
-      // Default response
-      return faker.lorem.paragraphs(4, "\n\n");
+      // Default response with rich markdown formatting
+      return [
+        `# ${faker.lorem.sentence()}\n`,
+        `## Overview\n`,
+        faker.lorem.paragraph(),
+        `\n### Key Features\n`,
+        `- **${faker.lorem.words(3)}**: ${faker.lorem.sentence()}`,
+        `- **${faker.lorem.words(2)}**: ${faker.lorem.sentence()}`,
+        `- **${faker.lorem.words(4)}**: ${faker.lorem.sentence()}\n`,
+        `### Code Example\n`,
+        "```typescript",
+        `function ${faker.lorem.word()}() {`,
+        `  // ${faker.lorem.words(4)}`,
+        `  return ${faker.lorem.words(2)};`,
+        "```\n",
+        `> ${faker.lorem.paragraph()}`,
+      ].join("\n");
     }
 
     // Generate mock response
@@ -133,8 +167,7 @@ export class AIProviderService implements OnModuleInit {
     // Calculate streaming parameters
     const numberOfChunks = 20;
     const chunkSize = Math.ceil(responseText.length / numberOfChunks);
-    const delayBetweenChunks = 5000 / numberOfChunks;
-    // const delayBetweenChunks = 1000 / numberOfChunks;
+    const delayBetweenChunks = 1000 / numberOfChunks;
 
     // Simulate streaming with chunks
     (async () => {

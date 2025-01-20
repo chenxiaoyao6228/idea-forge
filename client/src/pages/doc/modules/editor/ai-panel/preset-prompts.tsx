@@ -44,7 +44,7 @@ function SelectedTextActions() {
         <HoverCard openDelay={0} closeDelay={100}>
           <HoverCardTrigger asChild>
             <div>
-              <ActionItem icon={<Languages className="h-4 w-4" />} label="Translate to" onClick={() => submitPresetPrompt("translate")} />
+              <ActionItem icon={<Languages className="h-4 w-4" />} label="Translate to" />
             </div>
           </HoverCardTrigger>
           <HoverCardContent side="right" align="start" className="w-[200px] p-1 ml-1">

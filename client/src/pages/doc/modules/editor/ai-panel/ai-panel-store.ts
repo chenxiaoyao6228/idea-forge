@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { Editor } from "@tiptap/core";
 import { EventSourceService } from "@/lib/event-source";
 import createSelectors from "@/stores/utils/createSelector";
-import { PresetType, getStreamOptions, buildUserPromptMessage, buildPresetPromptMessage } from "./util";
+import { PresetType, getStreamOptions, buildUserPromptMessage, buildPresetPromptMessage, markdownToHtml, insertResultToEditor } from "./util";
 import { AIStreamRequest } from "shared";
 
 interface AIPanelState {
@@ -23,6 +23,7 @@ interface AIPanelState {
 
   // Result States
   result: string;
+  resultHtml: string;
   error: {
     message: string;
     action: {
@@ -43,7 +44,6 @@ interface AIPanelState {
   setEditor: (editor: Editor) => void;
 
   // Complex Actions
-  handleStreamData: (content: string) => void;
   handleError: (message: string) => void;
   reset: () => void;
   replaceResult: () => void;
@@ -68,6 +68,7 @@ export const store = create<AIPanelState>((set, get) => ({
   isThinking: false,
   isStreaming: false,
   result: "",
+  resultHtml: "",
   error: null,
   editor: null,
   currentRequest: null,
@@ -78,13 +79,6 @@ export const store = create<AIPanelState>((set, get) => ({
   setInputFocused: (focused) => set({ isInputFocused: focused }),
   setPrompt: (prompt) => set({ prompt }),
   setEditor: (editor) => set({ editor }),
-
-  // Stream Data Handler
-  handleStreamData: (content) => {
-    set((state) => ({
-      result: state.result + content,
-    }));
-  },
 
   // Error Handler
   handleError: (message) => {
@@ -109,6 +103,7 @@ export const store = create<AIPanelState>((set, get) => ({
       isThinking: false,
       isStreaming: false,
       result: "",
+      resultHtml: "",
       error: null,
       prompt: "",
     });
@@ -116,30 +111,18 @@ export const store = create<AIPanelState>((set, get) => ({
 
   // Handle result confirmation - overwrites selection if exists
   replaceResult: () => {
-    const { editor, result } = get();
-    if (!editor || !result) return;
+    const { editor, resultHtml } = get();
+    if (!editor || !resultHtml) return;
 
-    // Handle multiline content
-    if (result.includes("\n")) {
-      const lines = result.split("\n");
-      lines.forEach((line) => {
-        if (!line) return;
-        editor.commands.insertContent(line);
-        if (line !== lines[lines.length - 1]) {
-          editor.commands.enter();
-        }
-      });
-    } else {
-      // Handle single line content
-      editor.commands.insertContent(result);
-    }
+    editor.chain().focus().deleteSelection().insertContent(resultHtml).run();
+
     get().reset();
   },
 
   // Insert content below - always inserts at current position
   insertBelow: () => {
-    const { editor, result } = get();
-    if (!editor || !result) return;
+    const { editor, resultHtml } = get();
+    if (!editor || !resultHtml) return;
 
     const { selection } = editor.state;
     const $pos = editor.state.doc.resolve(selection.to);
@@ -150,12 +133,7 @@ export const store = create<AIPanelState>((set, get) => ({
 
     if (isEmptyParagraph && isNotFirstNode) {
       // If empty paragraph and not first node, insert before current paragraph
-      editor
-        .chain()
-        .focus()
-        .setTextSelection($pos.before())
-        .insertContent(result + "\n")
-        .run();
+      editor.chain().focus().setTextSelection($pos.before()).insertContent(resultHtml).run();
     } else {
       // Normal case: insert after current paragraph
       const endOfParagraph = $pos.end();
@@ -163,12 +141,12 @@ export const store = create<AIPanelState>((set, get) => ({
         .chain()
         .focus()
         .setTextSelection(endOfParagraph)
-        .insertContent("\n" + result)
+        .insertContent("\n" + resultHtml)
+        .focus()
         .run();
     }
 
     get().reset();
-    set({ isVisible: false });
   },
 
   // Handle result cancellation
@@ -185,6 +163,7 @@ export const store = create<AIPanelState>((set, get) => ({
       isStreaming: false,
       error: null,
       result: "",
+      resultHtml: "",
     });
 
     await get().eventSourceService.start(
@@ -197,11 +176,14 @@ export const store = create<AIPanelState>((set, get) => ({
           if (!get().isStreaming) {
             set({ isStreaming: true, isThinking: false });
           }
+          const concatenatedResult = get().result + data.content;
           set((state) => ({
-            result: state.result + data.content,
+            result: concatenatedResult,
+            resultHtml: markdownToHtml(concatenatedResult),
           }));
         },
         onComplete: () => {
+          console.log("handleStreamData", get().result);
           set({
             isStreaming: false,
             isThinking: false,
@@ -262,7 +244,7 @@ export const store = create<AIPanelState>((set, get) => ({
   // Stop stream
   stopStream: () => {
     get().eventSourceService.stop();
-    set({ isStreaming: false, isThinking: false, result: "" });
+    set({ isStreaming: false, isThinking: false, result: "", resultHtml: "" });
   },
 }));
 
