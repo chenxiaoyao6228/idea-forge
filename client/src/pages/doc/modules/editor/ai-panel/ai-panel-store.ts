@@ -4,6 +4,7 @@ import { EventSourceService } from "@/lib/event-source";
 import createSelectors from "@/stores/utils/createSelector";
 import { PresetType, getStreamOptions, buildUserPromptMessage, buildPresetPromptMessage, markdownToHtml } from "./util";
 import { AIStreamRequest } from "shared";
+import scrollIntoView from "scroll-into-view-if-needed";
 
 interface AIPanelState {
   // Services
@@ -156,7 +157,7 @@ export const store = create<AIPanelState>((set, get) => ({
   },
 
   // Start streaming process
-  startStream: async (request: AIStreamRequest) => {
+  startStream: async (request: AIStreamRequest, options?: { onComplete?: () => void }) => {
     set({
       currentRequest: request,
       isThinking: true,
@@ -188,6 +189,18 @@ export const store = create<AIPanelState>((set, get) => ({
             isStreaming: false,
             isThinking: false,
           });
+
+          // Scroll to confirm buttons after stream is complete and confirm button is visible
+          setTimeout(() => {
+            const confirmButtons = document.getElementById("ai-confirm-buttons");
+            if (confirmButtons) {
+              scrollIntoView(confirmButtons, {
+                scrollMode: "if-needed",
+                block: "nearest",
+                behavior: "smooth",
+              });
+            }
+          }, 50);
         },
         onError: (error) => {
           set({
