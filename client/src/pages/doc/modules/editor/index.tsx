@@ -75,6 +75,9 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
     },
   });
 
+  // @ts-ignore for debug
+  window._editor = editor;
+
   const renderStatusBanner = () => {
     switch (status) {
       case "loading":

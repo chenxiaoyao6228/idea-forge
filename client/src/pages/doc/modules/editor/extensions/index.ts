@@ -84,7 +84,7 @@ const _extensions = [
   TextAlign.configure({
     types: ["heading", "paragraph"],
   }),
-  Placeholder.configure({ placeholder: "Write something..." }),
+  Placeholder.configure({ placeholder: "Type / to set format, or type a space to use AI" }),
   CustomKeys,
   SlashCommands,
   Dropcursor.configure({

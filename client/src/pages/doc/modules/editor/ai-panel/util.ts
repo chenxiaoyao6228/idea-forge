@@ -1,3 +1,6 @@
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkHtml from "remark-html";
 import { ChatMessage } from "shared";
 import { Editor } from "@tiptap/core";
 import { Selection } from "@tiptap/pm/state";
@@ -122,7 +125,9 @@ export function getDocumentTitle() {
 }
 
 export function getDefaultSystemPrompt() {
-  return `Please analyze the context information provided in the assistant's message. For language detection:1. If there is selected content, respond in the same language as the selected content2. If there is no selected content, detect the language from (in order of priority):
+  return `Please analyze the context information provided in the assistant's message. For language detection:
+  1. If there is selected content, respond in the same language as the selected content
+  2. If there is no selected content, detect the language from (in order of priority):
          - Document title
          - Previous context
          - Following context
@@ -165,7 +170,6 @@ export function buildPresetPromptMessage(editor: Editor, preset: PresetType, opt
   // Combine context information into a single message
   const contextParts = [
     title && config.titleContext ? `Document title: ${title}` : null,
-    content ? `Selected content: ${content}` : null,
     beforeContext && config.contextBefore ? `Previous context: ${beforeContext}` : null,
     afterContext && config.contextAfter ? `Following context: ${afterContext}` : null,
   ].filter(Boolean);
@@ -181,10 +185,19 @@ export function buildPresetPromptMessage(editor: Editor, preset: PresetType, opt
       ? [
           {
             role: "assistant",
-            content: contextParts.join("\n\n"),
+            content: `The context information is: ${contextParts.join("\n\n")}`,
           },
         ]
       : []),
-    { role: "user", content: `${config.instruction}${allOptions.length ? `, with these options: ${allOptions.join(", ")}` : ""}` },
+    {
+      role: "user",
+      content: `${config.instruction}, the selected content is ${content ? `"${content}"` : "empty"}. ${allOptions.length ? `, with these options: ${allOptions.join(", ")}` : ""}`,
+    },
   ].filter(Boolean) as ChatMessage[];
+}
+
+export function markdownToHtml(markdown: string): string {
+  const result = unified().use(remarkParse).use(remarkHtml).processSync(markdown);
+
+  return result.toString();
 }

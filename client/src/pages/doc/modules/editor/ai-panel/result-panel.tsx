@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
-import { Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface AIResultPanelProps {
-  result?: string;
+  resultHtml?: string;
   error?: {
     message: string;
     code?: string;
@@ -16,7 +16,7 @@ interface AIResultPanelProps {
   className?: string;
 }
 
-export default function AIResultPanel({ result, error, className }: AIResultPanelProps) {
+export default function AIResultPanel({ resultHtml, error, className }: AIResultPanelProps) {
   if (error) {
     return (
       <Alert variant="destructive" className="mb-4">
@@ -34,7 +34,7 @@ export default function AIResultPanel({ result, error, className }: AIResultPane
     );
   }
 
-  if (!result) return null;
+  if (!resultHtml) return null;
 
   return (
     <div
@@ -43,10 +43,11 @@ export default function AIResultPanel({ result, error, className }: AIResultPane
         "bg-background/95 dark:bg-background/95 p-4 shadow-md",
         "backdrop-blur supports-[backdrop-filter]:bg-background/60",
         "dark:supports-[backdrop-filter]:bg-background/60",
+        "prose tiptap dark:prose-invert max-w-none",
         className,
       )}
     >
-      <div dangerouslySetInnerHTML={{ __html: result }} />
+      <div dangerouslySetInnerHTML={{ __html: resultHtml }} />
     </div>
   );
 }
