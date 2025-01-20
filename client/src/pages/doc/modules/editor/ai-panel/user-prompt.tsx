@@ -2,13 +2,17 @@ import { WandSparkles, Send, CircleStop } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAIPanelStore } from "./ai-panel-store";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import debounce from "lodash.debounce";
+import scrollIntoView from "scroll-into-view-if-needed";
 
 export function UserPrompt() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isComposing, setIsComposing] = useState(false);
   const editor = useAIPanelStore.use.editor();
   const isThinking = useAIPanelStore.use.isThinking();
+  const isVisible = useAIPanelStore.use.isVisible();
+  const result = useAIPanelStore.use.result();
   const isStreaming = useAIPanelStore.use.isStreaming();
   const prompt = useAIPanelStore.use.prompt();
   const setPrompt = useAIPanelStore.use.setPrompt();
@@ -48,6 +52,30 @@ export function UserPrompt() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isStreaming, stopStream]);
+
+  // Create debounced scroll function
+  const debouncedScroll = useCallback(
+    debounce((ref: HTMLDivElement) => {
+      scrollIntoView(ref, {
+        scrollMode: "if-needed",
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }, 16),
+    [],
+  );
+
+  // Use debounced function in effect
+  useEffect(() => {
+    if (isVisible && inputRef.current && (result || isStreaming)) {
+      debouncedScroll(inputRef.current);
+    }
+
+    // Cleanup
+    return () => {
+      debouncedScroll.cancel();
+    };
+  }, [isVisible, result, isStreaming, debouncedScroll]);
 
   return (
     <div className="ai-panel-input flex items-center w-full rounded-md border bg-popover dark:bg-popover p-0.5 text-popover-foreground dark:text-popover-foreground">

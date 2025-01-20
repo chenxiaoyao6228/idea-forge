@@ -130,17 +130,6 @@ export default function AIPanel({ editor }: AIPanelProps) {
     };
   }, [editor, setHasSelection]);
 
-  // Add effect to handle panel visibility and scrolling
-  useEffect(() => {
-    if (isVisible && panelRef.current && (result || isStreaming)) {
-      scrollIntoView(panelRef.current, {
-        scrollMode: "if-needed",
-        block: "nearest",
-        behavior: "smooth",
-      });
-    }
-  }, [isVisible, result, isStreaming]);
-
   // Listen to keyboard space key
   useEffect(() => {
     function fn(event: KeyboardEvent) {
@@ -173,7 +162,7 @@ export default function AIPanel({ editor }: AIPanelProps) {
       className="ai-panel dark:bg-background rounded-md"
       style={{
         display: isVisible ? "block" : "none",
-        zIndex: 50,
+        zIndex: 1,
         position: "absolute",
         visibility: isVisible ? "visible" : "hidden",
         opacity: isVisible ? 1 : 0,

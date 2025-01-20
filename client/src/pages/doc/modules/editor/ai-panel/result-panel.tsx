@@ -41,7 +41,6 @@ export default function AIResultPanel({ resultHtml, error, className }: AIResult
       className={cn(
         "relative mb-4 max-h-75 overflow-x-hidden overflow-y-auto custom-scrollbar rounded-lg border word-wrap",
         "bg-background/95 dark:bg-background/95 p-4 shadow-md",
-        "backdrop-blur supports-[backdrop-filter]:bg-background/60",
         "dark:supports-[backdrop-filter]:bg-background/60",
         "prose tiptap dark:prose-invert max-w-none",
         className,
