@@ -1,0 +1,6 @@
+{
+    "watch": [".env"],
+    "exec": "NODE_ENV=development nest start --debug 9333 --watch --preserveWatchOutput",
+    "ext": "env",
+    "ignore": ["node_modules", "dist"]
+  }

@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { Editor } from "@tiptap/core";
 import { EventSourceService } from "@/lib/event-source";
 import createSelectors from "@/stores/utils/createSelector";
-import { PresetType, getStreamOptions, buildUserPromptMessage, buildPresetPromptMessage, markdownToHtml, insertResultToEditor } from "./util";
+import { PresetType, getStreamOptions, buildUserPromptMessage, buildPresetPromptMessage, markdownToHtml } from "./util";
 import { AIStreamRequest } from "shared";
 
 interface AIPanelState {
