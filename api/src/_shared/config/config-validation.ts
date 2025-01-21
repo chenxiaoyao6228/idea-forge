@@ -17,6 +17,7 @@ export const envSchema = z.object({
   EMAIL_USER: z.string().min(1),
   EMAIL_PASSWORD: z.string().min(1),
   EMAIL_TO: z.string().email(),
+  SUPER_ADMIN_EMAIL: z.string().email(),
 
   /* REDIS CONFIG */
   REDIS_HOST: z.string().min(1),
