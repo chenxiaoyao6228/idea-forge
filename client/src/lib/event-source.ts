@@ -12,7 +12,7 @@ interface EventSourceOptions {
 interface EventSourceHandlers {
   onMessage?: (data: any) => void;
   onComplete?: () => void;
-  onError?: (error: Error) => void;
+  onError?: (error: { code: string; message: string }) => void;
 }
 
 export class EventSourceService {
@@ -38,6 +38,16 @@ export class EventSourceService {
         signal: this.abortController.signal,
 
         onmessage(msg) {
+          if (msg.event === "error") {
+            try {
+              const errorData = JSON.parse(msg.data);
+              onError?.(errorData);
+              return;
+            } catch (err) {
+              console.error("Failed to parse error message:", err);
+            }
+          }
+
           if (msg.event === "complete") {
             onComplete?.();
             return;
@@ -54,14 +64,17 @@ export class EventSourceService {
         onerror: (err) => {
           this.retryCount++;
           if (this.retryCount >= maxRetries) {
-            onError?.(new Error(`Max retries (${maxRetries}) exceeded`));
+            onError?.({ code: "MAX_RETRIES", message: `Max retries (${maxRetries}) exceeded` });
             throw err;
           }
           return retryDelay;
         },
       });
-    } catch (error) {
-      onError?.(error as Error);
+    } catch (error: any) {
+      onError?.({
+        code: "CONNECTION_ERROR",
+        message: error.message || "Connection failed",
+      });
     }
   }
 

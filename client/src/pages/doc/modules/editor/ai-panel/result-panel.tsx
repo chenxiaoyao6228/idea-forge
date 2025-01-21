@@ -19,18 +19,20 @@ interface AIResultPanelProps {
 export default function AIResultPanel({ resultHtml, error, className }: AIResultPanelProps) {
   if (error) {
     return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription className="flex flex-col gap-2">
-          <p>{error.message}</p>
-          {error.action && (
-            <Button variant="outline" size="sm" onClick={error.action.handler}>
-              {error.action.label}
-            </Button>
-          )}
-        </AlertDescription>
-      </Alert>
+      <div className="bg-popover dark:bg-popover mb-4  ">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>{error.message}</p>
+            {error.action && (
+              <Button variant="outline" size="sm" onClick={error.action.handler}>
+                {error.action.label}
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
@@ -40,8 +42,7 @@ export default function AIResultPanel({ resultHtml, error, className }: AIResult
     <div
       className={cn(
         "relative mb-4 max-h-75 overflow-x-hidden overflow-y-auto custom-scrollbar rounded-lg border word-wrap",
-        "bg-background/95 dark:bg-background/95 p-4 shadow-md",
-        "dark:supports-[backdrop-filter]:bg-background/60",
+        "bg-popover dark:bg-popover p-4 shadow-md",
         "prose tiptap dark:prose-invert max-w-none",
         className,
       )}

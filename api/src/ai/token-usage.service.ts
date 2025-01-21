@@ -1,0 +1,77 @@
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+
+const MONTHLY_TOKEN_LIMIT = 10000;
+
+@Injectable()
+export class TokenUsageService {
+  constructor(private prisma: PrismaService) {}
+
+  async updateTokenUsage(userId: number, usedTokens: number) {
+    const usage = await this.getOrCreateTokenUsage(userId);
+
+    // Check if we need to reset the monthly counter
+    if (this.shouldResetUsage(usage.lastResetDate)) {
+      await this.resetMonthlyUsage(userId);
+      usage.tokensUsed = 0;
+    }
+
+    // Update token usage
+    return this.prisma.aITokenUsage.update({
+      where: { userId },
+      data: {
+        tokensUsed: usage.tokensUsed + usedTokens,
+      },
+    });
+  }
+
+  private async getOrCreateTokenUsage(userId: number) {
+    const usage = await this.prisma.aITokenUsage.findUnique({
+      where: { userId },
+    });
+
+    if (!usage) {
+      return this.prisma.aITokenUsage.create({
+        data: {
+          userId,
+          tokensUsed: 0,
+          monthlyLimit: MONTHLY_TOKEN_LIMIT,
+        },
+      });
+    }
+
+    return usage;
+  }
+
+  private shouldResetUsage(lastResetDate: Date): boolean {
+    const now = new Date();
+    const lastReset = new Date(lastResetDate);
+
+    return now.getFullYear() !== lastReset.getFullYear() || now.getMonth() !== lastReset.getMonth();
+  }
+
+  private async resetMonthlyUsage(userId: number) {
+    await this.prisma.aITokenUsage.update({
+      where: { userId },
+      data: {
+        tokensUsed: 0,
+        lastResetDate: new Date(),
+      },
+    });
+  }
+
+  async getRemainingTokens(userId: number): Promise<number> {
+    const usage = await this.getOrCreateTokenUsage(userId);
+
+    if (this.shouldResetUsage(usage.lastResetDate)) {
+      return usage.monthlyLimit;
+    }
+
+    return Math.max(0, usage.monthlyLimit - usage.tokensUsed);
+  }
+
+  async isTokenUsageExceeded(userId: number): Promise<boolean> {
+    const usage = await this.getOrCreateTokenUsage(userId);
+    return usage.tokensUsed >= usage.monthlyLimit;
+  }
+}

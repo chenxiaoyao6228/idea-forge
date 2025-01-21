@@ -26,6 +26,8 @@ export const DocShareScalarFieldEnumSchema = z.enum(['id','docId','authorId','us
 
 export const FileScalarFieldEnumSchema = z.enum(['id','key','url','status','size','userId','contentType','createdAt','updatedAt']);
 
+export const AITokenUsageScalarFieldEnumSchema = z.enum(['id','userId','tokensUsed','lastResetDate','monthlyLimit','createdAt','updatedAt']);
+
 export const SortOrderSchema = z.enum(['asc','desc']);
 
 export const QueryModeSchema = z.enum(['default','insensitive']);
@@ -151,6 +153,22 @@ export const FileSchema = z.object({
 export type File = z.infer<typeof FileSchema>
 
 /////////////////////////////////////////
+// AI TOKEN USAGE SCHEMA
+/////////////////////////////////////////
+
+export const AITokenUsageSchema = z.object({
+  id: z.number().int(),
+  userId: z.number().int(),
+  tokensUsed: z.number().int(),
+  lastResetDate: z.coerce.date(),
+  monthlyLimit: z.number().int(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+})
+
+export type AITokenUsage = z.infer<typeof AITokenUsageSchema>
+
+/////////////////////////////////////////
 // SELECT & INCLUDE
 /////////////////////////////////////////
 
@@ -164,6 +182,7 @@ export const UserIncludeSchema: z.ZodType<Prisma.UserInclude> = z.object({
   sharedDocs: z.union([z.boolean(),z.lazy(() => DocShareFindManyArgsSchema)]).optional(),
   DocShare: z.union([z.boolean(),z.lazy(() => DocShareFindManyArgsSchema)]).optional(),
   File: z.union([z.boolean(),z.lazy(() => FileFindManyArgsSchema)]).optional(),
+  aiTokenUsage: z.union([z.boolean(),z.lazy(() => AITokenUsageArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => UserCountOutputTypeArgsSchema)]).optional(),
 }).strict()
 
@@ -200,6 +219,7 @@ export const UserSelectSchema: z.ZodType<Prisma.UserSelect> = z.object({
   sharedDocs: z.union([z.boolean(),z.lazy(() => DocShareFindManyArgsSchema)]).optional(),
   DocShare: z.union([z.boolean(),z.lazy(() => DocShareFindManyArgsSchema)]).optional(),
   File: z.union([z.boolean(),z.lazy(() => FileFindManyArgsSchema)]).optional(),
+  aiTokenUsage: z.union([z.boolean(),z.lazy(() => AITokenUsageArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => UserCountOutputTypeArgsSchema)]).optional(),
 }).strict()
 
@@ -365,6 +385,29 @@ export const FileSelectSchema: z.ZodType<Prisma.FileSelect> = z.object({
   user: z.union([z.boolean(),z.lazy(() => UserArgsSchema)]).optional(),
 }).strict()
 
+// AI TOKEN USAGE
+//------------------------------------------------------
+
+export const AITokenUsageIncludeSchema: z.ZodType<Prisma.AITokenUsageInclude> = z.object({
+  user: z.union([z.boolean(),z.lazy(() => UserArgsSchema)]).optional(),
+}).strict()
+
+export const AITokenUsageArgsSchema: z.ZodType<Prisma.AITokenUsageDefaultArgs> = z.object({
+  select: z.lazy(() => AITokenUsageSelectSchema).optional(),
+  include: z.lazy(() => AITokenUsageIncludeSchema).optional(),
+}).strict();
+
+export const AITokenUsageSelectSchema: z.ZodType<Prisma.AITokenUsageSelect> = z.object({
+  id: z.boolean().optional(),
+  userId: z.boolean().optional(),
+  tokensUsed: z.boolean().optional(),
+  lastResetDate: z.boolean().optional(),
+  monthlyLimit: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+  updatedAt: z.boolean().optional(),
+  user: z.union([z.boolean(),z.lazy(() => UserArgsSchema)]).optional(),
+}).strict()
+
 
 /////////////////////////////////////////
 // INPUT TYPES
@@ -388,7 +431,8 @@ export const UserWhereInputSchema: z.ZodType<Prisma.UserWhereInput> = z.object({
   docs: z.lazy(() => DocListRelationFilterSchema).optional(),
   sharedDocs: z.lazy(() => DocShareListRelationFilterSchema).optional(),
   DocShare: z.lazy(() => DocShareListRelationFilterSchema).optional(),
-  File: z.lazy(() => FileListRelationFilterSchema).optional()
+  File: z.lazy(() => FileListRelationFilterSchema).optional(),
+  aiTokenUsage: z.union([ z.lazy(() => AITokenUsageNullableRelationFilterSchema),z.lazy(() => AITokenUsageWhereInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const UserOrderByWithRelationInputSchema: z.ZodType<Prisma.UserOrderByWithRelationInput> = z.object({
@@ -406,7 +450,8 @@ export const UserOrderByWithRelationInputSchema: z.ZodType<Prisma.UserOrderByWit
   docs: z.lazy(() => DocOrderByRelationAggregateInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareOrderByRelationAggregateInputSchema).optional(),
   DocShare: z.lazy(() => DocShareOrderByRelationAggregateInputSchema).optional(),
-  File: z.lazy(() => FileOrderByRelationAggregateInputSchema).optional()
+  File: z.lazy(() => FileOrderByRelationAggregateInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageOrderByWithRelationInputSchema).optional()
 }).strict();
 
 export const UserWhereUniqueInputSchema: z.ZodType<Prisma.UserWhereUniqueInput> = z.union([
@@ -439,7 +484,8 @@ export const UserWhereUniqueInputSchema: z.ZodType<Prisma.UserWhereUniqueInput> 
   docs: z.lazy(() => DocListRelationFilterSchema).optional(),
   sharedDocs: z.lazy(() => DocShareListRelationFilterSchema).optional(),
   DocShare: z.lazy(() => DocShareListRelationFilterSchema).optional(),
-  File: z.lazy(() => FileListRelationFilterSchema).optional()
+  File: z.lazy(() => FileListRelationFilterSchema).optional(),
+  aiTokenUsage: z.union([ z.lazy(() => AITokenUsageNullableRelationFilterSchema),z.lazy(() => AITokenUsageWhereInputSchema) ]).optional().nullable(),
 }).strict());
 
 export const UserOrderByWithAggregationInputSchema: z.ZodType<Prisma.UserOrderByWithAggregationInput> = z.object({
@@ -964,6 +1010,85 @@ export const FileScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.FileScal
   updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
 }).strict();
 
+export const AITokenUsageWhereInputSchema: z.ZodType<Prisma.AITokenUsageWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => AITokenUsageWhereInputSchema),z.lazy(() => AITokenUsageWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => AITokenUsageWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => AITokenUsageWhereInputSchema),z.lazy(() => AITokenUsageWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  userId: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  tokensUsed: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  lastResetDate: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  monthlyLimit: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  user: z.union([ z.lazy(() => UserRelationFilterSchema),z.lazy(() => UserWhereInputSchema) ]).optional(),
+}).strict();
+
+export const AITokenUsageOrderByWithRelationInputSchema: z.ZodType<Prisma.AITokenUsageOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  userId: z.lazy(() => SortOrderSchema).optional(),
+  tokensUsed: z.lazy(() => SortOrderSchema).optional(),
+  lastResetDate: z.lazy(() => SortOrderSchema).optional(),
+  monthlyLimit: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  user: z.lazy(() => UserOrderByWithRelationInputSchema).optional()
+}).strict();
+
+export const AITokenUsageWhereUniqueInputSchema: z.ZodType<Prisma.AITokenUsageWhereUniqueInput> = z.union([
+  z.object({
+    id: z.number().int(),
+    userId: z.number().int()
+  }),
+  z.object({
+    id: z.number().int(),
+  }),
+  z.object({
+    userId: z.number().int(),
+  }),
+])
+.and(z.object({
+  id: z.number().int().optional(),
+  userId: z.number().int().optional(),
+  AND: z.union([ z.lazy(() => AITokenUsageWhereInputSchema),z.lazy(() => AITokenUsageWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => AITokenUsageWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => AITokenUsageWhereInputSchema),z.lazy(() => AITokenUsageWhereInputSchema).array() ]).optional(),
+  tokensUsed: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  lastResetDate: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  monthlyLimit: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  user: z.union([ z.lazy(() => UserRelationFilterSchema),z.lazy(() => UserWhereInputSchema) ]).optional(),
+}).strict());
+
+export const AITokenUsageOrderByWithAggregationInputSchema: z.ZodType<Prisma.AITokenUsageOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  userId: z.lazy(() => SortOrderSchema).optional(),
+  tokensUsed: z.lazy(() => SortOrderSchema).optional(),
+  lastResetDate: z.lazy(() => SortOrderSchema).optional(),
+  monthlyLimit: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional(),
+  _count: z.lazy(() => AITokenUsageCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => AITokenUsageAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => AITokenUsageMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => AITokenUsageMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => AITokenUsageSumOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const AITokenUsageScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.AITokenUsageScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => AITokenUsageScalarWhereWithAggregatesInputSchema),z.lazy(() => AITokenUsageScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => AITokenUsageScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => AITokenUsageScalarWhereWithAggregatesInputSchema),z.lazy(() => AITokenUsageScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  userId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  tokensUsed: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  lastResetDate: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  monthlyLimit: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+}).strict();
+
 export const UserCreateInputSchema: z.ZodType<Prisma.UserCreateInput> = z.object({
   email: z.string(),
   displayName: z.string().optional().nullable(),
@@ -978,7 +1103,8 @@ export const UserCreateInputSchema: z.ZodType<Prisma.UserCreateInput> = z.object
   docs: z.lazy(() => DocCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareCreateNestedManyWithoutSharedToInputSchema).optional(),
   DocShare: z.lazy(() => DocShareCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserUncheckedCreateInputSchema: z.ZodType<Prisma.UserUncheckedCreateInput> = z.object({
@@ -996,7 +1122,8 @@ export const UserUncheckedCreateInputSchema: z.ZodType<Prisma.UserUncheckedCreat
   docs: z.lazy(() => DocUncheckedCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutSharedToInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserUpdateInputSchema: z.ZodType<Prisma.UserUpdateInput> = z.object({
@@ -1013,7 +1140,8 @@ export const UserUpdateInputSchema: z.ZodType<Prisma.UserUpdateInput> = z.object
   docs: z.lazy(() => DocUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUpdateManyWithoutSharedToNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserUncheckedUpdateInputSchema: z.ZodType<Prisma.UserUncheckedUpdateInput> = z.object({
@@ -1031,7 +1159,8 @@ export const UserUncheckedUpdateInputSchema: z.ZodType<Prisma.UserUncheckedUpdat
   docs: z.lazy(() => DocUncheckedUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedUpdateManyWithoutSharedToNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserCreateManyInputSchema: z.ZodType<Prisma.UserCreateManyInput> = z.object({
@@ -1499,6 +1628,72 @@ export const FileUncheckedUpdateManyInputSchema: z.ZodType<Prisma.FileUncheckedU
   updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
+export const AITokenUsageCreateInputSchema: z.ZodType<Prisma.AITokenUsageCreateInput> = z.object({
+  tokensUsed: z.number().int().optional(),
+  lastResetDate: z.coerce.date().optional(),
+  monthlyLimit: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  user: z.lazy(() => UserCreateNestedOneWithoutAiTokenUsageInputSchema)
+}).strict();
+
+export const AITokenUsageUncheckedCreateInputSchema: z.ZodType<Prisma.AITokenUsageUncheckedCreateInput> = z.object({
+  id: z.number().int().optional(),
+  userId: z.number().int(),
+  tokensUsed: z.number().int().optional(),
+  lastResetDate: z.coerce.date().optional(),
+  monthlyLimit: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional()
+}).strict();
+
+export const AITokenUsageUpdateInputSchema: z.ZodType<Prisma.AITokenUsageUpdateInput> = z.object({
+  tokensUsed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  lastResetDate: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  monthlyLimit: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  user: z.lazy(() => UserUpdateOneRequiredWithoutAiTokenUsageNestedInputSchema).optional()
+}).strict();
+
+export const AITokenUsageUncheckedUpdateInputSchema: z.ZodType<Prisma.AITokenUsageUncheckedUpdateInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  userId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  tokensUsed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  lastResetDate: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  monthlyLimit: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const AITokenUsageCreateManyInputSchema: z.ZodType<Prisma.AITokenUsageCreateManyInput> = z.object({
+  id: z.number().int().optional(),
+  userId: z.number().int(),
+  tokensUsed: z.number().int().optional(),
+  lastResetDate: z.coerce.date().optional(),
+  monthlyLimit: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional()
+}).strict();
+
+export const AITokenUsageUpdateManyMutationInputSchema: z.ZodType<Prisma.AITokenUsageUpdateManyMutationInput> = z.object({
+  tokensUsed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  lastResetDate: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  monthlyLimit: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const AITokenUsageUncheckedUpdateManyInputSchema: z.ZodType<Prisma.AITokenUsageUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  userId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  tokensUsed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  lastResetDate: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  monthlyLimit: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
 export const IntFilterSchema: z.ZodType<Prisma.IntFilter> = z.object({
   equals: z.number().optional(),
   in: z.number().array().optional(),
@@ -1589,6 +1784,11 @@ export const FileListRelationFilterSchema: z.ZodType<Prisma.FileListRelationFilt
   every: z.lazy(() => FileWhereInputSchema).optional(),
   some: z.lazy(() => FileWhereInputSchema).optional(),
   none: z.lazy(() => FileWhereInputSchema).optional()
+}).strict();
+
+export const AITokenUsageNullableRelationFilterSchema: z.ZodType<Prisma.AITokenUsageNullableRelationFilter> = z.object({
+  is: z.lazy(() => AITokenUsageWhereInputSchema).optional().nullable(),
+  isNot: z.lazy(() => AITokenUsageWhereInputSchema).optional().nullable()
 }).strict();
 
 export const SortOrderInputSchema: z.ZodType<Prisma.SortOrderInput> = z.object({
@@ -2060,6 +2260,50 @@ export const FileSumOrderByAggregateInputSchema: z.ZodType<Prisma.FileSumOrderBy
   userId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
+export const AITokenUsageCountOrderByAggregateInputSchema: z.ZodType<Prisma.AITokenUsageCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  userId: z.lazy(() => SortOrderSchema).optional(),
+  tokensUsed: z.lazy(() => SortOrderSchema).optional(),
+  lastResetDate: z.lazy(() => SortOrderSchema).optional(),
+  monthlyLimit: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const AITokenUsageAvgOrderByAggregateInputSchema: z.ZodType<Prisma.AITokenUsageAvgOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  userId: z.lazy(() => SortOrderSchema).optional(),
+  tokensUsed: z.lazy(() => SortOrderSchema).optional(),
+  monthlyLimit: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const AITokenUsageMaxOrderByAggregateInputSchema: z.ZodType<Prisma.AITokenUsageMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  userId: z.lazy(() => SortOrderSchema).optional(),
+  tokensUsed: z.lazy(() => SortOrderSchema).optional(),
+  lastResetDate: z.lazy(() => SortOrderSchema).optional(),
+  monthlyLimit: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const AITokenUsageMinOrderByAggregateInputSchema: z.ZodType<Prisma.AITokenUsageMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  userId: z.lazy(() => SortOrderSchema).optional(),
+  tokensUsed: z.lazy(() => SortOrderSchema).optional(),
+  lastResetDate: z.lazy(() => SortOrderSchema).optional(),
+  monthlyLimit: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  updatedAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const AITokenUsageSumOrderByAggregateInputSchema: z.ZodType<Prisma.AITokenUsageSumOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  userId: z.lazy(() => SortOrderSchema).optional(),
+  tokensUsed: z.lazy(() => SortOrderSchema).optional(),
+  monthlyLimit: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
 export const PasswordCreateNestedOneWithoutUserInputSchema: z.ZodType<Prisma.PasswordCreateNestedOneWithoutUserInput> = z.object({
   create: z.union([ z.lazy(() => PasswordCreateWithoutUserInputSchema),z.lazy(() => PasswordUncheckedCreateWithoutUserInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => PasswordCreateOrConnectWithoutUserInputSchema).optional(),
@@ -2101,6 +2345,12 @@ export const FileCreateNestedManyWithoutUserInputSchema: z.ZodType<Prisma.FileCr
   connect: z.union([ z.lazy(() => FileWhereUniqueInputSchema),z.lazy(() => FileWhereUniqueInputSchema).array() ]).optional(),
 }).strict();
 
+export const AITokenUsageCreateNestedOneWithoutUserInputSchema: z.ZodType<Prisma.AITokenUsageCreateNestedOneWithoutUserInput> = z.object({
+  create: z.union([ z.lazy(() => AITokenUsageCreateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedCreateWithoutUserInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => AITokenUsageCreateOrConnectWithoutUserInputSchema).optional(),
+  connect: z.lazy(() => AITokenUsageWhereUniqueInputSchema).optional()
+}).strict();
+
 export const PasswordUncheckedCreateNestedOneWithoutUserInputSchema: z.ZodType<Prisma.PasswordUncheckedCreateNestedOneWithoutUserInput> = z.object({
   create: z.union([ z.lazy(() => PasswordCreateWithoutUserInputSchema),z.lazy(() => PasswordUncheckedCreateWithoutUserInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => PasswordCreateOrConnectWithoutUserInputSchema).optional(),
@@ -2140,6 +2390,12 @@ export const FileUncheckedCreateNestedManyWithoutUserInputSchema: z.ZodType<Pris
   connectOrCreate: z.union([ z.lazy(() => FileCreateOrConnectWithoutUserInputSchema),z.lazy(() => FileCreateOrConnectWithoutUserInputSchema).array() ]).optional(),
   createMany: z.lazy(() => FileCreateManyUserInputEnvelopeSchema).optional(),
   connect: z.union([ z.lazy(() => FileWhereUniqueInputSchema),z.lazy(() => FileWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const AITokenUsageUncheckedCreateNestedOneWithoutUserInputSchema: z.ZodType<Prisma.AITokenUsageUncheckedCreateNestedOneWithoutUserInput> = z.object({
+  create: z.union([ z.lazy(() => AITokenUsageCreateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedCreateWithoutUserInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => AITokenUsageCreateOrConnectWithoutUserInputSchema).optional(),
+  connect: z.lazy(() => AITokenUsageWhereUniqueInputSchema).optional()
 }).strict();
 
 export const StringFieldUpdateOperationsInputSchema: z.ZodType<Prisma.StringFieldUpdateOperationsInput> = z.object({
@@ -2238,6 +2494,16 @@ export const FileUpdateManyWithoutUserNestedInputSchema: z.ZodType<Prisma.FileUp
   deleteMany: z.union([ z.lazy(() => FileScalarWhereInputSchema),z.lazy(() => FileScalarWhereInputSchema).array() ]).optional(),
 }).strict();
 
+export const AITokenUsageUpdateOneWithoutUserNestedInputSchema: z.ZodType<Prisma.AITokenUsageUpdateOneWithoutUserNestedInput> = z.object({
+  create: z.union([ z.lazy(() => AITokenUsageCreateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedCreateWithoutUserInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => AITokenUsageCreateOrConnectWithoutUserInputSchema).optional(),
+  upsert: z.lazy(() => AITokenUsageUpsertWithoutUserInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => AITokenUsageWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => AITokenUsageWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => AITokenUsageWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => AITokenUsageUpdateToOneWithWhereWithoutUserInputSchema),z.lazy(() => AITokenUsageUpdateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedUpdateWithoutUserInputSchema) ]).optional(),
+}).strict();
+
 export const IntFieldUpdateOperationsInputSchema: z.ZodType<Prisma.IntFieldUpdateOperationsInput> = z.object({
   set: z.number().optional(),
   increment: z.number().optional(),
@@ -2324,6 +2590,16 @@ export const FileUncheckedUpdateManyWithoutUserNestedInputSchema: z.ZodType<Pris
   update: z.union([ z.lazy(() => FileUpdateWithWhereUniqueWithoutUserInputSchema),z.lazy(() => FileUpdateWithWhereUniqueWithoutUserInputSchema).array() ]).optional(),
   updateMany: z.union([ z.lazy(() => FileUpdateManyWithWhereWithoutUserInputSchema),z.lazy(() => FileUpdateManyWithWhereWithoutUserInputSchema).array() ]).optional(),
   deleteMany: z.union([ z.lazy(() => FileScalarWhereInputSchema),z.lazy(() => FileScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const AITokenUsageUncheckedUpdateOneWithoutUserNestedInputSchema: z.ZodType<Prisma.AITokenUsageUncheckedUpdateOneWithoutUserNestedInput> = z.object({
+  create: z.union([ z.lazy(() => AITokenUsageCreateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedCreateWithoutUserInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => AITokenUsageCreateOrConnectWithoutUserInputSchema).optional(),
+  upsert: z.lazy(() => AITokenUsageUpsertWithoutUserInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => AITokenUsageWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => AITokenUsageWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => AITokenUsageWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => AITokenUsageUpdateToOneWithWhereWithoutUserInputSchema),z.lazy(() => AITokenUsageUpdateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedUpdateWithoutUserInputSchema) ]).optional(),
 }).strict();
 
 export const UserCreateNestedOneWithoutPasswordInputSchema: z.ZodType<Prisma.UserCreateNestedOneWithoutPasswordInput> = z.object({
@@ -2584,6 +2860,20 @@ export const UserUpdateOneRequiredWithoutFileNestedInputSchema: z.ZodType<Prisma
   upsert: z.lazy(() => UserUpsertWithoutFileInputSchema).optional(),
   connect: z.lazy(() => UserWhereUniqueInputSchema).optional(),
   update: z.union([ z.lazy(() => UserUpdateToOneWithWhereWithoutFileInputSchema),z.lazy(() => UserUpdateWithoutFileInputSchema),z.lazy(() => UserUncheckedUpdateWithoutFileInputSchema) ]).optional(),
+}).strict();
+
+export const UserCreateNestedOneWithoutAiTokenUsageInputSchema: z.ZodType<Prisma.UserCreateNestedOneWithoutAiTokenUsageInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutAiTokenUsageInputSchema),z.lazy(() => UserUncheckedCreateWithoutAiTokenUsageInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => UserCreateOrConnectWithoutAiTokenUsageInputSchema).optional(),
+  connect: z.lazy(() => UserWhereUniqueInputSchema).optional()
+}).strict();
+
+export const UserUpdateOneRequiredWithoutAiTokenUsageNestedInputSchema: z.ZodType<Prisma.UserUpdateOneRequiredWithoutAiTokenUsageNestedInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutAiTokenUsageInputSchema),z.lazy(() => UserUncheckedCreateWithoutAiTokenUsageInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => UserCreateOrConnectWithoutAiTokenUsageInputSchema).optional(),
+  upsert: z.lazy(() => UserUpsertWithoutAiTokenUsageInputSchema).optional(),
+  connect: z.lazy(() => UserWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => UserUpdateToOneWithWhereWithoutAiTokenUsageInputSchema),z.lazy(() => UserUpdateWithoutAiTokenUsageInputSchema),z.lazy(() => UserUncheckedUpdateWithoutAiTokenUsageInputSchema) ]).optional(),
 }).strict();
 
 export const NestedIntFilterSchema: z.ZodType<Prisma.NestedIntFilter> = z.object({
@@ -2970,6 +3260,28 @@ export const FileCreateManyUserInputEnvelopeSchema: z.ZodType<Prisma.FileCreateM
   skipDuplicates: z.boolean().optional()
 }).strict();
 
+export const AITokenUsageCreateWithoutUserInputSchema: z.ZodType<Prisma.AITokenUsageCreateWithoutUserInput> = z.object({
+  tokensUsed: z.number().int().optional(),
+  lastResetDate: z.coerce.date().optional(),
+  monthlyLimit: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional()
+}).strict();
+
+export const AITokenUsageUncheckedCreateWithoutUserInputSchema: z.ZodType<Prisma.AITokenUsageUncheckedCreateWithoutUserInput> = z.object({
+  id: z.number().int().optional(),
+  tokensUsed: z.number().int().optional(),
+  lastResetDate: z.coerce.date().optional(),
+  monthlyLimit: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional()
+}).strict();
+
+export const AITokenUsageCreateOrConnectWithoutUserInputSchema: z.ZodType<Prisma.AITokenUsageCreateOrConnectWithoutUserInput> = z.object({
+  where: z.lazy(() => AITokenUsageWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => AITokenUsageCreateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedCreateWithoutUserInputSchema) ]),
+}).strict();
+
 export const PasswordUpsertWithoutUserInputSchema: z.ZodType<Prisma.PasswordUpsertWithoutUserInput> = z.object({
   update: z.union([ z.lazy(() => PasswordUpdateWithoutUserInputSchema),z.lazy(() => PasswordUncheckedUpdateWithoutUserInputSchema) ]),
   create: z.union([ z.lazy(() => PasswordCreateWithoutUserInputSchema),z.lazy(() => PasswordUncheckedCreateWithoutUserInputSchema) ]),
@@ -3129,6 +3441,34 @@ export const FileScalarWhereInputSchema: z.ZodType<Prisma.FileScalarWhereInput> 
   updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
 }).strict();
 
+export const AITokenUsageUpsertWithoutUserInputSchema: z.ZodType<Prisma.AITokenUsageUpsertWithoutUserInput> = z.object({
+  update: z.union([ z.lazy(() => AITokenUsageUpdateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedUpdateWithoutUserInputSchema) ]),
+  create: z.union([ z.lazy(() => AITokenUsageCreateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedCreateWithoutUserInputSchema) ]),
+  where: z.lazy(() => AITokenUsageWhereInputSchema).optional()
+}).strict();
+
+export const AITokenUsageUpdateToOneWithWhereWithoutUserInputSchema: z.ZodType<Prisma.AITokenUsageUpdateToOneWithWhereWithoutUserInput> = z.object({
+  where: z.lazy(() => AITokenUsageWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => AITokenUsageUpdateWithoutUserInputSchema),z.lazy(() => AITokenUsageUncheckedUpdateWithoutUserInputSchema) ]),
+}).strict();
+
+export const AITokenUsageUpdateWithoutUserInputSchema: z.ZodType<Prisma.AITokenUsageUpdateWithoutUserInput> = z.object({
+  tokensUsed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  lastResetDate: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  monthlyLimit: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const AITokenUsageUncheckedUpdateWithoutUserInputSchema: z.ZodType<Prisma.AITokenUsageUncheckedUpdateWithoutUserInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  tokensUsed: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  lastResetDate: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  monthlyLimit: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
 export const UserCreateWithoutPasswordInputSchema: z.ZodType<Prisma.UserCreateWithoutPasswordInput> = z.object({
   email: z.string(),
   displayName: z.string().optional().nullable(),
@@ -3142,7 +3482,8 @@ export const UserCreateWithoutPasswordInputSchema: z.ZodType<Prisma.UserCreateWi
   docs: z.lazy(() => DocCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareCreateNestedManyWithoutSharedToInputSchema).optional(),
   DocShare: z.lazy(() => DocShareCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserUncheckedCreateWithoutPasswordInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutPasswordInput> = z.object({
@@ -3159,7 +3500,8 @@ export const UserUncheckedCreateWithoutPasswordInputSchema: z.ZodType<Prisma.Use
   docs: z.lazy(() => DocUncheckedCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutSharedToInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserCreateOrConnectWithoutPasswordInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutPasswordInput> = z.object({
@@ -3191,7 +3533,8 @@ export const UserUpdateWithoutPasswordInputSchema: z.ZodType<Prisma.UserUpdateWi
   docs: z.lazy(() => DocUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUpdateManyWithoutSharedToNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserUncheckedUpdateWithoutPasswordInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutPasswordInput> = z.object({
@@ -3208,7 +3551,8 @@ export const UserUncheckedUpdateWithoutPasswordInputSchema: z.ZodType<Prisma.Use
   docs: z.lazy(() => DocUncheckedUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedUpdateManyWithoutSharedToNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserCreateWithoutConnectionsInputSchema: z.ZodType<Prisma.UserCreateWithoutConnectionsInput> = z.object({
@@ -3224,7 +3568,8 @@ export const UserCreateWithoutConnectionsInputSchema: z.ZodType<Prisma.UserCreat
   docs: z.lazy(() => DocCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareCreateNestedManyWithoutSharedToInputSchema).optional(),
   DocShare: z.lazy(() => DocShareCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserUncheckedCreateWithoutConnectionsInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutConnectionsInput> = z.object({
@@ -3241,7 +3586,8 @@ export const UserUncheckedCreateWithoutConnectionsInputSchema: z.ZodType<Prisma.
   docs: z.lazy(() => DocUncheckedCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutSharedToInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserCreateOrConnectWithoutConnectionsInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutConnectionsInput> = z.object({
@@ -3273,7 +3619,8 @@ export const UserUpdateWithoutConnectionsInputSchema: z.ZodType<Prisma.UserUpdat
   docs: z.lazy(() => DocUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUpdateManyWithoutSharedToNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserUncheckedUpdateWithoutConnectionsInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutConnectionsInput> = z.object({
@@ -3290,7 +3637,8 @@ export const UserUncheckedUpdateWithoutConnectionsInputSchema: z.ZodType<Prisma.
   docs: z.lazy(() => DocUncheckedUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedUpdateManyWithoutSharedToNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserCreateWithoutDocsInputSchema: z.ZodType<Prisma.UserCreateWithoutDocsInput> = z.object({
@@ -3306,7 +3654,8 @@ export const UserCreateWithoutDocsInputSchema: z.ZodType<Prisma.UserCreateWithou
   connections: z.lazy(() => ConnectionCreateNestedManyWithoutUserInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareCreateNestedManyWithoutSharedToInputSchema).optional(),
   DocShare: z.lazy(() => DocShareCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserUncheckedCreateWithoutDocsInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutDocsInput> = z.object({
@@ -3323,7 +3672,8 @@ export const UserUncheckedCreateWithoutDocsInputSchema: z.ZodType<Prisma.UserUnc
   connections: z.lazy(() => ConnectionUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutSharedToInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserCreateOrConnectWithoutDocsInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutDocsInput> = z.object({
@@ -3491,7 +3841,8 @@ export const UserUpdateWithoutDocsInputSchema: z.ZodType<Prisma.UserUpdateWithou
   connections: z.lazy(() => ConnectionUpdateManyWithoutUserNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUpdateManyWithoutSharedToNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserUncheckedUpdateWithoutDocsInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutDocsInput> = z.object({
@@ -3508,7 +3859,8 @@ export const UserUncheckedUpdateWithoutDocsInputSchema: z.ZodType<Prisma.UserUnc
   connections: z.lazy(() => ConnectionUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedUpdateManyWithoutSharedToNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const DocUpsertWithoutChildrenInputSchema: z.ZodType<Prisma.DocUpsertWithoutChildrenInput> = z.object({
@@ -3757,7 +4109,8 @@ export const UserCreateWithoutDocShareInputSchema: z.ZodType<Prisma.UserCreateWi
   connections: z.lazy(() => ConnectionCreateNestedManyWithoutUserInputSchema).optional(),
   docs: z.lazy(() => DocCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareCreateNestedManyWithoutSharedToInputSchema).optional(),
-  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserUncheckedCreateWithoutDocShareInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutDocShareInput> = z.object({
@@ -3774,7 +4127,8 @@ export const UserUncheckedCreateWithoutDocShareInputSchema: z.ZodType<Prisma.Use
   connections: z.lazy(() => ConnectionUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
   docs: z.lazy(() => DocUncheckedCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutSharedToInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserCreateOrConnectWithoutDocShareInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutDocShareInput> = z.object({
@@ -3795,7 +4149,8 @@ export const UserCreateWithoutSharedDocsInputSchema: z.ZodType<Prisma.UserCreate
   connections: z.lazy(() => ConnectionCreateNestedManyWithoutUserInputSchema).optional(),
   docs: z.lazy(() => DocCreateNestedManyWithoutOwnerInputSchema).optional(),
   DocShare: z.lazy(() => DocShareCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserUncheckedCreateWithoutSharedDocsInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutSharedDocsInput> = z.object({
@@ -3812,7 +4167,8 @@ export const UserUncheckedCreateWithoutSharedDocsInputSchema: z.ZodType<Prisma.U
   connections: z.lazy(() => ConnectionUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
   docs: z.lazy(() => DocUncheckedCreateNestedManyWithoutOwnerInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutAuthorInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional()
+  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserCreateOrConnectWithoutSharedDocsInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutSharedDocsInput> = z.object({
@@ -3891,7 +4247,8 @@ export const UserUpdateWithoutDocShareInputSchema: z.ZodType<Prisma.UserUpdateWi
   connections: z.lazy(() => ConnectionUpdateManyWithoutUserNestedInputSchema).optional(),
   docs: z.lazy(() => DocUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUpdateManyWithoutSharedToNestedInputSchema).optional(),
-  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserUncheckedUpdateWithoutDocShareInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutDocShareInput> = z.object({
@@ -3908,7 +4265,8 @@ export const UserUncheckedUpdateWithoutDocShareInputSchema: z.ZodType<Prisma.Use
   connections: z.lazy(() => ConnectionUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
   docs: z.lazy(() => DocUncheckedUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedUpdateManyWithoutSharedToNestedInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserUpsertWithoutSharedDocsInputSchema: z.ZodType<Prisma.UserUpsertWithoutSharedDocsInput> = z.object({
@@ -3935,7 +4293,8 @@ export const UserUpdateWithoutSharedDocsInputSchema: z.ZodType<Prisma.UserUpdate
   connections: z.lazy(() => ConnectionUpdateManyWithoutUserNestedInputSchema).optional(),
   docs: z.lazy(() => DocUpdateManyWithoutOwnerNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserUncheckedUpdateWithoutSharedDocsInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutSharedDocsInput> = z.object({
@@ -3952,7 +4311,8 @@ export const UserUncheckedUpdateWithoutSharedDocsInputSchema: z.ZodType<Prisma.U
   connections: z.lazy(() => ConnectionUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
   docs: z.lazy(() => DocUncheckedUpdateManyWithoutOwnerNestedInputSchema).optional(),
   DocShare: z.lazy(() => DocShareUncheckedUpdateManyWithoutAuthorNestedInputSchema).optional(),
-  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
+  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserCreateWithoutFileInputSchema: z.ZodType<Prisma.UserCreateWithoutFileInput> = z.object({
@@ -3968,7 +4328,8 @@ export const UserCreateWithoutFileInputSchema: z.ZodType<Prisma.UserCreateWithou
   connections: z.lazy(() => ConnectionCreateNestedManyWithoutUserInputSchema).optional(),
   docs: z.lazy(() => DocCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareCreateNestedManyWithoutSharedToInputSchema).optional(),
-  DocShare: z.lazy(() => DocShareCreateNestedManyWithoutAuthorInputSchema).optional()
+  DocShare: z.lazy(() => DocShareCreateNestedManyWithoutAuthorInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserUncheckedCreateWithoutFileInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutFileInput> = z.object({
@@ -3985,7 +4346,8 @@ export const UserUncheckedCreateWithoutFileInputSchema: z.ZodType<Prisma.UserUnc
   connections: z.lazy(() => ConnectionUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
   docs: z.lazy(() => DocUncheckedCreateNestedManyWithoutOwnerInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutSharedToInputSchema).optional(),
-  DocShare: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutAuthorInputSchema).optional()
+  DocShare: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutAuthorInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedCreateNestedOneWithoutUserInputSchema).optional()
 }).strict();
 
 export const UserCreateOrConnectWithoutFileInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutFileInput> = z.object({
@@ -4017,7 +4379,8 @@ export const UserUpdateWithoutFileInputSchema: z.ZodType<Prisma.UserUpdateWithou
   connections: z.lazy(() => ConnectionUpdateManyWithoutUserNestedInputSchema).optional(),
   docs: z.lazy(() => DocUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUpdateManyWithoutSharedToNestedInputSchema).optional(),
-  DocShare: z.lazy(() => DocShareUpdateManyWithoutAuthorNestedInputSchema).optional()
+  DocShare: z.lazy(() => DocShareUpdateManyWithoutAuthorNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUpdateOneWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const UserUncheckedUpdateWithoutFileInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutFileInput> = z.object({
@@ -4034,7 +4397,94 @@ export const UserUncheckedUpdateWithoutFileInputSchema: z.ZodType<Prisma.UserUnc
   connections: z.lazy(() => ConnectionUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
   docs: z.lazy(() => DocUncheckedUpdateManyWithoutOwnerNestedInputSchema).optional(),
   sharedDocs: z.lazy(() => DocShareUncheckedUpdateManyWithoutSharedToNestedInputSchema).optional(),
-  DocShare: z.lazy(() => DocShareUncheckedUpdateManyWithoutAuthorNestedInputSchema).optional()
+  DocShare: z.lazy(() => DocShareUncheckedUpdateManyWithoutAuthorNestedInputSchema).optional(),
+  aiTokenUsage: z.lazy(() => AITokenUsageUncheckedUpdateOneWithoutUserNestedInputSchema).optional()
+}).strict();
+
+export const UserCreateWithoutAiTokenUsageInputSchema: z.ZodType<Prisma.UserCreateWithoutAiTokenUsageInput> = z.object({
+  email: z.string(),
+  displayName: z.string().optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
+  emailVerified: z.coerce.date().optional().nullable(),
+  status: z.string(),
+  created_time: z.coerce.date().optional(),
+  updated_time: z.coerce.date().optional(),
+  hashedRefreshToken: z.string().optional().nullable(),
+  password: z.lazy(() => PasswordCreateNestedOneWithoutUserInputSchema).optional(),
+  connections: z.lazy(() => ConnectionCreateNestedManyWithoutUserInputSchema).optional(),
+  docs: z.lazy(() => DocCreateNestedManyWithoutOwnerInputSchema).optional(),
+  sharedDocs: z.lazy(() => DocShareCreateNestedManyWithoutSharedToInputSchema).optional(),
+  DocShare: z.lazy(() => DocShareCreateNestedManyWithoutAuthorInputSchema).optional(),
+  File: z.lazy(() => FileCreateNestedManyWithoutUserInputSchema).optional()
+}).strict();
+
+export const UserUncheckedCreateWithoutAiTokenUsageInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutAiTokenUsageInput> = z.object({
+  id: z.number().int().optional(),
+  email: z.string(),
+  displayName: z.string().optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
+  emailVerified: z.coerce.date().optional().nullable(),
+  status: z.string(),
+  created_time: z.coerce.date().optional(),
+  updated_time: z.coerce.date().optional(),
+  hashedRefreshToken: z.string().optional().nullable(),
+  password: z.lazy(() => PasswordUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
+  connections: z.lazy(() => ConnectionUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
+  docs: z.lazy(() => DocUncheckedCreateNestedManyWithoutOwnerInputSchema).optional(),
+  sharedDocs: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutSharedToInputSchema).optional(),
+  DocShare: z.lazy(() => DocShareUncheckedCreateNestedManyWithoutAuthorInputSchema).optional(),
+  File: z.lazy(() => FileUncheckedCreateNestedManyWithoutUserInputSchema).optional()
+}).strict();
+
+export const UserCreateOrConnectWithoutAiTokenUsageInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutAiTokenUsageInput> = z.object({
+  where: z.lazy(() => UserWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => UserCreateWithoutAiTokenUsageInputSchema),z.lazy(() => UserUncheckedCreateWithoutAiTokenUsageInputSchema) ]),
+}).strict();
+
+export const UserUpsertWithoutAiTokenUsageInputSchema: z.ZodType<Prisma.UserUpsertWithoutAiTokenUsageInput> = z.object({
+  update: z.union([ z.lazy(() => UserUpdateWithoutAiTokenUsageInputSchema),z.lazy(() => UserUncheckedUpdateWithoutAiTokenUsageInputSchema) ]),
+  create: z.union([ z.lazy(() => UserCreateWithoutAiTokenUsageInputSchema),z.lazy(() => UserUncheckedCreateWithoutAiTokenUsageInputSchema) ]),
+  where: z.lazy(() => UserWhereInputSchema).optional()
+}).strict();
+
+export const UserUpdateToOneWithWhereWithoutAiTokenUsageInputSchema: z.ZodType<Prisma.UserUpdateToOneWithWhereWithoutAiTokenUsageInput> = z.object({
+  where: z.lazy(() => UserWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => UserUpdateWithoutAiTokenUsageInputSchema),z.lazy(() => UserUncheckedUpdateWithoutAiTokenUsageInputSchema) ]),
+}).strict();
+
+export const UserUpdateWithoutAiTokenUsageInputSchema: z.ZodType<Prisma.UserUpdateWithoutAiTokenUsageInput> = z.object({
+  email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  displayName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  imageUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  emailVerified: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  created_time: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updated_time: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  hashedRefreshToken: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  password: z.lazy(() => PasswordUpdateOneWithoutUserNestedInputSchema).optional(),
+  connections: z.lazy(() => ConnectionUpdateManyWithoutUserNestedInputSchema).optional(),
+  docs: z.lazy(() => DocUpdateManyWithoutOwnerNestedInputSchema).optional(),
+  sharedDocs: z.lazy(() => DocShareUpdateManyWithoutSharedToNestedInputSchema).optional(),
+  DocShare: z.lazy(() => DocShareUpdateManyWithoutAuthorNestedInputSchema).optional(),
+  File: z.lazy(() => FileUpdateManyWithoutUserNestedInputSchema).optional()
+}).strict();
+
+export const UserUncheckedUpdateWithoutAiTokenUsageInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutAiTokenUsageInput> = z.object({
+  id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  displayName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  imageUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  emailVerified: z.union([ z.coerce.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  created_time: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updated_time: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  hashedRefreshToken: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  password: z.lazy(() => PasswordUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
+  connections: z.lazy(() => ConnectionUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
+  docs: z.lazy(() => DocUncheckedUpdateManyWithoutOwnerNestedInputSchema).optional(),
+  sharedDocs: z.lazy(() => DocShareUncheckedUpdateManyWithoutSharedToNestedInputSchema).optional(),
+  DocShare: z.lazy(() => DocShareUncheckedUpdateManyWithoutAuthorNestedInputSchema).optional(),
+  File: z.lazy(() => FileUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
 }).strict();
 
 export const ConnectionCreateManyUserInputSchema: z.ZodType<Prisma.ConnectionCreateManyUserInput> = z.object({
@@ -4803,6 +5253,68 @@ export const FileFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.FileFindUniqueOrT
   where: FileWhereUniqueInputSchema,
 }).strict() ;
 
+export const AITokenUsageFindFirstArgsSchema: z.ZodType<Prisma.AITokenUsageFindFirstArgs> = z.object({
+  select: AITokenUsageSelectSchema.optional(),
+  include: AITokenUsageIncludeSchema.optional(),
+  where: AITokenUsageWhereInputSchema.optional(),
+  orderBy: z.union([ AITokenUsageOrderByWithRelationInputSchema.array(),AITokenUsageOrderByWithRelationInputSchema ]).optional(),
+  cursor: AITokenUsageWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ AITokenUsageScalarFieldEnumSchema,AITokenUsageScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const AITokenUsageFindFirstOrThrowArgsSchema: z.ZodType<Prisma.AITokenUsageFindFirstOrThrowArgs> = z.object({
+  select: AITokenUsageSelectSchema.optional(),
+  include: AITokenUsageIncludeSchema.optional(),
+  where: AITokenUsageWhereInputSchema.optional(),
+  orderBy: z.union([ AITokenUsageOrderByWithRelationInputSchema.array(),AITokenUsageOrderByWithRelationInputSchema ]).optional(),
+  cursor: AITokenUsageWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ AITokenUsageScalarFieldEnumSchema,AITokenUsageScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const AITokenUsageFindManyArgsSchema: z.ZodType<Prisma.AITokenUsageFindManyArgs> = z.object({
+  select: AITokenUsageSelectSchema.optional(),
+  include: AITokenUsageIncludeSchema.optional(),
+  where: AITokenUsageWhereInputSchema.optional(),
+  orderBy: z.union([ AITokenUsageOrderByWithRelationInputSchema.array(),AITokenUsageOrderByWithRelationInputSchema ]).optional(),
+  cursor: AITokenUsageWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ AITokenUsageScalarFieldEnumSchema,AITokenUsageScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const AITokenUsageAggregateArgsSchema: z.ZodType<Prisma.AITokenUsageAggregateArgs> = z.object({
+  where: AITokenUsageWhereInputSchema.optional(),
+  orderBy: z.union([ AITokenUsageOrderByWithRelationInputSchema.array(),AITokenUsageOrderByWithRelationInputSchema ]).optional(),
+  cursor: AITokenUsageWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const AITokenUsageGroupByArgsSchema: z.ZodType<Prisma.AITokenUsageGroupByArgs> = z.object({
+  where: AITokenUsageWhereInputSchema.optional(),
+  orderBy: z.union([ AITokenUsageOrderByWithAggregationInputSchema.array(),AITokenUsageOrderByWithAggregationInputSchema ]).optional(),
+  by: AITokenUsageScalarFieldEnumSchema.array(),
+  having: AITokenUsageScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const AITokenUsageFindUniqueArgsSchema: z.ZodType<Prisma.AITokenUsageFindUniqueArgs> = z.object({
+  select: AITokenUsageSelectSchema.optional(),
+  include: AITokenUsageIncludeSchema.optional(),
+  where: AITokenUsageWhereUniqueInputSchema,
+}).strict() ;
+
+export const AITokenUsageFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.AITokenUsageFindUniqueOrThrowArgs> = z.object({
+  select: AITokenUsageSelectSchema.optional(),
+  include: AITokenUsageIncludeSchema.optional(),
+  where: AITokenUsageWhereUniqueInputSchema,
+}).strict() ;
+
 export const UserCreateArgsSchema: z.ZodType<Prisma.UserCreateArgs> = z.object({
   select: UserSelectSchema.optional(),
   include: UserIncludeSchema.optional(),
@@ -5123,4 +5635,50 @@ export const FileUpdateManyArgsSchema: z.ZodType<Prisma.FileUpdateManyArgs> = z.
 
 export const FileDeleteManyArgsSchema: z.ZodType<Prisma.FileDeleteManyArgs> = z.object({
   where: FileWhereInputSchema.optional(),
+}).strict() ;
+
+export const AITokenUsageCreateArgsSchema: z.ZodType<Prisma.AITokenUsageCreateArgs> = z.object({
+  select: AITokenUsageSelectSchema.optional(),
+  include: AITokenUsageIncludeSchema.optional(),
+  data: z.union([ AITokenUsageCreateInputSchema,AITokenUsageUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const AITokenUsageUpsertArgsSchema: z.ZodType<Prisma.AITokenUsageUpsertArgs> = z.object({
+  select: AITokenUsageSelectSchema.optional(),
+  include: AITokenUsageIncludeSchema.optional(),
+  where: AITokenUsageWhereUniqueInputSchema,
+  create: z.union([ AITokenUsageCreateInputSchema,AITokenUsageUncheckedCreateInputSchema ]),
+  update: z.union([ AITokenUsageUpdateInputSchema,AITokenUsageUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const AITokenUsageCreateManyArgsSchema: z.ZodType<Prisma.AITokenUsageCreateManyArgs> = z.object({
+  data: z.union([ AITokenUsageCreateManyInputSchema,AITokenUsageCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict() ;
+
+export const AITokenUsageCreateManyAndReturnArgsSchema: z.ZodType<Prisma.AITokenUsageCreateManyAndReturnArgs> = z.object({
+  data: z.union([ AITokenUsageCreateManyInputSchema,AITokenUsageCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict() ;
+
+export const AITokenUsageDeleteArgsSchema: z.ZodType<Prisma.AITokenUsageDeleteArgs> = z.object({
+  select: AITokenUsageSelectSchema.optional(),
+  include: AITokenUsageIncludeSchema.optional(),
+  where: AITokenUsageWhereUniqueInputSchema,
+}).strict() ;
+
+export const AITokenUsageUpdateArgsSchema: z.ZodType<Prisma.AITokenUsageUpdateArgs> = z.object({
+  select: AITokenUsageSelectSchema.optional(),
+  include: AITokenUsageIncludeSchema.optional(),
+  data: z.union([ AITokenUsageUpdateInputSchema,AITokenUsageUncheckedUpdateInputSchema ]),
+  where: AITokenUsageWhereUniqueInputSchema,
+}).strict() ;
+
+export const AITokenUsageUpdateManyArgsSchema: z.ZodType<Prisma.AITokenUsageUpdateManyArgs> = z.object({
+  data: z.union([ AITokenUsageUpdateManyMutationInputSchema,AITokenUsageUncheckedUpdateManyInputSchema ]),
+  where: AITokenUsageWhereInputSchema.optional(),
+}).strict() ;
+
+export const AITokenUsageDeleteManyArgsSchema: z.ZodType<Prisma.AITokenUsageDeleteManyArgs> = z.object({
+  where: AITokenUsageWhereInputSchema.optional(),
 }).strict() ;
