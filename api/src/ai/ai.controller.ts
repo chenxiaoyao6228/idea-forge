@@ -1,12 +1,15 @@
-import { Controller, Post, Body, Headers, Res, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Body, Res, HttpStatus, Query, Get } from "@nestjs/common";
 import { Response } from "express";
 import { AIProviderService } from "./ai.service";
-import { AIStreamRequest } from "shared";
+import { AIStreamRequest, TokenUsageData } from "shared";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { User } from "@prisma/client";
+import { ApiException } from "@/_shared/model/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { TokenUsageService } from "./token-usage.service";
 import { ConfigService } from "@nestjs/config";
+import { UserService } from "@/user/user.service";
+import { UpdateUserTokenLimitDto } from "./ai.dto";
 
 @Controller("api/ai")
 export class AIController {
@@ -14,6 +17,7 @@ export class AIController {
     private readonly aiProviderService: AIProviderService,
     private readonly tokenUsageService: TokenUsageService,
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
   ) {}
 
   @Post("stream")
@@ -80,5 +84,25 @@ export class AIController {
       );
       response.end();
     }
+  }
+
+  @Post("admin/update-token")
+  async updateUserTokenLimit(@Body() dto: UpdateUserTokenLimitDto, @GetUser() admin: User) {
+    const adminEmail = (await this.userService.getUserById(admin.id))?.email;
+    const superAdminEmail = this.configService.get("SUPER_ADMIN_EMAIL");
+    if (adminEmail !== superAdminEmail) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+    return this.tokenUsageService.updateUserTokenLimit(dto);
+  }
+
+  @Get("admin/token-usage")
+  async getUserTokenUsage(@Query("email") email: string, @GetUser() admin: User): Promise<TokenUsageData> {
+    const adminEmail = (await this.userService.getUserById(admin.id))?.email;
+    const superAdminEmail = this.configService.get("SUPER_ADMIN_EMAIL");
+    if (adminEmail !== superAdminEmail) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+    return this.tokenUsageService.getUserTokenUsage(email);
   }
 }

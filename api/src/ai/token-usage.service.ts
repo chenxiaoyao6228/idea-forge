@@ -1,5 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
+import { ApiException } from "@/_shared/model/api.exception";
+import { TokenUsageData } from "shared";
+import { UpdateUserTokenLimitDto } from "./ai.dto";
 
 const MONTHLY_TOKEN_LIMIT = 10000;
 
@@ -73,5 +77,49 @@ export class TokenUsageService {
   async isTokenUsageExceeded(userId: number): Promise<boolean> {
     const usage = await this.getOrCreateTokenUsage(userId);
     return usage.tokensUsed >= usage.monthlyLimit;
+  }
+
+  async updateUserTokenLimit(dto: UpdateUserTokenLimitDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      include: { aiTokenUsage: true },
+    });
+
+    if (!user) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    if (!user.aiTokenUsage) {
+      return this.prisma.aITokenUsage.create({
+        data: {
+          userId: user.id,
+          monthlyLimit: dto.monthlyLimit,
+          tokensUsed: dto.monthlyUsed,
+        },
+      });
+    }
+
+    return this.prisma.aITokenUsage.update({
+      where: { userId: user.id },
+      data: { monthlyLimit: dto.monthlyLimit, tokensUsed: dto.monthlyUsed },
+    });
+  }
+
+  async getUserTokenUsage(email: string): Promise<TokenUsageData> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { aiTokenUsage: true },
+    });
+
+    if (!user) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    return {
+      email: user.email,
+      monthlyLimit: user.aiTokenUsage?.monthlyLimit || 0,
+      monthlyUsed: user.aiTokenUsage?.tokensUsed || 0,
+      lastResetDate: user.aiTokenUsage?.lastResetDate || new Date(),
+    };
   }
 }
