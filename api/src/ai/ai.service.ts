@@ -1,10 +1,13 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import OpenAI from "openai";
-import { AIProviderConfig, StreamResponse } from "./ai.type";
+import { AIProviderConfig } from "./ai.type";
 import { Subject, Observable } from "rxjs";
 import { AIStreamResponse, AIStreamRequest, ChatMessage } from "shared";
 import { faker } from "@faker-js/faker";
+import { TokenUsageService } from "./token-usage.service";
+import { ApiException } from "@/_shared/model/api.exception";
+import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 
 @Injectable()
 export class AIProviderService implements OnModuleInit {
@@ -12,7 +15,10 @@ export class AIProviderService implements OnModuleInit {
   private providers: Map<string, { config: AIProviderConfig; client: OpenAI }> = new Map();
   private activeProviders: AIProviderConfig[] = [];
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private tokenUsageService: TokenUsageService,
+  ) {}
 
   onModuleInit() {
     this.initializeProviders();
@@ -47,50 +53,64 @@ export class AIProviderService implements OnModuleInit {
     this.activeProviders.sort((a, b) => a.priority - b.priority);
   }
 
-  async streamCompletion(request: AIStreamRequest): Promise<Observable<AIStreamResponse>> {
+  async streamCompletion(request: AIStreamRequest, userId: number): Promise<Observable<AIStreamResponse>> {
     const subject = new Subject<AIStreamResponse>();
 
-    const tryProvider = async (providerIndex: number) => {
-      if (providerIndex >= this.activeProviders.length) {
-        subject.error(new Error("All providers failed"));
-        subject.complete();
-        return;
-      }
-
-      const provider = this.activeProviders[providerIndex];
-      const { client } = this.providers.get(provider.id) as { config: AIProviderConfig; client: OpenAI };
-
-      try {
-        const stream = await client.chat.completions.create({
-          model: provider.model,
-          messages: request.messages,
-          stream: true,
-          temperature: request.options?.temperature ?? 0.7,
-          max_tokens: request.options?.max_tokens ?? 1000,
-        });
-
-        for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content || "";
-          if (content) {
-            subject.next({
-              id: provider.id,
-              content,
-              provider: provider.name,
-            });
-          }
+    try {
+      const tryProvider = async (providerIndex: number) => {
+        if (providerIndex >= this.activeProviders.length) {
+          subject.error(new Error("All providers failed"));
+          subject.complete();
+          return;
         }
 
-        subject.complete();
-      } catch (error: any) {
-        this.logger.error(`Provider ${provider.id} failed:`, error);
-        await tryProvider(providerIndex + 1);
-      }
-    };
+        const provider = this.activeProviders[providerIndex];
+        const { client } = this.providers.get(provider.id) as { config: AIProviderConfig; client: OpenAI };
 
-    tryProvider(0);
-    return subject.asObservable();
+        try {
+          const stream = await client.chat.completions.create({
+            model: provider.model,
+            messages: request.messages,
+            stream: true,
+            temperature: request.options?.temperature ?? 0.7,
+            max_tokens: request.options?.max_tokens ?? 1000,
+          });
+
+          for await (const chunk of stream) {
+            // console.log("=========chunk===========", chunk);
+            const content = chunk.choices[0]?.delta?.content || "";
+            if (content) {
+              subject.next({
+                id: provider.id,
+                content,
+                provider: provider.name,
+              });
+            }
+            const usage = chunk.usage;
+            if (usage) {
+              await this.tokenUsageService.updateTokenUsage(userId, usage.total_tokens);
+            }
+          }
+
+          subject.complete();
+        } catch (error: any) {
+          this.logger.error(`Provider ${provider.id} failed:`, error);
+          await tryProvider(providerIndex + 1);
+        }
+      };
+
+      tryProvider(0);
+      return subject.asObservable();
+    } catch (error) {
+      if (error instanceof ApiException) {
+        subject.error(error);
+        return subject.asObservable();
+      }
+      throw error;
+    }
   }
 
+  // FIXME: remove this after the AI feature is stable
   async streamCompletionMock(request: AIStreamRequest): Promise<Observable<AIStreamResponse>> {
     const subject = new Subject<AIStreamResponse>();
 

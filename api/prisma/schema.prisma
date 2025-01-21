@@ -31,9 +31,10 @@ model User {
   password           Password?
   connections        Connection[]
   docs               Doc[]
-  sharedDocs         DocShare[]   @relation("SharedToUser")
+  sharedDocs         DocShare[]    @relation("SharedToUser")
   DocShare           DocShare[]
   File               File[]
+  aiTokenUsage       AITokenUsage?
 }
 
 model Password {
@@ -115,4 +116,18 @@ model File {
   contentType String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model AITokenUsage {
+  id            Int      @id @default(autoincrement())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        Int      @unique
+  tokensUsed    Int      @default(0)
+  lastResetDate DateTime @default(now())
+  monthlyLimit  Int      @default(10000)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, lastResetDate])
 }

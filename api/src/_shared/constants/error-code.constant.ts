@@ -16,6 +16,8 @@ export enum ErrorCodeEnum {
   PasswordNotSet = 1006,
   AccountError = 1007, //账号异常
   SendEmailError = 1008, // 发送邮件失败
+
+  AITokenLimitExceeded = 1100,
 }
 
 export type ErrorCodeMsg = Record<ErrorCodeEnum, string>;
@@ -36,4 +38,5 @@ export const ErrorCodeMsg: ErrorCodeMsg = {
   [ErrorCodeEnum.PasswordNotSet]: "Password is not set after third party binding, click forget password to set.",
   [ErrorCodeEnum.AccountError]: "Account error.",
   [ErrorCodeEnum.SendEmailError]: "Failed to send email. Please try again",
+  [ErrorCodeEnum.AITokenLimitExceeded]: "Monthly token limit exceeded. Please contact support@",
 };
