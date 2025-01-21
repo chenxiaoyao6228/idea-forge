@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { TableOfContentDataItem } from "@tiptap-pro/extension-table-of-contents";
 import { TextSelection } from "@tiptap/pm/state";
@@ -7,8 +7,38 @@ import { useEditorStore } from "../stores/editor-store";
 
 export const TableOfContent = memo(() => {
   const [isHovered, setIsHovered] = useState(false);
+  const [activeId, setActiveId] = useState<string>("");
   const items = useEditorStore((state) => state.tocItems);
   const editor = useEditorStore((state) => state.editor);
+  const firstLevelItems = items.filter((item) => item.level === 2);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    // Create Intersection Observer
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute("data-toc-id");
+            if (id) setActiveId(id);
+          }
+        });
+      },
+      {
+        rootMargin: "-100px 0px -66% 0px", // Adjust observation area
+        threshold: 0,
+      },
+    );
+
+    // Observe all heading elements
+    const headings = editor.view.dom.querySelectorAll("[data-toc-id]");
+    headings.forEach((heading) => observer.observe(heading));
+
+    return () => {
+      headings.forEach((heading) => observer.unobserve(heading));
+    };
+  }, [editor]);
 
   if (!editor || items.length === 0) {
     return null;
@@ -52,8 +82,22 @@ export const TableOfContent = memo(() => {
       {/* Trigger */}
       {!isHovered && (
         <div className="bg-background p-2 shadow-lg rounded-lg cursor-pointer">
-          {firstLevelItems.map((item) => (
-            <div className="h-1 w-4 bg-primary mb-1" key={item.id}></div>
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className={cn(
+                "h-1 mb-1 transition-all duration-200",
+                // Set width based on level
+                {
+                  "w-6": item.level === 1,
+                  "w-4": item.level === 2,
+                  "w-3": item.level === 3,
+                  "w-2": item.level > 3,
+                },
+                // Active state style
+                item.id === activeId ? "bg-primary" : "bg-muted",
+              )}
+            />
           ))}
         </div>
       )}
@@ -61,7 +105,7 @@ export const TableOfContent = memo(() => {
       {/* Content */}
       <div
         className={cn(
-          "absolute right-full top-0 mr-2 w-80 max-h-[90vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto",
+          "absolute right-full top-0 mr-2 w-60 max-h-[90vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto",
           "transition-all duration-200 ease-in-out",
           isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none",
         )}
@@ -82,13 +126,13 @@ const ToCItem = ({ item, onItemClick }: { item: TableOfContentDataItem; onItemCl
       className={cn(
         "rounded-md transition-all duration-200 ease-[cubic-bezier(0.65,0.05,0.36,1)]",
         {
-          // Dynamic padding based on level
           "pl-0": item.level === 1,
           "pl-3.5": item.level === 2,
           "pl-7": item.level === 3,
           "pl-[calc(0.875rem*3)]": item.level > 3,
         },
-        "hover:bg-secondary",
+        "hover:bg-accent/50 dark:hover:bg-accent/25",
+        item.isActive ? "bg-accent dark:bg-accent/50" : "bg-transparent",
       )}
     >
       <a
