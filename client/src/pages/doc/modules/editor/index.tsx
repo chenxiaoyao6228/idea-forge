@@ -1,5 +1,5 @@
 import "./index.css";
-import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { useCollaborationProvider } from "./hooks/useCollaborationProvider";
@@ -8,13 +8,15 @@ import useUserStore from "@/stores/user";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
-import { useRef, useMemo } from "react";
-import { useCurrentDocumentState } from "@/pages/doc/stores/editor-store";
+import { useRef, useMemo, useEffect } from "react";
+import { useCurrentDocumentState, useEditorStore } from "@/pages/doc/stores/editor-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, WifiOff } from "lucide-react";
 import AIPanel from "./ai-panel";
+import { getHierarchicalIndexes } from "@tiptap-pro/extension-table-of-contents";
+import TableOfContents from "@tiptap-pro/extension-table-of-contents";
 
 interface Props {
   id: string;
@@ -27,7 +29,8 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
   const menuContainerRef = useRef(null);
   const { userInfo } = useUserStore();
   const currentDocument = useCurrentDocumentState();
-
+  const setEditor = useEditorStore((state) => state.setEditor);
+  const setTocItems = useEditorStore((state) => state.setTocItems);
   const { status, error, lastSyncedAt, pendingChanges, isIndexedDBLoaded } = currentDocument || {};
 
   const user = useMemo(
@@ -58,6 +61,14 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
         provider,
         user,
       }),
+      TableOfContents.configure({
+        scrollParent: () => document?.getElementById("WORK_CONTENT_SCROLL_CONTAINER") || window,
+        getIndex: getHierarchicalIndexes,
+        onUpdate(content) {
+          // console.log('toc content...', content);
+          setTocItems(content);
+        },
+      }),
     ],
     // onTransaction: ({ transaction, editor }) => {
     //   console.log("Transaction:", {
@@ -74,6 +85,12 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
       // console.log("Editor content:", editor.getJSON());
     },
   });
+
+  useEffect(() => {
+    if (editor) {
+      setEditor(editor);
+    }
+  }, [editor, setEditor]);
 
   // @ts-ignore for debug
   window._editor = editor;

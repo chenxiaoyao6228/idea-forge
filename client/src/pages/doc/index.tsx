@@ -22,6 +22,7 @@ import { Icon } from "@/components/ui/icon";
 import { useParams } from "react-router-dom";
 import { useEffect } from "react";
 import { useDocumentStore } from "./stores/doc-store";
+import { TableOfContent } from "./components/table-of-content";
 
 export default function Doc() {
   const { docId } = useParams();
@@ -67,6 +68,7 @@ export default function Doc() {
       <SidebarInset className={cn("h-full relative")}>
         <DocumentHeader />
         <DocDetail />
+        <TableOfContent />
       </SidebarInset>
     </SidebarProvider>
   );

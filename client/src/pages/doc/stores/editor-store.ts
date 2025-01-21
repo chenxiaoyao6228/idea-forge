@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { HocuspocusProvider } from "@hocuspocus/provider";
+import { TableOfContentDataItem } from "@tiptap-pro/extension-table-of-contents";
+import { Editor } from "@tiptap/react";
 
 export type DocumentStatus =
   | "loading" // Initial state
@@ -32,10 +34,14 @@ interface DocumentState {
 interface EditorState {
   documents: Record<string, DocumentState>;
   currentDocumentId: string | null;
+  editor: Editor | null;
+  tocItems: TableOfContentDataItem[];
   setProvider: (documentId: string, provider: HocuspocusProvider) => void;
   setCollaborationState: (documentId: string, state: Partial<DocumentState>) => void;
   resetDocumentState: (documentId: string) => void;
   setCurrentDocument: (documentId: string) => void;
+  setTocItems: (items: TableOfContentDataItem[]) => void;
+  setEditor: (editor: Editor) => void;
 }
 
 const initialDocumentState: DocumentState = {
@@ -51,6 +57,8 @@ const initialDocumentState: DocumentState = {
 export const useEditorStore = create<EditorState>((set) => ({
   documents: {},
   currentDocumentId: null,
+  tocItems: [],
+  editor: null,
   setProvider: (documentId, provider) =>
     set((state) => ({
       documents: {
@@ -79,6 +87,8 @@ export const useEditorStore = create<EditorState>((set) => ({
       },
     })),
   setCurrentDocument: (documentId) => set({ currentDocumentId: documentId }),
+  setTocItems: (items) => set({ tocItems: items }),
+  setEditor: (editor) => set({ editor }),
 }));
 
 export function useCurrentDocumentState() {
