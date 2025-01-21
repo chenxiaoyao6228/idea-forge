@@ -102,7 +102,7 @@ export const commandGroups: CommandGroup[] = [
         aliases: ["code"],
         description: "Code block with syntax highlighting",
         command: ({ editor }) => {
-          editor.chain().focus().setCodeBlock().run();
+          editor.chain().focus().setCodeBlock({ language: "typescript" }).run();
         },
       },
 

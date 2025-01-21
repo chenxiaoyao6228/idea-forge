@@ -35,7 +35,7 @@ export default function CodeBlockMenu(props: MenuProps) {
       updateDelay={0}
       shouldShow={shouldShow}
       tippyOptions={{
-        offset: [-20, 0],
+        offset: [0, 10],
         placement: "top-end",
         popperOptions: {
           modifiers: [{ name: "flip", enabled: false }],

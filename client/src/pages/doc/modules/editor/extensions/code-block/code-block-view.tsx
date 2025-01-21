@@ -17,7 +17,7 @@ const CodeBlockView: React.FC<NodeViewProps> = ({ node, updateAttributes, extens
   const mermaidDisplay = node.attrs.mermaidDisplay || "split";
 
   return (
-    <NodeViewWrapper className="code-block-wrapper relative bg-gray-100 rounded-md p-2" data-type="codeBlock" data-language={node.attrs.language}>
+    <NodeViewWrapper className="code-block-wrapper relative bg-gray-100 rounded-md" data-type="codeBlock" data-language={node.attrs.language}>
       <pre
         ref={codeRef}
         className={`text-sm font-mono overflow-x-auto transition-all duration-300 ${
