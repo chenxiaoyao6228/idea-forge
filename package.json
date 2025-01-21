@@ -1,16 +1,16 @@
 {
   "name": "idea-forge",
+  "version": "0.5.0",
   "description": "Powerful document tool that combines the functionality of Notion with the intelligence of AI",
   "keywords": [
     "notion",
+    "tiptap",
     "ai",
     "document",
-    "collaboration",
-    "tool"
+    "collaborate writing"
   ],
   "author": "YorkChan",
   "license": "MIT",
-  "version": "0.4.0",
   "main": "index.js",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
