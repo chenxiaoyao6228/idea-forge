@@ -42,6 +42,6 @@ export const Heading = THeading.extend<HeadingOptions>({
           },
         },
       },
-    };
+    } satisfies NodeMarkdownStorage;
   },
 });

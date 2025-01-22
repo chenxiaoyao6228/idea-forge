@@ -4,36 +4,36 @@ import type { Fragment, Mark, Node } from "@tiptap/pm/model";
 import type { MarkMarkdownStorage, MarkdownNode, NodeMarkdownStorage } from "../types";
 import { SerializerStack } from "./stack";
 
-// 定义 SerializerState 类
+// Define SerializerState class
 export class SerializerState {
-  // 声明公共只读属性
+  // Declare public readonly properties
   public readonly editor: Editor;
   public readonly processor: Processor;
-  // 声明私有属性
+  // Declare private properties
   private readonly stack: SerializerStack;
 
-  // 构造函数
+  // Constructor
   constructor(editor: Editor, processor: Processor) {
     this.stack = new SerializerStack(editor);
     this.editor = editor;
     this.processor = processor;
   }
 
-  // 序列化方法
+  // Serialization method
   public serialize(document: Node) {
-    // 处理文档节点
+    // Process document node
     this.next(document);
-    // 从栈中序列化 Markdown 节点
+    // Serialize Markdown nodes from stack
     let root = this.stack.serialize() as MarkdownNode;
-    // 遍历存储对象，执行 beforeSerialize 钩子
+    // Iterate through storage objects, execute beforeSerialize hooks
     for (const storage of Object.values(this.editor.storage as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
       if (storage?.markdown?.hooks?.beforeSerialize) {
         root = storage.markdown.hooks.beforeSerialize(root);
       }
     }
-    // 将 Markdown 节点转换为字符串
+    // Convert Markdown node to string
     let markdown = this.processor.stringify(root) as string;
-    // 遍历存储对象，执行 afterSerialize 钩子
+    // Iterate through storage objects, execute afterSerialize hooks
     for (const storage of Object.values(this.editor.storage as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
       if (storage?.markdown?.hooks?.afterSerialize) {
         markdown = storage.markdown.hooks.afterSerialize(markdown);
@@ -42,7 +42,7 @@ export class SerializerState {
     return markdown;
   }
 
-  // 处理下一个节点或片段
+  // Process next node or fragment
   public next(nodes: Node | Fragment) {
     if (this.isFragment(nodes)) {
       nodes.forEach((node) => this.runNode(node));
@@ -52,54 +52,54 @@ export class SerializerState {
     return this;
   }
 
-  // 向栈中添加节点
+  // Add node to stack
   public addNode(node: MarkdownNode) {
     this.stack.addNode(node);
     return this;
   }
 
-  // 在栈中打开新节点
+  // Open new node in stack
   public openNode(node: MarkdownNode) {
     this.stack.openNode(node);
     return this;
   }
 
-  // 关闭栈中当前节点
+  // Close current node in stack
   public closeNode() {
     this.stack.closeNode();
     return this;
   }
 
-  // 处理带标记的节点
+  // Process node with mark
   public withMark(mark: Mark, node: MarkdownNode) {
     this.stack.openMark(mark, node);
     return this;
   }
 
-  // 判断是否为 Fragment 类型
+  // Check if node is Fragment type
   private isFragment(node: Node | Fragment): node is Fragment {
-    return Object.hasOwn(node, "size");
+    return "size" in node;
   }
 
-  // 处理单个节点
+  // Process single node
   private runNode(node: Node) {
-    // 处理节点的所有标记
+    // Process all marks of the node
     const next = node.marks.every((mark) => {
       const storage = this.matchNode(mark)?.storage as MarkMarkdownStorage | undefined;
       return !storage?.markdown?.serializer?.apply(this, mark, node);
     });
-    // 如果所有标记都处理完毕，处理节点本身
+    // If all marks are processed, process the node itself
     if (next) {
       const storage = this.matchNode(node)?.storage as NodeMarkdownStorage | undefined;
       storage?.markdown?.serializer?.apply(this, node);
     }
-    // 关闭所有标记
+    // Close all marks
     for (const mark of node.marks) {
       this.stack.closeMark(mark);
     }
   }
 
-  // 匹配节点对应的扩展
+  // Match node with corresponding extension
   private matchNode(node: Node | Mark) {
     const extension = this.editor.extensionManager.extensions.find((e) => {
       const name = e.name;

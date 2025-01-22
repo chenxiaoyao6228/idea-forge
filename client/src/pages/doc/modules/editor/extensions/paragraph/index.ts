@@ -38,6 +38,6 @@ export const Paragraph = TParagraph.extend<ParagraphOptions>({
           },
         },
       },
-    };
+    } satisfies NodeMarkdownStorage;
   },
 });

@@ -13,6 +13,7 @@
     "target": "ESNext", // 如果不需要支持旧浏览器
     "sourceMap": true, // 添加 source map 支持
     // "noImplicitReturns": true,     // 检查函数隐式返回
+    "noImplicitAny": false,
     "useDefineForClassFields": true, // 现代类字段定义方式
     "allowImportingTsExtensions": true,
     "noEmit": true,

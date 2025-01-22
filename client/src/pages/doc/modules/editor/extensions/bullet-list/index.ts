@@ -30,6 +30,6 @@ export const BulletList = TBulletList.extend<BulletListOptions>({
           },
         },
       },
-    };
+    } satisfies NodeMarkdownStorage;
   },
 });

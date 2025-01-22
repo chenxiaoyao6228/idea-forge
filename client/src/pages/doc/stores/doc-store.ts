@@ -16,7 +16,7 @@ export interface DocTreeDataNode extends TreeDataNode {
     scrollY?: number;
   };
   permission?: "NONE" | "EDIT" | "READ";
-  ownerId: number;
+  ownerId?: number;
 }
 
 interface DocumentTreeState {
@@ -184,23 +184,17 @@ const store = create<DocumentTreeState>()(
           await documentApi.update(id, update);
 
           set((state) => {
+            const node = treeUtils.findNode(state.treeData, id);
+            if (!node) return state;
+
             const updates = {
+              ...node,
               ...update,
             };
 
-            // Update both treeData and currentDocument if this is the current document
             return {
-              treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
-                ...node,
-                ...updates,
-              })),
-              currentDocument:
-                state.currentDocId === id
-                  ? {
-                      ...state.currentDocument,
-                      ...updates,
-                    }
-                  : state.currentDocument,
+              treeData: treeUtils.updateTreeNodes(state.treeData, id, () => updates),
+              currentDocument: state.currentDocId === id ? updates : state.currentDocument,
             };
           });
         } catch (error) {
@@ -331,7 +325,11 @@ const store = create<DocumentTreeState>()(
           });
 
           set((state) => {
+            const node = treeUtils.findNode(state.treeData, id);
+            if (!node) return state;
+
             const coverUpdate = {
+              ...node,
               coverImage: {
                 id: response.id,
                 url: randomCover.url,
@@ -341,17 +339,8 @@ const store = create<DocumentTreeState>()(
             };
 
             return {
-              treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
-                ...node,
-                ...coverUpdate,
-              })),
-              currentDocument:
-                state.currentDocId === id
-                  ? {
-                      ...state.currentDocument,
-                      ...coverUpdate,
-                    }
-                  : state.currentDocument,
+              treeData: treeUtils.updateTreeNodes(state.treeData, id, () => coverUpdate),
+              currentDocument: state.currentDocId === id ? coverUpdate : state.currentDocument,
             };
           });
 
@@ -379,13 +368,7 @@ const store = create<DocumentTreeState>()(
                 ...node,
                 ...coverUpdate,
               })),
-              currentDocument:
-                state.currentDocId === id
-                  ? {
-                      ...state.currentDocument,
-                      ...coverUpdate,
-                    }
-                  : state.currentDocument,
+              currentDocument: state.currentDocId === id ? { ...state.currentDocument!, ...coverUpdate } : state.currentDocument,
             };
           });
 
@@ -405,13 +388,7 @@ const store = create<DocumentTreeState>()(
               ...node,
               coverImage: undefined,
             })),
-            currentDocument:
-              state.currentDocId === id
-                ? {
-                    ...state.currentDocument,
-                    coverImage: undefined,
-                  }
-                : state.currentDocument,
+            currentDocument: state.currentDocId === id ? { ...state.currentDocument!, coverImage: undefined } : state.currentDocument,
           }));
         } catch (error) {
           console.error("Failed to remove cover:", error);
@@ -429,7 +406,11 @@ const store = create<DocumentTreeState>()(
         try {
           const doc = await documentApi.getDocument(id);
           set((state) => ({
-            currentDocument: doc,
+            currentDocument: {
+              ...doc,
+              key: id,
+              coverImage: doc.coverImage ? { ...doc.coverImage } : undefined,
+            },
             treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
               ...node,
               ...doc,

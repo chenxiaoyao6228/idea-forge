@@ -42,6 +42,6 @@ export const OrderedList = TOrderedList.extend<OrderedListOptions>({
           },
         },
       },
-    };
+    } satisfies NodeMarkdownStorage;
   },
 });

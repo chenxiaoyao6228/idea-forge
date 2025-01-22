@@ -4,7 +4,6 @@ import type { Root } from "mdast";
 import type { MarkdownNode } from "../types";
 
 export class SerializerStack {
-  // @ts-expect-error
   private editor: Editor;
   private marks: ReadonlyArray<Mark>;
   private nodes: Array<MarkdownNode>;
