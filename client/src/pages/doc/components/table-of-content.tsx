@@ -13,34 +13,6 @@ export const TableOfContent = memo(() => {
   const items = useEditorStore((state) => state.tocItems);
   const editor = useEditorStore((state) => state.editor);
 
-  useEffect(() => {
-    if (!editor) return;
-
-    // Create Intersection Observer
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const id = entry.target.getAttribute("data-toc-id");
-            if (id) setActiveId(id);
-          }
-        });
-      },
-      {
-        rootMargin: "-100px 0px -66% 0px", // Adjust observation area
-        threshold: 0,
-      },
-    );
-
-    // Observe all heading elements
-    const headings = editor.view.dom.querySelectorAll("[data-toc-id]");
-    headings.forEach((heading) => observer.observe(heading));
-
-    return () => {
-      headings.forEach((heading) => observer.unobserve(heading));
-    };
-  }, [editor]);
-
   // Common function to handle navigation and scrolling
   const handleNavigation = (id: string, shouldUpdateHash = true) => {
     if (!editor) return;
@@ -80,6 +52,35 @@ export const TableOfContent = memo(() => {
     }
   });
 
+  // Must put this after useEditorMount, otherwise two scroll events will be conflicted
+  useEffect(() => {
+    if (!editor || items.length === 0) return;
+
+    // Create Intersection Observer
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute("data-toc-id");
+            if (id) setActiveId(id);
+          }
+        });
+      },
+      {
+        rootMargin: "-100px 0px -66% 0px", // Adjust observation area
+        threshold: 0,
+      },
+    );
+
+    // Observe all heading elements
+    const headings = editor.view.dom.querySelectorAll("[data-toc-id]");
+    headings.forEach((heading) => observer.observe(heading));
+
+    return () => {
+      headings.forEach((heading) => observer.unobserve(heading));
+    };
+  }, [editor, items]);
+
   // Click handler
   const onItemClick = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -105,7 +106,7 @@ export const TableOfContent = memo(() => {
                   "w-6 ml-0": item.level === 1,
                   "w-4 ml-1": item.level === 2,
                   "w-3 ml-2": item.level === 3,
-                  "w-2 ml-2": item.level > 3,
+                  "w-2 ml-3": item.level > 3,
                 },
                 // Active state style
                 item.id === activeId ? "bg-primary" : "bg-muted",
@@ -118,12 +119,12 @@ export const TableOfContent = memo(() => {
       {/* Content */}
       <div
         className={cn(
-          "absolute right-full top-0 mr-2 w-60 max-h-[90vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto",
+          "absolute right-full top-0 mr-2 w-60 max-h-[50vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto custom-scrollbar",
           "transition-all duration-200 ease-in-out",
           isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none",
         )}
       >
-        <div className="flex flex-col text-sm gap-1 mt-2">
+        <div className="flex flex-col text-sm gap-1">
           {items.map((item) => (
             <ToCItem onItemClick={onItemClick} key={item.id} item={item} />
           ))}
@@ -152,13 +153,13 @@ const ToCItem = ({ item, onItemClick }: { item: TableOfContentDataItem; onItemCl
         href={`#${item.id}`}
         onClick={(e) => onItemClick(e, item.id)}
         data-item-index={item.itemIndex}
-        className={cn("flex gap-1 no-underline", "before:content-[attr(data-item-index)'.']", {
+        className={cn("flex gap-1 no-underline line-clamp-2", {
           "text-primary": item.isActive && !item.isScrolledOver,
           "text-muted-foreground": item.isScrolledOver,
           "text-foreground": !item.isActive && !item.isScrolledOver,
         })}
       >
-        {item.textContent}
+        <span className="overflow-hidden text-ellipsis">{item.textContent}</span>
       </a>
     </div>
   );
