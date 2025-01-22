@@ -7,6 +7,7 @@ import Cover from "./cover";
 import TiptapEditor from "../editor";
 import useUserStore from "@/stores/user";
 import { getEnvVariable } from "@/lib/env";
+import { TableOfContent } from "../../components/table-of-content";
 
 export default function DocDetail() {
   const { docId } = useParams();
@@ -51,9 +52,10 @@ export default function DocDetail() {
     <div className="flex-auto overflow-y-auto">
       {/* TODO: use yjs-zustand to allow multiple user edit  title , cover and icon */}
       {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={isMyDoc} />}
-      <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10">
+      <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative">
         <Toolbar doc={currentDocument} editable={isMyDoc} />
         <TiptapEditor id={currentDocument.id} editable={hasEditPermission} collabToken={collabToken} collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")} />
+        <TableOfContent />
       </div>
     </div>
   );

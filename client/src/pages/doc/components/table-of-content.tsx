@@ -4,13 +4,13 @@ import type { TableOfContentDataItem } from "@tiptap-pro/extension-table-of-cont
 import { TextSelection } from "@tiptap/pm/state";
 import type React from "react";
 import { useEditorStore } from "../stores/editor-store";
+import scrollIntoView from "scroll-into-view-if-needed";
 
 export const TableOfContent = memo(() => {
   const [isHovered, setIsHovered] = useState(false);
   const [activeId, setActiveId] = useState<string>("");
   const items = useEditorStore((state) => state.tocItems);
   const editor = useEditorStore((state) => state.editor);
-  const firstLevelItems = items.filter((item) => item.level === 2);
 
   useEffect(() => {
     if (!editor) return;
@@ -50,29 +50,26 @@ export const TableOfContent = memo(() => {
     if (editor) {
       const element = editor.view.dom.querySelector(`[data-toc-id="${id}"`);
       if (element) {
+        // Set editor selection and focus
         const pos = editor.view.posAtDOM(element, 0);
-
-        // set focus
         const tr = editor.view.state.tr;
-
         tr.setSelection(new TextSelection(tr.doc.resolve(pos)));
-
         editor.view.dispatch(tr);
-
         editor.view.focus();
 
+        // Update URL hash
         if (history.pushState) {
           history.pushState(null, "", `#${id}`);
         }
 
-        const rect = element.getBoundingClientRect();
-        console.log("element position:", rect);
-        // FIXME: window.scrollTo is not working in this case
-        // window.scrollTo({
-        //   top: rect.top + window.scrollY,
-        //   behavior: 'smooth',
-        // });
-        element.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+        scrollIntoView(element, {
+          scrollMode: "if-needed",
+          block: "center",
+          inline: "nearest",
+          behavior: "smooth",
+        });
+
+        setActiveId(id);
       }
     }
   };
@@ -86,13 +83,13 @@ export const TableOfContent = memo(() => {
             <div
               key={item.id}
               className={cn(
-                "h-1 mb-1 transition-all duration-200",
-                // Set width based on level
+                "h-[2px] mb-2 transition-all duration-200",
+                // Set width and padding based on level
                 {
-                  "w-6": item.level === 1,
-                  "w-4": item.level === 2,
-                  "w-3": item.level === 3,
-                  "w-2": item.level > 3,
+                  "w-6 ml-0": item.level === 1,
+                  "w-4 ml-1": item.level === 2,
+                  "w-3 ml-2": item.level === 3,
+                  "w-2 ml-2": item.level > 3,
                 },
                 // Active state style
                 item.id === activeId ? "bg-primary" : "bg-muted",

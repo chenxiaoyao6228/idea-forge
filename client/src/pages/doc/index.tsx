@@ -68,7 +68,6 @@ export default function Doc() {
       <SidebarInset className={cn("h-full relative")}>
         <DocumentHeader />
         <DocDetail />
-        <TableOfContent />
       </SidebarInset>
     </SidebarProvider>
   );
