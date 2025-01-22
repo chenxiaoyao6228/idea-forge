@@ -1,10 +1,11 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { TableOfContentDataItem } from "@tiptap-pro/extension-table-of-contents";
 import { TextSelection } from "@tiptap/pm/state";
 import type React from "react";
 import { useEditorStore } from "../stores/editor-store";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { useEditorMount } from "../modules/editor/hooks/use-edtior-mount";
 
 export const TableOfContent = memo(() => {
   const [isHovered, setIsHovered] = useState(false);
@@ -40,39 +41,54 @@ export const TableOfContent = memo(() => {
     };
   }, [editor]);
 
+  // Common function to handle navigation and scrolling
+  const handleNavigation = (id: string, shouldUpdateHash = true) => {
+    if (!editor) return;
+
+    const element = editor.view.dom.querySelector(`[data-toc-id="${id}"]`);
+    if (!element) return;
+
+    // Set editor selection and focus
+    const pos = editor.view.posAtDOM(element, 0);
+    const tr = editor.view.state.tr;
+    tr.setSelection(new TextSelection(tr.doc.resolve(pos)));
+    editor.view.dispatch(tr);
+    editor.view.focus();
+
+    // Update URL hash if needed
+    if (shouldUpdateHash && history.pushState) {
+      history.pushState(null, "", `#${id}`);
+    }
+
+    // Smooth scroll to the target element
+    scrollIntoView(element, {
+      scrollMode: "if-needed",
+      block: "center",
+      inline: "nearest",
+      behavior: "smooth",
+    });
+
+    // Update active state
+    setActiveId(id);
+  };
+
+  // Handle initial navigation on editor mount
+  useEditorMount((editor) => {
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      handleNavigation(hash, false); // Don't update hash on initial load
+    }
+  });
+
+  // Click handler
+  const onItemClick = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    handleNavigation(id);
+  };
+
   if (!editor || items.length === 0) {
     return null;
   }
-
-  const onItemClick = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-
-    if (editor) {
-      const element = editor.view.dom.querySelector(`[data-toc-id="${id}"`);
-      if (element) {
-        // Set editor selection and focus
-        const pos = editor.view.posAtDOM(element, 0);
-        const tr = editor.view.state.tr;
-        tr.setSelection(new TextSelection(tr.doc.resolve(pos)));
-        editor.view.dispatch(tr);
-        editor.view.focus();
-
-        // Update URL hash
-        if (history.pushState) {
-          history.pushState(null, "", `#${id}`);
-        }
-
-        scrollIntoView(element, {
-          scrollMode: "if-needed",
-          block: "center",
-          inline: "nearest",
-          behavior: "smooth",
-        });
-
-        setActiveId(id);
-      }
-    }
-  };
 
   return (
     <div className="fixed top-[40%] right-2 cursor-pointer" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
