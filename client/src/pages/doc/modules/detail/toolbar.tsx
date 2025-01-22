@@ -1,47 +1,69 @@
-import React, { ElementRef, useRef, useState } from "react";
+import React, { ElementRef, useRef, useState, useMemo, useEffect } from "react";
 import { DocTreeDataNode, useDocumentStore } from "../../stores/doc-store";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Smile, X } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
 import { IconPicker } from "./icon-picker";
 import { Emoji } from "emoji-picker-react";
-import { useCoverImageStore } from "./cover/coverImageStore";
 import { DOCUMENT_TITLE_ID } from "../editor/constant";
+import debounce from "lodash.debounce";
 
 interface ToolbarProps {
   doc: DocTreeDataNode;
   editable: boolean;
 }
 
-interface IconSectionProps {
+export const Toolbar = ({ doc, editable }: ToolbarProps) => {
+  const updateDocument = useDocumentStore.use.updateDocument();
+  const generateDefaultCover = useDocumentStore.use.generateDefaultCover();
+
+  const onIconSelect = (icon: string) => {
+    updateDocument(doc.id, { icon });
+  };
+
+  const onRemoveIcon = () => {
+    updateDocument(doc.id, { icon: "" });
+  };
+
+  const onUpdateTitle = (title: string) => {
+    updateDocument(doc.id, { title });
+  };
+
+  return (
+    <div className="group relative mx-10">
+      <IconSelector doc={doc} editable={editable} onIconSelect={onIconSelect} onRemoveIcon={onRemoveIcon} />
+
+      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-x-1 py-2">
+        {!doc.icon && editable && (
+          <IconPicker asChild onChange={onIconSelect}>
+            <Button className="text-muted-foreground text-xs" variant="outline" size="sm">
+              <Smile className="h-4 w-4 mr-2" /> Add icon
+            </Button>
+          </IconPicker>
+        )}
+
+        {doc.id && !doc?.coverImage && (
+          <Button onClick={() => generateDefaultCover(doc.id)} className="text-muted-foreground text-xs" variant="outline" size="sm">
+            <ImageIcon className="h-4 w-4 mr-2" /> Add cover
+          </Button>
+        )}
+      </div>
+
+      <TitleInput doc={doc} editable={editable} onUpdateTitle={onUpdateTitle} />
+    </div>
+  );
+};
+
+// Icon Selector
+
+interface IconSelectorProps {
   doc: DocTreeDataNode;
   editable: boolean;
   onIconSelect: (icon: string) => void;
   onRemoveIcon: () => void;
 }
 
-const useDocumentTitle = (doc: DocTreeDataNode) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState(doc?.title || "");
-  const updateDocument = useDocumentStore.use.updateDocument();
-
-  const onInput = (value: string) => {
-    setValue(value);
-    updateDocument(doc.id, {
-      title: value || "Untitled",
-    });
-  };
-
-  return {
-    isEditing,
-    setIsEditing,
-    value,
-    setValue,
-    onInput,
-  };
-};
-
-const IconSection = ({ doc, editable, onIconSelect, onRemoveIcon }: IconSectionProps) => {
+const IconSelector = ({ doc, editable, onIconSelect, onRemoveIcon }: IconSelectorProps) => {
   if (!doc.icon) return null;
 
   const coverImage = doc.coverImage;
@@ -73,16 +95,38 @@ const IconSection = ({ doc, editable, onIconSelect, onRemoveIcon }: IconSectionP
   );
 };
 
-const STYLES = {
-  title: "text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF]",
-} as const;
+// Title Input
 
-export const Toolbar = ({ doc, editable }: ToolbarProps) => {
+interface TitleInputProps {
+  doc: DocTreeDataNode;
+  editable: boolean;
+  onUpdateTitle: (title: string) => void;
+}
+
+function TitleInput({ doc, editable, onUpdateTitle }: TitleInputProps) {
   const inputRef = useRef<ElementRef<"textarea">>(null);
-  const { isEditing, setIsEditing, value, setValue, onInput } = useDocumentTitle(doc);
-  const updateDocument = useDocumentStore.use.updateDocument();
-  const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
-  const generateDefaultCover = useDocumentStore.use.generateDefaultCover();
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState(doc?.title || "");
+
+  const debouncedUpdate = useMemo(
+    () =>
+      debounce((id: string, title: string) => {
+        onUpdateTitle(title);
+      }, 500),
+    [onUpdateTitle],
+  );
+
+  const onInput = (value: string) => {
+    setValue(value);
+    debouncedUpdate(doc.id, value);
+  };
+
+  useEffect(() => {
+    return () => {
+      debouncedUpdate.cancel();
+    };
+  }, [debouncedUpdate]);
+
   const enableInput = () => {
     if (!editable) return;
 
@@ -102,49 +146,23 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
     }
   };
 
-  const onIconSelect = (icon: string) => {
-    updateDocument(doc.id, { icon });
-  };
-
-  const onRemoveIcon = () => {
-    updateDocument(doc.id, { icon: "" });
-  };
+  if (isEditing && editable) {
+    return (
+      <TextareaAutosize
+        ref={inputRef}
+        onBlur={disableInput}
+        onKeyDown={onKeyDown}
+        value={value}
+        onChange={(e) => onInput(e.target.value)}
+        className={`text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF] bg-transparent resize-none`}
+        id={DOCUMENT_TITLE_ID}
+      />
+    );
+  }
 
   return (
-    <div className="group relative mx-10">
-      <IconSection doc={doc} editable={editable} onIconSelect={onIconSelect} onRemoveIcon={onRemoveIcon} />
-
-      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-x-1 py-2">
-        {!doc.icon && editable && (
-          <IconPicker asChild onChange={onIconSelect}>
-            <Button className="text-muted-foreground text-xs" variant="outline" size="sm">
-              <Smile className="h-4 w-4 mr-2" /> Add icon
-            </Button>
-          </IconPicker>
-        )}
-
-        {doc.id && !doc?.coverImage && (
-          <Button onClick={() => generateDefaultCover(doc.id)} className="text-muted-foreground text-xs" variant="outline" size="sm">
-            <ImageIcon className="h-4 w-4 mr-2" /> Add cover
-          </Button>
-        )}
-      </div>
-
-      {isEditing && editable ? (
-        <TextareaAutosize
-          ref={inputRef}
-          onBlur={disableInput}
-          onKeyDown={onKeyDown}
-          value={value}
-          onChange={(e) => onInput(e.target.value)}
-          className={`${STYLES.title} bg-transparent resize-none`}
-          id={DOCUMENT_TITLE_ID}
-        />
-      ) : (
-        <div onClick={enableInput} className={`${STYLES.title} pb-[11.5px]`} id={DOCUMENT_TITLE_ID}>
-          {doc.title}
-        </div>
-      )}
+    <div onClick={enableInput} className={`text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF] pb-[11.5px]`} id={DOCUMENT_TITLE_ID}>
+      {doc.title}
     </div>
   );
-};
+}
