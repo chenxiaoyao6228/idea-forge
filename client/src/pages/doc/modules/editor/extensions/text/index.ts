@@ -23,6 +23,6 @@ export const Text = TText.extend({
           },
         },
       },
-    };
+    } satisfies NodeMarkdownStorage;
   },
 });

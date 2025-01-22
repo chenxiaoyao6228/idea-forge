@@ -24,6 +24,6 @@ export const HardBreak = THardBreak.extend<HardBreakOptions>({
           },
         },
       },
-    };
+    } satisfies NodeMarkdownStorage;
   },
 });

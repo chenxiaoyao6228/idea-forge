@@ -1,6 +1,6 @@
 import { TextSelection } from "@tiptap/pm/state";
-import { BubbleMenu, Editor } from "@tiptap/react";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { BubbleMenu } from "@tiptap/react";
+import { useState, useEffect, useMemo } from "react";
 import { LinkEditBlock } from "./link-edit-block";
 import { LinkViewBlock } from "./link-view-block";
 import type { MenuProps } from "../type";
@@ -68,7 +68,9 @@ export default function LinkMenu({ editor, containerRef }: MenuProps) {
     }
 
     editor.on("transaction", handleUpdate);
-    return () => editor.off("transaction", handleUpdate);
+    return () => {
+      editor.off("transaction", handleUpdate);
+    };
   }, [editor, href]);
 
   if (!editor) return null;

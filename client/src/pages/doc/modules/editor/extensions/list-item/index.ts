@@ -26,6 +26,6 @@ export const ListItem = TListItem.extend<ListItemOptions>({
           },
         },
       },
-    };
+    } satisfies NodeMarkdownStorage;
   },
 });

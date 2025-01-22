@@ -10,6 +10,7 @@ import { findPlaceholder, createPlaceholderPlugin } from "./plugins/create-place
 import { v4 as uuidv4 } from "uuid";
 import { getImageDimensionsFromFile } from "@/lib/image";
 import { calculateInitialSize } from "./util";
+import { NodeMarkdownStorage } from "../markdown";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -138,7 +139,7 @@ const ImageBlock = TImage.extend({
         },
       },
       placeholderPlugin: null,
-    };
+    } satisfies NodeMarkdownStorage;
   },
 
   addCommands() {

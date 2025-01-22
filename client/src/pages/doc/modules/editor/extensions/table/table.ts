@@ -1,4 +1,5 @@
 import { Table as TiptapTable, TableOptions as TiptapTableOptions } from "@tiptap/extension-table";
+import { MarkdownStorage } from "../markdown";
 
 export const Table = TiptapTable.extend({
   name: "table",
@@ -31,6 +32,6 @@ export const Table = TiptapTable.extend({
           },
         },
       },
-    };
+    } satisfies MarkdownStorage;
   },
 });

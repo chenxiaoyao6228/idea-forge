@@ -36,6 +36,6 @@ export const TaskItem = TTaskItem.extend<TaskItemOptions>({
           },
         },
       },
-    };
+    } satisfies NodeMarkdownStorage;
   },
 });

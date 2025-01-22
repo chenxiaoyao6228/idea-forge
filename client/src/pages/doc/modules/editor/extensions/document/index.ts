@@ -22,7 +22,7 @@ export const Document = TiptapDocument.extend({
           },
         },
       },
-    };
+    } satisfies NodeMarkdownStorage;
   },
 });
 
