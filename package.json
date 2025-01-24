@@ -14,7 +14,6 @@
   "main": "index.js",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "prepare": "npx lefthook install",
     "dev": "turbo run dev",
     "dev:api": "cd api && npm run dev",
     "dev:client": "cd client && npm dev",
@@ -51,7 +50,7 @@
   },
   "packageManager": "pnpm@8.15.4",
   "engines": {
-    "node": ">=20",
+    "node": ">=18",
     "pnpm": ">=8.15.4",
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
