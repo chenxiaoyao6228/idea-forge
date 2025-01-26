@@ -1,5 +1,6 @@
 services:
   api:
+    image: ${DOCKER_HUB_USERNAME}/ideaforge-prod-docker:latest
     build:
       context: .
       dockerfile: Dockerfile.prod

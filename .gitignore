@@ -26,12 +26,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Editor directories and files
 .vscode/settings.json
@@ -70,11 +64,12 @@ api/view
 # upload
 api/uploads
 
-## env
-.env
-.env.local
-.env.test
-.env.production
 
 ## npmrc
 .npmrc
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
+!.env.example
