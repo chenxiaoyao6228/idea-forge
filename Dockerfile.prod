@@ -13,8 +13,6 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-## TODO:  create .npmrc and other files
-
 # Copy syntax: COPY xx from xx to xx
 # Copy all files
 COPY . .
@@ -62,10 +60,5 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 EXPOSE 5000 5001
 
-# 创建并配置 entrypoint 脚本
-COPY scripts/docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["docker-entrypoint.sh"]
 
 CMD  pnpm start:prod
