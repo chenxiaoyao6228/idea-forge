@@ -1,0 +1,103 @@
+on:
+  push:
+    branches:
+      - feature/test-deploy-github-action
+
+jobs:
+  Deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create config files
+        run: |
+          echo "${{ secrets.NPMRC }}" > .npmrc
+        env:
+          DOTENV_KEY_PRODUCTION: ${{ secrets.DOTENV_KEY_PRODUCTION }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f Dockerfile.prod \
+            -t ideaforge-prod-docker:latest \
+            --build-arg NODE_ENV=production \
+            .
+
+      # mark and push to Docker Hub
+      - name: Tag and push to Docker Hub
+        run: |
+          docker tag ideaforge-prod-docker:latest ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-prod-docker:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-prod-docker:latest
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{secrets.TENCENT_CLOUD_PRIVATE_KEY_PRODUCTION}}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan "${{secrets.TENCENT_CLOUD_IP_PRODUCTION}}" >> ~/.ssh/known_hosts
+
+
+      - name: Deploy to server
+        run: |
+          # Create remote deployment directory
+          ssh root@${{secrets.TENCENT_CLOUD_IP_PRODUCTION}} 'mkdir -p /root/app'
+          
+          # Copy necessary files to server
+          scp .env root@${{secrets.TENCENT_CLOUD_IP_PRODUCTION}}:/root/app/
+          scp docker-compose.prod.yml root@${{secrets.TENCENT_CLOUD_IP_PRODUCTION}}:/root/app/
+          
+          # Execute deployment on server
+          ssh root@${{secrets.TENCENT_CLOUD_IP_PRODUCTION}} '
+            cd /root/app
+            
+            # Login to Docker Hub
+            docker login -u ${{secrets.DOCKER_HUB_USERNAME}} -p ${{secrets.DOCKER_HUB_PASSWORD}}
+            
+            # Stop and remove old containers
+            echo "Stopping and removing old containers..."
+            docker-compose -f docker-compose.prod.yml down
+            
+            # Pull latest images
+            echo "Pulling latest images..."
+            docker-compose -f docker-compose.prod.yml pull
+            
+            # Wait for database to be ready
+            echo "Waiting for database to be ready..."
+            until docker-compose -f docker-compose.prod.yml exec -T postgres pg_isready -U postgres; do
+                echo "Postgres is unavailable - sleeping"
+                sleep 1
+            done
+            
+            # Run database migrations
+            echo "Running database migrations..."
+            docker-compose -f docker-compose.prod.yml run --rm api sh -c "cd api && pnpm run prisma:deploy"
+            
+            # Start services
+            echo "Starting services..."
+            docker-compose -f docker-compose.prod.yml up -d
+            
+            # Wait for services to start
+            echo "Waiting for services to start..."
+            sleep 10
+            
+            # Check service status
+            echo "Checking service status..."
+            docker-compose -f docker-compose.prod.yml ps
+            
+            # Show logs
+            echo "Showing logs..."
+            docker-compose -f docker-compose.prod.yml logs -f api
+          '
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf ~/.ssh/
