@@ -1,0 +1,89 @@
+on:
+  push:
+    branches:
+      # remove after testing
+      - feature/test-deploy-github-action
+      - test
+      - staging
+      - main
+
+jobs:
+  Deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment
+        run: |
+          if [[ $GITHUB_REF == 'refs/heads/main' ]]; then
+            echo "ENV=PRODUCTION" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == 'refs/heads/staging' ]]; then
+            echo "ENV=STAGING" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == 'refs/heads/test' ]]; then
+            echo "ENV=TEST" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == 'refs/heads/feature/test-deploy-github-action' ]]; then
+            echo "ENV=PRODUCTION" >> $GITHUB_ENV
+          else
+            echo "ENV=TEST" >> $GITHUB_ENV
+          fi
+
+      - name: Create config files
+        run: |
+          echo "${{ secrets.NPMRC }}" > .npmrc
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Generate image tag
+        id: tag
+        run: |
+          # Get short commit hash (first 8 characters)
+          COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+
+          # Get current timestamp (format: YYYYMMDD-HHMMSS)
+          TIMESTAMP=$(date '+%Y%m%d-%H%M%S')
+
+          # If triggered by tag, use tag name
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            TAG=${GITHUB_REF#refs/tags/}
+            IMAGE_TAG="${TAG}-${TIMESTAMP}"
+          else
+            IMAGE_TAG="${COMMIT_HASH}-${TIMESTAMP}"
+          fi
+          
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f api/Dockerfile.prod \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-docker:${{ env.IMAGE_TAG }} \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-docker:latest \
+            --build-arg NODE_ENV=production \
+            .
+
+      - name: Push to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-docker:${{ env.IMAGE_TAG }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-docker:latest
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          username: ubuntu
+          host: ${{ secrets[format('VM_IP_{0}', env.ENV)] }}
+          password: ${{ secrets[format('VM_PASSWORD_{0}', env.ENV)] }}
+          script: |
+            cd ~/deploy-scripts/idea-forge && \
+            sh deploy.sh ${{ env.ENV }} ${{ env.IMAGE_TAG }}
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf ~/.ssh/
