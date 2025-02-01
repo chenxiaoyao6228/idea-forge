@@ -1,3 +1,10 @@
+// !! IMPORTANT !! Must be at the top of the file, otherwise the environment variables will not be loaded
+import * as dotenv from "dotenv";
+dotenv.config();
+console.log("============process.env start===============");
+console.log(process.env);
+console.log("============process.env end===============");
+
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import type { NestExpressApplication } from "@nestjs/platform-express";

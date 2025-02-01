@@ -44,8 +44,11 @@ fi
 echo "🐳 Starting IdeaForge Docker containers..."
 DOCKER_CONTAINER_NAME="ideaforge"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
 # Use -f flag to ensure correct docker-compose file is used
-docker compose -p $DOCKER_CONTAINER_NAME up -d || {
+docker compose -f "${PROJECT_ROOT}/docker-compose.dev.yml" -p $DOCKER_CONTAINER_NAME up -d || {
     echo "❌ Failed to start Docker containers"
     echo "💡 Please check Docker status and try again"
     exit 1

@@ -32,6 +32,7 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
+
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/pnpm-workspace.yaml ./
@@ -41,18 +42,20 @@ COPY --from=builder /app/shared/package.json ./shared/
 COPY --from=builder /app/shared/dist ./shared/dist
 
 # api
-COPY --from=builder /app/api/.env ./api/.env
 COPY --from=builder /app/api/dist ./api/dist
 COPY --from=builder /app/api/package.json ./api/package.json
 COPY --from=builder /app/api/public ./api/public
 COPY --from=builder /app/api/prisma ./api/prisma
+
+# env file
+COPY --from=builder /app/api/.env.vault ./api/.env.vault
+RUN cat ./api/.env.vault
 
 # client build
 COPY --from=builder /app/api/view ./api/view 
 
 RUN pnpm install --prod --frozen-lockfile
 
-# 确保生成 Prisma Client
 RUN cd api && pnpm prisma generate
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
@@ -61,4 +64,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 EXPOSE 5000 5001
 
 
-CMD  pnpm start:prod
+CMD cd api && pnpm start:prod
