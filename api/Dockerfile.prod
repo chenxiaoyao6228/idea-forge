@@ -46,8 +46,7 @@ COPY --from=builder /app/api/dist ./api/dist
 COPY --from=builder /app/api/package.json ./api/package.json
 COPY --from=builder /app/api/public ./api/public
 COPY --from=builder /app/api/prisma ./api/prisma
-
-# env file
+COPY --from=builder /app/api/ecosystem.config.js ./api/ecosystem.config.js
 COPY --from=builder /app/api/.env.vault ./api/.env.vault
 RUN cat ./api/.env.vault
 
@@ -55,6 +54,8 @@ RUN cat ./api/.env.vault
 COPY --from=builder /app/api/view ./api/view 
 
 RUN pnpm install --prod --frozen-lockfile
+
+RUN npm install pm2 -g
 
 RUN cd api && pnpm prisma generate
 
@@ -64,4 +65,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 EXPOSE 5000 5001
 
 
-CMD cd api && pnpm start:prod
+CMD cd api && pm2-runtime start ecosystem.config.js --env production
