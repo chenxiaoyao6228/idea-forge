@@ -114,7 +114,7 @@ export class FallbackMiddleware implements NestMiddleware {
 
         const preloadHtml = this.generatePreloadTags(manifest, entryPoint, publicPath);
         const cssHtml = this.generateCssTags(entryPoint);
-        const jsHtml = `<script type="module" src="${entryPoint.file}"></script>`;
+        const jsHtml = `<script type="module" src="/${entryPoint.file}"></script>`;
 
         return {
           preload: preloadHtml,
@@ -289,6 +289,6 @@ export class FallbackMiddleware implements NestMiddleware {
   }
 
   private generateCssTags(entryPoint: any): string {
-    return entryPoint.css.map((css: string) => `<link rel="stylesheet" href="${css}">`).join("\n");
+    return entryPoint.css.map((css: string) => `<link rel="stylesheet" href="/${css}">`).join("\n");
   }
 }
