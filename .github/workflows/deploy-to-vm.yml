@@ -5,7 +5,7 @@ on:
       - feature/test-deploy-github-action
       - test
       - staging
-      - main
+      - master
 
 jobs:
   Deploy:
@@ -18,7 +18,7 @@ jobs:
 
       - name: Set environment
         run: |
-          if [[ $GITHUB_REF == 'refs/heads/main' ]]; then
+          if [[ $GITHUB_REF == 'refs/heads/master' ]]; then
             echo "ENV=PRODUCTION" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/staging' ]]; then
             echo "ENV=STAGING" >> $GITHUB_ENV
@@ -56,7 +56,7 @@ jobs:
           else
             IMAGE_TAG="${COMMIT_HASH}-${TIMESTAMP}"
           fi
-          
+
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
 

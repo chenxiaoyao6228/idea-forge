@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useUserStore, { UserInfo } from "@/stores/user";
+import Loading from "@/components/loading";
 
 /**
  * Get userInfo from local window object and destroy local storage
@@ -35,7 +36,7 @@ export default function WithAuth(WrappedComponent: React.ComponentType<any>) {
 
     // Loading state
     if (!userInfo?.id && window.location.pathname !== "/auth-callback") {
-      return <div>Loading...</div>;
+      return <Loading />;
     }
 
     // Render original component

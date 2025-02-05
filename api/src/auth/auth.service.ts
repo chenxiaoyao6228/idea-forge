@@ -287,104 +287,117 @@ export class AuthService {
   async handleOAuthLogin(profile: CreateOAuthUserDto): Promise<AuthResponse> {
     const { providerName, providerId, email: originalEmail, displayName, imageUrl } = profile;
 
-    const email = originalEmail.toLowerCase();
+    try {
+      const email = originalEmail.toLowerCase();
 
-    if (!providerName || !providerId) {
-      return {
-        type: "ERROR",
-        data: {
-          error: {
-            code: "INVALID_PROVIDER",
-            message: "Invalid OAuth provider",
+      if (!providerName || !providerId) {
+        return {
+          type: "ERROR",
+          data: {
+            error: {
+              code: "INVALID_PROVIDER",
+              message: "Invalid OAuth provider",
+            },
+          },
+        };
+      }
+
+      // 1. check if the user has already connected with the provider
+      const connection = await this.prisma.connection.findUnique({
+        where: {
+          providerName_providerId: {
+            providerName,
+            providerId,
           },
         },
-      };
-    }
+        include: { user: true },
+      });
 
-    // 1. 查找现有连接
-    const connection = await this.prisma.connection.findUnique({
-      where: {
-        providerName_providerId: {
-          providerName,
-          providerId,
+      if (connection) {
+        const { accessToken, refreshToken } = await this.generateJWTToken(connection.user.id);
+        const collabToken = await this.collaborationService.generateCollabToken(connection.user.id);
+        return {
+          type: "EXISTING_USER",
+          data: {
+            user: {
+              id: connection.user.id,
+              email: connection.user.email,
+              collabToken,
+            },
+            accessToken,
+            refreshToken,
+          },
+        };
+      }
+
+      // 2. check if the email has already been used
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        return {
+          type: "EMAIL_CONFLICT",
+          data: {
+            user: {
+              id: existingUser.id,
+              email: existingUser.email,
+              displayName: existingUser.displayName ?? undefined,
+              imageUrl: existingUser.imageUrl ?? undefined,
+            },
+            error: {
+              code: "EMAIL_CONFLICT",
+              message: "Email already exists",
+            },
+          },
+        };
+      }
+
+      // 3. new user, create new user and connection
+      const newUser = await this.prisma.user.create({
+        data: {
+          email: email.toLowerCase(),
+          displayName,
+          imageUrl,
+          status: UserStatus.ACTIVE,
+          connections: {
+            create: {
+              providerName,
+              providerId,
+            },
+          },
         },
-      },
-      include: { user: true },
-    });
+      });
 
-    if (connection) {
-      const { accessToken, refreshToken } = await this.generateJWTToken(connection.user.id);
-      const collabToken = await this.collaborationService.generateCollabToken(connection.user.id);
+      await this.documentService.createDefault(newUser.id);
+
+      const { accessToken, refreshToken } = await this.generateJWTToken(newUser.id);
+      const collabToken = await this.collaborationService.generateCollabToken(newUser.id);
+
       return {
-        type: "EXISTING_USER",
+        type: "NEW_USER",
         data: {
           user: {
-            id: connection.user.id,
-            email: connection.user.email,
+            id: newUser.id,
+            email,
+            displayName,
             collabToken,
           },
           accessToken,
           refreshToken,
         },
       };
-    }
-
-    // 2. 查找邮箱对应的用户
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
+    } catch (error) {
+      console.error("====handleOAuthLogin==== error", error);
       return {
-        type: "EMAIL_CONFLICT",
+        type: "ERROR",
         data: {
-          user: {
-            id: existingUser.id,
-            email: existingUser.email,
-            displayName: existingUser.displayName ?? undefined,
-            imageUrl: existingUser.imageUrl ?? undefined,
-          },
           error: {
-            code: "EMAIL_CONFLICT",
-            message: "Email already exists",
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Internal server error",
           },
         },
       };
     }
-
-    // 3. 新用户, 创建新用户和连接
-    const newUser = await this.prisma.user.create({
-      data: {
-        email: email.toLowerCase(),
-        displayName,
-        imageUrl,
-        status: UserStatus.ACTIVE,
-        connections: {
-          create: {
-            providerName,
-            providerId,
-          },
-        },
-      },
-    });
-
-    await this.documentService.createDefault(newUser.id);
-
-    const { accessToken, refreshToken } = await this.generateJWTToken(newUser.id);
-    const collabToken = await this.collaborationService.generateCollabToken(newUser.id);
-
-    return {
-      type: "NEW_USER",
-      data: {
-        user: {
-          id: newUser.id,
-          email,
-          displayName,
-          collabToken,
-        },
-        accessToken,
-        refreshToken,
-      },
-    };
   }
 }

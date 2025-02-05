@@ -7,7 +7,7 @@ import { ConfigService, ConfigType } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { AuthService } from "@/auth/auth.service";
 import { UserService } from "@/user/user.service";
-import { setAuthCookies } from "@/_shared/utils/cookie";
+import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
 import { ClientEnv } from "@/_shared/config/config-validation";
 import { UserResponseData } from "shared";
 import { CollaborationService } from "@/collaboration/collaboration.service";
@@ -56,6 +56,13 @@ export class FallbackMiddleware implements NestMiddleware {
     );
   }
 
+  private redirectToLogin(req: Request, res: Response) {
+    const currentPath = req.url;
+    const redirectTo = encodeURIComponent(currentPath);
+    clearAuthCookies(res);
+    return res.redirect(`/login?redirectTo=${redirectTo}`);
+  }
+
   private async renderApp(req: Request, res: Response) {
     console.log("====renderApp==== ");
     const isDev = this.configService.get("NODE_ENV") === "development";
@@ -64,13 +71,14 @@ export class FallbackMiddleware implements NestMiddleware {
     // Only get user info if not on skipAuthPaths
     const needAuth = !FallbackMiddleware.SKIP_AUTH_PATHS.some((path) => req.url.includes(path));
 
+    console.log("====renderApp==== needAuth", needAuth);
+
     const { accessToken, refreshToken } = req.cookies;
 
     if (needAuth && !accessToken && !refreshToken) {
+      console.log("====renderApp==== needAuth && !accessToken && !refreshToken");
       // No tokens, redirect to login page with current path
-      const currentPath = req.url;
-      const redirectTo = encodeURIComponent(currentPath);
-      return res.redirect(`/login?redirectTo=${redirectTo}`);
+      return this.redirectToLogin(req, res);
     }
 
     const userInfo = needAuth ? await this.getUserInfo(req, res) : null;
@@ -192,6 +200,7 @@ export class FallbackMiddleware implements NestMiddleware {
     const { accessToken, refreshToken } = req.cookies;
 
     if (!accessToken || !refreshToken) {
+      this.redirectToLogin(req, res);
       return null;
     }
 
@@ -200,8 +209,14 @@ export class FallbackMiddleware implements NestMiddleware {
       const payload = this.jwtService.verify(accessToken, {
         secret: jwtConfig.secret,
       });
+
       const user = await this.userService.getUserById(payload.sub);
-      if (!user) return null;
+
+      if (!user) {
+        this.redirectToLogin(req, res);
+        return null;
+      }
+
       return {
         id: user.id,
         email: user.email,
@@ -209,6 +224,7 @@ export class FallbackMiddleware implements NestMiddleware {
         imageUrl: user.imageUrl || "",
       };
     } catch (error) {
+      console.log("====getUserInfo==== error", error);
       if ((error as any).name === "TokenExpiredError" && refreshToken) {
         try {
           const jwtConfig = this.configService.get("jwt");
@@ -232,7 +248,12 @@ export class FallbackMiddleware implements NestMiddleware {
           }
         } catch (refreshError) {
           console.log("Failed to refresh token:", refreshError);
+          this.redirectToLogin(req, res);
         }
+      }
+
+      if ((error as any).message.includes("invalid signature")) {
+        this.redirectToLogin(req, res);
       }
     }
     return null;

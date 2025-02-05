@@ -7,8 +7,6 @@ import createSelectors from "@/stores/utils/createSelector";
 import { treeUtils } from "../util";
 import { PRESET_CATEGORIES } from "../modules/detail/constants";
 
-const LAST_DOC_ID_KEY = "last-doc-id";
-
 export interface DocTreeDataNode extends TreeDataNode {
   content?: string;
   coverImage?: {
@@ -53,7 +51,7 @@ const store = create<DocumentTreeState>()(
       expandedKeys: [],
       treeData: [],
       loading: false,
-      lastDocId: localStorage.getItem(LAST_DOC_ID_KEY),
+      lastDocId: null,
       currentDocId: null,
       currentDocument: null,
       currentDocLoadingError: null,
@@ -307,7 +305,6 @@ const store = create<DocumentTreeState>()(
       },
 
       setLastDocId: (id) => {
-        localStorage.setItem(LAST_DOC_ID_KEY, id);
         set({ lastDocId: id });
       },
 

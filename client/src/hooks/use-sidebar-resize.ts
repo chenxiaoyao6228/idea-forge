@@ -28,7 +28,6 @@ function formatWidth(value: number, unit: "rem" | "px"): string {
 }
 
 const SIDEBAR_WIDTH_COOKIE_NAME = "sidebar:width";
-const SIDEBAR_WIDTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
 export function useSidebarResize({
   enableDrag = true,
@@ -50,7 +49,7 @@ export function useSidebarResize({
   const autoCollapseThreshold = React.useRef(toPx(minResizeWidth) * 0.55); // 55% of min width
 
   const persistWidth = React.useCallback((width: string) => {
-    document.cookie = `${SIDEBAR_WIDTH_COOKIE_NAME}=${width}; path=/; max-age=${SIDEBAR_WIDTH_COOKIE_MAX_AGE}`;
+    localStorage.setItem(SIDEBAR_WIDTH_COOKIE_NAME, width);
   }, []);
 
   const handleMouseDown = React.useCallback(
