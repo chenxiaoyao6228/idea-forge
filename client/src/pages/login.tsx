@@ -1,9 +1,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useUserStore, { UserInfo } from "@/stores/user";
 import request from "@/lib/request";
 import { LoginSchema, type LoginData } from "shared";
@@ -17,8 +17,9 @@ import { authApi } from "@/apis/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userInfo, setUserInfo } = useUserStore();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(location.state?.error || null);
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
   const [isPending, setIsPending] = useState(false);
@@ -31,10 +32,16 @@ export default function LoginPage() {
     resolver: zodResolver(LoginSchema),
     defaultValues: {
       remember: true,
-      email: "",
+      email: location.state?.email || "",
       password: "",
     },
   });
+
+  useEffect(() => {
+    if (location.state?.error || location.state?.email) {
+      navigate(location.pathname + location.search);
+    }
+  }, [location, navigate]);
 
   const onSubmit = async (data: LoginData) => {
     setIsPending(true);

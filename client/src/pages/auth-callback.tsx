@@ -25,6 +25,7 @@ export default function AuthCallbackPage() {
         navigate("/login", {
           state: {
             error: "An account with this email already exists. Please login first.",
+            email: data.user?.email,
           },
         });
         break;
@@ -34,6 +35,7 @@ export default function AuthCallbackPage() {
         navigate("/login", {
           state: {
             error: searchParams.get("message") ?? "Authentication failed",
+            email: data.user?.email,
           },
         });
       }

@@ -44,10 +44,10 @@ export class AuthService {
 
       await this.userService.updateUserStatus(data.email, UserStatus.SUSPENDED);
     } else {
-      // 创建新用户并设置状态为 'pending'
+      // Create new user and set status to 'pending'
       user = await this.userService.createUser({
         ...data,
-        status: UserStatus.SUSPENDED, // 设置用户状态为待验证
+        status: UserStatus.SUSPENDED, // Set user status to pending
       });
     }
 
@@ -158,7 +158,7 @@ export class AuthService {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
     }
 
-    // 标记邮箱已验证(10分钟有效)
+    // Mark email as verified (10 minutes valid)
     const verifiedKey = `email:verified:${email}`;
     await this.redis.setex(verifiedKey, 600, "1");
 
@@ -182,7 +182,7 @@ export class AuthService {
         },
       });
 
-      // 三方登录后没有设置账号
+      // After OAuth login, the account is not set
       if (connection) {
         throw new ApiException(ErrorCodeEnum.PasswordNotSet);
       }

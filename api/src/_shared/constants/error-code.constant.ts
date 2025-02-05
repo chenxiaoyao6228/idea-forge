@@ -14,8 +14,8 @@ export enum ErrorCodeEnum {
   UsernameAlreadyExists = 1004,
   InvalidProvider = 1005,
   PasswordNotSet = 1006,
-  AccountError = 1007, //账号异常
-  SendEmailError = 1008, // 发送邮件失败
+  AccountError = 1007, // Account error
+  SendEmailError = 1008, // Send email error
 
   AITokenLimitExceeded = 1100,
 }
