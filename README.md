@@ -6,6 +6,8 @@ Idea Forge is a powerful document collaboration tool that combines the functiona
 
 1. Install Docker Desktop for your operating system from the [official Docker website](https://www.docker.com/products/docker-desktop/)
 
+> 由于 docker 被墙,国内用户请使用 docker 镜像加速,或者使用科学上网, 不然镜像无法拉取
+
 2. Setup tiptap pro extension
 
 Register and log in to the Tiptap website at https://tiptap.dev/, then visit https://cloud.tiptap.dev/pro-extensions and get your token.
@@ -13,12 +15,11 @@ Register and log in to the Tiptap website at https://tiptap.dev/, then visit htt
 Create a `.npmrc` file in the root directory of the project with the following content:
 
 ```bash
-link-workspace-packages=true 
+link-workspace-packages=true
 
 @tiptap-pro:registry=https://registry.tiptap.dev/
 //registry.tiptap.dev/:_authToken={your_token}
 ```
-
 
 3. Ensure Docker Desktop is running before proceeding with the setup
 
