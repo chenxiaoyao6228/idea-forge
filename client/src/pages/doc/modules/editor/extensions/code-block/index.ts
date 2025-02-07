@@ -6,7 +6,7 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 import CodeBlockView from "./code-block-view";
 import { LowlightPlugin } from "./plugins/lowlight/plugin";
 import lowlight from "./plugins/lowlight/lowlight";
-import { createCodeBlockVSCodeHandler } from "./plugins/codeBlockVSCodeHandler";
+import { createCodeBlockVSCodeHandler } from "./plugins/create-code-block-vscode-handler";
 
 export interface CodeBlockOptions {
   /**

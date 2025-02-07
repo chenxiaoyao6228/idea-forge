@@ -1,12 +1,14 @@
-# Idea Forge
+English | [简体中文](README-CN.md)
+
+<h1 align="center">Idea Forge</h1>
+
+## Introduction
 
 Idea Forge is a powerful document collaboration tool that combines the functionality of Notion with the intelligence of AI. It provides a seamless environment for real-time collaborative editing, AI-powered writing assistance, and efficient document management.
 
 ## Getting Started
 
 1. Install Docker Desktop for your operating system from the [official Docker website](https://www.docker.com/products/docker-desktop/)
-
-> 由于 docker 被墙,国内用户请使用 docker 镜像加速,或者使用科学上网, 不然镜像无法拉取
 
 2. Setup tiptap pro extension
 

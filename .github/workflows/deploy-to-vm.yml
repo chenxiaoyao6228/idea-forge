@@ -9,7 +9,7 @@ on:
 
 jobs:
   Deploy:
-    name: Deploy to production
+    name: Deploy to vm
     runs-on: ubuntu-latest
 
     steps:

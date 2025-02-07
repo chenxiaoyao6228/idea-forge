@@ -30,10 +30,12 @@ export default function Home() {
     </>
   );
 }
+
 function MainButton() {
   const userInfo = useUserStore((state) => state.userInfo);
-  const lastDocId = useDocumentStore.use.lastDocId();
+  const lastDocId = useDocumentStore((state) => state.lastDocId);
   const [isLoading, setIsLoading] = useState(false);
+  const setLastDocId = useDocumentStore((state) => state.setLastDocId);
 
   useEffect(() => {
     async function fetchLastDoc() {
@@ -42,7 +44,7 @@ function MainButton() {
       setIsLoading(true);
       try {
         const { id } = await documentApi.getLatestDocument();
-        useDocumentStore.getState().setLastDocId(id);
+        setLastDocId(id);
       } catch (error) {
         console.error("Failed to fetch last document:", error);
       } finally {
@@ -67,7 +69,7 @@ function MainButton() {
   const url = lastDocId ? `/doc/${lastDocId}` : "/doc/0";
   return (
     <Link to={url}>
-      <Button className="text-base px-6" size="lg">
+      <Button className="text-base px-6" size="lg" disabled={isLoading}>
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
         Get Started
       </Button>

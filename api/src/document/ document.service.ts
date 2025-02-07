@@ -6,7 +6,7 @@ import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
 import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse, Permission, UpdateCoverDto } from "shared";
 import { MoveDocumentsDto } from "shared";
 import { FileService } from "@/file-store/file-store.service";
-import { pick } from "lodash";
+import { omit, pick } from "lodash";
 const POSITION_GAP = 1024; // Define position gap
 
 @Injectable()
@@ -154,13 +154,15 @@ export class DocumentService {
       throw new ForbiddenException("You don't have permission to edit this document");
     }
 
-    return this.prisma.doc.update({
+    const res = await this.prisma.doc.update({
       where: { id },
       data: {
         ...dto,
         parentId: dto.parentId === undefined ? null : dto.parentId,
       },
     });
+
+    return omit(res, ["contentBinary"]);
   }
 
   async remove(id: string, ownerId: number) {
