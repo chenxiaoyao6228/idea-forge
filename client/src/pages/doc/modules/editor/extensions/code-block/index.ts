@@ -110,7 +110,6 @@ export const CodeBlock = Node.create<CodeBlockOptions>({
    */
   defining: true,
 
-  // state, 对应地，通过updateAttribute去更新
   addAttributes() {
     return {
       language: {

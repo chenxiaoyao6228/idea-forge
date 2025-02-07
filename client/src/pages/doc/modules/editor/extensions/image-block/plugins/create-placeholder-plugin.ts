@@ -4,7 +4,7 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 export const placeholderPluginKey = new PluginKey("imageUploadPlaceholder");
 
 /*
-  Reason for decoration instead of node to create placeholder
+  Reason for using decoration instead of node to create placeholder
   - collaboration friendly, decoration won't sync to other clients
 */
 export function createPlaceholderPlugin() {

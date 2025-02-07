@@ -16,7 +16,10 @@ interface Props {
 }
 
 export function useCollaborationProvider({ documentId, user, editable, collabWsUrl, collabToken }: Props) {
-  const { setProvider, setCollaborationState, resetDocumentState, setCurrentDocument } = useEditorStore();
+  const setProvider = useEditorStore((state) => state.setProvider);
+  const setCollaborationState = useEditorStore((state) => state.setCollaborationState);
+  const resetDocumentState = useEditorStore((state) => state.resetDocumentState);
+  const setCurrentDocument = useEditorStore((state) => state.setCurrentDocument);
   const timeoutRef = useRef<any>();
 
   useEffect(() => {
