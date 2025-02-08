@@ -63,6 +63,7 @@ jobs:
       - name: Build Docker image
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN_REACT: ${{ secrets.SENTRY_AUTH_TOKEN_REACT }}
         run: |
           docker build \
             -f api/Dockerfile.prod \

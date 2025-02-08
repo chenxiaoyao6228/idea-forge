@@ -1,3 +1,4 @@
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig, PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import { inspectorServer } from "@react-dev-inspector/vite-plugin";
@@ -20,6 +21,11 @@ export default defineConfig({
       withTypes: true,
       fileName: "sprite.svg",
     }),
+    sentryVitePlugin({
+      org: "yorkchan6228",
+      project: "idea-forge-client",
+      authToken: process.env.CLIENT_SENTRY_AUTH_TOKEN,
+    })
   ],
   server: {
     port: port,
@@ -27,17 +33,24 @@ export default defineConfig({
   },
   build: {
     // generate .vite/manifest.json in outDir
-    outDir: "../api/view", // 设置输出目录
-    emptyOutDir: true, // 构建前清空目录
+    // set output directory to api/view
+    outDir: "../api/view",
+
+    // clear directory before building
+    emptyOutDir: true,
+
     manifest: true,
+
     rollupOptions: {
-      input: "src/index.tsx", // 指定入口文件
+      input: "src/index.tsx", // specify entry file
       output: {
-        // 确保资源文件放在 assets 目录下
+        // ensure resource files are placed in the assets directory
         assetFileNames: "assets/[name]-[hash][extname]",
         chunkFileNames: "assets/[name]-[hash].js",
         entryFileNames: "assets/[name]-[hash].js",
       },
     },
+
+    sourcemap: true
   },
 });

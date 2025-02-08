@@ -51,12 +51,22 @@ export const envSchema = z.object({
   OSS_REGION: z.string().min(1),
   OSS_ENDPOINT: z.string().url(),
   OSS_CDN_ENDPOINT: z.string().url().optional().nullable(),
+
+  /* AI PROVIDERS */
+  DEEPSEEK_API_KEY_1: z.string().min(1),
+
+  /* SENTRY CONFIG */
+  SENTRY_DSN: z.string().url().optional(),
+  // Build-time variables don't need to be validated here
+  // SENTRY_AUTH_TOKEN: z.string().optional(),
+  // SENTRY_AUTH_TOKEN_REACT: z.string().optional(),
 });
 
 const clientEnvSchema = z.object({
   /* CLIENT CONFIG */
   CLIENT_APP_URL: z.string().url(),
   CLIENT_COLLAB_WS_URL: z.string().url(),
+  CLIENT_SENTRY_DSN: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

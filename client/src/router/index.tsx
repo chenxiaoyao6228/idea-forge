@@ -19,6 +19,7 @@ const ResetPassword = React.lazy(() => import(/* webpackChunkName: "ResetPasswor
 const AuthCallback = React.lazy(() => import(/* webpackChunkName: "AuthCallback" */ "@/pages/auth-callback"));
 const Doc = React.lazy(() => import(/* webpackChunkName: "Doc" */ "@/pages/doc"));
 const TokenUsage = React.lazy(() => import(/* webpackChunkName: "TokenUsage" */ "@/pages/admin/token-usage"));
+const TestSentry = React.lazy(() => import(/* webpackChunkName: "TestSentry" */ "@/pages/test-sentry"));
 
 // Routes that require authentication
 const AuthRouteConfig: IRouteObject = {
@@ -37,6 +38,11 @@ const AuthRouteConfig: IRouteObject = {
       path: "/admin/token-usage",
       element: LazyBoundary(TokenUsage),
       errorElement: LazyBoundary(ErrorBoundary as any),
+    },
+    // TODO: remove this after testing
+    {
+      path: "/test-sentry",
+      element: LazyBoundary(TestSentry),
     },
   ],
 };
