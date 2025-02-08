@@ -1,4 +1,5 @@
 import { type MiddlewareConsumer, Module, type NestModule, RequestMethod } from "@nestjs/common";
+import { SentryModule } from "@sentry/nestjs/setup";
 import { AppController } from "./app.controller";
 import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { RedisModule } from "@/_shared/database/redis/redis.module";
@@ -6,10 +7,9 @@ import { AuthModule } from "./auth/auth.module";
 import { LoggerModule } from "@/_shared/utils/logger.module";
 import { UserModule } from "./user/user.module";
 import { RequestLoggerMiddleware } from "@/_shared/middlewares/request-logger.middleware";
-import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
+import { APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
 import { MailModule } from "@/_shared/email/mail.module";
 import { ApiInterceptor } from "./_shared/interceptors/api.interceptor";
-import { HttpExceptionFilter } from "./_shared/filters/http-exception-filter";
 import { ZodValidationPipe } from "./_shared/pipes/zod-validation.pipe";
 import { DocumentModule } from "./document/document.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
@@ -23,6 +23,7 @@ import { AIModule } from "./ai/ai.module";
 @Module({
   controllers: [AppController],
   imports: [
+    SentryModule.forRoot(),
     // serve public static files
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "public"),
@@ -62,7 +63,6 @@ import { AIModule } from "./ai/ai.module";
       useClass: ZodValidationPipe,
     },
     { provide: APP_INTERCEPTOR, useClass: ApiInterceptor },
-    { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],
 })
 export class AppModule implements NestModule {

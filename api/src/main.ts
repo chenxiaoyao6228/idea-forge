@@ -5,6 +5,9 @@ console.log("============process.env start===============");
 console.log(process.env);
 console.log("============process.env end===============");
 
+// Sentry
+import "./instrument";
+
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import type { NestExpressApplication } from "@nestjs/platform-express";
@@ -12,6 +15,8 @@ import * as session from "express-session";
 import * as cookieParser from "cookie-parser";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { ConfigService } from "@nestjs/config";
+import { AllExceptionsFilter } from "./_shared/filters/all-exception-filter";
+import { HttpExceptionFilter } from "./_shared/filters/http-exception-filter";
 declare const module: any;
 
 async function bootstrap() {
@@ -28,6 +33,9 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
+
+  // Filters
+  app.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());
 
   app.use(
     session({

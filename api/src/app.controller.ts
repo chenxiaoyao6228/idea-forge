@@ -10,6 +10,12 @@ export class AppController {
     return "ok";
   }
 
+  @Public()
+  @Get("/debug-sentry")
+  getError() {
+    throw new Error("My first Sentry error!");
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get("protected")
   async protected(@Req() req: any) {
