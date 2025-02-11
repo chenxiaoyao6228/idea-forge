@@ -1,5 +1,10 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "outDir": "./dist",
     "strict": true,
     "module": "commonjs",
     "declaration": true,
@@ -10,8 +15,6 @@
     "target": "ES2021",
     "jsx": "react-jsx",
     "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -20,10 +23,8 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
-    "paths": {
-      "@/*": ["./src/*"]
-    },
+
   },
-  "include": ["src/**/*",],
+  "include": ["src/**/*", "dist/**/*"],
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }

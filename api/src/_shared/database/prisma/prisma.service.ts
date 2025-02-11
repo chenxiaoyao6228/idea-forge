@@ -1,14 +1,12 @@
-import { Injectable, type OnModuleInit, type OnModuleDestroy, Global } from "@nestjs/common";
+import { Injectable, type OnModuleInit, type OnModuleDestroy, Global, Logger } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
-import chalk from "chalk";
 
 @Global()
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  constructor() {
-    // Feel free to change this log threshold to something that makes sense for you
-    const logThreshold = 20;
+  private readonly logger = new Logger(PrismaService.name);
 
+  constructor() {
     super({
       log: [
         { level: "query", emit: "event" },
@@ -16,29 +14,25 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         { level: "warn", emit: "stdout" },
       ],
     });
-
-    // this.$on("query", async (e: any) => {
-    //   if (e.duration < logThreshold) return;
-    //   const color: keyof typeof chalk =
-    //     e.duration < logThreshold * 1.1
-    //       ? "green"
-    //       : e.duration < logThreshold * 1.2
-    //         ? "blue"
-    //         : e.duration < logThreshold * 1.3
-    //           ? "yellow"
-    //           : e.duration < logThreshold * 1.4
-    //             ? "redBright"
-    //             : "red";
-    //   const dur = chalk[color](`${e.duration}ms`);
-    //   console.info(`prisma:query - ${dur} - ${e.query}`);
-    // });
   }
 
   async onModuleInit() {
-    await this.$connect();
+    try {
+      await this.$connect();
+      this.logger.log("Successfully connected to database");
+    } catch (error) {
+      this.logger.error("Failed to connect to database", error);
+      throw error;
+    }
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    try {
+      await this.$disconnect();
+      this.logger.log("Successfully disconnected from database");
+    } catch (error) {
+      this.logger.error("Error disconnecting from database", error);
+      throw error;
+    }
   }
 }

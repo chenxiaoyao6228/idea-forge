@@ -48,10 +48,10 @@
       "@commitlint/config-conventional"
     ]
   },
-  "packageManager": "pnpm@8.15.4",
+  "packageManager": "pnpm@8.5.1",
   "engines": {
     "node": ">=18",
-    "pnpm": ">=8.15.4",
+    "pnpm": ">=8.5.1",
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
   }

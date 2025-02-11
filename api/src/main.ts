@@ -1,12 +1,9 @@
 // !! IMPORTANT !! Must be at the top of the file, otherwise the environment variables will not be loaded
 import * as dotenv from "dotenv";
 dotenv.config();
-console.log("============process.env start===============");
-console.log(process.env);
-console.log("============process.env end===============");
 
 // Sentry
-import "./instrument";
+import "./_shared/utils/sentry";
 
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
@@ -48,10 +45,6 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
-
-  console.log("------------------");
-  console.log(configService.get("NODE_ENV"), configService.get("DATABASE_URL"));
-  console.log("------------------");
 
   const port = configService.get("NEST_API_PORT", 5000);
 

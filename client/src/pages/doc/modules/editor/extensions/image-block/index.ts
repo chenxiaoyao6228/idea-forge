@@ -1,5 +1,5 @@
 import { Image as TImage } from "@tiptap/extension-image";
-import { ReactNodeViewRenderer } from "@tiptap/react";
+import { Editor, ReactNodeViewRenderer } from "@tiptap/react";
 import { mergeAttributes, type Range } from "@tiptap/core";
 import ImageBlockView from "./image-block-view";
 import { unwrap, wrap } from "../markdown/plugins/wrap";
@@ -249,7 +249,7 @@ const ImageBlock = TImage.extend({
     // Store the placeholder plugin in the storage
     this.storage.placeholderPlugin = placeholder;
     const paste = createPasteImagePlugin({
-      editor: this.editor,
+      editor: this.editor as Editor,
       placeholderPlugin: placeholder,
     });
     return [placeholder, paste];

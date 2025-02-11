@@ -112,6 +112,10 @@ export class AIProviderService implements OnModuleInit {
 
   // FIXME: remove this after the AI feature is stable
   async streamCompletionMock(request: AIStreamRequest): Promise<Observable<AIStreamResponse>> {
+    if (process.env.NODE_ENV === "production") {
+      return this.streamCompletion(request, 0);
+    }
+
     const subject = new Subject<AIStreamResponse>();
 
     function generateMockResponse(messages: ChatMessage[]): string {
