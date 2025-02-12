@@ -42,11 +42,11 @@ export class OssService {
         accessKeyId: this.config.accessKeyId,
         secretAccessKey: this.config.accessKeySecret,
       },
-      forcePathStyle: this.config.provider === "minio", // minio 需要这个配置
+      forcePathStyle: this.config.provider === "minio", // minio need this config
     });
   }
 
-  // 生成上传凭证
+  // Generate upload credentials
   async generatePresignedUrl(key: string, options: PresignedUrlOptions = { contentType: "image/png" }): Promise<PresignedUrlResult> {
     const command = new PutObjectCommand({
       Bucket: this.config.bucket,
@@ -86,7 +86,7 @@ export class OssService {
     }
   }
 
-  // 获取文件访问URL
+  // Get file access URL
   getFileUrl(key: string): string {
     const cdnEndpoint = this.configService.get("OSS_CDN_ENDPOINT");
     if (cdnEndpoint) {

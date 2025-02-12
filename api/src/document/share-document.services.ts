@@ -1,6 +1,8 @@
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { ApiException } from "@/_shared/model/api.exception";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { CommonSharedDocumentResponse, DocSharesResponse, Permission, RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "shared";
+import { ErrorCodeEnum } from "shared";
 
 @Injectable()
 export class ShareDocumentService {
@@ -40,16 +42,16 @@ export class ShareDocumentService {
       where: { id: dto.docId, ownerId: userId },
     });
 
-    if (!doc) throw new NotFoundException("Document not found");
+    if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
 
     const targetUser = await this.prisma.user.findFirst({
       where: { email: dto.email },
     });
 
-    if (!targetUser) throw new NotFoundException("User not found");
+    if (!targetUser) throw new ApiException(ErrorCodeEnum.UserNotFound);
 
     if (targetUser.id === userId) {
-      throw new BadRequestException("Cannot share with yourself");
+      throw new ApiException(ErrorCodeEnum.CannotShareWithYourself);
     }
 
     const existingShare = await this.prisma.docShare.findFirst({
@@ -57,7 +59,7 @@ export class ShareDocumentService {
     });
 
     if (existingShare) {
-      throw new BadRequestException("Document already shared with this user");
+      throw new ApiException(ErrorCodeEnum.DocumentAlreadyShared);
     }
 
     await this.prisma.docShare.create({

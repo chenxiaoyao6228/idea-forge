@@ -1,6 +1,6 @@
 import { HttpException } from "@nestjs/common";
 import { HttpStatus } from "@nestjs/common";
-import { type ErrorCodeEnum, ErrorCodeMsg } from "../constants/error-code.constant";
+import { type ErrorCodeEnum, ErrorCodeMsg } from "shared";
 
 export class ApiException extends HttpException {
   private errorCode: ErrorCodeEnum;

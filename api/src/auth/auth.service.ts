@@ -9,10 +9,9 @@ import { RedisService } from "@/_shared/database/redis/redis.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { MailService } from "@/_shared/email/mail.service";
 import { User } from "@prisma/client";
-import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { VerificationService } from "./verification.service";
 import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto } from "./auth.dto";
-import { AuthResponse, LoginResponseData, UserResponseData } from "shared";
+import { AuthResponse, ErrorCodeEnum, LoginResponseData, UserResponseData } from "shared";
 import { DocumentService } from "@/document/ document.service";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 import { UserStatus } from "shared";
@@ -68,7 +67,7 @@ export class AuthService {
     }
 
     if (user.status !== UserStatus.ACTIVE) {
-      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+      throw new ApiException(ErrorCodeEnum.UserNotActive);
     }
 
     const { accessToken, refreshToken } = await this.generateJWTToken(user.id);

@@ -1,3 +1,4 @@
+// For more information, see: https://github.com/BenLorantfy/nestjs-zod?tab=readme-ov-file#using-zodvalidationpipe
 import { UnprocessableEntityException } from "@nestjs/common";
 import { createZodValidationPipe } from "nestjs-zod";
 import { ZodError } from "zod";

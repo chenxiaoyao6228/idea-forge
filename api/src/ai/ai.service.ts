@@ -7,7 +7,6 @@ import { AIStreamResponse, AIStreamRequest, ChatMessage } from "shared";
 import { faker } from "@faker-js/faker";
 import { TokenUsageService } from "./token-usage.service";
 import { ApiException } from "@/_shared/model/api.exception";
-import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 
 @Injectable()
 export class AIProviderService implements OnModuleInit {

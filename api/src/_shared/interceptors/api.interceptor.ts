@@ -1,7 +1,7 @@
 import { Injectable, type NestInterceptor, type ExecutionContext, type CallHandler } from "@nestjs/common";
 import type { Observable } from "rxjs";
 import { map } from "rxjs/operators";
-import { RESPONSE_SUCCESS_CODE, RESPONSE_SUCCESS_MSG } from "../constants/response.constant";
+import { RESPONSE_SUCCESS_CODE, RESPONSE_SUCCESS_MSG } from "shared";
 
 interface Response<T> {
   statusCode: number;

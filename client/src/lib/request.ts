@@ -1,8 +1,13 @@
 import axios, { AxiosRequestConfig } from "axios";
 import useUserStore from "@/stores/user";
+import { RESPONSE_SUCCESS_CODE } from "shared";
 
-export const ApiHttpStatusCode = {
-  SUCCESS: 0,
+type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
+
+export type RequestConfig = Omit<AxiosRequestConfig, "url" | "data" | "method" | "params">;
+
+export const commonHttpStatusCode = {
+  SUCCESS: 200,
   CREATED: 201,
   BAD_REQUEST: 400,
   UNAUTHORIZED: 401,
@@ -10,10 +15,6 @@ export const ApiHttpStatusCode = {
   NOT_FOUND: 404,
   INTERNAL_SERVER_ERROR: 500,
 } as const;
-
-type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
-
-export type RequestConfig = Omit<AxiosRequestConfig, "url" | "data" | "method" | "params">;
 
 const REQUEST_TIMEOUT = 1000 * 60; // 1 minute
 
@@ -29,7 +30,7 @@ const request = axios.create({
 // Handle token refresh in response interceptor
 request.interceptors.response.use(
   (response) => {
-    if (response.status < 200 || response.status >= 300 || !response.data || response.data.statusCode !== ApiHttpStatusCode.SUCCESS) {
+    if (response.status < 200 || response.status >= 300 || !response.data || response.data.statusCode !== RESPONSE_SUCCESS_CODE) {
       // Let business logic handle the error
       return Promise.reject(response.data);
     }
@@ -39,7 +40,7 @@ request.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === commonHttpStatusCode.UNAUTHORIZED && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {

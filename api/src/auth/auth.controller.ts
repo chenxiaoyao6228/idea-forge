@@ -10,7 +10,7 @@ import { EmailVerifyDto, ForgotPasswordDto, CodeValidateDto, ResetPasswordDto, R
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { UserService } from "@/user/user.service";
 import { ApiException } from "@/_shared/model/api.exception";
-import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
+import { ErrorCodeEnum } from "shared";
 import { VerificationService } from "./verification.service";
 import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
 import { ConfigService } from "@nestjs/config";

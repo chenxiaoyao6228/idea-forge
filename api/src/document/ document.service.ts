@@ -7,6 +7,8 @@ import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse,
 import { MoveDocumentsDto } from "shared";
 import { FileService } from "@/file-store/file-store.service";
 import { omit, pick } from "lodash";
+import { ApiException } from "@/_shared/model/api.exception";
+import { ErrorCodeEnum } from "shared";
 const POSITION_GAP = 1024; // Define position gap
 
 @Injectable()
@@ -98,7 +100,7 @@ export class DocumentService {
         },
       });
 
-      if (!doc) throw new NotFoundException("Document not found");
+      if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
 
       const isMyDoc = doc.ownerId === userId;
 
@@ -147,11 +149,11 @@ export class DocumentService {
     });
 
     if (!doc) {
-      throw new NotFoundException("Document not found");
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
     }
 
     if (doc.ownerId !== userId && (!doc.sharedWith[0] || doc.sharedWith[0].permission !== "EDIT")) {
-      throw new ForbiddenException("You don't have permission to edit this document");
+      throw new ApiException(ErrorCodeEnum.DocumentAccessDenied);
     }
 
     const res = await this.prisma.doc.update({
@@ -385,7 +387,7 @@ export class DocumentService {
     ]);
 
     if (!sourceDoc || !targetDoc) {
-      throw new NotFoundException("Document not found");
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
     }
 
     // 1. Determine if target document is a leaf node
@@ -402,7 +404,7 @@ export class DocumentService {
 
     // 3. Prevent circular references
     if (targetParentId && (await this.isDescendant(id, targetParentId))) {
-      throw new BadRequestException("Cannot move a document to its descendant");
+      throw new ApiException(ErrorCodeEnum.DocumentCircularReference);
     }
 
     // 4. Get sibling documents
@@ -505,14 +507,14 @@ export class DocumentService {
   }
 
   async updateCover(docId: string, userId: number, dto: UpdateCoverDto) {
-    // 1. 验证文档和封面存在
+    // 1. verify doc and cover exist
     const doc = await this.prisma.doc.findFirst({
       where: { id: docId, ownerId: userId },
       include: { coverImage: true },
     });
-    if (!doc) throw new NotFoundException();
+    if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
 
-    // 2. 如果没有封面，创建新封面
+    // 2. if no cover, create new cover
     if (!doc.coverImage) {
       if (!dto.url) throw new BadRequestException("URL is required for new cover");
       return this.prisma.coverImage.create({
@@ -525,7 +527,7 @@ export class DocumentService {
       });
     }
 
-    // 3. 更新现有封面
+    // 3. update existing cover
     return this.prisma.coverImage.update({
       where: { docId },
       data: {
@@ -537,14 +539,14 @@ export class DocumentService {
   }
 
   async removeCover(docId: string, userId: number) {
-    // 1. 验证文档和封面存在
+    // 1. verify doc and cover exist
     const doc = await this.prisma.doc.findFirst({
       where: { id: docId, ownerId: userId },
       include: { coverImage: true },
     });
-    if (!doc || !doc.coverImage) throw new NotFoundException();
+    if (!doc || !doc.coverImage) throw new ApiException(ErrorCodeEnum.DocumentCoverNotFound);
 
-    // 2. 删除封面
+    // 2. delete cover
     return await this.prisma.coverImage.delete({
       where: { docId },
     });

@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException, HttpStatus } from "@nestjs/common";
 import { OssService } from "./oss.service";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { validImageExts } from "./constant";
+import { ApiException } from "@/_shared/model/api.exception";
+import { ErrorCodeEnum } from "shared";
 
 @Injectable()
 export class FileService {
@@ -121,7 +123,7 @@ export class FileService {
       };
     } catch (error) {
       console.error("Error uploading file:", error);
-      throw new BadRequestException("Failed to upload file");
+      throw new ApiException(ErrorCodeEnum.FileUploadFailed);
     }
   }
 
@@ -138,7 +140,7 @@ export class FileService {
     });
 
     if (!file) {
-      throw new NotFoundException("File not found");
+      throw new ApiException(ErrorCodeEnum.FileNotFound, HttpStatus.NOT_FOUND);
     }
 
     // Delete from storage (OSS)
@@ -162,7 +164,7 @@ export class FileService {
     });
 
     if (!file) {
-      throw new NotFoundException("File not found");
+      throw new ApiException(ErrorCodeEnum.FileNotFound);
     }
 
     return file;
@@ -172,8 +174,9 @@ export class FileService {
     try {
       // 1. Download original image
       const response = await fetch(imageUrl);
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.statusText}`);
+        throw new ApiException(ErrorCodeEnum.FileOperationFailed);
       }
 
       const contentType = response.headers.get("content-type");
@@ -199,7 +202,7 @@ export class FileService {
       return uploadResult;
     } catch (error) {
       console.error("Error proxying image:", error);
-      throw new BadRequestException("Failed to proxy image");
+      throw new ApiException(ErrorCodeEnum.FileOperationFailed);
     }
   }
 }

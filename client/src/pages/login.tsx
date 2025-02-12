@@ -1,12 +1,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-import useUserStore, { UserInfo } from "@/stores/user";
-import request from "@/lib/request";
-import { LoginSchema, type LoginData } from "shared";
+import useUserStore from "@/stores/user";
+import { ErrorCodeEnum, LoginSchema, type LoginData } from "shared";
 import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";
 import Logo from "@/components/logo";
@@ -53,7 +51,9 @@ export default function LoginPage() {
       setUserInfo(response.user);
       navigate(redirectTo || "/");
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      const errorCode = err.statusCode;
+      const errorMessage = err.message || "Login failed";
+      setError(errorMessage);
     } finally {
       setIsPending(false);
     }

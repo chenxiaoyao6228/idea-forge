@@ -5,7 +5,7 @@ import { AIStreamRequest, TokenUsageData } from "shared";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { User } from "@prisma/client";
 import { ApiException } from "@/_shared/model/api.exception";
-import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
+import { ErrorCodeEnum } from "shared";
 import { TokenUsageService } from "./token-usage.service";
 import { ConfigService } from "@nestjs/config";
 import { UserService } from "@/user/user.service";

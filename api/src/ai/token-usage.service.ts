@@ -1,8 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
 import { ApiException } from "@/_shared/model/api.exception";
-import { TokenUsageData } from "shared";
+import { ErrorCodeEnum, TokenUsageData } from "shared";
 import { UpdateUserTokenLimitDto } from "./ai.dto";
 
 const MONTHLY_TOKEN_LIMIT = 10000;

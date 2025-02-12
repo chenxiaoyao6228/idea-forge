@@ -2,7 +2,7 @@ import { Injectable, Inject } from "@nestjs/common";
 import { RedisService } from "@/_shared/database/redis/redis.service";
 import { MailService } from "@/_shared/email/mail.service";
 import { ApiException } from "@/_shared/model/api.exception";
-import { ErrorCodeEnum } from "@/_shared/constants/error-code.constant";
+import { ErrorCodeEnum } from "shared";
 import { UserService } from "@/user/user.service";
 import { DocumentService } from "@/document/ document.service";
 import { UserStatus, VerificationCodeType } from "shared";
