@@ -4,7 +4,7 @@ import { Link, useSearchParams, useNavigate, useLocation } from "react-router-do
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import useUserStore from "@/stores/user";
-import { ErrorCodeEnum, LoginSchema, type LoginData } from "shared";
+import { LoginRequestSchema, type LoginRequest } from "shared";
 import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";
 import Logo from "@/components/logo";
@@ -26,8 +26,8 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginData>({
-    resolver: zodResolver(LoginSchema),
+  } = useForm<LoginRequest>({
+    resolver: zodResolver(LoginRequestSchema),
     defaultValues: {
       remember: true,
       email: location.state?.email || "",
@@ -41,7 +41,7 @@ export default function LoginPage() {
     }
   }, [location, navigate]);
 
-  const onSubmit = async (data: LoginData) => {
+  const onSubmit = async (data: LoginRequest) => {
     setIsPending(true);
     try {
       const response = await authApi.login(data);

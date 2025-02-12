@@ -88,7 +88,8 @@ export type SearchDocumentDto = z.infer<typeof searchDocumentSchema>;
 export const moveDocumentsSchema = z.object({
   id: z.string().cuid(),
   targetId: z.string(),
-  dropPosition: z.number(), // -1 表示移动到目标文档之前，0 表示移动到目标文档之后，1 表示移动到目标文档之后
+  // -1 represents moving before the target document, 0 represents moving after the target document, 1 represents moving after the target document
+  dropPosition: z.number(),
 });
 
 export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;

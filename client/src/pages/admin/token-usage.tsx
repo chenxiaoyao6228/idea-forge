@@ -5,14 +5,14 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { aiApi } from "@/apis/ai";
-import { TokenUsageData } from "shared";
+import { TokenUsageResponse } from "shared";
 
 export default function TokenUsage() {
   const [email, setEmail] = useState("");
   const [tokenLimit, setTokenLimit] = useState("");
   const [tokenUsed, setTokenUsed] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [userData, setUserData] = useState<TokenUsageData | null>(null);
+  const [userData, setUserData] = useState<TokenUsageResponse | null>(null);
   const { toast } = useToast();
 
   async function handleLookup() {
@@ -27,7 +27,7 @@ export default function TokenUsage() {
 
     setIsLoading(true);
     try {
-      const response = await aiApi.getUserTokenUsage(email);
+      const response = await aiApi.getUserTokenUsage({ email });
 
       setUserData(response);
       setTokenLimit(response.monthlyLimit.toString());

@@ -44,73 +44,98 @@ export const DisplayNameSchema = z
   .max(20)
   .transform((val) => val.trim().toLowerCase().trim());
 
+// ==============================================================
+
 // register
-export const RegisterSchema = z.object({
+export const RegisterRequestSchema = z.object({
   email: EmailSchema,
   password: PasswordSchema,
 });
+export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 
-export type RegisterData = z.infer<typeof RegisterSchema>;
-
+// ==============================================================
 // login
-export const LoginSchema = z.object({
+export const LoginRequestSchema = z.object({
   email: EmailSchema,
   password: PasswordSchema,
   remember: z.boolean().optional(),
 });
+export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
-export type LoginData = z.infer<typeof LoginSchema>;
+export const LoginResponseSchema = z.object({
+  token: z.string(),
+});
+export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
-export const EmailVerifySchema = z.object({
+// ==============================================================
+
+export const EmailVerifyRequestSchema = z.object({
   email: EmailSchema,
 });
+export type EmailVerifyRequest = z.infer<typeof EmailVerifyRequestSchema>;
 
-export const EmailValidateSchema = z.object({
+// ==============================================================
+
+export const EmailValidateRequestSchema = z.object({
   email: EmailSchema,
   code: z.string().length(6),
 });
+export type EmailValidateRequest = z.infer<typeof EmailValidateRequestSchema>;
 
-export const ForgotPasswordSchema = z.object({
+// ==============================================================
+
+export const ForgotPasswordRequestSchema = z.object({
   email: EmailSchema,
 });
+export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordRequestSchema>;
 
-export const CodeValidateSchema = z.object({
+// ==============================================================
+
+export const CodeValidateRequestSchema = z.object({
   email: EmailSchema,
   code: z.string().length(6),
   type: VerificationTypeSchema,
 });
-export type CodeValidateData = z.infer<typeof CodeValidateSchema>;
 
-export const ResetPasswordSchema = z.object({
+export type CodeValidateRequest = z.infer<typeof CodeValidateRequestSchema>;
+
+// ==============================================================
+
+export const ResetPasswordRequestSchema = z.object({
   email: EmailSchema,
   password: PasswordSchema,
 });
+export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
 
-export const CreateUserSchema = z.object({
+// ==============================================================
+
+export const CreateUserRequestSchema = z.object({
   email: EmailSchema,
   password: z.string().optional(),
   status: z.nativeEnum(UserStatus),
 });
+export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>;
 
-export const CreateOAuthUserSchema = CreateUserSchema.extend({
+// ==============================================================
+
+export const CreateOAuthUserRequestSchema = CreateUserRequestSchema.extend({
   displayName: z.string().optional(),
   imageUrl: z.string().url().optional(),
   providerId: z.string().optional(),
   providerName: z.nativeEnum(Provider).optional(),
 });
+export type CreateOAuthUserRequest = z.infer<typeof CreateOAuthUserRequestSchema>;
 
-export const UpdateUserSchema = z.object({
+// ==============================================================
+
+export const UpdateUserRequestSchema = z.object({
   email: EmailSchema.optional(),
   displayName: z.string().optional(),
   imageUrl: z.string().url().optional(),
 });
+export type UpdateUserRequest = z.infer<typeof UpdateUserRequestSchema>;
 
 //  ============== response ==============
-export const LoginResponseSchema = z.object({
-  token: z.string(),
-});
-
-export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
 export interface AuthResponse {
   type: AuthResponseType;

@@ -8,6 +8,7 @@ import { fileApi } from "@/apis/file";
 import { useState } from "react";
 import { UpdateCoverDto } from "shared";
 
+// https://media.4-paws.org/9/c/9/7/9c97c38666efa11b79d94619cc1db56e8c43d430/Molly_006-2829x1886-2726x1886-1920x1328.jpg
 const schema = z.object({
   url: z.string().url("Please enter a valid URL"),
 });
@@ -32,7 +33,7 @@ export function LinkTab({ onSelect, onClose }: LinkTabProps) {
   const onFormSubmit = async (values: FormData) => {
     try {
       setIsLoading(true);
-      const { downloadUrl } = (await fileApi.proxyImage(values.url)) as any;
+      const { downloadUrl } = await fileApi.proxyImage({ imageUrl: values.url });
       await onSelect({ url: downloadUrl, isPreset: false });
       onClose();
     } catch (err) {

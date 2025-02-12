@@ -1,5 +1,6 @@
 // streaming request
 import { z } from "zod";
+import { EmailSchema } from "./auth";
 
 export interface AIStreamRequest {
   messages: ChatMessage[];
@@ -20,18 +21,24 @@ export type ChatMessage = {
   content: string;
 };
 
-// token usage
-export const TokenUsageSchema = z.object({
-  email: z.string().email(),
+// ==============================================================
+export const TokenUsageRequestSchema = z.object({
+  email: EmailSchema,
+});
+export type TokenUsageRequest = z.infer<typeof TokenUsageRequestSchema>;
+
+export const TokenUsageResponseSchema = z.object({
+  email: EmailSchema,
   monthlyLimit: z.number().min(0),
   monthlyUsed: z.number().min(0),
   lastResetDate: z.date(),
 });
-export type TokenUsageData = z.infer<typeof TokenUsageSchema>;
+export type TokenUsageResponse = z.infer<typeof TokenUsageResponseSchema>;
 
-export const UpdateUserTokenLimitSchema = z.object({
-  email: z.string().email(),
+// ==============================================================
+export const UpdateUserTokenLimitRequestSchema = z.object({
+  email: EmailSchema,
   monthlyUsed: z.number().min(0),
   monthlyLimit: z.number().min(0),
 });
-export type UpdateUserTokenLimitData = z.infer<typeof UpdateUserTokenLimitSchema>;
+export type UpdateUserTokenLimitRequest = z.infer<typeof UpdateUserTokenLimitRequestSchema>;

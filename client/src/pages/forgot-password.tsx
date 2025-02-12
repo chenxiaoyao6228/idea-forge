@@ -4,10 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
-import request from "@/lib/request";
-import { ForgotPasswordSchema } from "shared";
+import { ForgotPasswordRequestSchema, ForgotPasswordRequest } from "shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
+import { authApi } from "@/apis/auth";
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -18,8 +18,8 @@ export default function ForgotPasswordPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm({
-    resolver: zodResolver(ForgotPasswordSchema),
+  } = useForm<ForgotPasswordRequest>({
+    resolver: zodResolver(ForgotPasswordRequestSchema),
     defaultValues: {
       email: "",
     },
@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: { email: string }) => {
     setIsPending(true);
     try {
-      await request.post("/api/auth/forgot-password", data);
+      await authApi.forgotPassword(data);
       navigate(`/verify?email=${encodeURIComponent(data.email)}&type=reset-password`);
     } catch (err: any) {
       setError(err.message || "Password reset request failed");

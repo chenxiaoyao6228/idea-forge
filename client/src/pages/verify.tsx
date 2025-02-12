@@ -5,9 +5,10 @@ import { ErrorList, OTPField } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState, useCallback } from "react";
 import request from "@/lib/request";
-import { CodeValidateSchema, CodeValidateData } from "shared";
+import { CodeValidateRequestSchema, type CodeValidateRequest } from "shared";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import Logo from "@/components/logo";
+import { authApi } from "@/apis/auth";
 
 // Define query parameter names
 export const emailQueryParam = "email";
@@ -20,8 +21,8 @@ export default function VerifyRoute() {
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
-  const type = searchParams.get(typeQueryParam) as CodeValidateData["type"];
-  const email = searchParams.get(emailQueryParam) as CodeValidateData["email"];
+  const type = searchParams.get(typeQueryParam) as CodeValidateRequest["type"];
+  const email = searchParams.get(emailQueryParam) as CodeValidateRequest["email"];
   const redirectTo = searchParams.get(redirectToQueryParam) || "";
 
   if (!type || !email) {
@@ -33,8 +34,8 @@ export default function VerifyRoute() {
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
-  } = useForm<CodeValidateData>({
-    resolver: zodResolver(CodeValidateSchema),
+  } = useForm<CodeValidateRequest>({
+    resolver: zodResolver(CodeValidateRequestSchema),
     defaultValues: {
       code: "",
       email,
@@ -57,7 +58,7 @@ export default function VerifyRoute() {
     </>
   );
 
-  const headings: Record<CodeValidateData["type"], React.ReactNode> = {
+  const headings: Record<CodeValidateRequest["type"], React.ReactNode> = {
     register: checkEmail,
     "reset-password": checkEmail,
     "change-email": checkEmail,
@@ -69,10 +70,10 @@ export default function VerifyRoute() {
     ),
   };
 
-  const onSubmit = async (data: CodeValidateData) => {
+  const onSubmit = async (data: CodeValidateRequest) => {
     setIsPending(true);
     try {
-      await request.post("/api/auth/code/validate", data);
+      await authApi.validateCode(data);
 
       switch (data.type) {
         case "register":

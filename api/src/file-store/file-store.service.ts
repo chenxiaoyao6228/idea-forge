@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { validImageExts } from "./constant";
 import { ApiException } from "@/_shared/model/api.exception";
-import { ErrorCodeEnum } from "shared";
+import { ErrorCodeEnum, UploadCredentialsResponse } from "shared";
 
 @Injectable()
 export class FileService {
@@ -47,7 +47,7 @@ export class FileService {
     });
 
     return {
-      credentials,
+      credentials: credentials as UploadCredentialsResponse["credentials"],
       fileKey,
       downloadUrl: this.ossService.getFileUrl(fileKey),
       fileId: fileRecord.id,

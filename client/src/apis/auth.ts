@@ -1,11 +1,11 @@
 import request from "@/lib/request";
-import { LoginData, LoginResponseData } from "shared";
+import { CodeValidateRequest, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, LoginResponse } from "shared";
 
 export const authApi = {
-  login: async (data: LoginData) => {
-    return request.post<LoginData, LoginResponseData>("/api/auth/login", data);
-  },
-  logout: async () => {
-    return request.post<void>("/api/auth/logout");
-  },
+  register: async (data: RegisterRequest) => request.post<RegisterRequest, void>("/api/auth/register", data),
+  validateCode: async (data: CodeValidateRequest) => request.post<CodeValidateRequest, void>("/api/auth/code/validate", data),
+  login: async (data: LoginRequest) => request.post<LoginRequest, LoginResponse>("/api/auth/login", data),
+  logout: async () => request.post<void>("/api/auth/logout"),
+  forgotPassword: async (data: ForgotPasswordRequest) => request.post<ForgotPasswordRequest, void>("/api/auth/forgot-password", data),
+  resetPassword: async (data: ResetPasswordRequest) => request.post<ResetPasswordRequest, void>("/api/auth/reset-password", data),
 };

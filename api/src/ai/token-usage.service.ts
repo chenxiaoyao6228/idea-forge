@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/model/api.exception";
-import { ErrorCodeEnum, TokenUsageData } from "shared";
+import { ErrorCodeEnum, TokenUsageResponse } from "shared";
 import { UpdateUserTokenLimitDto } from "./ai.dto";
 
 const MONTHLY_TOKEN_LIMIT = 10000;
@@ -104,7 +104,7 @@ export class TokenUsageService {
     });
   }
 
-  async getUserTokenUsage(email: string): Promise<TokenUsageData> {
+  async getUserTokenUsage(email: string): Promise<TokenUsageResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: { aiTokenUsage: true },

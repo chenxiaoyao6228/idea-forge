@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Res, HttpStatus, Query, Get } from "@nestjs/common";
 import { Response } from "express";
 import { AIProviderService } from "./ai.service";
-import { AIStreamRequest, TokenUsageData } from "shared";
+import { AIStreamRequest, TokenUsageResponse } from "shared";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { User } from "@prisma/client";
 import { ApiException } from "@/_shared/model/api.exception";
@@ -97,7 +97,7 @@ export class AIController {
   }
 
   @Get("admin/token-usage")
-  async getUserTokenUsage(@Query("email") email: string, @GetUser() admin: User): Promise<TokenUsageData> {
+  async getUserTokenUsage(@Query("email") email: string, @GetUser() admin: User): Promise<TokenUsageResponse> {
     const adminEmail = (await this.userService.getUserById(admin.id))?.email;
     const superAdminEmail = this.configService.get("SUPER_ADMIN_EMAIL");
     if (adminEmail !== superAdminEmail) {

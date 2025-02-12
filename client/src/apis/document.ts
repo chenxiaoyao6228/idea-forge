@@ -4,7 +4,6 @@ import type {
   CreateDocumentDto,
   UpdateDocumentDto,
   MoveDocumentsDto,
-  DetailSharedDocumentResponse,
   CommonSharedDocumentResponse,
   DocSharesResponse,
   UpdateSharePermissionDto,

@@ -5,9 +5,10 @@ import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
 import request from "@/lib/request";
-import { RegisterSchema, RegisterData } from "shared";
+import { RegisterRequestSchema, RegisterRequest } from "shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
+import { authApi } from "@/apis/auth";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -20,20 +21,19 @@ export default function Register() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterData>({
-    resolver: zodResolver(RegisterSchema),
+  } = useForm<RegisterRequest>({
+    resolver: zodResolver(RegisterRequestSchema),
     defaultValues: {
       email: "",
       password: "",
     },
   });
 
-  const onSubmit = async (data: RegisterData) => {
+  const onSubmit = async (data: RegisterRequest) => {
     setIsPending(true);
     try {
-      await request.post("/api/auth/register", data);
+      await authApi.register(data);
 
-      // 注册成功后跳转到验证页面
       navigate(`/verify?email=${encodeURIComponent(data.email)}&type=register`);
     } catch (err: any) {
       setError(err.message || "Registration failed");

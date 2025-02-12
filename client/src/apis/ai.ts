@@ -1,12 +1,6 @@
 import request from "@/lib/request";
-import { TokenUsageData, UpdateUserTokenLimitData } from "shared";
+import { TokenUsageRequest, TokenUsageResponse, UpdateUserTokenLimitRequest } from "shared";
 export const aiApi = {
-  getUserTokenUsage: async (email: string) => {
-    return request.get<{ email: string }, TokenUsageData>("/api/ai/admin/token-usage", {
-      params: { email },
-    });
-  },
-  updateUserTokenLimit: async (data: UpdateUserTokenLimitData) => {
-    return request.post<UpdateUserTokenLimitData, void>("/api/ai/admin/update-token", data);
-  },
+  getUserTokenUsage: async (data: TokenUsageRequest) => request.get<TokenUsageRequest, TokenUsageResponse>("/api/ai/admin/token-usage", { params: data }),
+  updateUserTokenLimit: async (data: UpdateUserTokenLimitRequest) => request.post<UpdateUserTokenLimitRequest, void>("/api/ai/admin/update-token", data),
 };

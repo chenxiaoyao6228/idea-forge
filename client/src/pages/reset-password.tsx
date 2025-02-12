@@ -9,6 +9,7 @@ import { PasswordSchema } from "shared";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
+import { authApi } from "@/apis/auth";
 
 const PasswordAndConfirmPasswordSchema = z
   .object({ password: PasswordSchema, confirmPassword: PasswordSchema })
@@ -49,7 +50,7 @@ export default function ResetPasswordPage() {
 
     setIsPending(true);
     try {
-      await request.post("/api/auth/reset-password", {
+      await authApi.resetPassword({
         email,
         password: data.password,
       });
