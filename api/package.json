@@ -4,7 +4,7 @@
   "description": "",
   "private": true,
   "scripts": {
-    "build": "npm run prisma:generate && nest build",
+    "build": "NODE_ENV=production webpack --config webpack.config.js",
     "start": "NODE_ENV=production nest start",
     "predev": "chmod +x scripts/start-docker.sh && ./scripts/start-docker.sh",
     "dev": "npm run prisma:dev && nodemon",
@@ -67,6 +67,7 @@
     "chalk": "4.1.2",
     "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.5",
+    "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.1",
     "form-data": "^4.0.1",
@@ -101,6 +102,7 @@
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
     "@sentry/webpack-plugin": "^3.1.2",
+    "@swc/core": "^1.3.96",
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^4.17.13",
     "@types/express-session": "^1.18.0",
@@ -122,6 +124,7 @@
     "run-script-webpack-plugin": "^0.2.0",
     "source-map-support": "^0.5.20",
     "supertest": "^6.1.3",
+    "swc-loader": "^0.2.3",
     "trpc-panel": "^1.3.4",
     "ts-jest": "29.0.3",
     "ts-loader": "^9.2.3",
@@ -129,7 +132,8 @@
     "tsconfig-paths": "4.1.1",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
     "typescript": "^5",
-    "webpack": "^5.95.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
     "webpack-node-externals": "^3.0.0"
   },
   "jest": {

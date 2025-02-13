@@ -1,6 +1,6 @@
 {
     "watch": [".env"],
-    "exec": "NODE_ENV=development nest start --debug 9333 --watch --preserveWatchOutput",
+    "exec": "NODE_ENV=development webpack --config webpack.config.js --watch",
     "ext": "env",
     "ignore": ["node_modules", "dist"]
   }
