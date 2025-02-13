@@ -88,7 +88,7 @@ importers:
         version: 10.4.7(@nestjs/common@10.0.0)(@nestjs/websockets@10.4.7)(rxjs@7.2.0)
       '@nestjs/serve-static':
         specifier: ^4.0.2
-        version: 4.0.2(@nestjs/common@10.0.0)(@nestjs/core@10.0.0)
+        version: 4.0.2(@nestjs/common@10.0.0)(@nestjs/core@10.0.0)(express@4.18.2)
       '@nestjs/swagger':
         specifier: ^8.0.5
         version: 8.0.5(@nestjs/common@10.0.0)(@nestjs/core@10.0.0)(class-transformer@0.2.3)(class-validator@0.11.1)(reflect-metadata@0.1.13)
@@ -125,6 +125,9 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.4.5
+      express-rate-limit:
+        specifier: ^7.5.0
+        version: 7.5.0(express@4.18.2)
       express-session:
         specifier: ^1.18.1
         version: 1.18.1
@@ -182,6 +185,9 @@ importers:
       reflect-metadata:
         specifier: ^0.1.13
         version: 0.1.13
+      request-ip:
+        specifier: ^3.3.0
+        version: 3.3.0
       rxjs:
         specifier: ^7.2.0
         version: 7.2.0
@@ -3737,7 +3743,7 @@ packages:
       - chokidar
     dev: true
 
-  /@nestjs/serve-static@4.0.2(@nestjs/common@10.0.0)(@nestjs/core@10.0.0):
+  /@nestjs/serve-static@4.0.2(@nestjs/common@10.0.0)(@nestjs/core@10.0.0)(express@4.18.2):
     resolution: {integrity: sha512-cT0vdWN5ar7jDI2NKbhf4LcwJzU4vS5sVpMkVrHuyLcltbrz6JdGi1TfIMMatP2pNiq5Ie/uUdPSFDVaZX/URQ==}
     peerDependencies:
       '@fastify/static': ^6.5.0 || ^7.0.0
@@ -3755,6 +3761,7 @@ packages:
     dependencies:
       '@nestjs/common': 10.0.0(class-transformer@0.2.3)(class-validator@0.11.1)(reflect-metadata@0.1.13)(rxjs@7.2.0)
       '@nestjs/core': 10.0.0(@nestjs/common@10.0.0)(@nestjs/platform-express@10.0.0)(@nestjs/websockets@10.4.7)(reflect-metadata@0.1.13)(rxjs@7.2.0)
+      express: 4.18.2
       path-to-regexp: 0.2.5
     dev: false
 
@@ -11670,6 +11677,15 @@ packages:
       jest-util: 29.7.0
     dev: true
 
+  /express-rate-limit@7.5.0(express@4.18.2):
+    resolution: {integrity: sha512-eB5zbQh5h+VenMPM3fh+nw1YExi5nMr6HUCR62ELSP11huvxm/Uir1H1QEyTkk5QX6A58pX6NmaTMceKZ0Eodg==}
+    engines: {node: '>= 16'}
+    peerDependencies:
+      express: ^4.11 || 5 || ^5.0.0-beta.1
+    dependencies:
+      express: 4.18.2
+    dev: false
+
   /express-session@1.18.1:
     resolution: {integrity: sha512-a5mtTqEaZvBCL9A9aqkrtfz+3SMDhOVUnjafjo+s7A9Txkq+SVX2DLvSp1Zrv4uCXa3lMSK3viWnh9Gg07PBUA==}
     engines: {node: '>= 0.8.0'}
@@ -16844,6 +16860,10 @@ packages:
     resolution: {integrity: sha512-UszKE5KVK6JvyD92nzMn9cDapSk6w/CaFZ96CnmDMUqH9oowfxF/ZjRITD25H4DnOQClLA4/j7jLGXXLVKxAug==}
     engines: {node: '>= 10'}
     dev: true
+
+  /request-ip@3.3.0:
+    resolution: {integrity: sha512-cA6Xh6e0fDBBBwH77SLJaJPBmD3nWVAcF9/XAcsrIHdjhFzFiB5aNQFytdjCGPezU3ROwrR11IddKAM08vohxA==}
+    dev: false
 
   /require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
