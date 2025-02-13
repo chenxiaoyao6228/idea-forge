@@ -6,6 +6,8 @@ import { ErrorCodeEnum } from "shared";
 import { UserService } from "@/user/user.service";
 import { DocumentService } from "@/document/ document.service";
 import { UserStatus, VerificationCodeType } from "shared";
+import { WINSTON_MODULE_PROVIDER } from "nest-winston";
+import { Logger } from "winston";
 
 interface VerificationCodeConfig {
   codeExpiry: number;
@@ -22,6 +24,8 @@ export class VerificationService {
   };
 
   constructor(
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
     private readonly redis: RedisService,
     private readonly mailService: MailService,
     private readonly userService: UserService,
@@ -35,6 +39,11 @@ export class VerificationService {
       const isInCooldown = await this.redis.get(cooldownKey);
 
       if (isInCooldown) {
+        this.logger.warn(`Rate limit exceeded for email ${email} and type ${type}`, {
+          email,
+          type,
+          cooldownKey,
+        });
         throw new ApiException(ErrorCodeEnum.RequestTooFrequent);
       }
 
@@ -48,7 +57,13 @@ export class VerificationService {
 
       return code;
     } catch (error) {
-      // TODO: 记录错误日志
+      this.logger.error(`Failed to send verification code`, {
+        email,
+        type,
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
       throw new ApiException(ErrorCodeEnum.SendEmailError);
     }
   }
@@ -74,8 +89,7 @@ export class VerificationService {
         await this.userService.updateUserStatus(email, UserStatus.ACTIVE);
         await this.documentService.createDefault(user.id);
         break;
-      case "reset-password":
-        // return this.userService.verifyEmail(email);
+      default:
         break;
     }
 

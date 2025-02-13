@@ -1,9 +1,18 @@
+const chalk = require("chalk");
 import { Module } from "@nestjs/common";
 import { WinstonModule } from "nest-winston";
 import * as winston from "winston";
-import { utilities } from "nest-winston";
+import "winston-daily-rotate-file";
 import { MailModule } from "../email/mail.module";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+
+const levelsColors = {
+  error: "red",
+  warn: "yellow",
+  info: "green",
+  debug: "blue",
+  verbose: "cyan",
+};
 
 @Module({
   imports: [
@@ -14,23 +23,31 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
         level: configService.get("NODE_ENV") === "production" ? "info" : "debug",
         format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
         transports: [
-          new winston.transports.File({
-            filename: `${process.cwd()}/logs/error.log`,
+          // Error logs rotation
+          new winston.transports.DailyRotateFile({
+            filename: `${process.cwd()}/logs/app-error-%DATE%.log`,
+            datePattern: "YYYY-MM-DD",
+            zippedArchive: true,
+            maxSize: "20m",
+            maxFiles: "14d",
             level: "error",
-            maxFiles: 30,
-            maxsize: 5242880, // 5MB
           }),
-          new winston.transports.File({
-            filename: `${process.cwd()}/logs/combined.log`,
-            maxFiles: 30,
-            maxsize: 5242880,
+          // Combined logs rotation
+          new winston.transports.DailyRotateFile({
+            filename: `${process.cwd()}/logs/app-%DATE%.log`,
+            datePattern: "YYYY-MM-DD",
+            zippedArchive: true,
+            maxSize: "20m",
+            maxFiles: "14d",
           }),
+          // Console transport for development
           new winston.transports.Console({
             format: winston.format.combine(
               winston.format.timestamp(),
               winston.format.colorize(),
-              utilities.format.nestLike("IdeaForge", {
-                prettyPrint: true,
+              winston.format.printf(({ level, message, timestamp, ...meta }) => {
+                const color = levelsColors[level.toLowerCase()] || "white";
+                return chalk[color](`[IdeaForge] ${timestamp} ${level.toUpperCase()}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ""}`);
               }),
             ),
           }),
