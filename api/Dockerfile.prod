@@ -45,7 +45,6 @@ ENV DATABASE_URL=$DATABASE_URL
 
 RUN cd shared && pnpm build
 
-# FIXME: webpack does not working well with nestjs, so haven't figured out how to build sentry with webpack
 RUN cd api && pnpm build
 
 # set sentry auth token for react because sentry does not custom key for token
@@ -95,7 +94,7 @@ RUN cd api && pnpm prisma generate
 
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-CMD node -e "require('http').get('http://localhost:5000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+    CMD node -e "require('http').get('http://localhost:5000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
 
 EXPOSE 5000 5001
 

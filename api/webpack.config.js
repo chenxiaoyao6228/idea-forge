@@ -2,10 +2,12 @@ const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 const { RunScriptWebpackPlugin } = require('run-script-webpack-plugin');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
+const { sentryWebpackPlugin } = require("@sentry/webpack-plugin");
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 module.exports = {
+  devtool: "source-map", 
   entry: ['./src/main.ts'],
   target: 'node',
   mode: isDevelopment ? 'development' : 'production',
@@ -52,4 +54,12 @@ module.exports = {
       }),
     ],
   }),
+  plugins: [
+    sentryWebpackPlugin({
+      org: "yorkchan6228",
+      project: "idea-forge-client",
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: true,
+    }),
+  ],
 }; 

@@ -24,7 +24,7 @@ export default defineConfig({
     sentryVitePlugin({
       org: "yorkchan6228",
       project: "idea-forge-client",
-      authToken: process.env.CLIENT_SENTRY_AUTH_TOKEN,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
     })
   ],
   server: {
