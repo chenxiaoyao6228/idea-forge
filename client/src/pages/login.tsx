@@ -44,11 +44,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginRequest) => {
     setIsPending(true);
     try {
-      const response = await authApi.login(data);
-      if (!response.user) {
+      const res = await authApi.login(data);
+      if (!res.user) {
         throw new Error("Login failed");
       }
-      setUserInfo(response.user);
+      setUserInfo(res.user);
       navigate(redirectTo || "/");
     } catch (err: any) {
       const errorCode = err.statusCode;
