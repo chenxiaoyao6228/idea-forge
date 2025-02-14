@@ -48,7 +48,7 @@ module.exports = {
     path: path.join(__dirname, 'dist'),
     filename: 'main.js',
   },
-  watch: true,
+  watch: isDevelopment,
   plugins: [
     isDevelopment && new webpack.HotModuleReplacementPlugin(),
     isDevelopment && new RunScriptWebpackPlugin({ 

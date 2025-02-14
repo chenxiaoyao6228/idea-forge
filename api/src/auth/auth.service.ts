@@ -16,6 +16,12 @@ import { DocumentService } from "@/document/ document.service";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 import { UserStatus } from "shared";
 import { CollaborationService } from "@/collaboration/collaboration.service";
+import { ipToCity } from "@/_shared/utils/common";
+import { Logger } from "winston";
+
+interface LoginMetadata {
+  ip?: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -28,6 +34,7 @@ export class AuthService {
     private readonly verificationService: VerificationService,
     private readonly documentService: DocumentService,
     private readonly collaborationService: CollaborationService,
+    private readonly logger: Logger,
   ) {}
 
   @Inject(refreshJwtConfig.KEY)
@@ -59,7 +66,7 @@ export class AuthService {
     };
   }
 
-  async loginUser(email: string): Promise<LoginResponseData> {
+  async loginUser(email: string, metadata?: LoginMetadata): Promise<LoginResponseData> {
     const user = await this.userService.getUserByEmail(email);
 
     if (!user) {
@@ -82,6 +89,24 @@ export class AuthService {
 
     if (!userInfo) {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    // create login history async
+    if (metadata?.ip) {
+      ipToCity(metadata.ip).then((location) => {
+        this.prisma.userLoginHistory
+          .create({
+            data: {
+              userId: user.id,
+              ip: metadata.ip,
+              location: location,
+              loginTime: new Date(),
+            },
+          })
+          .catch((error) => {
+            this.logger.error("create login history error", error);
+          });
+      });
     }
 
     return {

@@ -19,6 +19,7 @@ import { ConfigsModule } from "./_shared/config/config.module";
 import { FileStoreModule } from "./file-store/file-store.module";
 import { CollaborationModule } from "./collaboration/collaboration.module";
 import { AIModule } from "./ai/ai.module";
+import { HttpModule } from "@nestjs/axios";
 
 @Module({
   controllers: [AppController],
@@ -44,6 +45,9 @@ import { AIModule } from "./ai/ai.module";
         maxAge: 365 * 24 * 60 * 60 * 1000,
         index: false,
       },
+    }),
+    HttpModule.register({
+      timeout: 5000,
     }),
     LoggerModule,
     ConfigsModule,

@@ -5,7 +5,6 @@ generator client {
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -27,10 +26,11 @@ model User {
   password           Password?
   connections        Connection[]
   docs               Doc[]
-  sharedDocs         DocShare[]    @relation("SharedToUser")
+  sharedDocs         DocShare[]         @relation("SharedToUser")
   DocShare           DocShare[]
   File               File[]
   aiTokenUsage       AITokenUsage?
+  UserLoginHistory   UserLoginHistory[]
 }
 
 model Password {
@@ -126,4 +126,15 @@ model AITokenUsage {
   updatedAt DateTime @updatedAt
 
   @@index([userId, lastResetDate])
+}
+
+model UserLoginHistory {
+  id        String   @id @default(cuid())
+  userId    Int // Changed from String to Int
+  ip        String?
+  location  String?
+  loginTime DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

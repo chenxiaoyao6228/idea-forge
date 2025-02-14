@@ -13,8 +13,8 @@ import { ApiException } from "@/_shared/model/api.exception";
 import { ErrorCodeEnum } from "shared";
 import { VerificationService } from "./verification.service";
 import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
-import { ConfigService } from "@nestjs/config";
 import { UserResponseData } from "shared";
+import * as requestIp from "request-ip";
 
 @Controller("/api/auth")
 export class AuthController {
@@ -22,7 +22,6 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UserService,
     private readonly verificationService: VerificationService,
-    private readonly configService: ConfigService,
   ) {}
 
   @Public()
@@ -47,7 +46,8 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post("/login")
   async login(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken, user } = await this.authService.loginUser(req.user.email);
+    const clientIp = requestIp.getClientIp(req);
+    const { accessToken, refreshToken, user } = await this.authService.loginUser(req.user.email, { ip: clientIp });
 
     setAuthCookies(res, accessToken, refreshToken);
 

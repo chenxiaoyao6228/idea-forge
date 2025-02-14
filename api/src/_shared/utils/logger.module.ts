@@ -1,5 +1,5 @@
 const chalk = require("chalk");
-import { Module } from "@nestjs/common";
+import { Global, Module } from "@nestjs/common";
 import { WinstonModule } from "nest-winston";
 import * as winston from "winston";
 import "winston-daily-rotate-file";
@@ -14,6 +14,7 @@ const levelsColors = {
   verbose: "cyan",
 };
 
+@Global()
 @Module({
   imports: [
     WinstonModule.forRootAsync({
