@@ -9,11 +9,13 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 
 module.exports = {
   devtool: "source-map", 
-  entry: ['webpack/hot/poll?100', './src/main.ts'],
+  entry: isDevelopment 
+    ? ['webpack/hot/poll?100', './src/main.ts']
+    : ['./src/main.ts'],
   target: 'node',
   mode: isDevelopment ? 'development' : 'production',
   externals: [nodeExternals({
-    allowlist: ['webpack/hot/poll?100'],
+    allowlist: isDevelopment ? ['webpack/hot/poll?100'] : [],
   }),],
   module: {
     rules: [
@@ -56,7 +58,7 @@ module.exports = {
       autoRestart: false,
       nodeArgs: ['--inspect=9333'],
     }),
-    sentryWebpackPlugin({
+    !isDevelopment && sentryWebpackPlugin({
       org: "yorkchan6228",
       project: "idea-forge-client",
       authToken: process.env.SENTRY_AUTH_TOKEN,
