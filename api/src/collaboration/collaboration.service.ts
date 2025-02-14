@@ -33,7 +33,7 @@ export class CollaborationService implements OnModuleInit {
     private configService: ConfigService,
     private userService: UserService,
   ) {
-    const secret = this.configService.get("COLLAB_SECRET_KEY") || "your-secure-collaboration-secret-key-32";
+    const secret = this.configService.get("COLLAB_SECRET_KEY");
     this.secretKey = createHash("sha256").update(secret).digest();
   }
 

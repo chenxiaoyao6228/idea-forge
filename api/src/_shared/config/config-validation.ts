@@ -83,6 +83,6 @@ export const validateConfig = (config: Record<string, unknown>) => {
       });
       console.error("\n");
     }
-    throw new Error("Invalid environment configuration");
+    throw error;
   }
 };
