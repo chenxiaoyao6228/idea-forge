@@ -1,8 +1,9 @@
-import { Module } from "@nestjs/common";
+import { Global, Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import * as config from "./configs";
 import { validateConfig } from "./config-validation";
 
+@Global()
 @Module({
   imports: [
     ConfigModule.forRoot({

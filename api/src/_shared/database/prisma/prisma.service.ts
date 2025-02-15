@@ -1,12 +1,12 @@
-import { Injectable, type OnModuleInit, type OnModuleDestroy, Global, Logger } from "@nestjs/common";
+import { Injectable, type OnModuleInit, type OnModuleDestroy, Global, Inject } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
+import { WINSTON_MODULE_PROVIDER } from "nest-winston";
+import { Logger } from "winston";
 
 @Global()
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(PrismaService.name);
-
-  constructor() {
+  constructor(@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger) {
     super({
       log: [
         { level: "query", emit: "event" },
@@ -19,7 +19,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleInit() {
     try {
       await this.$connect();
-      this.logger.log("Successfully connected to database");
+      this.logger.info("Successfully connected to database");
     } catch (error) {
       this.logger.error("Failed to connect to database", error);
       throw error;
@@ -29,7 +29,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleDestroy() {
     try {
       await this.$disconnect();
-      this.logger.log("Successfully disconnected from database");
+      this.logger.info("Successfully disconnected from database");
     } catch (error) {
       this.logger.error("Error disconnecting from database", error);
       throw error;

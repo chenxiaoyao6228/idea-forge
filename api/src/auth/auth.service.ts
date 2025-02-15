@@ -18,6 +18,7 @@ import { UserStatus } from "shared";
 import { CollaborationService } from "@/collaboration/collaboration.service";
 import { ipToCity } from "@/_shared/utils/common";
 import { Logger } from "winston";
+import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 
 interface LoginMetadata {
   ip?: string;
@@ -26,6 +27,7 @@ interface LoginMetadata {
 @Injectable()
 export class AuthService {
   constructor(
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly redis: RedisService,
@@ -34,7 +36,6 @@ export class AuthService {
     private readonly verificationService: VerificationService,
     private readonly documentService: DocumentService,
     private readonly collaborationService: CollaborationService,
-    private readonly logger: Logger,
   ) {}
 
   @Inject(refreshJwtConfig.KEY)
