@@ -57,7 +57,6 @@ model Connection {
 model Doc {
   id            String      @id @default(cuid())
   title         String
-  content       String
   contentBinary Bytes?
   isArchived    Boolean     @default(false)
   isStarred     Boolean     @default(false)

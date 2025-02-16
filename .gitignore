@@ -73,3 +73,6 @@ api/uploads
 !.env.project
 !.env.vault
 !.env.example
+
+# deploy
+build-job.env

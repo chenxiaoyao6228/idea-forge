@@ -30,6 +30,39 @@ jobs:
             echo "ENV=TEST" >> $GITHUB_ENV
           fi
 
+          # Write environment variables to build-job.env
+          cat > build-job.env << EOF
+          DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_PASSWORD=${{ secrets.DOCKER_HUB_PASSWORD }}
+          DOCKER_HUB_REPO=ideaforge-docker
+
+          # Environment variables
+          ENV=${ENV}
+          SKIP_PUSH=false
+          LOCAL_TEST=false
+
+          # VM related variables
+          VM_IP=${{ secrets[format('VM_IP_{0}', env.ENV)] }}
+          VM_PASSWORD=${{ secrets[format('VM_PASSWORD_{0}', env.ENV)] }}
+
+          # Build related variables
+          NODE_ENV=production
+          SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN_REACT=${{ secrets.SENTRY_AUTH_TOKEN_REACT }}
+
+          # Git information
+          GITHUB_SHA=${GITHUB_SHA}
+          GITHUB_REF=${GITHUB_REF}
+          GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
+
+          # branch name
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+
+          # npmrc 
+          NPMRC=${{ secrets.NPMRC }}
+
+          EOF
+
       - name: Create config files
         run: |
           echo "${{ secrets.NPMRC }}" > .npmrc
@@ -43,22 +76,6 @@ jobs:
       - name: Generate image tag
         id: tag
         run: |
-          # Get short commit hash (first 8 characters)
-          COMMIT_HASH=$(git rev-parse --short=8 HEAD)
-
-          # Get current timestamp (format: YYYYMMDD-HHMMSS)
-          TIMESTAMP=$(date '+%Y%m%d-%H%M%S')
-
-          # If triggered by tag, use tag name
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            TAG=${GITHUB_REF#refs/tags/}
-            IMAGE_TAG="${TAG}-${TIMESTAMP}"
-          else
-            IMAGE_TAG="${COMMIT_HASH}-${TIMESTAMP}"
-          fi
-
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
-          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
         run: |
