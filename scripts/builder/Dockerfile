@@ -1,18 +1,12 @@
 # Base stage for shared dependencies
 FROM node:20.18.1-alpine AS builder
-RUN corepack enable && corepack prepare pnpm@8.5.1 --activate
 
-# add system dependencies 
-RUN apk add --no-cache \
-    openssl3 \
-    openssl3-dev \
-    libc6-compat \
-    openssh-client \
-    git \
-    postgresql-client
+# Add OpenSSL dependencies for Prisma
+RUN apk add --no-cache openssl openssl-dev
+
+RUN npm install -g pnpm@8.5.1
 
 WORKDIR /app
-
 
 # Copy package files first for better caching
 COPY .npmrc ./
@@ -56,15 +50,13 @@ RUN cd client && pnpm build
 
 ## production stage
 FROM node:20.18.1-alpine AS production
-RUN corepack enable && corepack prepare pnpm@8.5.1 --activate
 
-# add system dependencies 
-RUN apk add --no-cache \
-    openssl3 \
-    postgresql-client
+# Add OpenSSL dependencies for Prisma in production stage
+RUN apk add --no-cache openssl openssl-dev
+
+RUN npm install -g pnpm@8.5.1
 
 WORKDIR /app
-
 
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-lock.yaml ./

@@ -5,8 +5,6 @@ services:
       - "5000:5000"
       - "5001:5001"
     environment:
-     # DOTENV_KEY=dotenv://:key_0c438695fc0b67f67a0e445c7978d621cb088fe107970ea7cfb46e0349f8dc32@dotenv.org/vault/.env.vault?environment=production docker-compose -f docker-compose.yml up -d && docker-compose -f docker-compose.yml logs -f idea-forge
-     #  The env variable is set in the deploy.sh script, but you should add it here as well, otherwise it will not be set in the container
       - NODE_ENV=production
       - DOTENV_KEY=${DOTENV_KEY}
       - DATABASE_URL=postgresql://postgres:123456@postgres:5432/ideaforge?schema=public
