@@ -5,7 +5,7 @@ set -e
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # echo all env variables:
-printenv
+cat "${ROOT_DIR}/scripts/builder/build-job.env"
 
 # Load environment variables from run.env
 if [ -f "${ROOT_DIR}/scripts/builder/build-job.env" ]; then

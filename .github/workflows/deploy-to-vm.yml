@@ -20,28 +20,24 @@ jobs:
         run: |
           if [[ $GITHUB_REF == 'refs/heads/master' ]]; then
             ENV="production"
-            VM_IP="VM_IP_PRODUCTION"
-            VM_PASSWORD="VM_PASSWORD_PRODUCTION"
-            SENTRY_DSN="SENTRY_DSN_PRODUCTION"
-            DOTENV_KEY="DOTENV_KEY_PRODUCTION"
+            VM_IP="${{ secrets.VM_IP_PRODUCTION }}"
+            VM_PASSWORD="${{ secrets.VM_PASSWORD_PRODUCTION }}"
+            DOTENV_KEY="${{ secrets.DOTENV_KEY_PRODUCTION }}"
           elif [[ $GITHUB_REF == 'refs/heads/staging' ]]; then
             ENV="staging"
-            VM_IP="VM_IP_STAGING"
-            VM_PASSWORD="VM_PASSWORD_STAGING"
-            SENTRY_DSN="SENTRY_DSN_STAGING"
-            DOTENV_KEY="DOTENV_KEY_STAGING"
+            VM_IP="${{ secrets.VM_IP_STAGING }}"
+            VM_PASSWORD="${{ secrets.VM_PASSWORD_STAGING }}"
+            DOTENV_KEY="${{ secrets.DOTENV_KEY_STAGING }}"
           elif [[ $GITHUB_REF == 'refs/heads/test' ]]; then
             ENV="test"
-            VM_IP="VM_IP_TEST"
-            VM_PASSWORD="VM_PASSWORD_TEST"
-            SENTRY_DSN="SENTRY_DSN_TEST"
-            DOTENV_KEY="DOTENV_KEY_TEST"
+            VM_IP="${{ secrets.VM_IP_TEST }}"
+            VM_PASSWORD="${{ secrets.VM_PASSWORD_TEST }}"
+            DOTENV_KEY="${{ secrets.DOTENV_KEY_TEST }}"
           elif [[ $GITHUB_REF == 'refs/heads/feature/test-deploy-github-action' ]]; then
             ENV="production"
-            VM_IP="VM_IP_PRODUCTION"
-            VM_PASSWORD="VM_PASSWORD_PRODUCTION"
-            SENTRY_DSN="SENTRY_DSN_PRODUCTION"
-            DOTENV_KEY="DOTENV_KEY_PRODUCTION"
+            VM_IP="${{ secrets.VM_IP_PRODUCTION }}"
+            VM_PASSWORD="${{ secrets.VM_PASSWORD_PRODUCTION }}"
+            DOTENV_KEY="${{ secrets.DOTENV_KEY_PRODUCTION }}"
           fi
 
           # Write environment variables to build-job.env
