@@ -18,13 +18,14 @@ import { JwtService } from "@nestjs/jwt";
 import { FileService } from "@/file-store/file-store.service";
 import { FileStoreModule } from "../file-store/file-store.module";
 import { CollaborationModule } from "@/collaboration/collaboration.module";
+import { LoggerModule } from "@/_shared/utils/logger.module";
 
 @Module({
   // JwtModule.registerAsync(jwtConfig.asProvider()) - Asynchronously register JWT module using jwtConfig
   // Contains configuration for secret and signOptions (expiration time etc.)
   // ConfigModule.forFeature(jwtConfig) - Register jwtConfig as a configuration feature
   // Allows jwtConfig values to be injected throughout the module
-  imports: [JwtModule.registerAsync(jwtConfig.asProvider()), FileStoreModule, CollaborationModule],
+  imports: [JwtModule.registerAsync(jwtConfig.asProvider()), FileStoreModule, CollaborationModule, LoggerModule],
   providers: [
     LocalStrategy,
     JwtStrategy,

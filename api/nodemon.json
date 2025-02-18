@@ -1,6 +1,6 @@
 {
     "watch": [".env", "webpack.config.js", "package.json"],
-    "exec": "NODE_ENV=development webpack --config webpack.config.js --watch",
+    "exec": "NODE_ENV=development dotenvx run --   webpack --config webpack.config.js --watch",
     "ext": "env,js,json",
     "ignore": ["node_modules", "dist"]
   }

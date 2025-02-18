@@ -24,8 +24,7 @@ export class VerificationService {
   };
 
   constructor(
-    @Inject(WINSTON_MODULE_PROVIDER)
-    private readonly logger: Logger,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     private readonly redis: RedisService,
     private readonly mailService: MailService,
     private readonly userService: UserService,

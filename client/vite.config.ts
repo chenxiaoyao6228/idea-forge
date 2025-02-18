@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import { inspectorServer } from "@react-dev-inspector/vite-plugin";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { iconsSpritesheet } from "vite-plugin-icons-spritesheet";
+import timeReporter from "vite-plugin-time-reporter";
 // TODO:  
 const port = 5173;
 const isDev = process.env.NODE_ENV !== "production";
@@ -12,8 +13,10 @@ const isDev = process.env.NODE_ENV !== "production";
 export default defineConfig({
   plugins: [
     isDev ? inspectorServer() : null,
+    !isDev && timeReporter(),
     react(),
     tsconfigPaths(),
+
     iconsSpritesheet({
       inputDir: "./src/assets/icons",
       typesOutputFile: "./src/components/ui/icons.d.ts",
@@ -21,12 +24,12 @@ export default defineConfig({
       withTypes: true,
       fileName: "sprite.svg",
     }),
-    sentryVitePlugin({
-      org: "yorkchan6228",
-      project: "idea-forge-client",
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-    })
-  ],
+    // sentryVitePlugin({
+    //   org: "yorkchan6228",
+    //   project: "idea-forge-client",
+    //   authToken: process.env.SENTRY_AUTH_TOKEN,
+    // })
+  ].filter(Boolean),
   server: {
     port: port,
     origin: `http://localhost:${port}`,
