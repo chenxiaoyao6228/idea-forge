@@ -2,6 +2,10 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
+console.log("========= env start ==========");
+console.log("process.env", process.env);
+console.log("========= env end ==========");
+
 // Sentry
 import "./_shared/utils/sentry";
 
@@ -58,8 +62,17 @@ async function bootstrap() {
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
   const port = configService.get("NEST_API_PORT", 5000);
-  await app.listen(port);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+
+  // For pm2 cluster mode
+  if (process.env.NODE_APP_INSTANCE) {
+    if (process.env.NODE_APP_INSTANCE === "0") {
+      await app.listen(port);
+      console.log(`Application is running on: ${await app.getUrl()}`);
+    }
+  } else {
+    await app.listen(port);
+    console.log(`Application is running on: ${await app.getUrl()}`);
+  }
 
   if (module.hot) {
     module.hot.accept();

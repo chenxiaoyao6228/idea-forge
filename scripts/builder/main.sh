@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# 解析参数
+# Parse arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --skip-push) SKIP_PUSH="$2"; shift ;;
@@ -10,16 +10,67 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# 定义根目录路径
+# Define root directory path
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# 加载环境配置
-source "${ROOT_DIR}/build-job.env"
+# Load environment configuration
+source "${ROOT_DIR}/scripts/builder/build-job.env"
 
-# TODO:  npmrc 文件 存在行压缩的问题
-# echo "$NPMRC" > "${ROOT_DIR}/.npmrc"
+function check_env_vars() {
+    local missing_vars=()
+    
+    # Docker Hub related variables
+    if [ -z "$DOCKER_HUB_USERNAME" ]; then
+        missing_vars+=("DOCKER_HUB_USERNAME")
+    fi
+    if [ -z "$DOCKER_HUB_PASSWORD" ]; then
+        missing_vars+=("DOCKER_HUB_PASSWORD")
+    fi
+    if [ -z "$DOCKER_HUB_REPO" ]; then
+        missing_vars+=("DOCKER_HUB_REPO")
+    fi
+    
+    # Build related variables
+    if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+        missing_vars+=("SENTRY_AUTH_TOKEN")
+    fi
+    if [ -z "$SENTRY_AUTH_TOKEN_REACT" ]; then
+        missing_vars+=("SENTRY_AUTH_TOKEN_REACT")
+    fi
+    if [ -z "$SENTRY_DSN" ]; then
+        missing_vars+=("SENTRY_DSN")
+    fi
+    
+    # Environment variables
+    if [ -z "$ENV" ]; then
+        missing_vars+=("ENV")
+    fi
+    
+    # Other required tokens
+    if [ -z "$DOTENV_KEY" ]; then
+        missing_vars+=("DOTENV_KEY")
+    fi
+    if [ -z "$TIPTAP_AUTH_TOKEN" ]; then
+        missing_vars+=("TIPTAP_AUTH_TOKEN")
+    fi
+    
+    # If any variables are missing, print them and exit
+    if [ ${#missing_vars[@]} -ne 0 ]; then
+        echo "Error: The following required environment variables are not set:"
+        printf '%s\n' "${missing_vars[@]}"
+        exit 1
+    fi
+}
 
-# 版本生成函数
+check_env_vars
+
+cat > "${ROOT_DIR}/.npmrc" << EOL
+link-workspace-packages=true
+@tiptap-pro:registry=https://registry.tiptap.dev/
+//registry.tiptap.dev/:_authToken=${TIPTAP_AUTH_TOKEN}
+EOL
+
+# Version generation function
 function generate_version() {
     local date_part=$(date +"%Y%m%d")
     local time_part=$(date +"%H%M%S")
@@ -30,26 +81,26 @@ function generate_version() {
     echo "${git_hash}-${date_part}-${time_part}"
 }
 
-# 生成版本号
+# Generate version number
 VERSION=$(generate_version)
 
-# Docker 构建函数
+# Docker build function
 function build_image() {
     local VERSION=$1
     
-    # 根据 SKIP_PUSH 决定镜像名称格式
+    # Determine image name format based on SKIP_PUSH
     local IMAGE_NAME
     if [ "$SKIP_PUSH" = "true" ]; then
-        IMAGE_NAME="${DOCKER_HUB_REPO}"  # 本地镜像格式
+        IMAGE_NAME="${DOCKER_HUB_REPO}"  # Local image format
     else
-        IMAGE_NAME="${DOCKER_HUB_USERNAME}/${DOCKER_HUB_REPO}"  # Docker Hub 格式
+        IMAGE_NAME="${DOCKER_HUB_USERNAME}/${DOCKER_HUB_REPO}"  # Docker Hub format
     fi
     local IMAGE_TAG="${VERSION}"
 
     echo "Building Docker image with tag: ${IMAGE_TAG}"
     echo "Environment: ${ENVIRONMENT}"
 
-    # 构建参数数组
+    # Build parameter array
     local build_args=(
         # --no-cache
         --progress=plain
@@ -78,36 +129,17 @@ function build_image() {
     fi
 }
 
-# 导出环境变量函数
+# Export environment variables function
 function export_env_vars() {
-    echo "ENVIRONMENT=$ENVIRONMENT" > "${ROOT_DIR}/scripts/deploy/run.env"
+    echo "ENVIRONMENT=$ENV" > "${ROOT_DIR}/scripts/deploy/run.env"
     echo "SKIP_PULL=$SKIP_PUSH" >> "${ROOT_DIR}/scripts/deploy/run.env"
     echo "IMAGE_TAG=$VERSION" >> "${ROOT_DIR}/scripts/deploy/run.env"
     echo "DOCKER_HUB_USERNAME=$DOCKER_HUB_USERNAME" >> "${ROOT_DIR}/scripts/deploy/run.env"
     echo "DOCKER_HUB_PASSWORD=$DOCKER_HUB_PASSWORD" >> "${ROOT_DIR}/scripts/deploy/run.env"
     echo "DOCKER_HUB_REPO=$DOCKER_HUB_REPO" >> "${ROOT_DIR}/scripts/deploy/run.env"
+    echo "DOTENV_KEY=$DOTENV_KEY" >> "${ROOT_DIR}/scripts/deploy/run.env"
 }
 
-# 执行主要流程
+# Execute main process
 build_image "$VERSION"
 export_env_vars
-
-# 如果是本地测试
-# if [[ "$LOCAL_TEST" == "true" ]]; then
-#     echo "Starting local test environment..."
-#     docker-compose -f "${ROOT_DIR}/scripts/deploy/docker-compose.local.yml" up -d
-# fi
-
-## ssh login vm
-
-#  ssh root@120.78.192.100
-
-## copy folder to vm
-# scp -r root@120.78.192.100:/root/idea-forge/scripts/deploy/docker-compose-production.yml /root/idea-forge/scripts/deploy/docker-compose-production.yml
-# scp -r root@120.78.192.100:/root/idea-forge/scripts/deploy/run.env /root/idea-forge/scripts/deploy/run.env
-# scp -r root@120.78.192.100:/root/idea-forge/scripts/deploy/main.sh /root/idea-forge/scripts/deploy/main.sh
-
-## 登录 vm 后，执行命令
-# cd /root/idea-forge/scripts/deploy
-
-# ./main.sh 

@@ -163,6 +163,7 @@
     "typescript-eslint": "^8.15.0",
     "vite": "^6.0.1",
     "vite-plugin-icons-spritesheet": "^2.2.1",
+    "vite-plugin-time-reporter": "^2.3.0",
     "vite-tsconfig-paths": "^5.1.3"
   }
 }

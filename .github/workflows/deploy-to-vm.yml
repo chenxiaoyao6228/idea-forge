@@ -19,79 +19,41 @@ jobs:
       - name: Set environment
         run: |
           if [[ $GITHUB_REF == 'refs/heads/master' ]]; then
-            echo "ENV=PRODUCTION" >> $GITHUB_ENV
+            echo "ENV=production" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/staging' ]]; then
-            echo "ENV=STAGING" >> $GITHUB_ENV
+            echo "ENV=staging" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/test' ]]; then
-            echo "ENV=TEST" >> $GITHUB_ENV
+            echo "ENV=test" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/feature/test-deploy-github-action' ]]; then
-            echo "ENV=PRODUCTION" >> $GITHUB_ENV
+            echo "ENV=production" >> $GITHUB_ENV
           else
-            echo "ENV=TEST" >> $GITHUB_ENV
+            echo "ENV=test" >> $GITHUB_ENV
           fi
 
           # Write environment variables to build-job.env
-          cat > build-job.env << EOF
+          cat > scripts/builder/build-job.env << EOF
+          # Environment variables
+          ENV=${{ env.ENV }}
+
+          # Docker Hub credentials
           DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
           DOCKER_HUB_PASSWORD=${{ secrets.DOCKER_HUB_PASSWORD }}
           DOCKER_HUB_REPO=ideaforge-docker
 
-          # Environment variables
-          ENV=${ENV}
-          SKIP_PUSH=false
-          LOCAL_TEST=false
-
-          # VM related variables
-          VM_IP=${{ secrets[format('VM_IP_{0}', env.ENV)] }}
-          VM_PASSWORD=${{ secrets[format('VM_PASSWORD_{0}', env.ENV)] }}
-
           # Build related variables
-          NODE_ENV=production
           SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_AUTH_TOKEN_REACT=${{ secrets.SENTRY_AUTH_TOKEN_REACT }}
+          SENTRY_DSN=${{ secrets.SENTRY_DSN }}
 
-          # Git information
-          GITHUB_SHA=${GITHUB_SHA}
-          GITHUB_REF=${GITHUB_REF}
-          GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
-
-          # branch name
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-
-          # npmrc 
-          NPMRC=${{ secrets.NPMRC }}
+          # tiptap auth token
+          TIPTAP_AUTH_TOKEN=${{ secrets.TIPTAP_AUTH_TOKEN }}
 
           EOF
 
-      - name: Create config files
-        run: |
-          echo "${{ secrets.NPMRC }}" > .npmrc
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-
-      - name: Generate image tag
-        id: tag
-        run: |
 
       - name: Build Docker image
         run: |
-          docker build \
-            -f api/Dockerfile.prod \
-            -t ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-docker:${{ env.IMAGE_TAG }} \
-            -t ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-docker:latest \
-            --build-arg NODE_ENV=production \
-            --build-arg SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} \
-            --build-arg SENTRY_AUTH_TOKEN_REACT=${{ secrets.SENTRY_AUTH_TOKEN_REACT }} \
-            .
-
-      - name: Push to Docker Hub
-        run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-docker:${{ env.IMAGE_TAG }}
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/ideaforge-docker:latest
+          make build
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.0

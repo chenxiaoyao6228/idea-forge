@@ -93,4 +93,4 @@ EXPOSE 5000 5001
 
 RUN npm install pm2 -g
 
-CMD cd api && pm2-runtime start ecosystem.config.js --env production
+CMD cd api && npm run start:pm2

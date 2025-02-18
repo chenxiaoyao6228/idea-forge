@@ -29,40 +29,15 @@ fi
 # Export image name for docker-compose
 echo "IMAGE_NAME=$IMAGE_NAME" >> "${ROOT_DIR}/scripts/deploy/run.env"
 
-# Define environment variables for different environments
-DOTENV_KEY_PRODUCTION="dotenv://:key_0c438695fc0b67f67a0e445c7978d621cb088fe107970ea7cfb46e0349f8dc32@dotenv.org/vault/.env.vault?environment=production"
-# DOTENV_KEY_STAGING="your_staging_key_here"
-DOTENV_KEY_TEST="dotenv://:key_eeeafd6e3e18edfcd6ea2b3ae52a08b676ab69772f3b9af5f0178e46da62a751@dotenv.org/vault/.env.vault?environment=ci"
-
-# Set DOTENV_KEY based on environment
-case $ENVIRONMENT in
-    "PRODUCTION")
-        DOTENV_KEY=$DOTENV_KEY_PRODUCTION
-        ;;
-    "STAGING") 
-        DOTENV_KEY=$DOTENV_KEY_STAGING
-        ;;
-    "TEST")
-        DOTENV_KEY=$DOTENV_KEY_TEST
-        ;;
-    *)
-        echo "Error: Invalid environment. Must be production, staging, or test"
-        exit 1
-        ;;
-esac
-
-# Convert environment variable to lowercase for Docker Compose file naming convention
-LOWERCASE_ENVIRONMENT=$(echo "$ENVIRONMENT" | tr '[:upper:]' '[:lower:]')
-
-DOCKER_COMPOSE_FILE="scripts/deploy/docker-compose-$LOWERCASE_ENVIRONMENT.yml"
+DOCKER_COMPOSE_FILE="scripts/deploy/docker-compose-$ENVIRONMENT.yml"
 
 echo "🚀 Starting deployment process..."
 
 # Login to Docker Hub if credentials are provided and SKIP_PULL is not true
+if [ "$SKIP_PULL" != "true" ]; then
     echo "🔑 Logging in to Docker Hub..."
     echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
-# if [ "$SKIP_PULL" != "true" ]; then
-# fi
+fi
 
 # Export environment variable for dotenv-vault
 export DOTENV_KEY="$DOTENV_KEY"
@@ -99,10 +74,6 @@ else
     exit 1
 fi
 
-# record deploy info
-echo "Deployed $ENVIRONMENT environment with image: $IMAGE_NAME at $(date '+%Y-%m-%d %H:%M:%S')" >> deploy.log
-SCRIPT_PATH="$(pwd)/$(basename $0)"
-echo "you can deploy manually with this command: sh $SCRIPT_PATH $ENVIRONMENT $IMAGE_TAG" >> deploy.log
 
 # Wait for services to start
 echo "⏳ Waiting for services to start..."
@@ -116,7 +87,7 @@ docker-compose -f $DOCKER_COMPOSE_FILE ps
 echo "🧹 Cleaning up old images..."
 
 if [ "$SKIP_PULL" != "true" ]; then
-    # 只在使用远程镜像时清理旧镜像
+    # only clean old images when using remote image
     docker images "$DOCKER_HUB_USERNAME/idea-forge" --format "{{.ID}} {{.Tag}} {{.CreatedAt}}" | sort -k3,4 -r |
     while read id tag created; do
         if [ "$tag" != "$IMAGE_TAG" ] && [ "$(echo "$created" | cut -d' ' -f1-2)" != "$(docker images "$DOCKER_HUB_USERNAME/idea-forge:$IMAGE_TAG" --format "{{.CreatedAt}}" | cut -d' ' -f1-2)" ]; then
