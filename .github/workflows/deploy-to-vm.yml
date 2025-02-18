@@ -20,14 +20,24 @@ jobs:
         run: |
           if [[ $GITHUB_REF == 'refs/heads/master' ]]; then
             echo "ENV=production" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_PRODUCTION" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/staging' ]]; then
             echo "ENV=staging" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_STAGING" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_STAGING" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/test' ]]; then
             echo "ENV=test" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_TEST" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/feature/test-deploy-github-action' ]]; then
             echo "ENV=production" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_PRODUCTION" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $GITHUB_ENV
           else
             echo "ENV=test" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_TEST" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $GITHUB_ENV
           fi
 
           # Write environment variables to build-job.env
@@ -50,7 +60,6 @@ jobs:
 
           EOF
 
-
       - name: Build Docker image
         run: |
           make build
@@ -59,11 +68,36 @@ jobs:
         uses: appleboy/ssh-action@v1.0.0
         with:
           username: ubuntu
-          host: ${{ secrets[format('VM_IP_{0}', env.ENV)] }}
-          password: ${{ secrets[format('VM_PASSWORD_{0}', env.ENV)] }}
+          host: ${{ env.VM_IP }}
+          password: ${{ env.VM_PASSWORD }}
           script: |
-            cd ~/deploy-scripts/idea-forge && \
-            sh deploy.sh ${{ env.ENV }} ${{ env.IMAGE_TAG }}
+            # Create deploy directory if not exists
+            mkdir -p ~/deploy-scripts/idea-forge
+
+            # Remove old files if they exist
+            rm -rf ~/deploy-scripts/idea-forge/*
+          script_stop: true
+
+      - name: Copy deployment files
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          username: ubuntu
+          host: ${{ env.VM_IP }}
+          password: ${{ env.VM_PASSWORD }}
+          source: "scripts/deploy/*"
+          target: "~/deploy-scripts/idea-forge"
+          strip_components: 2
+
+      - name: Run deployment
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          username: ubuntu
+          host: ${{ env.VM_IP }}
+          password: ${{ env.VM_PASSWORD }}
+          script: |
+            cd ~/deploy-scripts/idea-forge
+            chmod +x main.sh
+            ./main.sh
 
       - name: Cleanup
         if: always()
