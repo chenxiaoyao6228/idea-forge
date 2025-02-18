@@ -19,29 +19,29 @@ jobs:
       - name: Set environment
         run: |
           if [[ $GITHUB_REF == 'refs/heads/master' ]]; then
-            echo "ENV=production" >> $ENV
-            echo "VM_IP=VM_IP_PRODUCTION" >> $ENV
-            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $ENV
-            echo "SENTRY_DSN=SENTRY_DSN_PRODUCTION" >> $ENV
+            echo "ENV=production" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_PRODUCTION" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $GITHUB_ENV
+            echo "SENTRY_DSN=SENTRY_DSN_PRODUCTION" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/staging' ]]; then
-            echo "ENV=staging" >> $ENV
-            echo "VM_IP=VM_IP_STAGING" >> $ENV
-            echo "VM_PASSWORD=VM_PASSWORD_STAGING" >> $ENV
-            echo "SENTRY_DSN=SENTRY_DSN_STAGING" >> $ENV
+            echo "ENV=staging" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_STAGING" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_STAGING" >> $GITHUB_ENV
+            echo "SENTRY_DSN=SENTRY_DSN_STAGING" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/test' ]]; then
-            echo "ENV=test" >> $ENV
-            echo "VM_IP=VM_IP_TEST" >> $ENV
-            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $ENV
-            echo "SENTRY_DSN=SENTRY_DSN_TEST" >> $ENV
+            echo "ENV=test" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_TEST" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $GITHUB_ENV
+            echo "SENTRY_DSN=SENTRY_DSN_TEST" >> $GITHUB_ENV
           elif [[ $GITHUB_REF == 'refs/heads/feature/test-deploy-github-action' ]]; then
-            echo "ENV=production" >> $ENV
-            echo "VM_IP=VM_IP_PRODUCTION" >> $ENV
-            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $ENV
-            echo "SENTRY_DSN=SENTRY_DSN_PRODUCTION" >> $ENV
+            echo "ENV=production" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_PRODUCTION" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $GITHUB_ENV
+            echo "SENTRY_DSN=SENTRY_DSN_PRODUCTION" >> $GITHUB_ENV
           else
-            echo "ENV=test" >> $ENV
-            echo "VM_IP=VM_IP_TEST" >> $ENV
-            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $ENV
+            echo "ENV=test" >> $GITHUB_ENV
+            echo "VM_IP=VM_IP_TEST" >> $GITHUB_ENV
+            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $GITHUB_ENV
           fi
 
           # Write environment variables to build-job.env
@@ -52,7 +52,7 @@ jobs:
           # Docker Hub credentials
           DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
           DOCKER_HUB_PASSWORD=${{ secrets.DOCKER_HUB_PASSWORD }}
-          DOCKER_HUB_REPO=idea-forge
+          DOCKER_HUB_REPO=ideaforge-docker
 
           # Build related variables
           SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
