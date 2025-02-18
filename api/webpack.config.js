@@ -58,11 +58,11 @@ module.exports = {
       autoRestart: false,
       nodeArgs: ['--inspect=9333'],
     }),
-    !isDevelopment && sentryWebpackPlugin({
-      org: "yorkchan6228",
-      project: "idea-forge-client",
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      silent: true,
-    }),
+    // !isDevelopment && sentryWebpackPlugin({
+    //   org: "yorkchan6228",
+    //   project: "idea-forge-client",
+    //   authToken: process.env.SENTRY_AUTH_TOKEN,
+    //   silent: true,
+    // }),
   ].filter(Boolean),
 }; 

@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import OpenAI from "openai";
 import { AIProviderConfig } from "./ai.type";
@@ -7,10 +7,13 @@ import { AIStreamResponse, AIStreamRequest, ChatMessage } from "shared";
 import { faker } from "@faker-js/faker";
 import { TokenUsageService } from "./token-usage.service";
 import { ApiException } from "@/_shared/model/api.exception";
+import { WINSTON_MODULE_PROVIDER } from "nest-winston";
+import { Logger } from "winston";
+import { Inject } from "@nestjs/common";
 
 @Injectable()
 export class AIProviderService implements OnModuleInit {
-  private readonly logger = new Logger(AIProviderService.name);
+  @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger;
   private providers: Map<string, { config: AIProviderConfig; client: OpenAI }> = new Map();
   private activeProviders: AIProviderConfig[] = [];
 
