@@ -52,7 +52,7 @@ jobs:
           # Docker Hub credentials
           DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
           DOCKER_HUB_PASSWORD=${{ secrets.DOCKER_HUB_PASSWORD }}
-          DOCKER_HUB_REPO=ideaforge-docker
+          DOCKER_HUB_REPO=idea-forge
 
           # Build related variables
           SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
