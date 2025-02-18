@@ -19,25 +19,29 @@ jobs:
       - name: Set environment
         run: |
           if [[ $GITHUB_REF == 'refs/heads/master' ]]; then
-            echo "ENV=production" >> $GITHUB_ENV
-            echo "VM_IP=VM_IP_PRODUCTION" >> $GITHUB_ENV
-            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $GITHUB_ENV
+            echo "ENV=production" >> $ENV
+            echo "VM_IP=VM_IP_PRODUCTION" >> $ENV
+            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $ENV
+            echo "SENTRY_DSN=SENTRY_DSN_PRODUCTION" >> $ENV
           elif [[ $GITHUB_REF == 'refs/heads/staging' ]]; then
-            echo "ENV=staging" >> $GITHUB_ENV
-            echo "VM_IP=VM_IP_STAGING" >> $GITHUB_ENV
-            echo "VM_PASSWORD=VM_PASSWORD_STAGING" >> $GITHUB_ENV
+            echo "ENV=staging" >> $ENV
+            echo "VM_IP=VM_IP_STAGING" >> $ENV
+            echo "VM_PASSWORD=VM_PASSWORD_STAGING" >> $ENV
+            echo "SENTRY_DSN=SENTRY_DSN_STAGING" >> $ENV
           elif [[ $GITHUB_REF == 'refs/heads/test' ]]; then
-            echo "ENV=test" >> $GITHUB_ENV
-            echo "VM_IP=VM_IP_TEST" >> $GITHUB_ENV
-            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $GITHUB_ENV
+            echo "ENV=test" >> $ENV
+            echo "VM_IP=VM_IP_TEST" >> $ENV
+            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $ENV
+            echo "SENTRY_DSN=SENTRY_DSN_TEST" >> $ENV
           elif [[ $GITHUB_REF == 'refs/heads/feature/test-deploy-github-action' ]]; then
-            echo "ENV=production" >> $GITHUB_ENV
-            echo "VM_IP=VM_IP_PRODUCTION" >> $GITHUB_ENV
-            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $GITHUB_ENV
+            echo "ENV=production" >> $ENV
+            echo "VM_IP=VM_IP_PRODUCTION" >> $ENV
+            echo "VM_PASSWORD=VM_PASSWORD_PRODUCTION" >> $ENV
+            echo "SENTRY_DSN=SENTRY_DSN_PRODUCTION" >> $ENV
           else
-            echo "ENV=test" >> $GITHUB_ENV
-            echo "VM_IP=VM_IP_TEST" >> $GITHUB_ENV
-            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $GITHUB_ENV
+            echo "ENV=test" >> $ENV
+            echo "VM_IP=VM_IP_TEST" >> $ENV
+            echo "VM_PASSWORD=VM_PASSWORD_TEST" >> $ENV
           fi
 
           # Write environment variables to build-job.env
@@ -53,7 +57,6 @@ jobs:
           # Build related variables
           SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_AUTH_TOKEN_REACT=${{ secrets.SENTRY_AUTH_TOKEN_REACT }}
-          SENTRY_DSN=${{ secrets.SENTRY_DSN }}
 
           # tiptap auth token
           TIPTAP_AUTH_TOKEN=${{ secrets.TIPTAP_AUTH_TOKEN }}
