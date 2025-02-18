@@ -52,7 +52,7 @@ jobs:
           # Write environment variables to build-job.env
           cat > scripts/builder/build-job.env << EOF
           # Environment variables
-          ENV=${ENV}
+          ENV=${{ env.ENV }}
 
           # Docker Hub credentials
           DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
