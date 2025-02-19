@@ -78,8 +78,9 @@ export class AIProviderService implements OnModuleInit {
             max_tokens: request.options?.max_tokens ?? 1000,
           });
 
+          let finalUsage: OpenAI.Completions.CompletionUsage | null = null;
+
           for await (const chunk of stream) {
-            // console.log("=========chunk===========", chunk);
             const content = chunk.choices[0]?.delta?.content || "";
             if (content) {
               subject.next({
@@ -88,10 +89,14 @@ export class AIProviderService implements OnModuleInit {
                 provider: provider.name,
               });
             }
-            const usage = chunk.usage;
-            if (usage) {
-              await this.tokenUsageService.updateTokenUsage(userId, usage.total_tokens);
+            if (chunk.usage) {
+              finalUsage = chunk.usage;
             }
+          }
+
+          if (finalUsage) {
+            this.logger.info(`Final token usage for provider ${provider.id}:`, finalUsage);
+            await this.tokenUsageService.updateTokenUsage(userId, finalUsage.total_tokens);
           }
 
           subject.complete();
