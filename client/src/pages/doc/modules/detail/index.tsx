@@ -4,7 +4,7 @@ import Loading from "@/components/loading";
 import { useDocumentStore } from "../../stores/doc-store";
 import { Toolbar } from "./toolbar";
 import Cover from "./cover";
-import TiptapEditor from "../editor";
+import TiptapEditor from "../../../../editor";
 import useUserStore from "@/stores/user";
 import { getEnvVariable } from "@/lib/env";
 import { TableOfContent } from "../../components/table-of-content";

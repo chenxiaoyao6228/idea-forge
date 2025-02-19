@@ -5,7 +5,7 @@ import { TextSelection } from "@tiptap/pm/state";
 import type React from "react";
 import { useEditorStore } from "../stores/editor-store";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { useEditorMount } from "../modules/editor/hooks/use-edtior-mount";
+import { useEditorMount } from "../../../editor/hooks/use-edtior-mount";
 
 export const TableOfContent = memo(() => {
   const [isHovered, setIsHovered] = useState(false);
