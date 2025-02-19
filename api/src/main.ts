@@ -28,7 +28,7 @@ async function bootstrap() {
       exposedHeaders: ["Content-Range", "X-Content-Range"],
       maxAge: 3600,
     },
-    logger: ["error", "warn", "log", "debug", "verbose"],
+    // logger: ["error", "warn", "log", "debug", "verbose"],
   });
 
   const configService = app.get(ConfigService);
