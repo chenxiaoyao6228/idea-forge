@@ -5,7 +5,14 @@
   "compilerOptions": {
     "builder": "webpack",
     "webpackConfigPath": "webpack.config.js",
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "assets": [
+      {
+        "include": "_shared/i18n/**/*.json",
+        "outDir": "dist/_shared/i18n",
+        "watchAssets": true
+      }
+    ]
   },
   "generateOptions": {
     "spec": false
