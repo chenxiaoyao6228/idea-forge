@@ -8,14 +8,16 @@ import HomeLogo from "@/assets/imgs/home-logo.png";
 import { documentApi } from "@/apis/document";
 import { useEffect, useState } from "react";
 import { useDocumentStore } from "../doc/stores/doc-store";
+import { useTranslation } from "react-i18next";
 
 export default function Home() {
+  const { t } = useTranslation();
   return (
     <>
       <HomeNav />
       <main className="min-h-screen flex flex-col justify-center text-center ">
         <h2 className="scroll-m-20 text-4xl tracking-tight lg:text-5xl">
-          <span className="font-extrabold">Work less, Create more</span>
+          <span className="font-extrabold">{t("Work less, Create more")}</span>
         </h2>
         <div className="mt-6">
           <Slogan />
@@ -36,6 +38,7 @@ function MainButton() {
   const lastDocId = useDocumentStore((state) => state.lastDocId);
   const [isLoading, setIsLoading] = useState(false);
   const setLastDocId = useDocumentStore((state) => state.setLastDocId);
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function fetchLastDoc() {
@@ -60,7 +63,7 @@ function MainButton() {
       <Link to="/login">
         <Button className="text-base" size="lg">
           <User className="h-4 w-4" />
-          &nbsp;Login / Register
+          &nbsp;{t("Login / Register")}
         </Button>
       </Link>
     );
@@ -71,7 +74,7 @@ function MainButton() {
     <Link to={url}>
       <Button className="text-base px-6" size="lg" disabled={isLoading}>
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-        Get Started
+        {t("Get Started")}
       </Button>
     </Link>
   );

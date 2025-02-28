@@ -1,7 +1,8 @@
 import { Outlet, useRoutes } from "react-router-dom";
 import { useIsMobile } from "./hooks/use-mobile";
 function RootLayout() {
-  const isMobile = useIsMobile();
+  // const isMobile = useIsMobile();
+  const isMobile = false;
 
   if (isMobile) {
     return (
