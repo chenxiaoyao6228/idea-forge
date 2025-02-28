@@ -20,6 +20,9 @@ import { FileStoreModule } from "./file-store/file-store.module";
 import { CollaborationModule } from "./collaboration/collaboration.module";
 import { AIModule } from "./ai/ai.module";
 import { HttpModule } from "@nestjs/axios";
+import { I18nModule, QueryResolver } from "nestjs-i18n";
+import * as path from "node:path";
+import { AppService } from "./app.service";
 
 @Module({
   controllers: [AppController],
@@ -46,6 +49,22 @@ import { HttpModule } from "@nestjs/axios";
         index: false,
       },
     }),
+
+    I18nModule.forRoot({
+      fallbackLanguage: "en",
+      loaderOptions: {
+        path:
+          process.env.NODE_ENV === "production"
+            ? join(__dirname, "../_shared/i18n/") // production
+            : join(__dirname, "../src/_shared/i18n/"), // development
+        watch: true,
+      },
+      resolvers: [new QueryResolver(["lang", "l"])],
+      logging: true,
+      throwOnMissingKey: true,
+      typesOutputPath: path.join(__dirname, "../src/_generated/i18n.generated.ts"),
+    }),
+
     HttpModule.register({
       timeout: 5000,
     }),
@@ -67,6 +86,7 @@ import { HttpModule } from "@nestjs/axios";
       useClass: ZodValidationPipe,
     },
     { provide: APP_INTERCEPTOR, useClass: ApiInterceptor },
+    AppService,
   ],
 })
 export class AppModule implements NestModule {
