@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { StatusButton } from "@/components/status-button";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -95,10 +96,10 @@ export default function LoginPage() {
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="font-medium">
-                    Password
+                    {t("Password")}
                   </Label>
                   <Link to="/forgot-password" className="text-sm underline-offset-4 hover:underline">
-                    Forgot password?
+                    {t("Forgot password?")}
                   </Link>
                 </div>
                 <Field

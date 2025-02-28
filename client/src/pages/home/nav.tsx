@@ -1,4 +1,6 @@
+import { LanguageSwitcher } from "@/components/language-switcher";
 import Logo from "@/components/logo";
+import { Spacer } from "@/components/spacer";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export default function HomeNav() {
@@ -10,6 +12,8 @@ export default function HomeNav() {
       <div className="flex-1 text-end p-2">
         <div className="inline-flex items-center">
           <ThemeSwitcher />
+          <div className="w-1" />
+          <LanguageSwitcher />
         </div>
       </div>
     </div>

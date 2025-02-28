@@ -30,7 +30,7 @@ import { HttpModule } from "@nestjs/axios";
       rootPath: join(__dirname, "..", "public"),
       serveRoot: "/",
       serveStaticOptions: {
-        maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year in milliseconds
+        maxAge: 0, // no cache
         // Set to false to disable using index.html as the default page for directories
         // This allows our FallbackMiddleware to handle all page routes
         index: false,
