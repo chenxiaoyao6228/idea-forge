@@ -1,3 +1,4 @@
+import "./i18n";
 import "./lib/sentry-intrument";
 import { createRoot } from "react-dom/client";
 import "./index.css";

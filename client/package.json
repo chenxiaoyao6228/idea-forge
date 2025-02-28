@@ -11,7 +11,8 @@
     "format:fix": "biome format --write .",
     "lint": "biome lint .",
     "lint:fix": "biome check --apply .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "i18n:extract": "i18next --config i18next-parser.config.js"
   },
   "dependencies": {
     "@hocuspocus/provider": "^2.15.0",
@@ -99,6 +100,7 @@
     "emoji-picker-react": "^4.12.0",
     "highlight.js": "^11.11.1",
     "i18next": "^24.0.5",
+    "i18next-browser-languagedetector": "^8.0.4",
     "i18next-fs-backend": "^2.6.0",
     "i18next-http-backend": "^3.0.1",
     "input-otp": "^1.4.1",
