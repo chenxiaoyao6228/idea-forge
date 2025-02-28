@@ -12,6 +12,7 @@ import { ErrorList, Field } from "@/components/forms";
 import { Label } from "@/components/ui/label";
 import { StatusButton } from "@/components/status-button";
 import { authApi } from "@/apis/auth";
+import { useTranslation } from "react-i18next";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
   const [isPending, setIsPending] = useState(false);
+  const { t } = useTranslation();
 
   const {
     register,
@@ -70,8 +72,8 @@ export default function LoginPage() {
               </div>
               Idea Forge
             </span>
-            <CardTitle className="text-xl">Login</CardTitle>
-            <CardDescription>Enter your email below to login to your account</CardDescription>
+            <CardTitle className="text-xl">{t("Login")}</CardTitle>
+            <CardDescription>{t("Enter your email below to login to your account")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
