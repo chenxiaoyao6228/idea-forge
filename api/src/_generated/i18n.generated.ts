@@ -6,8 +6,17 @@ import { Path } from "nestjs-i18n";
 /* prettier-ignore */
 export type I18nTranslations = {
   translation: {
-    hello: string;
-    test: string;
+    "You have requested to reset your password. Your verification code is:": string;
+    "Please use this code to complete your password reset process.": string;
+    "Your registration verification code is:": string;
+    "Please use this code to complete your registration.": string;
+    "Password Reset Verification Code": string;
+    "Welcome to Idea Forge, {email}!": string;
+    "Your password reset verification code is: {code}": string;
+    "Hello,": string;
+    "Password Reset for {email}": string;
+    "Complete Your Registration": string;
+    "Welcome to Idea Forge! Your registration verification code is: {code}. Please use this code to complete your registration.": string;
   };
 };
 /* prettier-ignore */
