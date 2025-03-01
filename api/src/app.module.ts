@@ -20,7 +20,7 @@ import { FileStoreModule } from "./file-store/file-store.module";
 import { CollaborationModule } from "./collaboration/collaboration.module";
 import { AIModule } from "./ai/ai.module";
 import { HttpModule } from "@nestjs/axios";
-import { I18nModule, QueryResolver } from "nestjs-i18n";
+import { HeaderResolver, AcceptLanguageResolver, I18nModule, QueryResolver } from "nestjs-i18n";
 import * as path from "node:path";
 import { AppService } from "./app.service";
 
@@ -59,7 +59,7 @@ import { AppService } from "./app.service";
             : join(__dirname, "../src/_shared/i18n/"), // development
         watch: true,
       },
-      resolvers: [new QueryResolver(["lang", "l"])],
+      resolvers: [{ use: QueryResolver, options: ["lang"] }, AcceptLanguageResolver, new HeaderResolver(["x-lang"])],
       logging: true,
       throwOnMissingKey: true,
       typesOutputPath: path.join(__dirname, "../src/_generated/i18n.generated.ts"),

@@ -1,7 +1,10 @@
 import React from "react";
 import { Body, Container, Head, Html, Preview, Section, Text } from "jsx-email";
+import { I18nTranslations } from "@/_generated/i18n.generated";
+import { I18nService } from "nestjs-i18n";
+import { EmailTemplateProps } from "../type";
 
-interface TemplateProps {
+interface TemplateProps extends EmailTemplateProps {
   email: string;
   code: string;
 }
@@ -28,20 +31,20 @@ const paragraph = {
   textAlign: "left" as const,
 };
 
-export const Template = ({ email = "test@test.com", code = "123456" }: TemplateProps) => (
+export const Template = ({ email = "test@test.com", code = "123456", i18n }: TemplateProps) => (
   <Html>
     <Head />
-    <Preview>Password Reset for {email}</Preview>
+    <Preview>{i18n.t("translation.Password Reset for {email}", { args: { email } })}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={box}>
-          <Text style={paragraph}>Hello,</Text>
+          <Text style={paragraph}>{i18n.t("translation.Hello,")}</Text>
           <Text style={paragraph}>
-            You have requested to reset your password. Your verification code is:
+            {i18n.t("translation.You have requested to reset your password. Your verification code is:")}
             <br />
           </Text>
           <Text style={{ fontSize: "24px", fontWeight: "bold" }}>{code}</Text>
-          <Text style={paragraph}>Please use this code to complete your password reset process.</Text>
+          <Text style={paragraph}>{i18n.t("translation.Please use this code to complete your password reset process.")}</Text>
         </Section>
       </Container>
     </Body>
