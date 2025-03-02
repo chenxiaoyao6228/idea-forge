@@ -23,6 +23,8 @@ import { HttpModule } from "@nestjs/axios";
 import { HeaderResolver, AcceptLanguageResolver, I18nModule, QueryResolver } from "nestjs-i18n";
 import * as path from "node:path";
 import { AppService } from "./app.service";
+import { I18nNextModule } from "./_shared/i18next/i18n.module";
+// import { I18nNextMiddleware } from "./_shared/i18next/i18n.middleware";
 
 @Module({
   controllers: [AppController],
@@ -79,6 +81,7 @@ import { AppService } from "./app.service";
     FileStoreModule,
     CollaborationModule,
     AIModule,
+    I18nNextModule,
   ],
   providers: [
     {
@@ -96,5 +99,6 @@ export class AppModule implements NestModule {
       method: RequestMethod.GET,
     });
     consumer.apply(RequestLoggerMiddleware).forRoutes("*");
+    // consumer.apply(I18nNextMiddleware).forRoutes("*");
   }
 }

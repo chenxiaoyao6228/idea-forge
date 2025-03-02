@@ -2,12 +2,14 @@ import { Controller, Get, Body, Post, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { Public } from "./auth/decorators/public.decorator";
 import { AppService } from "./app.service";
-import { I18n, I18nContext } from "nestjs-i18n";
-import { I18nTranslations } from "./_generated/i18n.generated";
+import { I18nNextService } from "./_shared/i18next/i18n.service";
 
 @Controller("/api")
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly i18nextService: I18nNextService,
+  ) {}
 
   @Public()
   @Get("health")
@@ -28,11 +30,9 @@ export class AppController {
   }
 
   @Public()
-  @Get("/test-i18n")
-  // async testI18n() {
-  //   return this.appService.getHello();
-  // }
-  async getHello(@I18n() i18n: I18nContext<I18nTranslations>): Promise<string> {
-    return await i18n.t("translation.test", { args: { name: "Toon" } });
+  @Get("/test-i18next")
+  async getHello(): Promise<string> {
+    console.log("test-i18next");
+    return await this.i18nextService.testTranslate();
   }
 }
