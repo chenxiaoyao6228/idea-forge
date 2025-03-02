@@ -73,6 +73,8 @@
     "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.1",
     "form-data": "^4.0.1",
+    "i18next": "^24.0.5",
+    "i18next-fs-backend": "^2.6.0",
     "iconv-lite": "^0.6.3",
     "jsx-email": "^2.2.0",
     "lodash": "^4.17.21",
@@ -99,7 +101,8 @@
     "winston": "^3.15.0",
     "winston-daily-rotate-file": "^5.0.0",
     "yjs": "^13.6.18",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "zod-i18n-map": "^2.27.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

@@ -8,6 +8,7 @@ export class AppService {
   i18n: I18nService<I18nTranslations>;
 
   getHello(): string {
-    return this.i18n.t("translation.test", { args: { name: "John" } });
+    // return this.i18n.t("translation.test", { args: { name: "John" } });
+    return "yyy";
   }
 }

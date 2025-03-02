@@ -146,6 +146,12 @@ importers:
       form-data:
         specifier: ^4.0.1
         version: 4.0.1
+      i18next:
+        specifier: ^24.0.5
+        version: 24.0.5(typescript@5.6.2)
+      i18next-fs-backend:
+        specifier: ^2.6.0
+        version: 2.6.0
       iconv-lite:
         specifier: ^0.6.3
         version: 0.6.3
@@ -227,6 +233,9 @@ importers:
       zod:
         specifier: ^3.23.8
         version: 3.23.8
+      zod-i18n-map:
+        specifier: ^2.27.0
+        version: 2.27.0(i18next@24.0.5)(zod@3.23.8)
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.0.0
@@ -19902,6 +19911,16 @@ packages:
   /yocto-queue@1.1.1:
     resolution: {integrity: sha512-b4JR1PFR10y1mKjhHY9LaGo6tmrgjit7hxVIeAmyMw3jegXR4dhYqLaQF5zMXZxY7tLpMyJeLjr1C4rLmkVe8g==}
     engines: {node: '>=12.20'}
+    dev: false
+
+  /zod-i18n-map@2.27.0(i18next@24.0.5)(zod@3.23.8):
+    resolution: {integrity: sha512-ORu9XpiVh3WDiEUs5Cr9siGgnpeODoBsTIgSD8sQCH9B//f9KowlzqHUEdPYb3vFonaSH8yPvPCOFM4niwp3Sg==}
+    peerDependencies:
+      i18next: '>=21.3.0'
+      zod: '>=3.17.0'
+    dependencies:
+      i18next: 24.0.5(typescript@5.6.2)
+      zod: 3.23.8
     dev: false
 
   /zod-to-json-schema@3.24.1(zod@3.23.8):
