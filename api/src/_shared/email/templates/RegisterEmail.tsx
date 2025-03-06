@@ -29,20 +29,20 @@ const paragraph = {
   textAlign: "left" as const,
 };
 
-export const Template = ({ email = "test@test.com", code = "123456", i18n }: TemplateProps) => (
+export const Template = ({ email = "test@test.com", code = "123456", t }: TemplateProps) => (
   <Html>
     <Head />
-    <Preview>{i18n.t("translation.Welcome to Idea Forge, {email}!", { args: { email } })}</Preview>
+    <Preview>{t("Welcome to Idea Forge, {{email}}!", { email })}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={box}>
-          <Text style={paragraph}>{i18n.t("translation.Welcome to Idea Forge, {email}!", { args: { email } })}</Text>
+          <Text style={paragraph}>{t("Welcome to Idea Forge, {{email}}!", { email })}</Text>
           <Text style={paragraph}>
-            {i18n.t("translation.Your registration verification code is:")}
+            {t("Your registration verification code is:")}
             <br />
           </Text>
           <Text style={{ fontSize: "24px", fontWeight: "bold" }}>{code}</Text>
-          <Text style={paragraph}>{i18n.t("translation.Please use this code to complete your registration.")}</Text>
+          <Text style={paragraph}>{t("Please use this code to complete your registration.")}</Text>
         </Section>
       </Container>
     </Body>

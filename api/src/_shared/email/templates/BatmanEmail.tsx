@@ -13,7 +13,7 @@ export const previewProps: TemplateProps = {
 
 export const templateName = "BatmanEmail";
 
-export const Template = ({ firstName, lastName }: TemplateProps) => (
+export const Template = ({ firstName, lastName, t }: TemplateProps) => (
   <Html>
     <Head />
     <Preview>

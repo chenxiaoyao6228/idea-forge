@@ -31,20 +31,20 @@ const paragraph = {
   textAlign: "left" as const,
 };
 
-export const Template = ({ email = "test@test.com", code = "123456", i18n }: TemplateProps) => (
+export const Template = ({ email = "test@test.com", code = "123456", t }: TemplateProps) => (
   <Html>
     <Head />
-    <Preview>{i18n.t("translation.Password Reset for {email}", { args: { email } })}</Preview>
+    <Preview>{t("Password Reset for {{email}}", { email })}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={box}>
-          <Text style={paragraph}>{i18n.t("translation.Hello,")}</Text>
+          <Text style={paragraph}>{t("Hello,")}</Text>
           <Text style={paragraph}>
-            {i18n.t("translation.You have requested to reset your password. Your verification code is:")}
+            {t("You have requested to reset your password. Your verification code is:")}
             <br />
           </Text>
           <Text style={{ fontSize: "24px", fontWeight: "bold" }}>{code}</Text>
-          <Text style={paragraph}>{i18n.t("translation.Please use this code to complete your password reset process.")}</Text>
+          <Text style={paragraph}>{t("Please use this code to complete your password reset process.")}</Text>
         </Section>
       </Container>
     </Body>

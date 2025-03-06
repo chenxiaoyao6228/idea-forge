@@ -122,6 +122,9 @@ importers:
       argon2:
         specifier: ^0.41.1
         version: 0.41.1
+      async_hooks:
+        specifier: ^1.0.0
+        version: 1.0.0
       axios:
         specifier: ^1.7.9
         version: 1.7.9
@@ -152,6 +155,9 @@ importers:
       i18next-fs-backend:
         specifier: ^2.6.0
         version: 2.6.0
+      i18next-http-middleware:
+        specifier: ^3.7.1
+        version: 3.7.1
       iconv-lite:
         specifier: ^0.6.3
         version: 0.6.3
@@ -9873,6 +9879,10 @@ packages:
     resolution: {integrity: sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA==}
     dev: false
 
+  /async_hooks@1.0.0:
+    resolution: {integrity: sha512-t4BSJgx48V3e7U6Ll3/WOUNmxIRPzmPdxVfgbyzcnRItEnn4iKp4F//b0sV3L9hzbdr5qxWdNWzOF7t+rjYSfA==}
+    dev: false
+
   /asynckit@0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
 
@@ -13157,6 +13167,10 @@ packages:
       cross-fetch: 4.0.0
     transitivePeerDependencies:
       - encoding
+    dev: false
+
+  /i18next-http-middleware@3.7.1:
+    resolution: {integrity: sha512-nVTSGB1P4Gad5PFQYf3xVUOzJ4tVSQYD8Rs0luyWkjEMwqdqAcZ9CqIzqYwVLgB5/BKr1COI0oAei5dlYzmGbg==}
     dev: false
 
   /i18next-parser@9.0.2:
