@@ -1,0 +1,10 @@
+{
+  "Email is required": "邮箱是必填项",
+  "Email is invalid": "邮箱格式不正确",
+  "Email is too short": "邮箱太短",
+  "Email is too long": "邮箱太长",
+  "Password is required": "密码是必填项",
+  "Password is too short": "密码太短",
+  "Password is too long": "密码太长",
+  "Password must contain uppercase, lowercase letters and numbers": "密码必须包含大写字母、小写字母和数字"
+}

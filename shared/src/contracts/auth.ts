@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./utils/zod";
 
 export const VERIFICATION_CODE_TYPES = ["register", "reset-password", "change-email", "2fa"] as const;
 
@@ -22,10 +22,19 @@ export type Provider = (typeof Provider)[keyof typeof Provider];
 
 //  ============== request ==============
 export const EmailSchema = z
-  .string({ required_error: "Email is required" })
-  .email({ message: "Email is invalid" })
-  .min(3, { message: "Email is too short" })
-  .max(100, { message: "Email is too long" })
+  .string()
+  .email()
+  .refine(() => false, {
+    params: {
+      i18n: {
+        key: "Email is invalid",
+        params: {
+          min: 3,
+          max: 10,
+        },
+      },
+    },
+  })
   // users can type the email in any case, but we store it in lowercase
   .transform((value) => value.toLowerCase().trim());
 

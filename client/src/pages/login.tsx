@@ -23,7 +23,7 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
   const [isPending, setIsPending] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const {
     register,
@@ -37,6 +37,10 @@ export default function LoginPage() {
       password: "",
     },
   });
+
+  // useEffect(() => {
+  //   zodI18n.setLanguage(i18n.language as Language);
+  // }, [i18n.language]);
 
   useEffect(() => {
     if (location.state?.error || location.state?.email) {
