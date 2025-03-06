@@ -1,13 +1,14 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-
 import Backend from "i18next-http-backend";
-//To load the translation files
+import { initZodI18n } from "shared";
 
 i18n.on("languageChanged", (lng) => {
   localStorage.setItem("lng", lng);
 });
+
+const supportedLngs = ["en", "zh"];
 
 i18n
   .use(Backend)
@@ -16,7 +17,7 @@ i18n
   .init({
     debug: import.meta.env.MODE !== "production",
     fallbackLng: "en",
-    supportedLngs: ["en", "zh"],
+    supportedLngs: supportedLngs,
     interpolation: {
       escapeValue: false,
     },
@@ -24,7 +25,7 @@ i18n
     backend: {
       loadPath: `${window.location.origin}/locales/{{lng}}.json`, //Path to the translation files
       // TODO: add path to the translation files
-      addPath: `${window.location.origin}/locales/add/{{lng}}`,
+      // addPath: `${window.location.origin}/locales/add/{{lng}}`,
     },
     detection: {
       order: ["localStorage"],
@@ -37,6 +38,8 @@ i18n
   .then(() => {
     console.log("=====i18n initialized =======");
   });
+
+initZodI18n(i18n);
 
 export const LANGUAGE_NAME_MAP = {
   en: "English",

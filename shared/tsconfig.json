@@ -13,7 +13,8 @@
     "rootDir": "src",
     "outDir": "./dist/esm",
     "declarationDir": "./dist/types",
-    "module": "ESNext"
+    "module": "ESNext",
+    "resolveJsonModule": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

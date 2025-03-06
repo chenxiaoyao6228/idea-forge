@@ -1,0 +1,10 @@
+{
+  "Email is required": "Email is required",
+  "Email is invalid": "Email is invalid",
+  "Email is too short": "Email is too short",
+  "Email is too long": "Email is too long",
+  "Password is required": "Password is required",
+  "Password is too short": "Password is too short",
+  "Password is too long": "Password is too long",
+  "Password must contain uppercase, lowercase letters and numbers": "Password must contain uppercase, lowercase letters and numbers"
+}
