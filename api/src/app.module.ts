@@ -20,8 +20,6 @@ import { FileStoreModule } from "./file-store/file-store.module";
 import { CollaborationModule } from "./collaboration/collaboration.module";
 import { AIModule } from "./ai/ai.module";
 import { HttpModule } from "@nestjs/axios";
-import { HeaderResolver, AcceptLanguageResolver, I18nModule, QueryResolver } from "nestjs-i18n";
-import * as path from "node:path";
 import { AppService } from "./app.service";
 import { I18nNextModule } from "./_shared/i18next/i18n.module";
 import { I18nNextMiddleware } from "./_shared/i18next/i18n.middleware";
@@ -50,21 +48,6 @@ import { I18nNextMiddleware } from "./_shared/i18next/i18n.middleware";
         maxAge: 365 * 24 * 60 * 60 * 1000,
         index: false,
       },
-    }),
-
-    I18nModule.forRoot({
-      fallbackLanguage: "en",
-      loaderOptions: {
-        path:
-          process.env.NODE_ENV === "production"
-            ? join(__dirname, "../_shared/i18n/") // production
-            : join(__dirname, "../src/_shared/i18n/"), // development
-        watch: true,
-      },
-      resolvers: [{ use: QueryResolver, options: ["lang"] }, AcceptLanguageResolver, new HeaderResolver(["x-lang"])],
-      logging: true,
-      throwOnMissingKey: true,
-      typesOutputPath: path.join(__dirname, "../src/_generated/i18n.generated.ts"),
     }),
 
     HttpModule.register({
