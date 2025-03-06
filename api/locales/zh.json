@@ -1,3 +1,13 @@
 {
-  "helloworld": "你好 {{name}}"
+  "Hello,": "您好，{{name}}",
+  "You have requested to reset your password. Your verification code is:": "您已请求重置密码。您的验证码是：",
+  "Please use this code to complete your password reset process.": "请使用此验证码完成密码重置流程。",
+  "Your registration verification code is:": "您的注册验证码是：",
+  "Please use this code to complete your registration.": "请使用此验证码完成注册。",
+  "Password Reset Verification Code": "密码重置验证码",
+  "Welcome to Idea Forge, {{email}}!": "欢迎来到 Idea Forge，{{email}}！",
+  "Your password reset verification code is:": "您的密码重置验证码是：",
+  "Password Reset for {{email}}": "{{email}} 的密码重置",
+  "Complete Your Registration": "完成注册",
+  "Welcome to Idea Forge! Your registration verification code is: {{code}}. Please use this code to complete your registration.": "欢迎来到 Idea Forge！您的注册验证码是：{{code}}。请使用此验证码完成注册。"
 }

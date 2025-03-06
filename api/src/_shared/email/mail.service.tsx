@@ -7,6 +7,7 @@ import { Template as ResetPasswordEmail } from "./templates/ResetPasswordEmail";
 import { render } from "jsx-email";
 import { I18nTranslations } from "@/_generated/i18n.generated";
 import { I18nService } from "nestjs-i18n";
+import { I18nContextManager } from "../i18next/i18n.context";
 
 // jsx-email: https://jsx.email/docs/email-providers#nodemailer
 @Injectable()
@@ -24,9 +25,6 @@ export class MailService {
       rejectUnauthorized: false, // Use this for development only
     },
   });
-
-  @Inject()
-  i18n: I18nService<I18nTranslations>;
 
   /**
    * Send email
@@ -62,19 +60,15 @@ export class MailService {
   }
 
   async sendRegistrationEmail(email: string, code: string) {
+    const t = I18nContextManager.getT();
     try {
-      const html = await render(<RegisterEmail code={code} email={email} i18n={this.i18n} />);
+      const html = await render(<RegisterEmail code={code} email={email} t={t} />);
 
-      const text = this.i18n.t(
-        "translation.Welcome to Idea Forge! Your registration verification code is: {code}. Please use this code to complete your registration.",
-        {
-          args: { code },
-        },
-      );
+      const text = t("Welcome to Idea Forge! Your registration verification code is: {{code}}. Please use this code to complete your registration.", { code });
 
       return this.sendEmail({
         to: email,
-        subject: this.i18n.t("translation.Complete Your Registration"),
+        subject: t("Complete Your Registration"),
         text,
         html,
       });
@@ -86,11 +80,12 @@ export class MailService {
 
   async sendPasswordResetEmail(email: string, code: string) {
     try {
-      const html = await render(<ResetPasswordEmail code={code} email={email} i18n={this.i18n} />);
-      const text = this.i18n.t("translation.Your password reset verification code is: {code}", { args: { code } });
+      const t = I18nContextManager.getT();
+      const html = await render(<ResetPasswordEmail code={code} email={email} t={t} />);
+      const text = t("Your password reset verification code is: {{code}}", { code });
       return this.sendEmail({
         to: email,
-        subject: this.i18n.t("translation.Password Reset Verification Code"),
+        subject: t("Password Reset Verification Code"),
         text,
         html,
       });
