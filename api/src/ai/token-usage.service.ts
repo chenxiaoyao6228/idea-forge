@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { ApiException } from "@/_shared/model/api.exception";
+import { ApiException } from "@/_shared/exeptions/api.exception";
 import { ErrorCodeEnum, TokenUsageResponse } from "shared";
 import { UpdateUserTokenLimitDto } from "./ai.dto";
 

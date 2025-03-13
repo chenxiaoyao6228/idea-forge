@@ -7,7 +7,7 @@ import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse,
 import { MoveDocumentsDto } from "shared";
 import { FileService } from "@/file-store/file-store.service";
 import { omit, pick } from "lodash";
-import { ApiException } from "@/_shared/model/api.exception";
+import { ApiException } from "@/_shared/exeptions/api.exception";
 import { ErrorCodeEnum } from "shared";
 const POSITION_GAP = 1024; // Define position gap
 

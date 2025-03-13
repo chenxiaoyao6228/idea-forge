@@ -49,6 +49,7 @@ export enum ErrorCodeEnum {
 
 export type ErrorCodeMsg = Record<ErrorCodeEnum, string>;
 
+// 🚧 remember to update translate in api/locales/en.json
 export const ErrorCodeMsg: ErrorCodeMsg = {
   [ErrorCodeEnum.UserAlreadyExists]: "The user already exists in the system.",
   [ErrorCodeEnum.UserNotActive]: "The user is not active.",

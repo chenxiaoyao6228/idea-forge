@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import i18next from "i18next";
 import Backend from "i18next-fs-backend";
 import { join } from "node:path";
-import { initZodI18n } from "shared";
+// import { initZodI18n } from "shared";
 import i18nextHttpMiddleware from "i18next-http-middleware";
 
 @Injectable()

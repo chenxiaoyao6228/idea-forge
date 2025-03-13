@@ -2,7 +2,7 @@ import { HttpStatus, Inject, Injectable, UnauthorizedException } from "@nestjs/c
 import { UserService } from "../user/user.service";
 import { hash, verify } from "argon2";
 import type { AuthJwtPayload } from "./types/auth-jwtPayload";
-import { ApiException } from "@/_shared/model/api.exception";
+import { ApiException } from "@/_shared/exeptions/api.exception";
 import { JwtService } from "@nestjs/jwt";
 import type { ConfigType } from "@nestjs/config";
 import { RedisService } from "@/_shared/database/redis/redis.service";

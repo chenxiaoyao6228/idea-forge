@@ -4,6 +4,8 @@ import { Public } from "./auth/decorators/public.decorator";
 import { AppService } from "./app.service";
 import { I18nNextService } from "./_shared/i18next/i18n.service";
 import { MailService } from "./_shared/email/mail.service";
+import { ErrorCodeEnum } from "shared";
+import { ApiException } from "./_shared/exeptions/api.exception";
 
 @Controller("/api")
 export class AppController {
@@ -19,6 +21,7 @@ export class AppController {
     return "ok";
   }
 
+  // ============= test router below =============
   @Public()
   @Get("/test-sentry")
   getError() {
@@ -33,16 +36,22 @@ export class AppController {
 
   @Public()
   @Get("/test-email")
-  async testEmail(@Req() req: Request, @Res() res: Response) {
+  async testEmail(@Req() req: Request) {
     console.log("testEmail");
     return this.mailService.sendRegistrationEmail("test@test.com", "123456");
   }
 
   @Public()
-  @Get("/test-i18next")
-  async getHello(@Req() req: Request, @Res() res: Response): Promise<string> {
-    const text = this.appService.testI18n();
-    console.log("text", text);
-    return text;
+  @Get("/test-i18next-success")
+  async testI18nSuccess() {
+    return {
+      a: "a",
+    };
+  }
+
+  @Public()
+  @Get("/test-i18next-error")
+  async testI18nError() {
+    throw new ApiException(ErrorCodeEnum.UserNotFound);
   }
 }
