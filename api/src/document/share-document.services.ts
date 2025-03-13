@@ -1,5 +1,5 @@
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { ApiException } from "@/_shared/model/api.exception";
+import { ApiException } from "@/_shared/exeptions/api.exception";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { CommonSharedDocumentResponse, DocSharesResponse, Permission, RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "shared";
 import { ErrorCodeEnum } from "shared";

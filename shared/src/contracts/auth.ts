@@ -21,20 +21,10 @@ export const Provider = {
 export type Provider = (typeof Provider)[keyof typeof Provider];
 
 //  ============== request ==============
+// TODO: the error message need to show to the client
 export const EmailSchema = z
   .string()
   .email()
-  .refine(() => false, {
-    params: {
-      i18n: {
-        key: "Email is invalid",
-        params: {
-          min: 3,
-          max: 10,
-        },
-      },
-    },
-  })
   // users can type the email in any case, but we store it in lowercase
   .transform((value) => value.toLowerCase().trim());
 

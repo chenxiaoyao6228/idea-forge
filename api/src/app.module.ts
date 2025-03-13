@@ -7,7 +7,7 @@ import { AuthModule } from "./auth/auth.module";
 import { LoggerModule } from "@/_shared/utils/logger.module";
 import { UserModule } from "./user/user.module";
 import { RequestLoggerMiddleware } from "@/_shared/middlewares/request-logger.middleware";
-import { APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
+import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER } from "@nestjs/core";
 import { MailModule } from "@/_shared/email/mail.module";
 import { ApiInterceptor } from "./_shared/interceptors/api.interceptor";
 import { ZodValidationPipe } from "./_shared/pipes/zod-validation.pipe";
@@ -23,6 +23,8 @@ import { HttpModule } from "@nestjs/axios";
 import { AppService } from "./app.service";
 import { I18nNextModule } from "./_shared/i18next/i18n.module";
 import { I18nNextMiddleware } from "./_shared/i18next/i18n.middleware";
+import { HttpExceptionFilter } from "./_shared/filters/http-exception.filter";
+import { AllExceptionsFilter } from "./_shared/filters/all-exception.filter";
 
 @Module({
   controllers: [AppController],
@@ -71,7 +73,18 @@ import { I18nNextMiddleware } from "./_shared/i18next/i18n.middleware";
       provide: APP_PIPE,
       useClass: ZodValidationPipe,
     },
-    { provide: APP_INTERCEPTOR, useClass: ApiInterceptor },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ApiInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
     AppService,
   ],
 })

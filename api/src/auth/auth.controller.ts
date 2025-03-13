@@ -9,7 +9,7 @@ import { Public } from "./decorators/public.decorator";
 import { EmailVerifyDto, ForgotPasswordDto, CodeValidateDto, ResetPasswordDto, RegisterDto } from "./auth.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { UserService } from "@/user/user.service";
-import { ApiException } from "@/_shared/model/api.exception";
+import { ApiException } from "@/_shared/exeptions/api.exception";
 import { ErrorCodeEnum } from "shared";
 import { VerificationService } from "./verification.service";
 import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";

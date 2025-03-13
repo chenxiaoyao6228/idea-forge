@@ -6,7 +6,7 @@ import { Subject, Observable } from "rxjs";
 import { AIStreamResponse, AIStreamRequest, ChatMessage } from "shared";
 import { faker } from "@faker-js/faker";
 import { TokenUsageService } from "./token-usage.service";
-import { ApiException } from "@/_shared/model/api.exception";
+import { ApiException } from "@/_shared/exeptions/api.exception";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 import { Inject } from "@nestjs/common";

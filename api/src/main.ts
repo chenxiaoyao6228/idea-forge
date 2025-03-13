@@ -13,9 +13,10 @@ import { mw as requestIpMw } from "request-ip";
 import * as cookieParser from "cookie-parser";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { ConfigService } from "@nestjs/config";
-import { AllExceptionsFilter } from "./_shared/filters/all-exception-filter";
-import { HttpExceptionFilter } from "./_shared/filters/http-exception-filter";
+import { AllExceptionsFilter } from "./_shared/filters/all-exception.filter";
+import { HttpExceptionFilter } from "./_shared/filters/http-exception.filter";
 import rateLimit from "express-rate-limit";
+import { I18nNextService } from "./_shared/i18next/i18n.service";
 declare const module: any;
 
 async function bootstrap() {
@@ -43,7 +44,8 @@ async function bootstrap() {
   );
 
   // Filters
-  app.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());
+  const i18nService = app.get(I18nNextService);
+  app.useGlobalFilters(new AllExceptionsFilter(i18nService), new HttpExceptionFilter(i18nService));
 
   app.use(
     session({
