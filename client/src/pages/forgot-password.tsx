@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
+import HomeNav from "./home/nav";
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -40,51 +41,54 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-full flex-col justify-center py-8">
-      <div className="mx-auto w-full max-w-md">
-        <Card>
-          <CardHeader>
-            <span className="flex items-center gap-2 mb-4 self-center text-2xl font-bold">
-              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Logo />
-              </div>
-              {t("Idea Forge")}
-            </span>
-            <CardTitle className="text-xl">{t("Forgot Password")}</CardTitle>
-            <CardDescription>{t("No worries, we'll send you reset instructions.")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-              <Field
-                labelProps={{
-                  htmlFor: "email",
-                  children: t("Email"),
-                  className: "font-medium",
-                }}
-                inputProps={{
-                  ...register("email"),
-                  type: "email",
-                  autoFocus: true,
-                  autoComplete: "email",
-                }}
-                errors={errors.email?.message ? [errors.email.message] : []}
-              />
-              <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
+    <>
+      <HomeNav />
+      <div className="flex min-h-full flex-col justify-center py-8">
+        <div className="mx-auto w-full max-w-md">
+          <Card>
+            <CardHeader>
+              <span className="flex items-center gap-2 mb-4 self-center text-2xl font-bold">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                  <Logo />
+                </div>
+                {t("Idea Forge")}
+              </span>
+              <CardTitle className="text-xl">{t("Forgot Password")}</CardTitle>
+              <CardDescription>{t("No worries, we'll send you reset instructions.")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+                <Field
+                  labelProps={{
+                    htmlFor: "email",
+                    children: t("Email"),
+                    className: "font-medium",
+                  }}
+                  inputProps={{
+                    ...register("email"),
+                    type: "email",
+                    autoFocus: true,
+                    autoComplete: "email",
+                  }}
+                  errors={errors.email?.message ? [errors.email.message] : []}
+                />
+                <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
-              <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
-                {t("Recover password")}
-              </StatusButton>
+                <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
+                  {t("Recover password")}
+                </StatusButton>
 
-              <div className="text-center text-sm">
-                {t("Remember your password?")}{" "}
-                <Link to="/login" className="underline underline-offset-4">
-                  {t("Back to Login")}
-                </Link>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="text-center text-sm">
+                  {t("Remember your password?")}{" "}
+                  <Link to="/login" className="underline underline-offset-4">
+                    {t("Back to Login")}
+                  </Link>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

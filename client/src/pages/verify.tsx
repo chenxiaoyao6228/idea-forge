@@ -9,6 +9,8 @@ import { CodeValidateRequestSchema, type CodeValidateRequest } from "shared";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
+import HomeNav from "./home/nav";
+import WithHomeNav from "@/hocs/with-home-nav";
 
 // Define query parameter names
 export const emailQueryParam = "email";
@@ -16,7 +18,7 @@ export const typeQueryParam = "type";
 export const codeQueryParam = "code";
 export const redirectToQueryParam = "redirectTo";
 
-export default function VerifyRoute() {
+function VerifyPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -140,3 +142,5 @@ export default function VerifyRoute() {
     </div>
   );
 }
+
+export default WithHomeNav(VerifyPage);
