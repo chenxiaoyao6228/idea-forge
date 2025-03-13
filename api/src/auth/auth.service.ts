@@ -19,6 +19,7 @@ import { CollaborationService } from "@/collaboration/collaboration.service";
 import { ipToCity } from "@/_shared/utils/common";
 import { Logger } from "winston";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
+import { SystemDocumentService } from "@/document/system-document.service";
 
 interface LoginMetadata {
   ip?: string;
@@ -36,6 +37,7 @@ export class AuthService {
     private readonly verificationService: VerificationService,
     private readonly documentService: DocumentService,
     private readonly collaborationService: CollaborationService,
+    private readonly systemDocumentService: SystemDocumentService,
   ) {}
 
   @Inject(refreshJwtConfig.KEY)
@@ -51,11 +53,18 @@ export class AuthService {
 
       await this.userService.updateUserStatus(data.email, UserStatus.SUSPENDED);
     } else {
-      // Create new user and set status to 'pending'
       user = await this.userService.createUser({
         ...data,
-        status: UserStatus.SUSPENDED, // Set user status to pending
+        status: UserStatus.SUSPENDED,
       });
+
+      // Share welcome document when creating new user
+      try {
+        await this.systemDocumentService.shareWelcomeDocument(user.id);
+      } catch (error) {
+        console.error("Failed to share welcome document:", error);
+        // Don't throw error as this is not critical for registration
+      }
     }
 
     await this.verificationService.generateAndSendCode(data.email, "register");

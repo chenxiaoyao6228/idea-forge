@@ -19,6 +19,7 @@ import { FileService } from "@/file-store/file-store.service";
 import { FileStoreModule } from "../file-store/file-store.module";
 import { CollaborationModule } from "@/collaboration/collaboration.module";
 import { LoggerModule } from "@/_shared/utils/logger.module";
+import { SystemDocumentService } from "@/document/system-document.service";
 
 @Module({
   // JwtModule.registerAsync(jwtConfig.asProvider()) - Asynchronously register JWT module using jwtConfig
@@ -38,6 +39,7 @@ import { LoggerModule } from "@/_shared/utils/logger.module";
     UserService,
     JwtService,
     DocumentService,
+    SystemDocumentService,
     FileService,
     {
       provide: APP_GUARD,

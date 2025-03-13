@@ -25,6 +25,7 @@ import { I18nNextModule } from "./_shared/i18next/i18n.module";
 import { I18nNextMiddleware } from "./_shared/i18next/i18n.middleware";
 import { HttpExceptionFilter } from "./_shared/filters/http-exception.filter";
 import { AllExceptionsFilter } from "./_shared/filters/all-exception.filter";
+import { SystemDocumentService } from "./document/system-document.service";
 
 @Module({
   controllers: [AppController],
@@ -86,6 +87,7 @@ import { AllExceptionsFilter } from "./_shared/filters/all-exception.filter";
       useClass: HttpExceptionFilter,
     },
     AppService,
+    SystemDocumentService,
   ],
 })
 export class AppModule implements NestModule {
