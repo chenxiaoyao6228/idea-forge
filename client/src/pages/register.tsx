@@ -10,8 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
+import HomeNav from "./home/nav";
+import WithHomeNav from "@/hocs/with-home-nav";
 
-export default function Register() {
+function Register() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
@@ -103,3 +105,5 @@ export default function Register() {
     </div>
   );
 }
+
+export default WithHomeNav(Register);
