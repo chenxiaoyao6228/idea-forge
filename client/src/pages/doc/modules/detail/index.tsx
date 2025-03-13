@@ -8,8 +8,10 @@ import TiptapEditor from "../../../../editor";
 import useUserStore from "@/stores/user";
 import { getEnvVariable } from "@/lib/env";
 import { TableOfContent } from "../../components/table-of-content";
+import { useTranslation } from "react-i18next";
 
 export default function DocDetail() {
+  const { t } = useTranslation();
   const { docId } = useParams();
   const userId = useUserStore((s) => s.userInfo?.id);
   const collabToken = useUserStore((s) => s.userInfo?.collabToken);
@@ -43,7 +45,7 @@ export default function DocDetail() {
   const hasEditPermission = permission === "EDIT";
 
   if (hasNoPermission) {
-    return <div>You have no permission to view this document</div>;
+    return <div>{t("You have no permission to view this document")}</div>;
   }
 
   const isMyDoc = currentDocument.ownerId === userId;

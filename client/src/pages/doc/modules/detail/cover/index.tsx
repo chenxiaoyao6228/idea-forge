@@ -6,6 +6,7 @@ import { useCoverImageStore } from "./coverImageStore";
 import { UpdateCoverDto } from "shared";
 import { useImageLoading } from "@/hooks/use-image-loading";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface CoverProps {
   cover?: {
@@ -18,6 +19,7 @@ interface CoverProps {
 const CONTAINER_HEIGHT_VH = 30;
 
 export default function Cover({ cover = { url: "", scrollY: 50 }, editable = false }: CoverProps) {
+  const { t } = useTranslation();
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
   const currentDocument = useDocumentStore.use.currentDocument();
@@ -121,7 +123,7 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, editable = fal
           ref={imageRef}
           onLoad={handleImageLoad}
           src={url}
-          alt="cover"
+          alt={t("Cover image")}
           className={cn(
             "absolute left-0 top-0 w-full h-full object-cover transition-transform duration-200 ease-out",
             isCoverImgLoading && "opacity-0",
@@ -150,13 +152,13 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, editable = fal
                       className="cursor-pointer text-xs px-3 py-1 text-white rounded-l-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors"
                       onClick={handleSavePosition}
                     >
-                      Save position
+                      {t("Save position")}
                     </button>
                     <button
                       className="cursor-pointer text-xs px-3 py-1 text-white rounded-r-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors border-l border-white border-opacity-20"
                       onClick={handleCancelRepositioning}
                     >
-                      Cancel
+                      {t("Cancel")}
                     </button>
                   </>
                 ) : (
@@ -165,19 +167,19 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, editable = fal
                       className="cursor-pointer text-xs px-3 py-1 text-white rounded-l-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors"
                       onClick={handleChangeCover}
                     >
-                      Change cover
+                      {t("Change cover")}
                     </button>
                     <button
                       className="cursor-pointer text-xs px-3 py-1 text-white  bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors border-l border-white border-opacity-20"
                       onClick={handleStartRepositioning}
                     >
-                      Reposition
+                      {t("Reposition")}
                     </button>
                     <button
                       className="cursor-pointer text-xs px-3 py-1 text-white rounded-r-sm bg-gray-300 bg-opacity-30 hover:bg-gray-400 hover:bg-opacity-40 transition-colors border-l border-white border-opacity-20"
                       onClick={handleRemoveCover}
                     >
-                      Remove
+                      {t("Remove")}
                     </button>
                   </>
                 )}
@@ -189,7 +191,7 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, editable = fal
           {isRepositioning && (
             <div className="tip absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
               <div className="text-xs px-3 py-1 text-white rounded-r-sm bg-gray-300 bg-opacity-30 border-l border-white border-opacity-20">
-                Drag image to reposition
+                {t("Drag image to reposition")}
               </div>
             </div>
           )}

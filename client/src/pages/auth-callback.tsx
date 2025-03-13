@@ -2,8 +2,10 @@ import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useUserStore, { UserInfo } from "@/stores/user";
 import type { AuthResponseType, AuthResponseData } from "shared";
+import { useTranslation } from "react-i18next";
 
 export default function AuthCallbackPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const setUserInfo = useUserStore((state) => state.setUserInfo);
@@ -24,7 +26,7 @@ export default function AuthCallbackPage() {
       case "EMAIL_CONFLICT": {
         navigate("/login", {
           state: {
-            error: "An account with this email already exists. Please login first.",
+            error: t("An account with this email already exists. Please login first."),
             email: data.user?.email,
           },
         });
@@ -34,13 +36,13 @@ export default function AuthCallbackPage() {
       default: {
         navigate("/login", {
           state: {
-            error: searchParams.get("message") ?? "Authentication failed",
+            error: searchParams.get("message") ?? t("Authentication failed"),
             email: data.user?.email,
           },
         });
       }
     }
-  }, [type]);
+  }, [type, t]);
 
   return null;
 }

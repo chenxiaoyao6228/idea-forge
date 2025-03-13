@@ -1,3 +1,5 @@
+// For more, see:  https://github.com/aiji42/zod-i18n
+
 import { z } from "zod";
 import { makeZodI18nMap, zodI18nMap } from "zod-i18n-map";
 

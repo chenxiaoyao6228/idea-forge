@@ -26,7 +26,7 @@ export default function Home() {
           <MainButton />
         </section>
         <div className="flex justify-center mt-6">
-          <img src={HomeLogo} width={3751} height={2138} alt="home-logo" className="h-[300px] w-auto bg-white rounded-lg" />
+          <img src={HomeLogo} width={3751} height={2138} alt={t("Home Logo")} className="h-[300px] w-auto bg-white rounded-lg" />
         </div>
       </main>
     </>

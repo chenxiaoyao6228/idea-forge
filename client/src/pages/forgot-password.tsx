@@ -8,11 +8,13 @@ import { ForgotPasswordRequestSchema, ForgotPasswordRequest } from "shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
+import { useTranslation } from "react-i18next";
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const { t } = useTranslation();
 
   const {
     register,
@@ -31,7 +33,7 @@ export default function ForgotPasswordPage() {
       await authApi.forgotPassword(data);
       navigate(`/verify?email=${encodeURIComponent(data.email)}&type=reset-password`);
     } catch (err: any) {
-      setError(err.message || "Password reset request failed");
+      setError(err.message || t("Password reset request failed"));
     } finally {
       setIsPending(false);
     }
@@ -46,17 +48,17 @@ export default function ForgotPasswordPage() {
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <Logo />
               </div>
-              Idea Forge
+              {t("Idea Forge")}
             </span>
-            <CardTitle className="text-xl">Forgot Password</CardTitle>
-            <CardDescription>No worries, we'll send you reset instructions.</CardDescription>
+            <CardTitle className="text-xl">{t("Forgot Password")}</CardTitle>
+            <CardDescription>{t("No worries, we'll send you reset instructions.")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Field
                 labelProps={{
                   htmlFor: "email",
-                  children: "Email",
+                  children: t("Email"),
                   className: "font-medium",
                 }}
                 inputProps={{
@@ -70,13 +72,13 @@ export default function ForgotPasswordPage() {
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
               <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
-                Recover password
+                {t("Recover password")}
               </StatusButton>
 
               <div className="text-center text-sm">
-                Remember your password?{" "}
+                {t("Remember your password?")}{" "}
                 <Link to="/login" className="underline underline-offset-4">
-                  Back to Login
+                  {t("Back to Login")}
                 </Link>
               </div>
             </form>
