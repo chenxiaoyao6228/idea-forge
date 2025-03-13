@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Tree, TreeDataNode } from "@/components/ui/tree";
+import { useTranslation } from "react-i18next";
 
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
 import { useSharedDocumentStore } from "../../stores/shared-store";
@@ -7,6 +8,7 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 export function OthersDocs() {
+  const { t } = useTranslation();
   const { docId: curDocId } = useParams();
   const sharedTreeData = useSharedDocumentStore.use.sharedTreeData();
   const expandedKeys = useSharedDocumentStore.use.expandedKeys();
@@ -39,7 +41,7 @@ export function OthersDocs() {
   return (
     <SidebarGroup>
       <div className="flex items-center justify-between group/label">
-        <SidebarGroupLabel>Others Docs</SidebarGroupLabel>
+        <SidebarGroupLabel>{t("Others Docs")}</SidebarGroupLabel>
       </div>
       <SidebarMenu>
         <Tree treeData={sharedTreeData} onSelect={handleSelect} expandedKeys={expandedKeys} onExpand={(keys) => setExpandedKeys(keys)} />

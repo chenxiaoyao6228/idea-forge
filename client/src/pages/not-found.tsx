@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next";
+
 export default function NotFound() {
-  return <div>Not Found</div>;
+  const { t } = useTranslation();
+  return <div>{t("Not Found")}</div>;
 }

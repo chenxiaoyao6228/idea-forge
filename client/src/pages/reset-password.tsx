@@ -4,26 +4,27 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
-import request from "@/lib/request";
 import { PasswordSchema } from "shared";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
+import { useTranslation } from "react-i18next";
+import { TFunction } from "i18next";
 
-const PasswordAndConfirmPasswordSchema = z
-  .object({ password: PasswordSchema, confirmPassword: PasswordSchema })
-  .superRefine(({ confirmPassword, password }, ctx) => {
+const createPasswordAndConfirmPasswordSchema = (t: TFunction) =>
+  z.object({ password: PasswordSchema, confirmPassword: PasswordSchema }).superRefine(({ confirmPassword, password }, ctx) => {
     if (confirmPassword !== password) {
       ctx.addIssue({
         path: ["confirmPassword"],
         code: "custom",
-        message: "The passwords must match",
+        message: t("The passwords must match"),
       });
     }
   });
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
@@ -35,7 +36,7 @@ export default function ResetPasswordPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm({
-    resolver: zodResolver(PasswordAndConfirmPasswordSchema),
+    resolver: zodResolver(createPasswordAndConfirmPasswordSchema(t)),
     defaultValues: {
       password: "",
       confirmPassword: "",
@@ -44,7 +45,7 @@ export default function ResetPasswordPage() {
 
   const onSubmit = async (data: { password: string; confirmPassword: string }) => {
     if (!email) {
-      setError("Email is required");
+      setError(t("Email is required"));
       return;
     }
 
@@ -56,7 +57,7 @@ export default function ResetPasswordPage() {
       });
       navigate("/login");
     } catch (err: any) {
-      setError(err.message || "Password reset failed");
+      setError(err.message || t("Password reset failed"));
     } finally {
       setIsPending(false);
     }
@@ -76,17 +77,19 @@ export default function ResetPasswordPage() {
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <Logo />
               </div>
-              Idea Forge
+              {t("Idea Forge")}
             </span>
-            <CardTitle className="text-xl">Password Reset</CardTitle>
-            <CardDescription>Hi, {email}. No worries. It happens all the time.</CardDescription>
+            <CardTitle className="text-xl">{t("Password Reset")}</CardTitle>
+            <CardDescription>
+              {t("Hi, {{email}}", { email })}. {t("No worries. It happens all the time.")}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Field
                 labelProps={{
                   htmlFor: "password",
-                  children: "New Password",
+                  children: t("New Password"),
                   className: "font-medium",
                 }}
                 inputProps={{
@@ -100,7 +103,7 @@ export default function ResetPasswordPage() {
               <Field
                 labelProps={{
                   htmlFor: "confirmPassword",
-                  children: "Confirm Password",
+                  children: t("Confirm Password"),
                   className: "font-medium",
                 }}
                 inputProps={{
@@ -114,7 +117,7 @@ export default function ResetPasswordPage() {
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
               <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
-                Reset password
+                {t("Reset password")}
               </StatusButton>
             </form>
           </CardContent>

@@ -6,6 +6,7 @@ import { initZodI18n } from "shared";
 
 i18n.on("languageChanged", (lng) => {
   localStorage.setItem("lng", lng);
+  console.log("=====languageChanged =======", lng);
 });
 
 const supportedLngs = ["en", "zh"];

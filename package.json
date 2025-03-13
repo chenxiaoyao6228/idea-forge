@@ -30,17 +30,22 @@
     "lint:fix": "turbo lint --continue -- --write",
     "pinstall": "find client api  -name \"node_modules\" -type d -exec rm -rf {} + && pnpm install --force",
     "removeLocks": "find . -name 'pnpm-lock.yaml' -type f -delete",
-    "setup": "node scripts/setup-vscode.js && cd ./api && npm run setup"
+    "setup": "node scripts/setup-vscode.js && cd ./api && npm run setup",
+    "i18n:extract": "cd client && npm run i18n:extract",
+    "i18n:translate": "node scripts/i18n/update-translation.js",
+    "i18n:process": "pnpm i18n:extract && pnpm i18n:translate"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
     "@biomejs/biome": "^1.9.2",
     "@commitlint/cli": "^17.8.1",
     "@commitlint/config-conventional": "^17.8.1",
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.4.5",
+    "kill-port-process": "^3.2.1",
     "lefthook": "^1.8.2",
+    "openai": "^4.78.1",
     "ts-node": "^10.9.2",
     "turbo": "^2.1.2",
-    "kill-port-process": "^3.2.1",
     "typescript": "^5"
   },
   "commitlint": {
