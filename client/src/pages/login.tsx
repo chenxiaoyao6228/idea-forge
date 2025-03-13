@@ -37,11 +37,6 @@ export default function LoginPage() {
       password: "",
     },
   });
-
-  // useEffect(() => {
-  //   zodI18n.setLanguage(i18n.language as Language);
-  // }, [i18n.language]);
-
   useEffect(() => {
     if (location.state?.error || location.state?.email) {
       navigate(location.pathname + location.search);
@@ -84,7 +79,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Field
                 labelProps={{
-                  children: "Email",
+                  children: t("Email"),
                   className: "font-medium",
                 }}
                 inputProps={{
@@ -108,8 +103,8 @@ export default function LoginPage() {
                 </div>
                 <Field
                   labelProps={{
-                    children: "Password",
-                    className: "sr-only", // 隐藏标签因为我们已经在上面显示了
+                    children: t("Password"),
+                    className: "sr-only",
                   }}
                   inputProps={{
                     ...register("password"),
@@ -123,7 +118,7 @@ export default function LoginPage() {
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
               <StatusButton type="submit" className="w-full" disabled={isPending || isSubmitting} status={isPending ? "pending" : "idle"}>
-                Log in
+                {t("Log in")}
               </StatusButton>
 
               {providerNames.map((providerName) => (
@@ -131,9 +126,9 @@ export default function LoginPage() {
               ))}
 
               <div className="text-center text-sm">
-                New here?{" "}
+                {t("New here?")}{" "}
                 <Link to={redirectTo ? `/register?${encodeURIComponent(redirectTo)}` : "/register"} className="underline underline-offset-4">
-                  Create an account
+                  {t("Create an account")}
                 </Link>
               </div>
             </form>

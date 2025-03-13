@@ -6,6 +6,13 @@
 pre-commit:
   parallel: false
   commands:
+    i18n:
+      glob: "{client/src/**/*.{tsx,ts,jsx,js},**/locales/en.json}"
+      run: |
+        echo "Running i18n process..."
+        pnpm i18n:process
+        echo "Adding translation files..."
+        git add **/**/locales/*.json
     format:
       glob: "*.{js,ts,jsx,tsx,json}"
       run: |

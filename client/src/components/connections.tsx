@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Icon } from "@/components/ui/icon";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export const GITHUB_PROVIDER_NAME = "github";
 export const GOOGLE_PROVIDER_NAME = "google";
@@ -34,20 +35,36 @@ export function ProviderConnectionForm({
 }) {
   const label = providerLabels[providerName];
   const [isPending, setIsPending] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsPending(true);
 
-    // 构建重定向URL
+    // construct redirect URL
     const baseUrl = `api/auth/${providerName}/login`;
     const params = new URLSearchParams({
       provider: providerName,
       ...(redirectTo ? { redirectTo } : {}),
     });
 
-    // 重定向到认证页面
+    // redirect to auth page
     window.location.href = `${baseUrl}?${params.toString()}`;
+  };
+
+  const messages = {
+    Connect: {
+      pending: t("Connecting with {{provider}}", { provider: label }),
+      idle: t("Connect with {{provider}}", { provider: label }),
+    },
+    Login: {
+      pending: t("Logging in with {{provider}}", { provider: label }),
+      idle: t("Login with {{provider}}", { provider: label }),
+    },
+    Signup: {
+      pending: t("Signing up with {{provider}}", { provider: label }),
+      idle: t("Signup with {{provider}}", { provider: label }),
+    },
   };
 
   return (
@@ -55,7 +72,7 @@ export function ProviderConnectionForm({
       <StatusButton variant="outline" type="submit" className="w-full" status={isPending ? "pending" : "idle"}>
         <div className="inline-flex items-center gap-1.5">
           {providerIcons[providerName]}
-          <span>{isPending ? `${type}ing with ${label}` : `${type} with ${label}`}</span>
+          <span>{isPending ? messages[type].pending : messages[type].idle}</span>
         </div>
       </StatusButton>
     </div>

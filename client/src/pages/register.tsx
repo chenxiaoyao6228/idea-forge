@@ -9,6 +9,7 @@ import { RegisterRequestSchema, RegisterRequest } from "shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
+import { useTranslation } from "react-i18next";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function Register() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
   const [isPending, setIsPending] = useState(false);
+  const { t } = useTranslation();
 
   const {
     register,
@@ -53,15 +55,15 @@ export default function Register() {
               </div>
               Idea Forge
             </span>
-            <CardTitle className="text-xl">Register</CardTitle>
-            <CardDescription>Create your account to get started</CardDescription>
+            <CardTitle className="text-xl">{t("Register")}</CardTitle>
+            <CardDescription>{t("Create your account to get started")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Field
                 labelProps={{
                   htmlFor: "email",
-                  children: "Email",
+                  children: t("Email"),
                 }}
                 inputProps={{
                   ...register("email"),
@@ -74,7 +76,7 @@ export default function Register() {
               <Field
                 labelProps={{
                   htmlFor: "password",
-                  children: "Password",
+                  children: t("Password"),
                 }}
                 inputProps={{
                   ...register("password"),
@@ -85,13 +87,13 @@ export default function Register() {
               />
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
               <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
-                Register
+                {t("Register")}
               </StatusButton>
 
               <div className="text-center text-sm">
-                Already have an account?{" "}
+                {t("Already have an account?")}{" "}
                 <Link to={redirectTo ? `/login?${encodeURIComponent(redirectTo)}` : "/login"} className="underline underline-offset-4">
-                  Sign in
+                  {t("Sign in")}
                 </Link>
               </div>
             </form>

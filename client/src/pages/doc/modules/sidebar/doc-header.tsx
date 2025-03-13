@@ -6,8 +6,10 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import DocumentBreadcrumb from "./doc-breadcrumb";
 import { ShareDocButton } from "./share-doc-button";
 import { CollabUsers } from "@/pages/doc/components/collab-users";
+import { useTranslation } from "node_modules/react-i18next";
 
 export default function DocumentHeader() {
+  const { t } = useTranslation();
   return (
     <header
       className={cn(
@@ -21,7 +23,7 @@ export default function DocumentHeader() {
             <SidebarTrigger className="-ml-1" />
           </TooltipTrigger>
           <TooltipContent side="bottom" align="start">
-            Toggle Sidebar <kbd className="ml-2">⌘+b</kbd>
+            {t("Toggle Sidebar")} <kbd className="ml-2">⌘+b</kbd>
           </TooltipContent>
         </Tooltip>
         <DocumentBreadcrumb />

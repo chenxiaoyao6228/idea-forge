@@ -9,6 +9,7 @@ import { useDocumentStore } from "../../stores/doc-store";
 import { AddDocButton } from "./add-doc-button";
 import { logger } from "@/lib/logger";
 import { treeUtils } from "../../util";
+import { useTranslation } from "react-i18next";
 
 export function MyDocs() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export function MyDocs() {
   const moveDocuments = useDocumentStore.use.moveDocuments();
   const deleteDocument = useDocumentStore.use.deleteDocument();
   const updateDocument = useDocumentStore.use.updateDocument();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadNestedTree(curDocId || null);
@@ -72,7 +74,7 @@ export function MyDocs() {
   return (
     <SidebarGroup>
       <div className="flex items-center justify-between group/label">
-        <SidebarGroupLabel>My Docs</SidebarGroupLabel>
+        <SidebarGroupLabel>{t("My Docs")}</SidebarGroupLabel>
         <div className="flex items-center gap-1 invisible group-hover/label:visible">
           <AddDocButton parentId={null} />
         </div>
@@ -100,7 +102,7 @@ export function MyDocs() {
           }}
           actionsOnHover
           renderActions={({ node, onDropdownOpenChange, onStartRename }) => (
-            <div className="flex gap-1 ">
+            <div className="flex items-center">
               <DropdownMenu onOpenChange={onDropdownOpenChange}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-4 w-4 p-0 mr-1 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25">
@@ -108,15 +110,9 @@ export function MyDocs() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      onStartRename();
-                    }}
-                  >
-                    Rename
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onStartRename}>{t("Rename")}</DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteDoc(node.key)}>
-                    Delete
+                    {t("Delete")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
