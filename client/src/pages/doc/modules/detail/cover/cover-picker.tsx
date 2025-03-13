@@ -7,6 +7,7 @@ import { LinkTab } from "./pickers/link-tab";
 import { useClickAway } from "react-use";
 import { UpdateCoverDto } from "shared";
 import { Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface CoverPickerProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface CoverPickerProps {
 }
 
 export function CoverPicker({ isOpen, onClose, onSelect, onRemove }: CoverPickerProps) {
+  const { t } = useTranslation();
   const [selectedTab, setSelectedTab] = useState("gallery");
   const ref = useRef(null);
 
@@ -23,15 +25,15 @@ export function CoverPicker({ isOpen, onClose, onSelect, onRemove }: CoverPicker
 
   if (!isOpen) return null;
 
-  const content = (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div ref={ref} className="bg-white rounded-lg w-[640px] max-h-[80vh] overflow-hidden">
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabsList className="flex border-b px-4 justify-between">
             <div className="flex">
-              <TabsTrigger value="gallery">Gallery</TabsTrigger>
-              <TabsTrigger value="upload">Upload</TabsTrigger>
-              <TabsTrigger value="link">Link</TabsTrigger>
+              <TabsTrigger value="gallery">{t("Gallery")}</TabsTrigger>
+              <TabsTrigger value="upload">{t("Upload")}</TabsTrigger>
+              <TabsTrigger value="link">{t("Link")}</TabsTrigger>
             </div>
             <TabsTrigger
               value="remove"
@@ -58,8 +60,7 @@ export function CoverPicker({ isOpen, onClose, onSelect, onRemove }: CoverPicker
           </div>
         </Tabs>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
-
-  return createPortal(content, document.body);
 }

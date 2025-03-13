@@ -7,6 +7,7 @@ import { IconPicker } from "./icon-picker";
 import { Emoji } from "emoji-picker-react";
 import { DOCUMENT_TITLE_ID } from "../../../../editor/constant";
 import debounce from "lodash.debounce";
+import { useTranslation } from "react-i18next";
 
 interface ToolbarProps {
   doc: DocTreeDataNode;
@@ -14,6 +15,7 @@ interface ToolbarProps {
 }
 
 export const Toolbar = ({ doc, editable }: ToolbarProps) => {
+  const { t } = useTranslation();
   const updateDocument = useDocumentStore.use.updateDocument();
   const generateDefaultCover = useDocumentStore.use.generateDefaultCover();
 
@@ -37,14 +39,14 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
         {!doc.icon && editable && (
           <IconPicker asChild onChange={onIconSelect}>
             <Button className="text-muted-foreground text-xs" variant="outline" size="sm">
-              <Smile className="h-4 w-4 mr-2" /> Add icon
+              <Smile className="h-4 w-4 mr-2" /> {t("Add icon")}
             </Button>
           </IconPicker>
         )}
 
         {doc.id && !doc?.coverImage && (
           <Button onClick={() => generateDefaultCover(doc.id)} className="text-muted-foreground text-xs" variant="outline" size="sm">
-            <ImageIcon className="h-4 w-4 mr-2" /> Add cover
+            <ImageIcon className="h-4 w-4 mr-2" /> {t("Add cover")}
           </Button>
         )}
       </div>
@@ -64,6 +66,7 @@ interface IconSelectorProps {
 }
 
 const IconSelector = ({ doc, editable, onIconSelect, onRemoveIcon }: IconSelectorProps) => {
+  const { t } = useTranslation();
   if (!doc.icon) return null;
 
   const coverImage = doc.coverImage;
@@ -88,6 +91,7 @@ const IconSelector = ({ doc, editable, onIconSelect, onRemoveIcon }: IconSelecto
         variant="outline"
         size="icon"
         className="rounded-full opacity-0 group-hover/icon:opacity-100 transition text-muted-foreground text-xs"
+        aria-label={t("Remove icon")}
       >
         <X className="h-4 w-4" />
       </Button>
@@ -104,9 +108,10 @@ interface TitleInputProps {
 }
 
 function TitleInput({ doc, editable, onUpdateTitle }: TitleInputProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<ElementRef<"textarea">>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState(doc?.title || "");
+  const [value, setValue] = useState(doc?.title || t("Untitled"));
 
   const debouncedUpdate = useMemo(
     () =>
@@ -156,13 +161,14 @@ function TitleInput({ doc, editable, onUpdateTitle }: TitleInputProps) {
         onChange={(e) => onInput(e.target.value)}
         className={`text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF] bg-transparent resize-none`}
         id={DOCUMENT_TITLE_ID}
+        placeholder={t("Type a title...")}
       />
     );
   }
 
   return (
     <div onClick={enableInput} className={`text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF] pb-[11.5px]`} id={DOCUMENT_TITLE_ID}>
-      {doc.title}
+      {doc.title || t("Untitled")}
     </div>
   );
 }

@@ -28,14 +28,7 @@ export const EmailSchema = z
   // users can type the email in any case, but we store it in lowercase
   .transform((value) => value.toLowerCase().trim());
 
-export const PasswordSchema = z
-  .string({ required_error: "Password is required" })
-  .min(6, { message: "Password is too short" })
-  .max(100, { message: "Password is too long" })
-  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    // TODO: i18n
-    message: "Password must contain uppercase, lowercase letters and numbers",
-  });
+export const PasswordSchema = z.string().min(6).max(100);
 
 export const DisplayNameSchema = z
   .string()

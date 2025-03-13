@@ -6,7 +6,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import DocumentBreadcrumb from "./doc-breadcrumb";
 import { ShareDocButton } from "./share-doc-button";
 import { CollabUsers } from "@/pages/doc/components/collab-users";
-import { useTranslation } from "node_modules/react-i18next";
+import { useTranslation } from "react-i18next";
 
 export default function DocumentHeader() {
   const { t } = useTranslation();

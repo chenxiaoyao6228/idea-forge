@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { StatusButton } from "@/components/status-button";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
-import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function LoginPage() {
   const navigate = useNavigate();

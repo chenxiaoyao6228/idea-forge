@@ -2,8 +2,8 @@ import { uploadFile } from "@/lib/upload";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Spinner } from "@/components/ui/spinner";
-
 import { UpdateCoverDto } from "shared";
+import { useTranslation } from "react-i18next";
 
 interface UploadTabProps {
   onSelect: (dto: UpdateCoverDto) => Promise<void>;
@@ -11,6 +11,7 @@ interface UploadTabProps {
 }
 
 export function UploadTab({ onSelect, onClose }: UploadTabProps) {
+  const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -60,11 +61,11 @@ export function UploadTab({ onSelect, onClose }: UploadTabProps) {
         <div className="relative">
           {previewUrl && (
             <>
-              <img src={previewUrl} alt="Preview" className="max-h-48 mx-auto object-contain" />
+              <img src={previewUrl} alt={t("Preview")} className="max-h-48 mx-auto object-contain" />
               <div className="absolute inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center">
                 <div className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/80">
                   <Spinner className="w-4 h-4" />
-                  <span className="text-sm text-gray-600">Uploading...</span>
+                  <span className="text-sm text-gray-600">{t("Uploading...")}</span>
                 </div>
               </div>
             </>
@@ -72,12 +73,12 @@ export function UploadTab({ onSelect, onClose }: UploadTabProps) {
           {!previewUrl && (
             <div className="flex justify-center items-center py-4">
               <Spinner className="mr-2" />
-              <span className="text-gray-600">Uploading...</span>
+              <span className="text-gray-600">{t("Uploading...")}</span>
             </div>
           )}
         </div>
       ) : (
-        <p className="text-gray-600">{isDragActive ? "Drop the image here..." : "Drag 'n' drop an image here, or click to select one"}</p>
+        <p className="text-gray-600">{isDragActive ? t("Drop the image here...") : t("Drag 'n' drop an image here, or click to select one")}</p>
       )}
     </div>
   );
