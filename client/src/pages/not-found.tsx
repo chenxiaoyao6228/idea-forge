@@ -1,4 +1,3 @@
-import WithHomeNav from "@/hocs/with-home-nav";
 import { useTranslation } from "react-i18next";
 
 function NotFound() {
@@ -6,4 +5,4 @@ function NotFound() {
   return <div>{t("Not Found")}</div>;
 }
 
-export default WithHomeNav(NotFound);
+export default NotFound;

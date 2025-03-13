@@ -4,14 +4,11 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
-import request from "@/lib/request";
 import { RegisterRequestSchema, RegisterRequest } from "shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
-import HomeNav from "./home/nav";
-import WithHomeNav from "@/hocs/with-home-nav";
 
 function Register() {
   const navigate = useNavigate();
@@ -106,4 +103,4 @@ function Register() {
   );
 }
 
-export default WithHomeNav(Register);
+export default Register;

@@ -11,8 +11,6 @@ import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
 import { TFunction } from "i18next";
-import HomeNav from "./home/nav";
-import WithHomeNav from "@/hocs/with-home-nav";
 
 const createPasswordAndConfirmPasswordSchema = (t: TFunction) =>
   z.object({ password: PasswordSchema, confirmPassword: PasswordSchema }).superRefine(({ confirmPassword, password }, ctx) => {
@@ -129,4 +127,4 @@ function ResetPasswordPage() {
   );
 }
 
-export default WithHomeNav(ResetPasswordPage);
+export default ResetPasswordPage;

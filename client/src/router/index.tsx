@@ -7,6 +7,7 @@ import { getOrCreateRouter, registerRoute } from "./utils/router";
 import WithAuth from "@/hocs/with-auth";
 import LazyBoundary from "@/components/lazy-boundary";
 import ErrorBoundary from "@/components/error-boundary";
+import WithHomeNav from "@/hocs/with-home-nav";
 
 const RootLayout = React.lazy(() => import(/* webpackChunkName: "RootLayout" */ "@/RootLayout"));
 const Home = React.lazy(() => import(/* webpackChunkName: "Home" */ "@/pages/home"));
@@ -28,7 +29,7 @@ const AuthRouteConfig: IRouteObject = {
   errorElement: LazyBoundary(ErrorBoundary as any),
   wrapper: [WithAuth],
   children: [
-    { path: "/", element: LazyBoundary(Home) },
+    { path: "/", wrapper: [WithHomeNav], element: LazyBoundary(Home) },
     {
       path: "doc/:docId",
       element: LazyBoundary(Doc),
@@ -53,7 +54,7 @@ const UnAuthRouteConfig: IRouteObject = {
   path: "/",
   element: <RootLayout />,
   errorElement: LazyBoundary(ErrorBoundary as any),
-  wrapper: [],
+  wrapper: [WithHomeNav],
   children: [
     {
       path: "/login",

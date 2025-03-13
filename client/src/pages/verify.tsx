@@ -9,8 +9,6 @@ import { CodeValidateRequestSchema, type CodeValidateRequest } from "shared";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
-import HomeNav from "./home/nav";
-import WithHomeNav from "@/hocs/with-home-nav";
 
 // Define query parameter names
 export const emailQueryParam = "email";
@@ -143,4 +141,4 @@ function VerifyPage() {
   );
 }
 
-export default WithHomeNav(VerifyPage);
+export default VerifyPage;
