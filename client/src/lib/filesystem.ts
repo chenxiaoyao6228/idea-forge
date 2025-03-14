@@ -1,4 +1,4 @@
-import { fileOpen as _fileOpen, type FileSystemHandle, supported as nativeFileSystemSupported } from "browser-fs-access";
+import { fileOpen as _fileOpen, fileSave as _fileSave, type FileSystemHandle, supported as nativeFileSystemSupported } from "browser-fs-access";
 import debounce from "lodash.debounce";
 import { EVENT, MIME_TYPES } from "@/constants";
 
@@ -64,6 +64,29 @@ export function fileOpen<M extends boolean | undefined = false>(opts: FileOpenOp
     };
   }
 }
+
+export const fileSave = (
+  blob: Blob | Promise<Blob>,
+  opts: {
+    /** supply without the extension */
+    name: string;
+    /** file extension */
+    extension: FILE_EXTENSION;
+    description: string;
+    /** existing FileSystemHandle */
+    fileHandle?: FileSystemFileHandle | null;
+  },
+) => {
+  return _fileSave(
+    blob,
+    {
+      fileName: `${opts.name}.${opts.extension}`,
+      description: opts.description,
+      extensions: [`.${opts.extension}`],
+    },
+    opts.fileHandle,
+  );
+};
 
 export type { FileSystemHandle };
 export { nativeFileSystemSupported };

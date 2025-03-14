@@ -7,9 +7,16 @@ import DocumentBreadcrumb from "./doc-breadcrumb";
 import { ShareDocButton } from "./share-doc-button";
 import { CollabUsers } from "@/pages/doc/components/collab-users";
 import { useTranslation } from "react-i18next";
+import ExportMarkdownButton from "../../components/export-markdown-button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Ellipsis } from "lucide-react";
+import { useDocumentStore } from "../../stores/doc-store";
 
 export default function DocumentHeader() {
   const { t } = useTranslation();
+  const currentDocument = useDocumentStore.use.currentDocument();
+
   return (
     <header
       className={cn(
@@ -33,7 +40,23 @@ export default function DocumentHeader() {
         <CollabUsers className="mr-2" />
         <ShareDocButton />
         <ThemeSwitcher />
+        <TopBarHandlers />
       </div>
     </header>
+  );
+}
+
+function TopBarHandlers() {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="mx-2">
+          <Ellipsis className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="py-1 px-2 w-42">
+        <ExportMarkdownButton />
+      </PopoverContent>
+    </Popover>
   );
 }
