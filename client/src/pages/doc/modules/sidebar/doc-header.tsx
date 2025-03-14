@@ -1,5 +1,5 @@
+import { useEffect, useState } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar.tsx";
-import { Separator } from "@/components/ui/separator.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -11,16 +11,24 @@ import ExportMarkdownButton from "../../components/export-markdown-button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Ellipsis } from "lucide-react";
-import { useDocumentStore } from "../../stores/doc-store";
+import { useScrollTop } from "@/hooks/use-scroll-top";
 
 export default function DocumentHeader() {
   const { t } = useTranslation();
-  const currentDocument = useDocumentStore.use.currentDocument();
+
+  const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setScrollContainer(document.getElementsByClassName("main")[0] as HTMLElement);
+  }, []);
+
+  const scrolled = useScrollTop(10, scrollContainer || undefined);
 
   return (
     <header
       className={cn(
         "sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 justify-between bg-background",
+        scrolled ? "border-b shadow-sm" : "",
       )}
     >
       {/* left */}
