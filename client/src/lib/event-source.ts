@@ -75,7 +75,7 @@ export class EventSourceService {
 
           onerror: (err: any) => {
             console.error("EventSource onerror:", err);
-            if (err.statusCode === 401) {
+            if (err.code === 401) {
               // throw error to stop retrying
               throw err;
             }
@@ -91,7 +91,7 @@ export class EventSourceService {
       } catch (error: any) {
         console.error("EventSource error:", error);
 
-        if (error.statusCode === 401) {
+        if (error.code === 401) {
           if (!this.isRefreshing) {
             this.isRefreshing = true;
             try {
