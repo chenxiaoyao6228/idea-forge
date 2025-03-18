@@ -2,15 +2,19 @@ import { fileApi } from "@/apis/file";
 import { compressImage } from "./image";
 import type { z } from "zod";
 import { ConfirmUploadResponseSchema } from "shared";
+import { getFileInfo } from "./file";
 
-export const uploadFile = async ({ file, ext }: { file: File; ext: string }): Promise<z.infer<typeof ConfirmUploadResponseSchema>> => {
+export const uploadFile = async ({ file }: { file: File }): Promise<z.infer<typeof ConfirmUploadResponseSchema>> => {
+  // Get file information including real mime type and extension
+  const fileInfo = await getFileInfo(file);
+
   // Compress file before upload
   const compressedFile = await compressImage(file);
 
   // Get upload credentials
   const { credentials, fileKey, fileId } = await fileApi.getUploadCredentials({
     fileName: compressedFile.name,
-    ext,
+    ext: fileInfo.ext,
   });
 
   // Configure upload request
@@ -19,7 +23,7 @@ export const uploadFile = async ({ file, ext }: { file: File; ext: string }): Pr
     body: compressedFile,
     headers: {
       ...credentials.headers,
-      "Content-Type": compressedFile.type || "application/octet-stream",
+      "Content-Type": fileInfo.mimeType || "application/octet-stream",
     },
     mode: "cors",
   });
@@ -29,7 +33,5 @@ export const uploadFile = async ({ file, ext }: { file: File; ext: string }): Pr
   }
 
   // Confirm upload
-  const confirmRes = await fileApi.confirmUpload({ fileKey, fileId });
-
-  return confirmRes;
+  return await fileApi.confirmUpload({ fileKey, fileId });
 };

@@ -70,6 +70,9 @@ export async function compressImage(file: File | Blob, customOptions?: Partial<C
   // Skip compression for non-image files
   if (!file.type.startsWith("image/")) return file as File;
 
+  // Skip compression for GIF files to preserve animation
+  if (file.type === "image/gif") return file as File;
+
   // Skip compression for small images (less than 100KB)
   if (file.size < 100 * 1024) return file as File;
 
@@ -100,5 +103,5 @@ export async function compressImage(file: File | Blob, customOptions?: Partial<C
 
 // Helper to check if compression is needed
 export function shouldCompressImage(file: File): boolean {
-  return file.type.startsWith("image/") && file.size > 100 * 1024;
+  return file.type.startsWith("image/") && file.type !== "image/gif" && file.size > 100 * 1024;
 }

@@ -210,7 +210,6 @@ const ImageBlock = TImage.extend({
 
               const { downloadUrl } = await uploadFile({
                 file,
-                ext: file.name.split(".").pop() || "png",
               });
 
               const pos = findPlaceholder(this.storage.placeholderPlugin, view.state, id);

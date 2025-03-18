@@ -25,7 +25,7 @@ export function UploadTab({ onSelect, onClose }: UploadTabProps) {
           const objectUrl = URL.createObjectURL(file);
           setPreviewUrl(objectUrl);
 
-          const { downloadUrl } = await uploadFile({ file, ext: file.type.split("/")[1] });
+          const { downloadUrl } = await uploadFile({ file });
           await onSelect({ url: downloadUrl, isPreset: false });
 
           // Clean up preview URL

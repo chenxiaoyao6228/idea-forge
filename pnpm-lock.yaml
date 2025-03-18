@@ -609,6 +609,9 @@ importers:
       emoji-picker-react:
         specifier: ^4.12.0
         version: 4.12.0(react@18.3.1)
+      get-real-file-type:
+        specifier: ^2.1.0
+        version: 2.1.0
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
@@ -12239,6 +12242,11 @@ packages:
       moment: 2.30.1
     dev: false
 
+  /file-type@12.4.2:
+    resolution: {integrity: sha512-UssQP5ZgIOKelfsaB5CuGAL+Y+q7EmONuiwF3N5HAH0t27rvrttgi6Ra9k/+DVaY9UF6+ybxu5pOXLUdA8N7Vg==}
+    engines: {node: '>=8'}
+    dev: false
+
   /filesize@8.0.7:
     resolution: {integrity: sha512-pjmC+bkIF8XI7fWaH8KxHcZL3DPybs1roSKP4rKDvy20tAWwIObE4+JIseG2byfGKhud5ZnM4YSGKBz7Sh0ndQ==}
     engines: {node: '>= 0.4.0'}
@@ -12609,6 +12617,13 @@ packages:
     dependencies:
       dunder-proto: 1.0.1
       es-object-atoms: 1.1.1
+
+  /get-real-file-type@2.1.0:
+    resolution: {integrity: sha512-idSfagSo2GoiQDJMvyD3L5vG2hIKwZwfNPIqYMYY8B4DzJC2GT4+RyGNTHohVV2QREkOP8EWCat1L+EKtnVE4w==}
+    dependencies:
+      '@babel/runtime': 7.26.7
+      file-type: 12.4.2
+    dev: false
 
   /get-stream@3.0.0:
     resolution: {integrity: sha512-GlhdIUuVakc8SJ6kK0zAFbiGzRFzNnY4jUuEbV9UROo4Y+0Ny4fjvcZFVTeDA4odpFyOQzaw6hXukJSq/f28sQ==}

@@ -50,7 +50,7 @@ export function createPasteImagePlugin({
           view.dispatch(tr);
 
           try {
-            const { downloadUrl } = await uploadFile({ file, ext: file.name.split(".").pop() || "png" });
+            const { downloadUrl } = await uploadFile({ file });
 
             const pos = findPlaceholder(placeholderPlugin, view.state, id);
             if (pos == null) return;
