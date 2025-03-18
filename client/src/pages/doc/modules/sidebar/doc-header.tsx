@@ -38,7 +38,8 @@ export default function DocumentHeader() {
             <SidebarTrigger className="-ml-1" />
           </TooltipTrigger>
           <TooltipContent side="bottom" align="start">
-            {t("Toggle Sidebar")} <kbd className="ml-2">⌘+b</kbd>
+            {t("Toggle Sidebar")}
+            {/* <kbd className="ml-2">⌘+b</kbd> */}
           </TooltipContent>
         </Tooltip>
         <DocumentBreadcrumb />
