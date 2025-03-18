@@ -1,9 +1,16 @@
+import { cn } from "@/lib/utils";
 import { Spinner } from "./ui/spinner";
 
-export default function Loading() {
+interface LoadingProps {
+  fullScreen?: boolean;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}
+
+export default function Loading({ fullScreen = false, size = "md", className }: LoadingProps) {
   return (
-    <div className="h-screen flex justify-center items-center">
-      <Spinner size="lg" />
+    <div className={cn("flex justify-center items-center", fullScreen ? "h-screen" : "h-full w-full", className)}>
+      <Spinner size={size} />
     </div>
   );
 }

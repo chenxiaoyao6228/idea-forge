@@ -3,6 +3,9 @@
 //  see:  https://github.com/microsoft/vscode/issues/37519
 
 {
+  "files.exclude": {
+   // see file.exclude-example.json if you want to exclude some files from vscode
+  },
   "[javascript][javascriptreact][typescript][typescriptreact][less][sass][scss][css][json][jsonc][html]": {
     "editor.defaultFormatter": "biomejs.biome"
   },

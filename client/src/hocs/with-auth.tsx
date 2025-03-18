@@ -36,7 +36,7 @@ export default function WithAuth(WrappedComponent: React.ComponentType<any>) {
 
     // Loading state
     if (!userInfo?.id && window.location.pathname !== "/auth-callback") {
-      return <Loading />;
+      return <Loading fullScreen size="lg" />;
     }
 
     // Render original component

@@ -9,7 +9,7 @@ import LazyBoundary from "@/components/lazy-boundary";
 import ErrorBoundary from "@/components/error-boundary";
 import WithHomeNav from "@/hocs/with-home-nav";
 
-const RootLayout = React.lazy(() => import(/* webpackChunkName: "RootLayout" */ "@/RootLayout"));
+const App = React.lazy(() => import(/* webpackChunkName: "App" */ "@/App"));
 const Home = React.lazy(() => import(/* webpackChunkName: "Home" */ "@/pages/home"));
 const Login = React.lazy(() => import(/* webpackChunkName: "Login" */ "@/pages/login"));
 const Register = React.lazy(() => import(/* webpackChunkName: "Register" */ "@/pages/register"));
@@ -25,7 +25,7 @@ const TestSentry = React.lazy(() => import(/* webpackChunkName: "TestSentry" */ 
 // Routes that require authentication
 const AuthRouteConfig: IRouteObject = {
   path: "/",
-  element: <RootLayout />,
+  element: <App />,
   errorElement: LazyBoundary(ErrorBoundary as any),
   wrapper: [WithAuth],
   children: [
@@ -52,7 +52,7 @@ const AuthRouteConfig: IRouteObject = {
 // TODO: remember to update skipAuthPaths in api/src/_shared/middlewares/fallback.middleware.ts when changing adding new paths
 const UnAuthRouteConfig: IRouteObject = {
   path: "/",
-  element: <RootLayout />,
+  element: <App />,
   errorElement: LazyBoundary(ErrorBoundary as any),
   wrapper: [WithHomeNav],
   children: [

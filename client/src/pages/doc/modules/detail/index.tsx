@@ -21,7 +21,7 @@ export default function DocDetail() {
   const isHomeDoc = docId === "0";
 
   if (isCurrentDocLoading) {
-    return <Loading />;
+    return <Loading fullScreen size="lg" />;
   }
 
   if (currentDocLoadingError) {

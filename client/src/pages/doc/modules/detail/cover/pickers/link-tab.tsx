@@ -67,8 +67,7 @@ export function LinkTab({ onSelect, onClose }: LinkTabProps) {
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? (
             <div className="flex items-center space-x-2">
-              <Spinner className="h-4 w-4" />
-              <span>{t("Loading...")}</span>
+              <Spinner size="sm" text={t("Loading...")} />
             </div>
           ) : (
             t("Submit")

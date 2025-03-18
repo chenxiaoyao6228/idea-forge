@@ -64,16 +64,14 @@ export function UploadTab({ onSelect, onClose }: UploadTabProps) {
               <img src={previewUrl} alt={t("Preview")} className="max-h-48 mx-auto object-contain" />
               <div className="absolute inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center">
                 <div className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/80">
-                  <Spinner className="w-4 h-4" />
-                  <span className="text-sm text-gray-600">{t("Uploading...")}</span>
+                  <Spinner size="sm" text={t("Uploading...")} />
                 </div>
               </div>
             </>
           )}
           {!previewUrl && (
             <div className="flex justify-center items-center py-4">
-              <Spinner className="mr-2" />
-              <span className="text-gray-600">{t("Uploading...")}</span>
+              <Spinner size="sm" className="mr-2" text={t("Uploading...")} />
             </div>
           )}
         </div>

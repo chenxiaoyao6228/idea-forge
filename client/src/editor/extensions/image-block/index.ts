@@ -151,7 +151,7 @@ const ImageBlock = TImage.extend({
             type: "imageBlock",
             attrs: {
               src: attrs.src,
-              alignment: attrs.alignment || "center",
+              alignment: attrs.alignment || "left",
               width: attrs.width,
               height: attrs.height,
               aspectRatio: attrs.aspectRatio,

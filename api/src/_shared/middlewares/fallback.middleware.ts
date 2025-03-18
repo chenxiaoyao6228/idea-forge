@@ -64,7 +64,6 @@ export class FallbackMiddleware implements NestMiddleware {
   }
 
   private async renderApp(req: Request, res: Response) {
-    console.log("====renderApp==== ");
     const isDev = this.configService.get("NODE_ENV") === "development";
     const vitePort = this.configService.get("PORT", 5173);
 
@@ -76,7 +75,6 @@ export class FallbackMiddleware implements NestMiddleware {
     const { accessToken, refreshToken } = req.cookies;
 
     if (needAuth && !accessToken && !refreshToken) {
-      console.log("====renderApp==== needAuth && !accessToken && !refreshToken");
       // No tokens, redirect to login page with current path
       return this.redirectToLogin(req, res);
     }
@@ -172,6 +170,35 @@ export class FallbackMiddleware implements NestMiddleware {
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>Idea Forge</title>
           <meta name="description" content="Powerful document tool that combines the functionality of Notion with the intelligence of AI" />
+          <style>
+            #initial-loader {
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-color: #fff;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              z-index: 9999;
+            }
+
+            .initial-spinner {
+              width: 32px;
+              height: 32px;
+              animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+              from {
+                transform: rotate(0deg);
+              }
+              to {
+                transform: rotate(360deg);
+              }
+            }
+          </style>
           ${_html.preload ? _html.preload : ""}
           ${_html.css ? _html.css : ""}
            <script>
@@ -185,6 +212,22 @@ export class FallbackMiddleware implements NestMiddleware {
           </script>
         </head>
         <body>
+          <div id="initial-loader">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="initial-spinner"
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+          </div>
           <div id="root"></div>
           ${userInfoScript}
           ${createEnvScript()}
