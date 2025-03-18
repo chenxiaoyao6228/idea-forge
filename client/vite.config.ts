@@ -5,6 +5,7 @@ import { inspectorServer } from "@react-dev-inspector/vite-plugin";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { iconsSpritesheet } from "vite-plugin-icons-spritesheet";
 import timeReporter from "vite-plugin-time-reporter";
+import checker from 'vite-plugin-checker';
 // TODO:  
 const port = 5173;
 const isDev = process.env.NODE_ENV !== "production";
@@ -12,6 +13,13 @@ const isDev = process.env.NODE_ENV !== "production";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    isDev && checker({
+      typescript: true,
+      // Optional: Enable ESLint checking
+      // eslint: {
+      //   lintCommand: 'eslint "./src/**/*.{ts,tsx}"',
+      // },
+    }),
     isDev ? inspectorServer() : null,
     !isDev && timeReporter(),
     react(),
