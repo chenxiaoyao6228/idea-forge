@@ -33,6 +33,7 @@ import ImageBlock from "./image-block";
 import { Selection } from "./selection";
 import { Table, TableCell, TableHeader, TableRow } from "./table";
 import AddParagraph from "./paragraph/plugins/add-paragraph";
+import { AutoFocus } from "./auto-fucus";
 
 const nodes = [
   Document,
@@ -97,6 +98,7 @@ const _extensions = [
   }),
   Selection,
   AddParagraph,
+  AutoFocus,
 ];
 
 export const extensions = [...nodes, ...marks, ..._extensions];

@@ -17,6 +17,7 @@ import { RefreshCw, WifiOff } from "lucide-react";
 import AIPanel from "./ai-panel";
 import { getHierarchicalIndexes } from "@tiptap-pro/extension-table-of-contents";
 import TableOfContents from "@tiptap-pro/extension-table-of-contents";
+import React from "react";
 
 interface Props {
   id: string;
@@ -161,16 +162,18 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
   if (!user || !editor) return null;
 
   return (
-    <div id="EDITOR-CONTAINER" className="editor-container relative md:col-[2] w-full mx-auto mt-2 " ref={menuContainerRef}>
-      {renderStatusBanner()}
+    <React.Fragment>
+      <div id="EDITOR-CONTAINER" className="editor-container relative md:col-[2] w-full mx-auto mt-2 " ref={menuContainerRef}>
+        {renderStatusBanner()}
 
-      {status !== "loading" && (
-        <>
-          <EditorContent editor={editor} className="w-full" />
-          <BubbleMenus editor={editor} containerRef={menuContainerRef} />
-          <AIPanel editor={editor} />
-        </>
-      )}
-    </div>
+        {status !== "loading" && (
+          <>
+            <EditorContent editor={editor} className="w-full" />
+            <BubbleMenus editor={editor} containerRef={menuContainerRef} />
+            <AIPanel editor={editor} />
+          </>
+        )}
+      </div>
+    </React.Fragment>
   );
 }
