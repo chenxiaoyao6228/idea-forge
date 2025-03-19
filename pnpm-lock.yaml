@@ -648,6 +648,9 @@ importers:
       react:
         specifier: ^18.3.1
         version: 18.3.1
+      react-confirm:
+        specifier: ^0.3.0
+        version: 0.3.0(react-dom@18.3.1)(react@18.3.1)
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
@@ -16627,6 +16630,16 @@ packages:
       http-errors: 2.0.0
       iconv-lite: 0.4.24
       unpipe: 1.0.0
+
+  /react-confirm@0.3.0(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-xd14cjreB+ndQFqO2iZSMFRelf7MXya7dhGEyZh1km1oCeudQaF7VoIMAzSDLB4wrZiFS3KfGxeqZLnoxq6dwA==}
+    peerDependencies:
+      react: '>=18.x'
+      react-dom: '>=18.x'
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+    dev: false
 
   /react-dev-inspector@2.0.1(@types/react@18.3.12)(eslint@9.15.0)(react@18.3.1)(typescript@5.6.2)(webpack@5.95.0):
     resolution: {integrity: sha512-b8PAmbwGFrWcxeaX8wYveqO+VTwTXGJaz/yl9RO31LK1zeLKJVlkkbeLExLnJ6IvhXY1TwL8Q4+gR2GKJ8BI6Q==}

@@ -11,6 +11,7 @@
   "Can view": "可以查看",
   "Cancel": "取消",
   "Change cover": "更换封面",
+  "Confirm": "确认",
   "Confirm Password": "确认密码",
   "Connect with {{provider}}": "与{{provider}}连接",
   "Connecting with {{provider}}": "正在与{{provider}}连接",
@@ -102,5 +103,5 @@
   "You have no permission to view this document": "您没有权限查看此文档",
   "You will be logged out of your account and will need to sign in again to access your data.": "您将被登出账户，需要重新登录以访问您的数据。",
   "Your AI-powered writing and collaborative editing tools!": "您的AI驱动写作和协作编辑工具！",
-  "undefined": "德文：\"Hallo <bold>{{name}}</bold> \""
+  "undefined": "German: \"Hallo <bold>{{name}}</bold> \""
 }

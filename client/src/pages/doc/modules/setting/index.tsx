@@ -3,20 +3,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import useUserStore from "@/stores/user";
-import { SignOutDialog, useSignOutDialog } from "./signout-dialog";
-import { useTranslation } from "react-i18next";
+import { SignOutButton } from "./signout-button";
 
-/*
- * Shadcn Dialog inside of Dropdown closes automatically, see:
- * https://stackoverflow.com/questions/77185827/shadcn-dialog-inside-of-dropdown-closes-automatically
- * Do not use: <DropdownMenuItem onSelect={(e) => e.preventDefault()}>, use preventDefault will cause your page freeze
- * cause it will add a pointer-events: none to the body, so you can't click any element on the page
- */
 export default function UserSettings() {
   const { isMobile } = useSidebar();
   const user = useUserStore((state) => state.userInfo);
-  const { t } = useTranslation();
-  const { onOpen: onSignOutOpen } = useSignOutDialog();
 
   return (
     <>
@@ -42,17 +33,13 @@ export default function UserSettings() {
               align="end"
               sideOffset={4}
             >
-              <DropdownMenuItem onClick={onSignOutOpen}>
-                <div className="flex items-center gap-2 px-1 py-0 text-left text-sm">
-                  <LogOut className="h-4 w-4" />
-                  <span className="ml-2">{t("Sign Out")}</span>
-                </div>
+              <DropdownMenuItem>
+                <SignOutButton />
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>
       </SidebarMenu>
-      <SignOutDialog />
     </>
   );
 }
