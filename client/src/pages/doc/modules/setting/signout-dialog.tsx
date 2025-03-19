@@ -1,3 +1,4 @@
+import { create } from "zustand";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -7,31 +8,42 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
 import useUserStore from "@/stores/user";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-export function SignOutButton() {
+interface SignOutStore {
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+}
+
+const useSignOutStore = create<SignOutStore>((set) => ({
+  isOpen: false,
+  onOpen: () => set({ isOpen: true }),
+  onClose: () => set({ isOpen: false }),
+}));
+
+export function useSignOutDialog() {
+  const { onOpen } = useSignOutStore();
+  return { onOpen };
+}
+
+export function SignOutDialog() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { isOpen, onClose } = useSignOutStore();
 
   const handleSignOut = () => {
     useUserStore.getState().logout();
+    onClose();
     navigate("/login");
   };
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <div className="flex items-center gap-2 px-1 py-0 text-left text-sm cursor-pointer">
-          <LogOut className="h-4 w-4" />
-          <span className="ml-2">{t("Sign Out")}</span>
-        </div>
-      </AlertDialogTrigger>
+    // https://github.com/shadcn-ui/ui/issues/1859
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t("Are you sure you want to sign out?")}</AlertDialogTitle>
