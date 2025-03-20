@@ -12,6 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Ellipsis } from "lucide-react";
 import { useScrollTop } from "@/hooks/use-scroll-top";
+import ImportMarkdownButton from "../../components/import-markdown";
+import { Separator } from "@/components/ui/separator";
 
 export default function DocumentHeader() {
   const { t } = useTranslation();
@@ -59,12 +61,14 @@ function TopBarHandlers() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="mx-2">
+        <Button variant="ghost" size="icon">
           <Ellipsis className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="py-1 px-2 w-42">
+      <PopoverContent className="w-42 py-1 px-2" align="end">
         <ExportMarkdownButton />
+        <Separator className="my-1" />
+        <ImportMarkdownButton />
       </PopoverContent>
     </Popover>
   );
