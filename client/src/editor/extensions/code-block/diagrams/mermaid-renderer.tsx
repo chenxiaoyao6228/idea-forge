@@ -1,26 +1,29 @@
+/*
+ * docs:  https://mermaid.js.org/config/usage.html
+ */
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
 import debounce from "lodash.debounce";
-import DOMPurify from "dompurify";
-import { mermaidTemplates } from "../constant";
 import { v4 as uuidv4 } from "uuid";
+import { mermaidTemplates } from "../constant";
 
-// Initialize mermaid
-(function initializeMermaid() {
+let isMermaidInitialized = false;
+export function initializeMermaid() {
+  if (isMermaidInitialized) return;
+  isMermaidInitialized = true;
   const mermaidConfig: Record<string, { useMaxWidth: boolean }> = {};
   mermaidTemplates.forEach((template) => {
     mermaidConfig[template.value] = { useMaxWidth: true };
   });
   mermaid.initialize({ ...mermaidConfig });
-})();
+}
 
 interface MermaidComponentProps {
   code: string;
 }
 
 const MermaidComponent: React.FC<MermaidComponentProps> = ({ code }) => {
-  const [svg, setSvg] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const diagramIdRef = useRef<string>(uuidv4());
@@ -28,17 +31,20 @@ const MermaidComponent: React.FC<MermaidComponentProps> = ({ code }) => {
   // Debounced render function
   const debouncedRender = debounce(async () => {
     try {
-      // NOTE: cannot use diagramIdRef.current here, mermaid will somehow destroy the dom
+      // https://mermaid.js.org/config/usage.html#api-usage
       const { svg } = await mermaid.render(`mermaid-diagram-${diagramIdRef.current}`, code);
-      setSvg(svg);
+      if (containerRef.current && svg) {
+        containerRef.current.innerHTML = svg;
+        setError(null);
+      }
     } catch (error) {
-      setSvg("");
       setError(error instanceof Error ? error.message : "An error occurred while rendering the diagram");
     }
   }, 100);
 
   // Effect to trigger render on code change
   useEffect(() => {
+    initializeMermaid();
     // Prevent error from flashing briefly
     setError(null);
     debouncedRender();
@@ -56,20 +62,7 @@ const MermaidComponent: React.FC<MermaidComponentProps> = ({ code }) => {
     );
   }
 
-  if (!svg) {
-    return null;
-  }
-
-  return (
-    <div
-      ref={containerRef}
-      id={diagramIdRef.current}
-      // NOTE: DOMPurify v3.1.7 breaks Mermaid. see: https://github.com/facebook/docusaurus/issues/10526
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: <the svg is sanitized>
-      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svg) }}
-      className="mermaid-svg-wrapper flex justify-center"
-    />
-  );
+  return <div ref={containerRef} id={diagramIdRef.current} className="mermaid-svg-wrapper flex justify-center" />;
 };
 
 export default MermaidComponent;
