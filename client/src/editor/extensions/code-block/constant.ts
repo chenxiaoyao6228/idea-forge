@@ -73,4 +73,12 @@ export const mermaidTemplates = [
   { name: "Gantt Chart", value: "gantt" },
   { name: "Pie Chart", value: "pie" },
   { name: "Requirement Diagram", value: "requirementDiagram" },
+  { name: "Architecture Beta", value: "architecture-beta" },
+  { name: "Kanban", value: "kanban" },
+  { name: "Packet Beta", value: "packet-beta" },
+  { name: "Block Beta", value: "block-beta" },
+  { name: "XY Chart Beta", value: "xychart-beta" },
+  { name: "Sankey Beta", value: "sankey-beta" },
+  { name: "Mind Map", value: "mindmap" },
+  { name: "Timeline", value: "timeline" },
 ];
