@@ -10,6 +10,8 @@ import { Select, SelectValue, SelectItem, SelectTrigger, SelectContent } from "@
 import { treeUtils } from "../../util";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export function ShareDocButton() {
   const { t } = useTranslation();
@@ -18,6 +20,7 @@ export function ShareDocButton() {
   const { currentDocShares, loadDocShares, shareDocument, removeShare, updateSharePermission } = useSharedDocumentStore();
   const docTree = useDocumentStore.use.treeData();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const { docId: curDocId } = useParams();
   const isMyDoc = curDocId ? treeUtils.findNode(docTree, curDocId) : null;
@@ -29,20 +32,30 @@ export function ShareDocButton() {
 
   const handleShare = async () => {
     if (!curDocId) return;
-    await shareDocument({ email, permission, docId: curDocId });
-    setEmail("");
+    try {
+      await shareDocument({ email, permission, docId: curDocId });
+      setEmail("");
+    } catch (error: any) {
+      if (error?.message) {
+        toast({
+          title: error.message,
+          variant: "destructive",
+          duration: 2000,
+        });
+      }
+    }
   };
 
   if (!curDocId || !isMyDoc) return null;
 
   return (
-    <Popover open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-      <PopoverTrigger asChild>
+    <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+      <DialogTrigger asChild>
         <Button variant="ghost" size="icon">
           <ShareIcon className="h-4 w-4" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px] overflow-y-auto">
         <div className="space-y-4">
           <div>
             <h2 className="text-sm font-medium text-gray-950">{t("Share document")}</h2>
@@ -61,35 +74,37 @@ export function ShareDocButton() {
             </div>
           </div>
 
-          {currentDocShares.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-sm font-medium text-gray-950">{t("Shared users")}</h2>
-              {currentDocShares.map((share) => (
-                <div key={share.id} className="flex items-center justify-between pb-2">
-                  <div className="space-y-1">
-                    <div className="font-medium">{share.displayName || share.email}</div>
-                    <div className="text-sm text-gray-500">{share.email}</div>
+          <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+            {currentDocShares.length > 0 && (
+              <div className="space-y-2">
+                <h2 className="text-sm font-medium text-gray-950">{t("Shared users")}</h2>
+                {currentDocShares.map((share) => (
+                  <div key={share.id} className="flex items-center justify-between pb-2">
+                    <div className="space-y-1">
+                      <div className="font-medium">{share.displayName || share.email}</div>
+                      <div className="text-sm text-gray-500">{share.email}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Select value={share.permission} onValueChange={(value: Permission) => updateSharePermission(curDocId, share.id, value)}>
+                        <SelectTrigger className="w-[104px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="READ">{t("Can view")}</SelectItem>
+                          <SelectItem value="EDIT">{t("Can edit")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="ghost" size="sm" onClick={() => removeShare(curDocId, share.id)}>
+                        {t("Remove")}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Select value={share.permission} onValueChange={(value: Permission) => updateSharePermission(curDocId, share.id, value)}>
-                      <SelectTrigger className="w-[104px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="READ">{t("Can view")}</SelectItem>
-                        <SelectItem value="EDIT">{t("Can edit")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="ghost" size="sm" onClick={() => removeShare(curDocId, share.id)}>
-                      {t("Remove")}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }

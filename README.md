@@ -12,7 +12,7 @@ Idea Forge is a powerful document collaboration platform that combines Notion-li
 - 👥 Real-time collaboration
 - 🎨 Customizable themes, cover images, and emojis
 - 🌐 Multilingual support (English, Chinese, and more)
-- 📝 Markdown keyboard shortcuts
+- 📝 Markdown keyboard shortcuts, import and export markdown
 
 Try Idea Forge now at [ideaforge.link](https://ideaforge.link/)
 

@@ -12,7 +12,7 @@ Idea Forge 是一个强大的文档协作平台，结合了类 Notion 的功能�
 - 👥 实时协作
 - 🎨 可自定义主题、封面图片和表情符号
 - 🌐 多语言支持（英文、中文等）
-- 📝 Markdown 快捷键
+- 📝 Markdown 快捷键, 导入和导出 Markdown
 
 立即体验 Idea Forge：[ideaforge.link](https://ideaforge.link/)
 

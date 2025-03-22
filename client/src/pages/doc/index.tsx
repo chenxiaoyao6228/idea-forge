@@ -17,15 +17,10 @@ import { MyDocs } from "./modules/sidebar/my-docs";
 import { OthersDocs } from "./modules/sidebar/others-docs";
 import UserSettings from "./modules/setting";
 import DocDetail from "./modules/detail";
-import { Link } from "react-router-dom";
-import { Icon } from "@/components/ui/icon";
 import { useParams } from "react-router-dom";
 import { useEffect } from "react";
 import { useDocumentStore } from "./stores/doc-store";
-import { TableOfContent } from "./components/table-of-content";
-import { TrashDialog } from "@/components/ui/trash-dialog";
-import { Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TrashDialog } from "@/components/trash-dialog";
 
 export default function Doc() {
   const { docId } = useParams();

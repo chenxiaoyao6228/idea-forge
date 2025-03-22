@@ -10,7 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useSharedDocumentStore } from "@/pages/doc/stores/shared-store";
 import { useDocumentStore } from "@/pages/doc/stores/doc-store";
-import { confirmModal } from "./confirm-modal";
+import { confirmModal } from "./ui/confirm-modal";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -120,7 +120,7 @@ export function TrashDialog() {
             <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder={t("Search documents in trash")} className="max-w" />
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
             {loading ? (
               <div className="py-8 text-center text-muted-foreground">{t("Loading...")}</div>
             ) : documents.length === 0 ? (
