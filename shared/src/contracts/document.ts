@@ -161,3 +161,15 @@ export type DetailSharedDocumentResponse = z.infer<typeof detailSharedDocumentSc
 
 export const docSharesSchema = z.array(docShareUserSchema);
 export type DocSharesResponse = z.infer<typeof docSharesSchema>;
+
+export interface TrashDocumentResponse {
+  id: string;
+  title: string;
+  updatedAt: Date;
+  parentId: string | null;
+  icon: string | null;
+  coverImage: {
+    url: string;
+    scrollY: number;
+  } | null;
+}

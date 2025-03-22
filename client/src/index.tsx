@@ -7,12 +7,10 @@ import AppWithInspector from "./components/react-dev-inspector";
 import router from "./router";
 import { Toaster } from "./components/ui/toaster";
 import { createConfirmationCreater, createReactTreeMounter, createMountPoint } from "react-confirm";
-
-const mounter = createReactTreeMounter();
-export const MountPoint = createMountPoint(mounter);
-
 import { I18nextProvider } from "react-i18next";
 import i18n from "./lib/i18n";
+const mounter = createReactTreeMounter();
+export const MountPoint = createMountPoint(mounter);
 
 createRoot(document.getElementById("root")!).render(
   // <StrictMode>

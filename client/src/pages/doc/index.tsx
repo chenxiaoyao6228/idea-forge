@@ -23,6 +23,9 @@ import { useParams } from "react-router-dom";
 import { useEffect } from "react";
 import { useDocumentStore } from "./stores/doc-store";
 import { TableOfContent } from "./components/table-of-content";
+import { TrashDialog } from "@/components/ui/trash-dialog";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Doc() {
   const { docId } = useParams();
@@ -40,20 +43,23 @@ export default function Doc() {
           <SidebarGroup>
             <Logo />
           </SidebarGroup>
-          {/* <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
             <SidebarMenu>
-            
-              <SidebarMenuItem>
+              {/* <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link to="/doc/0">
                     <Icon name="Home" />
                     <span>Home</span>
                   </Link>
                 </SidebarMenuButton>
+              </SidebarMenuItem> */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <TrashDialog />
+                </SidebarMenuButton>
               </SidebarMenuItem>
-    
             </SidebarMenu>
-          </SidebarGroup> */}
+          </SidebarGroup>
         </SidebarHeader>
         <SidebarContent className="custom-scrollbar">
           <OthersDocs />

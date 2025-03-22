@@ -1,3 +1,9 @@
+/*
+ * Shadcn Dialog inside of Dropdown closes automatically, see:
+ * https://stackoverflow.com/questions/77185827/shadcn-dialog-inside-of-dropdown-closes-automatically
+ * So we use react-confirm to create a custom confirm modal, instead of using AlertDialog/Dialog directly from shadcn/ui
+ */
+
 import * as React from "react";
 import { confirmable, ConfirmDialog } from "react-confirm";
 import { useKey } from "react-use";
@@ -6,15 +12,47 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
-import type { ConfirmModalProps } from "./types";
 import { useTranslation } from "react-i18next";
+import { createConfirmation } from "react-confirm";
+import { ButtonProps } from "@/components/ui/button";
+
+export interface ConfirmModalProps {
+  // basic info
+  title?: string;
+  description?: string;
+  content?: React.ReactNode;
+
+  // button related
+  confirmText?: string;
+  cancelText?: string;
+  confirmVariant?: ButtonProps["variant"];
+  cancelVariant?: ButtonProps["variant"];
+  hideCancel?: boolean;
+  hideFooter?: boolean;
+  footer?: React.ReactNode;
+
+  // style related
+  width?: number;
+  className?: string;
+  icon?: React.ReactNode;
+
+  // callback functions
+  onConfirm?: () => Promise<boolean> | boolean;
+  onCancel?: () => Promise<boolean> | boolean;
+
+  // type
+  type?: "alert" | "dialog";
+
+  // react-confirm
+  show?: boolean;
+  proceed?: (value: boolean) => void;
+}
 
 const ConfirmModal: ConfirmDialog<ConfirmModalProps, boolean> = ({
   show = false,
   proceed,
   title,
   description,
-  children,
   confirmText,
   cancelText,
   confirmVariant = "default",
@@ -26,6 +64,9 @@ const ConfirmModal: ConfirmDialog<ConfirmModalProps, boolean> = ({
   onConfirm,
   onCancel,
   type = "alert",
+  content,
+  footer,
+  hideFooter = false,
 }) => {
   const [isLoading, setIsLoading] = React.useState(false);
   const { t } = useTranslation();
@@ -65,7 +106,6 @@ const ConfirmModal: ConfirmDialog<ConfirmModalProps, boolean> = ({
 
   const contentProps = {
     className: cn(
-      "sm:max-w-[425px]",
       {
         [`w-[${width}px]`]: width,
       },
@@ -106,8 +146,8 @@ const ConfirmModal: ConfirmDialog<ConfirmModalProps, boolean> = ({
             {title && <AlertDialogTitle>{headerContent}</AlertDialogTitle>}
             {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
           </AlertDialogHeader>
-          {children}
-          <AlertDialogFooter>{footerContent}</AlertDialogFooter>
+          {content}
+          {!hideFooter && <AlertDialogFooter>{footer || footerContent}</AlertDialogFooter>}
         </AlertDialogContent>
       </AlertDialog>
     );
@@ -120,11 +160,11 @@ const ConfirmModal: ConfirmDialog<ConfirmModalProps, boolean> = ({
           {title && <DialogTitle>{headerContent}</DialogTitle>}
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        {children}
-        <DialogFooter>{footerContent}</DialogFooter>
+        {content}
+        {!hideFooter && <DialogFooter>{footer || footerContent}</DialogFooter>}
       </DialogContent>
     </Dialog>
   );
 };
 
-export default confirmable(ConfirmModal);
+export const confirmModal = createConfirmation(confirmable(ConfirmModal));

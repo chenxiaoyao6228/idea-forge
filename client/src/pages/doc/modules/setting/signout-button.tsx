@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LogOut } from "lucide-react";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { confirmModal } from "@/components/ui/confirm-modal";
 import useUserStore from "@/stores/user";
 
 export function SignOutButton() {
@@ -9,7 +9,7 @@ export function SignOutButton() {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await showConfirmModal({
+    await confirmModal({
       title: t("Are you sure you want to sign out?"),
       description: t("You will be logged out of your account and will need to sign in again to access your data."),
       confirmText: t("Sign Out"),

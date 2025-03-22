@@ -28,6 +28,23 @@ export class DocumentController {
     return this.documentService.findLatestOrCreate(userId);
   }
 
+  @Post("move")
+  async moveDocuments(@GetUser("id") userId: number, @Body() dto: MoveDocumentsDto) {
+    return this.documentService.moveDocuments(userId, dto);
+  }
+
+  @Get("trash")
+  getTrash(@GetUser("id") userId: number) {
+    return this.documentService.getTrash(userId);
+  }
+
+  @Post("trash/empty")
+  emptyTrash(@GetUser("id") userId: number) {
+    return this.documentService.emptyTrash(userId);
+  }
+
+  // ==============keep router without id above ==========================================
+
   @Get(":id")
   findOne(@GetUser("id") userId: number, @Param("id") id: string) {
     return this.documentService.findOne(id, userId);
@@ -58,8 +75,13 @@ export class DocumentController {
     return this.documentService.removeCover(id, userId);
   }
 
-  @Post("move")
-  async moveDocuments(@GetUser("id") userId: number, @Body() dto: MoveDocumentsDto) {
-    return this.documentService.moveDocuments(userId, dto);
+  @Post(":id/restore")
+  restore(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.restore(id, userId);
+  }
+
+  @Delete(":id/permanent")
+  permanentDelete(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.permanentDelete(id, userId);
   }
 }

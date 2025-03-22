@@ -11,6 +11,7 @@ import type {
   RemoveShareDto,
   UpdateCoverDto,
   DetailDocumentResponse,
+  TrashDocumentResponse,
 } from "shared";
 
 export const documentApi = {
@@ -67,4 +68,12 @@ export const documentApi = {
 
   updateCover: (id: string, dto: UpdateCoverDto) => request.patch<UpdateCoverDto, CommonDocumentResponse>(`/api/documents/${id}/cover`, dto),
   removeCover: (id: string) => request.delete<null, CommonDocumentResponse>(`/api/documents/${id}/cover`),
+
+  getTrash: () => request.get<null, TrashDocumentResponse[]>("/api/documents/trash"),
+
+  restore: (id: string) => request.post<null, CommonDocumentResponse>(`/api/documents/${id}/restore`),
+
+  permanentDelete: (id: string) => request.delete<null, void>(`/api/documents/${id}/permanent`),
+
+  emptyTrash: () => request.post<null, { success: boolean }>("/api/documents/trash/empty"),
 };
