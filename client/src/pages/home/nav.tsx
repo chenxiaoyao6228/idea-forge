@@ -1,7 +1,12 @@
 import { LanguageSwitcher } from "@/components/language-switcher";
 import Logo from "@/components/logo";
-import { Spacer } from "@/components/spacer";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { Button } from "@/components/ui/button";
+import { Popover } from "@/components/ui/popover";
+import { Ellipsis } from "lucide-react";
+import { PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
 
 export default function HomeNav() {
   return (
@@ -11,11 +16,27 @@ export default function HomeNav() {
       </div>
       <div className="flex-1 text-end p-2">
         <div className="inline-flex items-center">
-          <ThemeSwitcher />
-          <div className="w-1" />
-          <LanguageSwitcher />
+          <TopBarHandlers />
         </div>
       </div>
     </div>
+  );
+}
+
+function TopBarHandlers() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Ellipsis className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-42 py-1 px-2" align="end">
+        <ThemeSwitcher onSelect={() => setOpen(false)} />
+        <Separator className="my-1" />
+        <LanguageSwitcher onSelect={() => setOpen(false)} />
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -5,9 +5,18 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useTheme } from "./providers/theme-provider";
 import { useTranslation } from "react-i18next";
 
-export function ThemeSwitcher() {
+interface ThemeSwitcherProps {
+  onSelect?: () => void;
+}
+
+export function ThemeSwitcher({ onSelect }: ThemeSwitcherProps) {
   const { setTheme } = useTheme();
   const { t } = useTranslation();
+
+  const handleSelect = (theme: "light" | "dark" | "system") => {
+    setTheme(theme);
+    onSelect?.();
+  };
 
   return (
     <DropdownMenu>
@@ -18,10 +27,10 @@ export function ThemeSwitcher() {
           <span>{t("Toggle theme")}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>{t("Light")}</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>{t("Dark")}</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>{t("System")}</DropdownMenuItem>
+      <DropdownMenuContent align="end" side="left" sideOffset={12}>
+        <DropdownMenuItem onClick={() => handleSelect("light")}>{t("Light")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleSelect("dark")}>{t("Dark")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleSelect("system")}>{t("System")}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

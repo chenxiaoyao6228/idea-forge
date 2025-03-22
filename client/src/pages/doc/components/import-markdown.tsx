@@ -2,10 +2,11 @@ import { fileOpen } from "@/lib/filesystem";
 import { Button } from "../../../components/ui/button";
 import { FileUp } from "lucide-react";
 import { useEditorStore } from "../stores/editor-store";
+import { useTranslation } from "react-i18next";
 
 export default function ImportMarkdownButton() {
+  const { t } = useTranslation();
   const editor = useEditorStore((state) => state.editor);
-
   if (!editor) return null;
 
   const handleImportMarkdown = async () => {
@@ -25,8 +26,8 @@ export default function ImportMarkdownButton() {
 
   return (
     <Button variant="ghost" className="w-full justify-start p-2 h-8" onClick={handleImportMarkdown}>
-      <FileUp className="mr-2 h-4 w-4" />
-      Import Markdown
+      <FileUp className="h-4 w-4" />
+      {t("Import Markdown")}
     </Button>
   );
 }

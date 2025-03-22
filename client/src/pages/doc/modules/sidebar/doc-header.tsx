@@ -14,6 +14,7 @@ import { Ellipsis } from "lucide-react";
 import { useScrollTop } from "@/hooks/use-scroll-top";
 import ImportMarkdownButton from "../../components/import-markdown";
 import { Separator } from "@/components/ui/separator";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function DocumentHeader() {
   const { t } = useTranslation();
@@ -50,7 +51,6 @@ export default function DocumentHeader() {
       <div className="flex items-center mr-2 sm:mr-4 ">
         <CollabUsers className="mr-2" />
         <ShareDocButton />
-        <ThemeSwitcher />
         <TopBarHandlers />
       </div>
     </header>
@@ -58,14 +58,19 @@ export default function DocumentHeader() {
 }
 
 function TopBarHandlers() {
+  const [open, setOpen] = useState(false);
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon">
           <Ellipsis className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-42 py-1 px-2" align="end">
+        <ThemeSwitcher onSelect={() => setOpen(false)} />
+        <Separator className="my-1" />
+        <LanguageSwitcher onSelect={() => setOpen(false)} />
+        <Separator className="my-1" />
         <ExportMarkdownButton />
         <Separator className="my-1" />
         <ImportMarkdownButton />
