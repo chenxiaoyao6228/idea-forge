@@ -5,15 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { documentApi } from "@/apis/document";
-import type { TrashDocumentResponse } from "shared";
+import { ErrorCodeEnum, type TrashDocumentResponse } from "shared";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useSharedDocumentStore } from "@/pages/doc/stores/shared-store";
 import { useDocumentStore } from "@/pages/doc/stores/doc-store";
 import { confirmModal } from "./confirm-modal";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export function TrashDialog() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<TrashDocumentResponse[]>([]);
@@ -37,8 +39,8 @@ export function TrashDialog() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load trash documents",
+        title: t("Error"),
+        description: t("Failed to load trash documents"),
       });
     } finally {
       setLoading(false);
@@ -52,13 +54,13 @@ export function TrashDialog() {
       // Refresh both document lists
       await Promise.all([loadSharedDocuments(), loadNestedTree(null)]);
       toast({
-        description: "Document restored successfully",
+        description: t("Document restored successfully"),
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to restore document",
+        title: t("Error"),
+        description: t("Failed to restore document"),
       });
     }
   }
@@ -67,18 +69,24 @@ export function TrashDialog() {
     confirmModal({
       type: "alert",
       confirmVariant: "destructive",
-      title: "Permanent Delete",
-      description: "Are you sure you want to permanently delete this document? This action cannot be undone.",
-      confirmText: "Delete",
-      cancelText: "Cancel",
+      title: t("Permanent Delete"),
+      description: t("Are you sure you want to permanently delete this document? This action cannot be undone."),
+      confirmText: t("Delete"),
+      cancelText: t("Cancel"),
       onConfirm: async () => {
         try {
           await documentApi.permanentDelete(id);
           await loadTrashDocuments();
-          toast({ description: "Document deleted permanently" });
+          toast({ description: t("Document deleted permanently") });
           return true;
-        } catch (error) {
-          toast({ variant: "destructive", description: "Failed to delete document" });
+        } catch (error: any) {
+          if (error?.code === ErrorCodeEnum.DocumentNotFound) {
+            // refresh trash documents
+            toast({ description: t("Document not found in trash") });
+            await loadTrashDocuments();
+            return false;
+          }
+          toast({ variant: "destructive", description: t("Failed to delete document") });
           return false;
         }
       },
@@ -99,37 +107,37 @@ export function TrashDialog() {
           )}
         >
           <Trash2 className="h-4 w-4 mr-2 shrink-0" />
-          <span className="truncate">Trash</span>
+          <span className="truncate">{t("Trash")}</span>
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
-          <DialogTitle>Trash</DialogTitle>
-          <DialogDescription>Docs in trash will be deleted permanently after 30 days.</DialogDescription>
+          <DialogTitle>{t("Trash")}</DialogTitle>
+          <DialogDescription>{t("Documents in trash will be automatically deleted after 30 days. You can restore them before then.")}</DialogDescription>
         </DialogHeader>
         <>
           <div>
-            <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Search documents in trash" className="max-w" />
+            <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder={t("Search documents in trash")} className="max-w" />
           </div>
 
           <div className="max-h-[400px] overflow-y-auto">
             {loading ? (
-              <div className="py-8 text-center text-muted-foreground">Loading...</div>
+              <div className="py-8 text-center text-muted-foreground">{t("Loading...")}</div>
             ) : documents.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">No documents in trash</div>
+              <div className="py-8 text-center text-muted-foreground">{t("No documents in trash")}</div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[300px]">Title</TableHead>
-                    <TableHead>Deleted At</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-[300px]">{t("Title")}</TableHead>
+                    <TableHead>{t("Deleted At")}</TableHead>
+                    <TableHead className="text-right">{t("Actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredDocuments.map((doc) => (
                     <TableRow key={doc.id}>
-                      <TableCell className="font-medium">{doc.title || "Untitled"}</TableCell>
+                      <TableCell className="font-medium">{doc.title || t("Untitled")}</TableCell>
                       <TableCell>{formatDistanceToNow(new Date(doc.updatedAt), { addSuffix: true })}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleRestore(doc.id)}>

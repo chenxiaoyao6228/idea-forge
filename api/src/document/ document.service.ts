@@ -9,14 +9,91 @@ import { FileService } from "@/file-store/file-store.service";
 import { omit, pick } from "lodash";
 import { ApiException } from "@/_shared/exeptions/api.exception";
 import { ErrorCodeEnum } from "shared";
+import { Cron } from "@nestjs/schedule";
+
 const POSITION_GAP = 1024; // Define position gap
 
 @Injectable()
 export class DocumentService {
+  private static isCleanupRunning = false;
   constructor(
     private prisma: PrismaService,
     private fileService: FileService,
   ) {}
+
+  @Cron("0 0 * * *") // every day at 00:00
+  async cleanupExpiredDocuments() {
+    if (DocumentService.isCleanupRunning) {
+      console.log("[Cleanup] Task already running, skipping...");
+      return;
+    }
+
+    DocumentService.isCleanupRunning = true;
+    console.log("[Cleanup] Task started at:", new Date().toISOString());
+
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      await this.prisma.$transaction(async (tx) => {
+        const expiredDocs = await tx.doc.findMany({
+          where: {
+            isArchived: true,
+            updatedAt: {
+              lt: thirtyDaysAgo,
+            },
+          },
+          include: {
+            coverImage: true,
+          },
+          orderBy: {
+            updatedAt: "asc",
+          },
+          take: 10,
+        });
+
+        console.log(`[Cleanup] Found ${expiredDocs.length} expired documents`);
+
+        for (const doc of expiredDocs) {
+          try {
+            const existingDoc = await tx.doc.findUnique({
+              where: { id: doc.id },
+              include: { coverImage: true },
+            });
+
+            if (!existingDoc) {
+              console.log(`[Cleanup] Document ${doc.id} no longer exists`);
+              continue;
+            }
+
+            if (existingDoc.coverImage) {
+              await tx.coverImage.delete({
+                where: { docId: doc.id },
+              });
+            }
+
+            await tx.docShare.deleteMany({
+              where: { docId: doc.id },
+            });
+
+            await tx.doc.delete({
+              where: { id: doc.id },
+            });
+
+            console.log(`[Cleanup] Successfully deleted document ${doc.id}`);
+            await new Promise((resolve) => setTimeout(resolve, 200));
+          } catch (error) {
+            console.error(`[Cleanup] Error processing document ${doc.id}:`, error);
+          }
+        }
+      });
+    } catch (error) {
+      console.error("[Cleanup] Task error:", error);
+    } finally {
+      DocumentService.isCleanupRunning = false;
+      console.log("[Cleanup] Task completed at:", new Date().toISOString());
+    }
+  }
 
   async createDefault(ownerId: number) {
     return this.create(ownerId, {
