@@ -10,9 +10,10 @@ import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useSharedDocumentStore } from "@/pages/doc/stores/shared-store";
 import { useDocumentStore } from "@/pages/doc/stores/doc-store";
-import { confirmModal } from "./ui/confirm-modal";
+import { confirmModal } from "../../../components/ui/confirm-modal";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import Loading from "../../../components/loading";
 
 export function TrashDialog() {
   const { t } = useTranslation();
@@ -122,7 +123,7 @@ export function TrashDialog() {
 
           <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
             {loading ? (
-              <div className="py-8 text-center text-muted-foreground">{t("Loading...")}</div>
+              <Loading />
             ) : documents.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">{t("No documents in trash")}</div>
             ) : (

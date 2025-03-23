@@ -85,6 +85,11 @@ export const searchDocumentSchema = z.object({
 
 export type SearchDocumentDto = z.infer<typeof searchDocumentSchema>;
 
+export interface SearchDocumentResponse {
+  documents: CommonDocumentResponse[];
+  total: number;
+}
+
 export const moveDocumentsSchema = z.object({
   id: z.string().cuid(),
   targetId: z.string(),

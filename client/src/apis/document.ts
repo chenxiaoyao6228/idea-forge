@@ -12,6 +12,8 @@ import type {
   UpdateCoverDto,
   DetailDocumentResponse,
   TrashDocumentResponse,
+  SearchDocumentDto,
+  SearchDocumentResponse,
 } from "shared";
 
 export const documentApi = {
@@ -76,4 +78,15 @@ export const documentApi = {
   permanentDelete: (id: string) => request.delete<null, void>(`/api/documents/${id}/permanent`),
 
   emptyTrash: () => request.post<null, { success: boolean }>("/api/documents/trash/empty"),
+
+  search: async (params: SearchDocumentDto) => {
+    const searchParams = new URLSearchParams();
+    if (params.keyword) searchParams.set("keyword", params.keyword);
+    if (params.sort) searchParams.set("sort", params.sort);
+    if (params.order) searchParams.set("order", params.order);
+    if (params.page) searchParams.set("page", params.page.toString());
+    if (params.limit) searchParams.set("limit", params.limit.toString());
+
+    return request.get<null, SearchDocumentResponse>(`/api/documents/search?${searchParams.toString()}`);
+  },
 };

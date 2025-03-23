@@ -20,7 +20,8 @@ import DocDetail from "./modules/detail";
 import { useParams } from "react-router-dom";
 import { useEffect } from "react";
 import { useDocumentStore } from "./stores/doc-store";
-import { TrashDialog } from "@/components/trash-dialog";
+import { TrashDialog } from "@/pages/doc/components/trash-dialog";
+import { SearchDocDialog } from "@/pages/doc/components/search-doc-dialog";
 
 export default function Doc() {
   const { docId } = useParams();
@@ -48,6 +49,11 @@ export default function Doc() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem> */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <SearchDocDialog />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <TrashDialog />
