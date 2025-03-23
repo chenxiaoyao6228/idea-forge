@@ -9,6 +9,7 @@ import useUserStore from "@/stores/user";
 import { getEnvVariable } from "@/lib/env";
 import { TableOfContent } from "../../components/table-of-content";
 import { useTranslation } from "react-i18next";
+import { useTitle } from "react-use";
 
 export default function DocDetail() {
   const { t } = useTranslation();
@@ -18,7 +19,10 @@ export default function DocDetail() {
   const currentDocument = useDocumentStore.use.currentDocument();
   const isCurrentDocLoading = useDocumentStore.use.isCurrentDocLoading();
   const currentDocLoadingError = useDocumentStore.use.currentDocLoadingError();
+
   const isHomeDoc = docId === "0";
+
+  useTitle(`Idea Forge - ${currentDocument?.title}`);
 
   if (isCurrentDocLoading) {
     return <Loading fullScreen size="lg" />;
