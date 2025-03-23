@@ -9,6 +9,7 @@
   "Are you sure you want to sign out?": "您确定要退出登录吗？",
   "Authentication failed": "认证失败",
   "Back to Login": "返回登录",
+  "Back to top": "返回顶部",
   "Can edit": "可以编辑",
   "Can view": "可以查看",
   "Cancel": "取消",
@@ -126,5 +127,5 @@
   "You have no permission to view this document": "您没有权限查看此文档",
   "You will be logged out of your account and will need to sign in again to access your data.": "您将被登出账户，需要重新登录以访问您的数据。",
   "Your AI-powered writing and collaborative editing tools!": "您的AI驱动写作和协作编辑工具！",
-  "undefined": "German: \"Hallo <bold>{{name}}</bold> \""
+  "undefined": "中文: \"你好 <bold>{{name}}</bold> \""
 }

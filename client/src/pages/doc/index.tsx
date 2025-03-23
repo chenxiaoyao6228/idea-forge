@@ -22,6 +22,7 @@ import { useEffect } from "react";
 import { useDocumentStore } from "./stores/doc-store";
 import { TrashDialog } from "@/pages/doc/components/trash-dialog";
 import { SearchDocDialog } from "@/pages/doc/components/search-doc-dialog";
+import BackToTop from "@/components/ui/back-to-top";
 
 export default function Doc() {
   const { docId } = useParams();
@@ -75,6 +76,7 @@ export default function Doc() {
       <SidebarInset className={cn("h-full relative")}>
         <DocumentHeader />
         <DocDetail />
+        <BackToTop />
       </SidebarInset>
     </SidebarProvider>
   );

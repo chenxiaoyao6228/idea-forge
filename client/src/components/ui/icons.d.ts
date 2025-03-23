@@ -13,6 +13,7 @@ export const iconNames = [
   "Settings",
   "Settings2",
   "Search",
+  "RocketLine",
   "Reset",
   "QuestionMarkCircled",
   "Plus",
@@ -67,6 +68,6 @@ export const iconNames = [
   "AudioWaveform",
   "ArrowRight",
   "ArrowLeft",
-] as const
+] as const;
 
-export type IconName = typeof iconNames[number]
+export type IconName = (typeof iconNames)[number];
