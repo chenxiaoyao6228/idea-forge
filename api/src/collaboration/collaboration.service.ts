@@ -8,6 +8,7 @@ import { PrismaService } from "../_shared/database/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import { UserService } from "@/user/user.service";
 import { Permission } from "shared";
+import { TiptapTransformer } from "@hocuspocus/transformer";
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 function delay(ms: number) {
@@ -183,10 +184,18 @@ export class CollaborationService implements OnModuleInit {
             });
             return doc?.contentBinary ? new Uint8Array(doc.contentBinary) : null;
           },
-          store: async ({ documentName, state }) => {
+          store: async ({ documentName, document, state }) => {
+            /**
+             * Why we need to convert to json?
+             * 1. global text search in postgres
+             * 2. duplicate document, first load content from postgres
+             */
+            const json = TiptapTransformer.fromYdoc(document, "default");
+            const jsonStr = JSON.stringify(json);
+
             await this.prisma.doc.update({
               where: { id: documentName },
-              data: { contentBinary: state },
+              data: { contentBinary: state, content: jsonStr },
             });
           },
         }),
