@@ -125,9 +125,144 @@ importers:
       '@sentry/profiling-node':
         specifier: ^8.54.0
         version: 8.54.0
-      '@trpc/server':
-        specifier: ^10.45.2
-        version: 10.45.2
+      '@tiptap-pro/extension-drag-handle-react':
+        specifier: ^2.8.0
+        version: 2.8.0(@tiptap-pro/extension-drag-handle@2.17.3)(@tiptap/pm@2.9.1)(@tiptap/react@2.2.4)(react-dom@18.3.1)(react@18.3.1)
+      '@tiptap-pro/extension-file-handler':
+        specifier: ^2.8.0
+        version: 2.8.0(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap-pro/extension-table-of-contents':
+        specifier: ^2.11.9
+        version: 2.11.9(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/core':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/pm@2.9.1)
+      '@tiptap/extension-blockquote':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-bold':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-bullet-list':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-character-count':
+        specifier: ^2.4.0
+        version: 2.4.0(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-code':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-code-block':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-code-block-lowlight':
+        specifier: ^2.8.0
+        version: 2.8.0(@tiptap/core@2.9.1)(@tiptap/extension-code-block@2.9.1)(@tiptap/pm@2.9.1)(highlight.js@11.11.1)(lowlight@3.3.0)
+      '@tiptap/extension-collaboration':
+        specifier: ^2.4.0
+        version: 2.4.0(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)(y-prosemirror@1.2.15)
+      '@tiptap/extension-collaboration-cursor':
+        specifier: ^2.4.0
+        version: 2.4.0(@tiptap/core@2.9.1)(y-prosemirror@1.2.15)
+      '@tiptap/extension-document':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-dropcursor':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-focus':
+        specifier: ^2.11.0
+        version: 2.11.0(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-gapcursor':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-hard-break':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-heading':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-highlight':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/core@2.9.1)
+      '@tiptap/extension-history':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-horizontal-rule':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-image':
+        specifier: ^2.2.6
+        version: 2.2.6(@tiptap/core@2.9.1)
+      '@tiptap/extension-italic':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-link':
+        specifier: ^2.2.6
+        version: 2.2.6(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-list-item':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-ordered-list':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-paragraph':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-placeholder':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-strike':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-subscript':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/core@2.9.1)
+      '@tiptap/extension-superscript':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/core@2.9.1)
+      '@tiptap/extension-table':
+        specifier: ^2.11.0
+        version: 2.11.0(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-table-header':
+        specifier: ^2.11.0
+        version: 2.11.0(@tiptap/core@2.9.1)
+      '@tiptap/extension-table-row':
+        specifier: ^2.11.0
+        version: 2.11.0(@tiptap/core@2.9.1)
+      '@tiptap/extension-task-item':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap/extension-task-list':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/core@2.9.1)
+      '@tiptap/extension-text':
+        specifier: ^2.9.1
+        version: 2.9.1(@tiptap/core@2.9.1)
+      '@tiptap/extension-text-align':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/core@2.9.1)
+      '@tiptap/extension-typography':
+        specifier: ^2.8.0
+        version: 2.8.0(@tiptap/core@2.9.1)
+      '@tiptap/extension-underline':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/core@2.9.1)
+      '@tiptap/extension-youtube':
+        specifier: ^2.8.0
+        version: 2.8.0(@tiptap/core@2.9.1)
+      '@tiptap/pm':
+        specifier: ^2.9.1
+        version: 2.9.1
+      '@tiptap/react':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)(react-dom@18.3.1)(react@18.3.1)
+      '@tiptap/starter-kit':
+        specifier: ^2.2.4
+        version: 2.2.4(@tiptap/pm@2.9.1)
+      '@tiptap/suggestion':
+        specifier: ^2.2.6
+        version: 2.2.6(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
       argon2:
         specifier: ^0.41.1
         version: 0.41.1

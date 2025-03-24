@@ -654,6 +654,7 @@ export class DocumentService {
         data: {
           title: child.title,
           content: child.content,
+          contentBinary: child.contentBinary,
           ownerId: userId,
           parentId: newParentId,
           position: child.position + positionOffset,
