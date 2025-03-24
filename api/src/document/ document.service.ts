@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from "@nestjs/common";
+import { Injectable, BadRequestException } from "@nestjs/common";
 import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./document.dto";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { DEFAULT_NEW_DOC_TITLE } from "@/_shared/constants/common";
 import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
-import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse, Permission, UpdateCoverDto } from "shared";
+import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse, DuplicateDocumentResponse, Permission, UpdateCoverDto } from "shared";
 import { MoveDocumentsDto } from "shared";
 import { FileService } from "@/file-store/file-store.service";
 import { omit, pick } from "lodash";
@@ -569,6 +569,127 @@ export class DocumentService {
     }
 
     return this.loadChildren(ownerId, targetParentId);
+  }
+
+  async duplicate(userId: number, id: string): Promise<DuplicateDocumentResponse> {
+    // Find original document with children
+    const originalDoc = await this.prisma.doc.findFirst({
+      where: {
+        id,
+        ownerId: userId,
+        isArchived: false,
+      },
+      include: {
+        coverImage: true,
+        children: {
+          where: { isArchived: false },
+          include: {
+            coverImage: true,
+          },
+        },
+      },
+    });
+
+    if (!originalDoc) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Get siblings to calculate position
+    const siblings = await this.prisma.doc.findMany({
+      where: {
+        parentId: originalDoc.parentId,
+        ownerId: userId,
+        isArchived: false,
+      },
+      orderBy: { position: "desc" },
+      take: 1,
+    });
+
+    const newPosition = siblings.length > 0 ? siblings[0].position + POSITION_GAP : POSITION_GAP;
+
+    // Create duplicate document
+    const duplicatedDoc = await this.prisma.doc.create({
+      data: {
+        title: `${originalDoc.title} (copy)`,
+        // FIXME: the content is not sync with the contentBinary
+        content: originalDoc.content,
+        contentBinary: originalDoc.contentBinary,
+        ownerId: userId,
+        parentId: originalDoc.parentId,
+        position: newPosition,
+        icon: originalDoc.icon,
+        isArchived: false,
+        isStarred: false,
+      },
+    });
+
+    // Duplicate cover image if exists
+    if (originalDoc.coverImage) {
+      await this.prisma.coverImage.create({
+        data: {
+          docId: duplicatedDoc.id,
+          url: originalDoc.coverImage.url,
+          scrollY: originalDoc.coverImage.scrollY,
+          isPreset: originalDoc.coverImage.isPreset,
+        },
+      });
+    }
+
+    // Recursively duplicate children
+    if (originalDoc.children.length > 0) {
+      await this.duplicateChildren(originalDoc.children, duplicatedDoc.id, userId);
+    }
+
+    return {
+      ...duplicatedDoc,
+      isLeaf: originalDoc.children.length === 0,
+      icon: duplicatedDoc.icon,
+    };
+  }
+
+  private async duplicateChildren(children: any[], newParentId: string, userId: number, positionOffset = 0) {
+    for (const child of children) {
+      // Create duplicate of child
+      const duplicatedChild = await this.prisma.doc.create({
+        data: {
+          title: child.title,
+          content: child.content,
+          ownerId: userId,
+          parentId: newParentId,
+          position: child.position + positionOffset,
+          icon: child.icon,
+          isArchived: false,
+          isStarred: false,
+        },
+      });
+
+      // Duplicate child's cover image if exists
+      if (child.coverImage) {
+        await this.prisma.coverImage.create({
+          data: {
+            docId: duplicatedChild.id,
+            url: child.coverImage.url,
+            scrollY: child.coverImage.scrollY,
+            isPreset: child.coverImage.isPreset,
+          },
+        });
+      }
+
+      // Recursively duplicate this child's children
+      const grandchildren = await this.prisma.doc.findMany({
+        where: {
+          parentId: child.id,
+          isArchived: false,
+        },
+        include: {
+          coverImage: true,
+        },
+      });
+
+      if (grandchildren.length > 0) {
+        await this.duplicateChildren(grandchildren, duplicatedChild.id, userId);
+      }
+    }
   }
 
   private async isDescendant(parentId: string, childId: string): Promise<boolean> {
