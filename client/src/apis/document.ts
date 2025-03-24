@@ -14,6 +14,7 @@ import type {
   TrashDocumentResponse,
   SearchDocumentDto,
   SearchDocumentResponse,
+  DuplicateDocumentResponse,
 } from "shared";
 
 export const documentApi = {
@@ -89,4 +90,6 @@ export const documentApi = {
 
     return request.get<null, SearchDocumentResponse>(`/api/documents/search?${searchParams.toString()}`);
   },
+
+  duplicate: (id: string) => request.post<null, DuplicateDocumentResponse>(`/api/documents/${id}/duplicate`),
 };

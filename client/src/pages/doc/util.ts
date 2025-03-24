@@ -57,7 +57,7 @@ export const treeUtils = {
         return {
           ...existingNode,
           ...newNode,
-          children: existingNode.children || newNode.children,
+          children: newNode.children ? treeUtils.mergeTreeData(existingNode.children || [], newNode.children) : existingNode.children,
         };
       }
       return newNode;

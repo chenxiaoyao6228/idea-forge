@@ -84,4 +84,9 @@ export class DocumentController {
   permanentDelete(@GetUser("id") userId: number, @Param("id") id: string) {
     return this.documentService.permanentDelete(id, userId);
   }
+
+  @Post(":id/duplicate")
+  duplicate(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.duplicate(userId, id);
+  }
 }

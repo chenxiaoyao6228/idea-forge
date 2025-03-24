@@ -178,3 +178,5 @@ export interface TrashDocumentResponse {
     scrollY: number;
   } | null;
 }
+
+export interface DuplicateDocumentResponse extends CommonDocumentResponse {}

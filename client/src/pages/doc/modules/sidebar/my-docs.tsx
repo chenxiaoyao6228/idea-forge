@@ -10,6 +10,8 @@ import { AddDocButton } from "./add-doc-button";
 import { logger } from "@/lib/logger";
 import { treeUtils } from "../../util";
 import { useTranslation } from "react-i18next";
+import { documentApi } from "@/apis/document";
+import { useToast } from "@/hooks/use-toast";
 
 export function MyDocs() {
   const navigate = useNavigate();
@@ -22,8 +24,9 @@ export function MyDocs() {
   const moveDocuments = useDocumentStore.use.moveDocuments();
   const deleteDocument = useDocumentStore.use.deleteDocument();
   const updateDocument = useDocumentStore.use.updateDocument();
+  const duplicateDocument = useDocumentStore.use.duplicateDocument();
   const { t } = useTranslation();
-
+  const { toast } = useToast();
   useEffect(() => {
     loadNestedTree(curDocId || null);
   }, []);
@@ -71,6 +74,22 @@ export function MyDocs() {
     }
   };
 
+  const handleDuplicateDoc = async (id: string) => {
+    try {
+      const newDoc = await duplicateDocument(id);
+      if (newDoc) {
+        navigate(`/doc/${newDoc.id}`);
+      }
+    } catch (error: any) {
+      console.error("Failed to duplicate document:", error);
+      if (error.message) {
+        toast({
+          description: error.message,
+        });
+      }
+    }
+  };
+
   return (
     <SidebarGroup>
       <div className="flex items-center justify-between group/label">
@@ -111,6 +130,7 @@ export function MyDocs() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={onStartRename}>{t("Rename")}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDuplicateDoc(node.key)}>{t("Duplicate")}</DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteDoc(node.key)}>
                     {t("Delete")}
                   </DropdownMenuItem>

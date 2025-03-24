@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
-import { MoveDocumentsDto, UpdateDocumentDto } from "shared";
+import { DuplicateDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "shared";
 import createSelectors from "@/stores/utils/createSelector";
 import { treeUtils } from "../util";
 import { PRESET_CATEGORIES } from "../modules/detail/constants";
@@ -37,6 +37,7 @@ interface DocumentTreeState {
   moveDocuments: (data: MoveDocumentsDto) => Promise<void>;
   loadNestedTree: (key: string | null) => Promise<void>;
   updateDocument: (id: string, update: UpdateDocumentDto) => Promise<void>;
+  duplicateDocument: (id: string) => Promise<DuplicateDocumentResponse>;
   setLastDocId: (id: string) => void;
   generateDefaultCover: (id: string) => Promise<void>;
   updateCover: (id: string, dto: { url?: string; scrollY?: number }) => Promise<void>;
@@ -300,6 +301,40 @@ const store = create<DocumentTreeState>()(
           }
         } catch (error) {
           console.error("Failed to move documents:", error);
+          throw error;
+        }
+      },
+
+      duplicateDocument: async (id) => {
+        try {
+          const response = await documentApi.duplicate(id);
+
+          const newNode = treeUtils.convertToTreeNode(response);
+
+          set((state) => {
+            const parentId = treeUtils.findParentKey(state.treeData, id);
+            const newExpandedKeys = parentId ? [...new Set([...state.expandedKeys, parentId])] : state.expandedKeys;
+
+            if (!parentId) {
+              return {
+                treeData: [...state.treeData, newNode],
+                expandedKeys: newExpandedKeys,
+              };
+            }
+
+            return {
+              treeData: treeUtils.updateTreeNodes(state.treeData, parentId, (node) => ({
+                ...node,
+                children: [...(node.children || []), newNode],
+                isLeaf: false,
+              })),
+              expandedKeys: newExpandedKeys,
+            };
+          });
+
+          return response.id;
+        } catch (error) {
+          console.error("Failed to duplicate document:", error);
           throw error;
         }
       },
