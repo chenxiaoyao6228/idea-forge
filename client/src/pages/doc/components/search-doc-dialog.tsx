@@ -112,32 +112,35 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
     if (nodeId && editor) {
       const element = editor.view.dom.querySelector(`[data-node-id="${nodeId}"]`);
       if (element) {
-        // Set editor selection and focus
         const pos = editor.view.posAtDOM(element, 0);
-        const tr = editor.view.state.tr;
+
+        // Create a transaction to add highlight
+        let tr = editor.view.state.tr;
+
+        // Set selection
         tr.setSelection(new TextSelection(tr.doc.resolve(pos)));
+
+        // Add highlight mark
+        tr = editor.view.state.tr.addMark(pos, pos + element.textContent!.length, editor.schema.marks.highlight.create());
+
         editor.view.dispatch(tr);
         editor.view.focus();
 
-        // Update URL hash
-        if (history.pushState) {
-          history.pushState(null, "", `#${nodeId}`);
-        }
+        // Delay remove highlight
+        setTimeout(() => {
+          const tr = editor.view.state.tr.removeMark(pos, pos + element.textContent!.length, editor.schema.marks.highlight);
+          editor.view.dispatch(tr);
+        }, 2000);
 
-        // Smooth scroll to the target element
+        // scroll to position
         scrollIntoView(element, {
           scrollMode: "if-needed",
           block: "center",
           inline: "nearest",
           behavior: "smooth",
         });
-
-        // Optional: Add temporary highlight effect
-        // element.classList.add("highlight");
-        // setTimeout(() => element.classList.remove("highlight"), 2000);
       }
     }
-
     onClose();
   };
 
@@ -253,7 +256,7 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-// 高亮关键字的辅助函数
+// Helper function to highlight keywords
 function highlightKeyword(text: string, keyword: string) {
   if (!keyword.trim()) return text;
   const parts = text.split(new RegExp(`(${keyword})`, "gi"));
