@@ -85,8 +85,22 @@ export const searchDocumentSchema = z.object({
 
 export type SearchDocumentDto = z.infer<typeof searchDocumentSchema>;
 
+export interface ContentMatch {
+  id: number;
+  title: string;
+  matches: Array<{
+    nodeId: string;
+    text: string;
+    position: number;
+    beforeText?: string;
+    afterText?: string;
+    type: string;
+  }>;
+}
+
 export interface SearchDocumentResponse {
   documents: CommonDocumentResponse[];
+  contentMatches: ContentMatch[];
   total: number;
 }
 

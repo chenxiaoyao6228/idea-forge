@@ -93,6 +93,32 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
     }
   }, [editor, setEditor]);
 
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (!hash) return;
+
+      // Give a small delay to ensure the DOM is fully rendered
+      // Get the node by the node id
+      setTimeout(() => {
+        const node = editor.view.dom.querySelector(`[data-node-id="${hash}"]`);
+        if (node) {
+          // Calculate the scroll position to center the target element in the viewport
+          node.scrollIntoView({ behavior: "smooth", block: "center" });
+          // Add the highlight effect
+          node.classList.add("highlight");
+          setTimeout(() => node.classList.remove("highlight"), 2000);
+        }
+      }, 100);
+    };
+
+    handleHashChange();
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [editor]);
+
   // @ts-ignore for debug
   window._editor = editor;
 

@@ -18,6 +18,7 @@
   "Confirm Password": "确认密码",
   "Connect with {{provider}}": "与{{provider}}连接",
   "Connecting with {{provider}}": "正在与{{provider}}连接",
+  "Content matches": "内容匹配",
   "Cover image": "封面图片",
   "Create an account": "创建账户",
   "Create your account to get started": "创建您的账户以开始使用",
@@ -96,6 +97,7 @@
   "Save position": "保存位置",
   "Search": "搜索",
   "Search Documents": "搜索文档",
+  "Search document by title or content...": "按标题或内容搜索文档...",
   "Search document by title...": "按标题搜索文档...",
   "Search documents in trash": "在回收站中搜索文档",
   "Share": "分享",
@@ -111,6 +113,7 @@
   "System": "跟随系统",
   "The passwords must match": "密码必须匹配",
   "Title": "标题",
+  "Title matches": "标题匹配",
   "Toggle Language": "切换语言",
   "Toggle Sidebar": "切换侧边栏",
   "Toggle theme": "切换主题",
@@ -128,5 +131,5 @@
   "You have no permission to view this document": "您没有权限查看此文档",
   "You will be logged out of your account and will need to sign in again to access your data.": "您将被登出账户，需要重新登录以访问您的数据。",
   "Your AI-powered writing and collaborative editing tools!": "您的AI驱动写作和协作编辑工具！",
-  "undefined": "中文: \"你好 <bold>{{name}}</bold> \""
+  "undefined": "德文：\"Hallo <bold>{{name}}</bold> \""
 }

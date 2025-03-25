@@ -3,7 +3,15 @@ import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto } from "./docum
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { DEFAULT_NEW_DOC_TITLE } from "@/_shared/constants/common";
 import { DEFAULT_NEW_DOC_CONTENT } from "@/_shared/constants/common";
-import { CommonDocumentResponse, CreateDocumentResponse, DetailDocumentResponse, DuplicateDocumentResponse, Permission, UpdateCoverDto } from "shared";
+import {
+  CommonDocumentResponse,
+  ContentMatch,
+  CreateDocumentResponse,
+  DetailDocumentResponse,
+  DuplicateDocumentResponse,
+  Permission,
+  UpdateCoverDto,
+} from "shared";
 import { MoveDocumentsDto } from "shared";
 import { FileService } from "@/file-store/file-store.service";
 import { omit, pick } from "lodash";
@@ -318,27 +326,99 @@ export class DocumentService {
     });
   }
 
-  async searchDocuments(ownerId: number, { keyword, sort, order, page, limit }: SearchDocumentDto) {
-    const skip = (page - 1) * limit;
-    const documents = await this.prisma.doc.findMany({
-      where: {
-        ownerId,
-        OR: [{ title: { contains: keyword, mode: "insensitive" } }, { content: { contains: keyword, mode: "insensitive" } }],
-      },
-      orderBy: {
-        [sort]: order,
-      },
-      skip,
-      take: limit,
-    });
+  async searchDocuments(ownerId: number, { keyword, sort, order, limit }: SearchDocumentDto) {
+    try {
+      // Title matches remain the same
+      const titleMatches = await this.prisma.doc.findMany({
+        where: {
+          ownerId,
+          title: { contains: keyword, mode: "insensitive" },
+        },
+        select: {
+          id: true,
+          title: true,
+        },
+        orderBy: {
+          [sort]: order,
+        },
+        take: limit,
+      });
 
-    const total = await this.prisma.doc.count({
-      where: {
-        OR: [{ title: { contains: keyword, mode: "insensitive" } }, { content: { contains: keyword, mode: "insensitive" } }],
-      },
-    });
+      // Modified content matches query with context
+      const contentMatches = await this.prisma.$queryRaw<ContentMatch[]>`
+        WITH RECURSIVE JsonContent AS (
+          SELECT 
+            d.id,
+            d.title,
+            CASE 
+              WHEN d.content IS NULL OR d.content = '' 
+              THEN '{"content":[]}'::jsonb 
+              ELSE d.content::jsonb
+            END as content
+          FROM "Doc" d
+          WHERE d."ownerId" = ${ownerId}
+            AND NOT d."isArchived"
+        ),
+        Blocks AS (
+          SELECT 
+            id,
+            title,
+            jsonb_array_elements(content->'content') as block,
+            ROW_NUMBER() OVER (PARTITION BY id ORDER BY id) as block_position
+          FROM JsonContent
+        )
+        SELECT 
+          id,
+          title,
+          array_agg(
+            json_build_object(
+              'text', COALESCE(block#>>'{content,0,text}', ''),
+              'position', block_position,
+              'type', block->>'type',
+              'nodeId', COALESCE(block#>>'{attrs,id}', ''),  -- 修改这里：从 attrs.id 获取
+              'beforeText', 
+                LEFT(
+                  COALESCE(block#>>'{content,0,text}', ''),
+                  GREATEST(
+                    0,
+                    POSITION(${keyword} IN LOWER(COALESCE(block#>>'{content,0,text}', ''))) - 31
+                  )
+                ),
+              'afterText',
+                RIGHT(
+                  COALESCE(block#>>'{content,0,text}', ''),
+                  GREATEST(
+                    0,
+                    LENGTH(COALESCE(block#>>'{content,0,text}', '')) - 
+                    (POSITION(${keyword} IN LOWER(COALESCE(block#>>'{content,0,text}', ''))) + LENGTH(${keyword}) + 30)
+                  )
+                )
+            )
+          ) as matches
+        FROM Blocks
+        WHERE 
+          block->>'type' IN ('paragraph', 'heading')
+          AND (block#>>'{content,0,text}' ILIKE ${`%${keyword}%`})
+        GROUP BY id, title
+        LIMIT ${limit}
+      `;
 
-    return { documents, total };
+      const total = await this.prisma.doc.count({
+        where: {
+          ownerId,
+          OR: [{ title: { contains: keyword, mode: "insensitive" } }, { content: { contains: keyword, mode: "insensitive" } }],
+        },
+      });
+
+      return {
+        documents: titleMatches,
+        contentMatches,
+        total,
+      };
+    } catch (error) {
+      console.error("Search documents error:", error);
+      throw error;
+    }
   }
 
   async loadChildren(userId: number, parentId?: string | null): Promise<CommonDocumentResponse[]> {
