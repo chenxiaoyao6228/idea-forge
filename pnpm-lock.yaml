@@ -588,6 +588,9 @@ importers:
       '@tiptap-pro/extension-table-of-contents':
         specifier: ^2.11.9
         version: 2.11.9(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
+      '@tiptap-pro/extension-unique-id':
+        specifier: ^2.17.5
+        version: 2.17.5(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1)
       '@tiptap/core':
         specifier: ^2.9.1
         version: 2.9.1(@tiptap/pm@2.9.1)
@@ -8334,6 +8337,17 @@ packages:
 
   /@tiptap-pro/extension-table-of-contents@2.11.9(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1):
     resolution: {integrity: sha512-4aX5UiLGuUtBy60SZmt/waduqW0Sa+Ht8dudsFoEnhXnjQm46HXvNf4+0gCqKm+fa+k3LzNoFYYCmtrZ3ETulA==}
+    peerDependencies:
+      '@tiptap/core': ^2.0.0
+      '@tiptap/pm': ^2.0.0
+    dependencies:
+      '@tiptap/core': 2.9.1(@tiptap/pm@2.9.1)
+      '@tiptap/pm': 2.9.1
+      uuid: 10.0.0
+    dev: false
+
+  /@tiptap-pro/extension-unique-id@2.17.5(@tiptap/core@2.9.1)(@tiptap/pm@2.9.1):
+    resolution: {integrity: sha512-eYB2iadHrpTYAMTrtqqYYcHd2IU3XEmomUsBEzM5YLtV0fkqcRhvhKn5nTi1hNBnDd1SETDPv//0GDl9qv6WTg==}
     peerDependencies:
       '@tiptap/core': ^2.0.0
       '@tiptap/pm': ^2.0.0

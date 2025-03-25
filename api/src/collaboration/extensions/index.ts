@@ -3,6 +3,7 @@ import Typography from "@tiptap/extension-typography";
 import TextAlign from "@tiptap/extension-text-align";
 import { Dropcursor } from "@tiptap/extension-dropcursor";
 import Focus from "@tiptap/extension-focus";
+import UniqueID from "@tiptap-pro/extension-unique-id";
 
 // custom extensions
 import { HardBreak } from "./hard-break";
@@ -99,6 +100,10 @@ const _extensions = [
   Selection,
   AddParagraph,
   AutoFocus,
+  UniqueID.configure({
+    attributeName: "id",
+    types: ["heading", "paragraph"],
+  }),
 ];
 
 export const extensions = [...nodes, ...marks, ..._extensions];

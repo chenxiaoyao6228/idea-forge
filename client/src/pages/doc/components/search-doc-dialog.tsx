@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useDebounce } from "react-use";
 import { documentApi } from "@/apis/document";
-import type { CommonDocumentResponse } from "shared";
+import type { CommonDocumentResponse, ContentMatch } from "shared";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Loading from "../../../components/loading";
+import { TextSelection } from "@tiptap/pm/state";
+import scrollIntoView from "scroll-into-view-if-needed";
+import { useEditorStore } from "../stores/editor-store";
 
 export function SearchDocDialog() {
   const { t } = useTranslation();
@@ -46,11 +49,13 @@ export function SearchDocDialog() {
 function SearchPanel({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const editor = useEditorStore((state) => state.editor);
   const inputRef = useRef<HTMLInputElement>(null);
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState<CommonDocumentResponse[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
+  const [contentMatches, setContentMatches] = useState<Array<ContentMatch>>([]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -60,6 +65,7 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
     () => {
       if (!keyword.trim()) {
         setDocuments([]);
+        setContentMatches([]);
         setLoading(false);
         return;
       }
@@ -73,8 +79,9 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
           sort: "updatedAt",
           order: "desc",
         })
-        .then(({ documents }) => {
+        .then(({ documents, contentMatches }) => {
           setDocuments(documents);
+          setContentMatches(contentMatches);
         })
         .catch((error) => {
           console.error("Search failed:", error);
@@ -93,8 +100,44 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
     setCurrentIndex(-1);
   };
 
-  const handleDocumentClick = (doc: CommonDocumentResponse) => {
-    navigate(`/doc/${doc.id}`);
+  const handleDocumentClick = async (doc: CommonDocumentResponse, nodeId?: string) => {
+    // First navigate to the document if it's different from current
+    if (window.location.pathname !== `/doc/${doc.id}`) {
+      await navigate(`/doc/${doc.id}${nodeId ? `#${nodeId}` : ""}`);
+      onClose();
+      return;
+    }
+
+    // If we're already on the correct document, handle the scroll and focus
+    if (nodeId && editor) {
+      const element = editor.view.dom.querySelector(`[data-node-id="${nodeId}"]`);
+      if (element) {
+        // Set editor selection and focus
+        const pos = editor.view.posAtDOM(element, 0);
+        const tr = editor.view.state.tr;
+        tr.setSelection(new TextSelection(tr.doc.resolve(pos)));
+        editor.view.dispatch(tr);
+        editor.view.focus();
+
+        // Update URL hash
+        if (history.pushState) {
+          history.pushState(null, "", `#${nodeId}`);
+        }
+
+        // Smooth scroll to the target element
+        scrollIntoView(element, {
+          scrollMode: "if-needed",
+          block: "center",
+          inline: "nearest",
+          behavior: "smooth",
+        });
+
+        // Optional: Add temporary highlight effect
+        // element.classList.add("highlight");
+        // setTimeout(() => element.classList.remove("highlight"), 2000);
+      }
+    }
+
     onClose();
   };
 
@@ -122,7 +165,7 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
             value={keyword}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder={t("Search document by title...")}
+            placeholder={t("Search document by title or content...")}
             className="border-0 p-0 focus-visible:ring-0"
           />
         </div>
@@ -131,29 +174,100 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
       <div className="max-h-[400px] min-h-[200px] overflow-y-auto custom-scrollbar">
         {loading && <Loading />}
 
-        {!loading && keyword && documents.length === 0 && (
+        {!loading && keyword && documents.length === 0 && contentMatches?.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
             <FileSearch className="h-8 w-8" />
             <p>{t("No documents found")}</p>
           </div>
         )}
 
-        {!loading && documents.length > 0 && (
+        {!loading && (documents.length > 0 || (contentMatches && contentMatches.length > 0)) && (
           <div className="flex flex-col gap-1 mt-2">
-            {documents.map((doc, index) => (
-              <Button
-                key={doc.id}
-                variant="ghost"
-                className={cn("flex items-center gap-2 justify-start h-auto py-2 px-3", index === currentIndex && "bg-accent/50 dark:bg-accent/25")}
-                onClick={() => handleDocumentClick(doc)}
-              >
-                <FileText className="h-4 w-4 shrink-0" />
-                <span className="flex-1 truncate text-left">{doc.title || t("Untitled")}</span>
-              </Button>
-            ))}
+            {/* Title matches */}
+            {documents.length > 0 && (
+              <div className="mb-4">
+                <div className="text-sm font-medium text-muted-foreground mb-2">{t("Title matches")}</div>
+                {documents.map((doc, index) => (
+                  <Button
+                    key={doc.id}
+                    variant="ghost"
+                    className={cn("flex items-center gap-2 justify-start h-auto py-2 px-3", index === currentIndex && "bg-accent/50 dark:bg-accent/25")}
+                    onClick={() => handleDocumentClick(doc)}
+                  >
+                    <FileText className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 truncate text-left">{doc.title || t("Untitled")}</span>
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            {/* Content matches */}
+            {contentMatches && contentMatches.length > 0 && (
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-2">{t("Content matches")}</div>
+                {contentMatches.map((match) => (
+                  <div key={match.id} className="mb-4">
+                    <div className="text-sm font-medium mb-1">{match.title || t("Untitled")}</div>
+                    {match.matches.map((m, i) => (
+                      <Button
+                        key={`${m.text}-${i}`}
+                        variant="ghost"
+                        className="flex items-center gap-2 justify-start h-auto py-2 px-3 w-full"
+                        onClick={() =>
+                          handleDocumentClick(
+                            {
+                              id: match.id.toString(),
+                              title: match.title,
+                              parentId: null,
+                              icon: null,
+                              isStarred: false,
+                              createdAt: new Date(),
+                              updatedAt: new Date(),
+                              isArchived: false,
+                              isLeaf: true,
+                              position: 0,
+                            },
+                            m.nodeId,
+                          )
+                        }
+                      >
+                        <FileText className="h-4 w-4 shrink-0" />
+                        <div className="flex-1 text-left">
+                          <div className="text-sm text-muted-foreground">
+                            {m.beforeText && <span className="opacity-75">{m.beforeText}</span>}
+                            {highlightKeyword(m.text, keyword)}
+                            {m.afterText && <span className="opacity-75">{m.afterText}</span>}
+                          </div>
+                          {/* <div className="text-xs text-muted-foreground mt-1">{t(m.type)}</div> */}
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+// 高亮关键字的辅助函数
+function highlightKeyword(text: string, keyword: string) {
+  if (!keyword.trim()) return text;
+  const parts = text.split(new RegExp(`(${keyword})`, "gi"));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === keyword.toLowerCase() ? (
+          <span key={part} className="bg-yellow-200 dark:bg-yellow-900">
+            {part}
+          </span>
+        ) : (
+          part
+        ),
+      )}
     </>
   );
 }
