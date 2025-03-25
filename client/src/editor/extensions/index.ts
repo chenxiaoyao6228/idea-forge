@@ -35,6 +35,7 @@ import { Selection } from "./selection";
 import { Table, TableCell, TableHeader, TableRow } from "./table";
 import AddParagraph from "./paragraph/plugins/add-paragraph";
 import { AutoFocus } from "./auto-fucus";
+import { HighlightMark } from "./highlight-marker";
 
 const nodes = [
   Document,
@@ -78,6 +79,7 @@ const marks = [
   Link.configure({
     openOnClick: false,
   }),
+  HighlightMark,
 ];
 
 const _extensions = [

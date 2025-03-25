@@ -18,6 +18,7 @@ import AIPanel from "./ai-panel";
 import { getHierarchicalIndexes } from "@tiptap-pro/extension-table-of-contents";
 import TableOfContents from "@tiptap-pro/extension-table-of-contents";
 import React from "react";
+import { TextSelection } from "@tiptap/pm/state";
 
 interface Props {
   id: string;
@@ -101,15 +102,30 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
       if (!hash) return;
 
       // Give a small delay to ensure the DOM is fully rendered
-      // Get the node by the node id
       setTimeout(() => {
-        const node = editor.view.dom.querySelector(`[data-node-id="${hash}"]`);
-        if (node) {
-          // Calculate the scroll position to center the target element in the viewport
-          node.scrollIntoView({ behavior: "smooth", block: "center" });
-          // Add the highlight effect
-          node.classList.add("highlight");
-          setTimeout(() => node.classList.remove("highlight"), 2000);
+        const element = editor.view.dom.querySelector(`[data-node-id="${hash}"]`);
+        if (element) {
+          // Calculate scroll position and scroll
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          // Get position of the node in the document
+          const pos = editor.view.posAtDOM(element, 0);
+
+          // Create transaction to add highlight mark
+          let tr = editor.view.state.tr;
+
+          // Set selection and add highlight mark
+          tr.setSelection(new TextSelection(tr.doc.resolve(pos)));
+          tr = tr.addMark(pos, pos + element.textContent!.length, editor.schema.marks.highlight.create());
+
+          editor.view.dispatch(tr);
+          editor.view.focus();
+
+          // Remove highlight after delay
+          setTimeout(() => {
+            const tr = editor.view.state.tr.removeMark(pos, pos + element.textContent!.length, editor.schema.marks.highlight);
+            editor.view.dispatch(tr);
+          }, 2000);
         }
       }, 100);
     };

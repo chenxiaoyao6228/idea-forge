@@ -430,7 +430,11 @@
   }
 }
 
-[data-node-id].highlight {
-  background-color: rgba(255, 255, 0, 0.2);
-  transition: background-color 0.5s ease;
+.highlight-mark {
+  background-color: theme("colors.yellow.100/50");
+  transition: background-color 0.3s ease;
+}
+
+.dark .highlight-mark {
+  background-color: theme("colors.yellow.900/30");
 }
