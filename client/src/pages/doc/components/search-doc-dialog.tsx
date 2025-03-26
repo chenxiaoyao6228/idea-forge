@@ -113,24 +113,49 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
       const element = editor.view.dom.querySelector(`[data-node-id="${nodeId}"]`);
       if (element) {
         const pos = editor.view.posAtDOM(element, 0);
+        const node = editor.view.state.doc.nodeAt(pos);
 
-        // Create a transaction to add highlight
+        if (!node) return;
+
+        // Create a transaction to set selection
         let tr = editor.view.state.tr;
 
-        // Set selection
-        tr.setSelection(new TextSelection(tr.doc.resolve(pos)));
+        // Calculate the end position correctly using node size
+        const endPos = pos + node.nodeSize;
 
-        // Add highlight mark
-        tr = editor.view.state.tr.addMark(pos, pos + element.textContent!.length, editor.schema.marks.highlight.create());
+        // Set selection to the whole node
+        tr.setSelection(new TextSelection(tr.doc.resolve(pos), tr.doc.resolve(endPos - 1)));
+
+        // Only add highlight mark if the node type allows marks
+        if (!node.type.spec.code) {
+          try {
+            // Find the first text node position
+            let textPos = pos;
+            node.descendants((child, childPos) => {
+              if (child.isText) {
+                textPos = pos + childPos;
+                return false; // stop traversing
+              }
+              return true;
+            });
+
+            // Add highlight mark only to the text content
+            if (textPos !== pos) {
+              tr = tr.addMark(textPos, textPos + node.textContent.length, editor.schema.marks.highlight.create());
+
+              // Delay remove highlight
+              setTimeout(() => {
+                const removeTr = editor.view.state.tr.removeMark(textPos, textPos + node.textContent.length, editor.schema.marks.highlight);
+                editor.view.dispatch(removeTr);
+              }, 2000);
+            }
+          } catch (error) {
+            console.error("Error adding highlight:", error);
+          }
+        }
 
         editor.view.dispatch(tr);
         editor.view.focus();
-
-        // Delay remove highlight
-        setTimeout(() => {
-          const tr = editor.view.state.tr.removeMark(pos, pos + element.textContent!.length, editor.schema.marks.highlight);
-          editor.view.dispatch(tr);
-        }, 2000);
 
         // scroll to position
         scrollIntoView(element, {

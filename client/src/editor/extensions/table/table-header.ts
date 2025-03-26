@@ -22,6 +22,14 @@ export const TableHeader = TiptapTableHeader.extend({
       style: {
         default: null,
       },
+      id: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("id"),
+        renderHTML: (attributes) => ({
+          "data-node-id": attributes.id,
+          id: attributes.id,
+        }),
+      },
     };
   },
 

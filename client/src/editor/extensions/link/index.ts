@@ -21,6 +21,18 @@ export const Link = TLink.extend<LinkOptions>({
       },
     };
   },
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("id"),
+        renderHTML: (attributes) => ({
+          "data-node-id": attributes.id,
+          id: attributes.id,
+        }),
+      },
+    };
+  },
   addStorage() {
     return {
       ...this.parent?.(),

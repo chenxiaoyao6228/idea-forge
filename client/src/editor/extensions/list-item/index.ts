@@ -5,6 +5,18 @@ export interface ListItemOptions extends TListItemOptions {}
 
 export const ListItem = TListItem.extend<ListItemOptions>({
   name: "listItem",
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("id"),
+        renderHTML: (attributes) => ({
+          "data-node-id": attributes.id,
+          id: attributes.id,
+        }),
+      },
+    };
+  },
   addStorage() {
     return {
       ...this.parent?.(),

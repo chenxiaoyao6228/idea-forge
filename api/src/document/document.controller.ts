@@ -3,10 +3,14 @@ import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsD
 import { DocumentService } from "./ document.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { UpdateCoverDto } from "shared";
+import { SearchDocumentService } from "./search-document.service";
 
 @Controller("/api/documents")
 export class DocumentController {
-  constructor(private readonly documentService: DocumentService) {}
+  constructor(
+    private readonly documentService: DocumentService,
+    private readonly searchDocumentService: SearchDocumentService,
+  ) {}
 
   @Get("tree")
   async getNestedTree(@GetUser("id") userId: number, @Query("parentId") parentId?: string) {
@@ -20,7 +24,7 @@ export class DocumentController {
 
   @Get("search")
   async search(@GetUser("id") userId: number, @Query() dto: SearchDocumentDto) {
-    return this.documentService.searchDocuments(userId, dto);
+    return this.searchDocumentService.searchDocuments(userId, dto);
   }
 
   @Get("latest")

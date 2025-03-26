@@ -126,6 +126,14 @@ export const CodeBlock = Node.create<CodeBlockOptions>({
           "data-mermaid-display": attributes.mermaidDisplay,
         }),
       },
+      id: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("id") || element.getAttribute("data-node-id"),
+        renderHTML: (attributes) => ({
+          id: attributes.id,
+          "data-node-id": attributes.id,
+        }),
+      },
     };
   },
 
@@ -149,6 +157,7 @@ export const CodeBlock = Node.create<CodeBlockOptions>({
         contentElement: (node) => node.querySelector("code") || node,
         getAttrs: (node) => ({
           language: node.getAttribute("data-language"),
+          id: node.getAttribute("id") || node.getAttribute("data-node-id"),
         }),
       },
     ];
@@ -174,6 +183,8 @@ export const CodeBlock = Node.create<CodeBlockOptions>({
         class: `code-block`,
         ...mergeAttributes(HTMLAttributes, {
           "data-language": node.attrs.language,
+          id: node.attrs.id,
+          "data-node-id": node.attrs.id,
         }),
       },
       ["pre", ["code", { spellcheck: "false" }, 0]],
