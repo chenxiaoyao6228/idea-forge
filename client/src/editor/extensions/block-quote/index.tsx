@@ -3,6 +3,18 @@ import { NodeMarkdownStorage } from "../markdown/types";
 
 export const Blockquote = IBlockquote.extend({
   name: "blockquote",
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("id"),
+        renderHTML: (attributes) => ({
+          "data-node-id": attributes.id,
+          id: attributes.id,
+        }),
+      },
+    };
+  },
   addStorage() {
     return {
       ...this.parent?.(),

@@ -7,10 +7,11 @@ import { ShareDocumentController } from "./share-document.controller";
 import { FileStoreModule } from "@/file-store/file-store.module";
 import { FileService } from "@/file-store/file-store.service";
 import { SystemDocumentService } from "./system-document.service";
+import { SearchDocumentService } from "./search-document.service";
 @Module({
   imports: [FileStoreModule, ScheduleModule.forRoot()],
   controllers: [DocumentController, ShareDocumentController],
-  providers: [DocumentService, ShareDocumentService, SystemDocumentService],
-  exports: [DocumentService, SystemDocumentService],
+  providers: [DocumentService, ShareDocumentService, SystemDocumentService, SearchDocumentService],
+  exports: [DocumentService, SystemDocumentService, SearchDocumentService],
 })
 export class DocumentModule {}

@@ -104,7 +104,7 @@ const _extensions = [
   AutoFocus,
   UniqueID.configure({
     attributeName: "id",
-    types: ["heading", "paragraph"],
+    types: ["heading", "paragraph", "blockQuote", "code", "codeBlock", "link", "tableCell", "tableRow", "tableHeader", "listItem"],
   }),
 ];
 
