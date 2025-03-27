@@ -24,7 +24,6 @@ interface AIPanelState {
 
   // Result States
   result: string;
-  resultHtml: string;
   error: {
     message: string;
     action: {
@@ -69,7 +68,6 @@ export const store = create<AIPanelState>((set, get) => ({
   isThinking: false,
   isStreaming: false,
   result: "",
-  resultHtml: "",
   error: null,
   editor: null,
   currentRequest: null,
@@ -104,7 +102,6 @@ export const store = create<AIPanelState>((set, get) => ({
       isThinking: false,
       isStreaming: false,
       result: "",
-      resultHtml: "",
       error: null,
       prompt: "",
     });
@@ -112,18 +109,26 @@ export const store = create<AIPanelState>((set, get) => ({
 
   // Handle result confirmation - overwrites selection if exists
   replaceResult: () => {
-    const { editor, resultHtml } = get();
-    if (!editor || !resultHtml) return;
+    const { editor, result } = get();
+    if (!editor || !result) return;
 
-    editor.chain().focus().deleteSelection().insertContent(resultHtml).run();
+    const { selection } = editor.state;
+    const { from, to } = selection;
+
+    // Use markdown storage to insert content
+    editor.storage.markdown.setAt({ from, to }, result, {
+      updateSelection: true,
+      preserveWhitespace: true,
+      emit: true,
+    });
 
     get().reset();
   },
 
   // Insert content below - always inserts at current position
   insertBelow: () => {
-    const { editor, resultHtml } = get();
-    if (!editor || !resultHtml) return;
+    const { editor, result } = get();
+    if (!editor || !result) return;
 
     const { selection } = editor.state;
     const $pos = editor.state.doc.resolve(selection.to);
@@ -134,17 +139,19 @@ export const store = create<AIPanelState>((set, get) => ({
 
     if (isEmptyParagraph && isNotFirstNode) {
       // If empty paragraph and not first node, insert before current paragraph
-      editor.chain().focus().setTextSelection($pos.before()).insertContent(resultHtml).run();
+      editor.storage.markdown.setAt($pos.before(), result, {
+        updateSelection: true,
+        preserveWhitespace: true,
+        emit: true,
+      });
     } else {
       // Normal case: insert after current paragraph
       const endOfParagraph = $pos.end();
-      editor
-        .chain()
-        .focus()
-        .setTextSelection(endOfParagraph)
-        .insertContent("\n" + resultHtml)
-        .focus()
-        .run();
+      editor.storage.markdown.setAt(endOfParagraph, "\n" + result, {
+        updateSelection: true,
+        preserveWhitespace: true,
+        emit: true,
+      });
     }
 
     get().reset();
@@ -164,7 +171,6 @@ export const store = create<AIPanelState>((set, get) => ({
       isStreaming: false,
       error: null,
       result: "",
-      resultHtml: "",
     });
 
     await get().eventSourceService.start(
@@ -178,10 +184,7 @@ export const store = create<AIPanelState>((set, get) => ({
             set({ isStreaming: true, isThinking: false });
           }
           const concatenatedResult = get().result + data.content;
-          set((state) => ({
-            result: concatenatedResult,
-            resultHtml: markdownToHtml(concatenatedResult),
-          }));
+          set({ result: concatenatedResult });
         },
         onComplete: () => {
           console.log("handleStreamData", get().result);
@@ -257,7 +260,7 @@ export const store = create<AIPanelState>((set, get) => ({
   // Stop stream
   stopStream: () => {
     get().eventSourceService.stop();
-    set({ isStreaming: false, isThinking: false, result: "", resultHtml: "" });
+    set({ isStreaming: false, isThinking: false, result: "" });
   },
 }));
 

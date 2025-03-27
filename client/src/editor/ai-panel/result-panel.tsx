@@ -2,9 +2,10 @@ import { cn } from "@/lib/utils";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { markdownToHtml } from "./util";
 
 interface AIResultPanelProps {
-  resultHtml?: string;
+  result?: string;
   error?: {
     message: string;
     code?: string;
@@ -16,7 +17,7 @@ interface AIResultPanelProps {
   className?: string;
 }
 
-export default function AIResultPanel({ resultHtml, error, className }: AIResultPanelProps) {
+export default function AIResultPanel({ result, error, className }: AIResultPanelProps) {
   if (error) {
     return (
       <div className="bg-popover dark:bg-popover mb-4  ">
@@ -36,7 +37,9 @@ export default function AIResultPanel({ resultHtml, error, className }: AIResult
     );
   }
 
-  if (!resultHtml) return null;
+  if (!result) return null;
+
+  const resultHtml = markdownToHtml(result);
 
   return (
     <div
