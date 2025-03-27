@@ -8,6 +8,7 @@ import { Extension } from "@tiptap/core";
 import { ParserState } from "./parser/state";
 import { SerializerState } from "./serializer/state";
 import type { MarkMarkdownStorage, NodeMarkdownStorage } from "./types";
+import { Selection } from "@tiptap/pm/state";
 
 export * from "./types";
 
@@ -16,6 +17,15 @@ export type MarkdownOptions = {};
 export interface MarkdownStorage {
   get: () => string;
   set: (markdown: string, emit?: boolean) => void;
+  setAt: (
+    position: number | { from: number; to: number },
+    markdown: string,
+    options?: {
+      updateSelection?: boolean;
+      preserveWhitespace?: boolean;
+      emit?: boolean;
+    },
+  ) => void;
   parse: (markdown: string) => Node | null;
   serialize: (document: Node) => string;
   processor: Processor;
@@ -51,11 +61,51 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
     this.storage.get = () => {
       return this.editor.storage[this.name].serialize(this.editor.state.doc) as string;
     };
-    // set
+    // set - replaces entire document
     this.storage.set = (markdown: string, emit?: boolean) => {
       const tr = this.editor.state.tr;
       const doc = this.editor.storage[this.name].parse(markdown);
+      if (!doc) return;
       this.editor.view.dispatch(tr.replaceWith(0, tr.doc.content.size, doc).setMeta("preventUpdate", !emit));
+    };
+    // setAt - supports multiple insertion patterns
+    this.storage.setAt = (
+      position: number | { from: number; to: number },
+      markdown: string,
+      options: {
+        updateSelection?: boolean;
+        preserveWhitespace?: boolean;
+        emit?: boolean;
+      } = {},
+    ) => {
+      const tr = this.editor.state.tr;
+      const doc = this.editor.storage[this.name].parse(markdown);
+      if (!doc) return;
+
+      // Handle position variants
+      let from: number;
+      let to: number;
+
+      if (typeof position === "number") {
+        from = to = position;
+      } else {
+        from = position.from;
+        to = position.to;
+      }
+
+      // Insert content
+      tr.replaceWith(from, to, doc);
+
+      // Handle selection update
+      if (options.updateSelection) {
+        const resolvedPos = tr.doc.resolve(from + doc.content.size);
+        tr.setSelection(Selection.near(resolvedPos));
+      }
+
+      // Handle emit option
+      tr.setMeta("preventUpdate", !options.emit);
+
+      this.editor.view.dispatch(tr);
     };
   },
 });

@@ -22,7 +22,6 @@ export default function AIPanel({ editor }: AIPanelProps) {
   const setHasSelection = useAIPanelStore.use.setHasSelection();
   const prompt = useAIPanelStore.use.prompt();
   const result = useAIPanelStore.use.result();
-  const resultHtml = useAIPanelStore.use.resultHtml();
   const error = useAIPanelStore.use.error();
   const setVisible = useAIPanelStore.use.setVisible();
   const setEditor = useAIPanelStore.use.setEditor();
@@ -170,7 +169,7 @@ export default function AIPanel({ editor }: AIPanelProps) {
       }}
     >
       {/* ai-result */}
-      {<AIResultPanel resultHtml={resultHtml} error={error} />}
+      {<AIResultPanel result={result} error={error} />}
 
       {/* user prompt */}
       <UserPrompt />
