@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search as SearchIcon, FileText, FileSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useDebounce } from "react-use";
 import { documentApi } from "@/apis/document";
-import type { CommonDocumentResponse, ContentMatch } from "shared";
+import type { ContentMatch } from "shared";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Loading from "../../../components/loading";
@@ -53,7 +53,7 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [documents, setDocuments] = useState<CommonDocumentResponse[]>([]);
+  const [titleMatches, setTitleMatches] = useState<{ id: string; title: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [contentMatches, setContentMatches] = useState<Array<ContentMatch>>([]);
 
@@ -79,8 +79,8 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
           sort: "updatedAt",
           order: "desc",
         })
-        .then(({ documents, contentMatches }) => {
-          setDocuments(documents);
+        .then(({ titleMatches, contentMatches }) => {
+          setTitleMatches(titleMatches);
           setContentMatches(contentMatches);
         })
         .catch((error) => {
@@ -100,7 +100,7 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
     setCurrentIndex(-1);
   };
 
-  const handleDocumentClick = async (doc: CommonDocumentResponse, nodeId?: string) => {
+  const handleDocumentClick = async (doc: { id: string; title: string }, nodeId?: string) => {
     // First navigate to the document if it's different from current
     if (window.location.pathname !== `/doc/${doc.id}`) {
       await navigate(`/doc/${doc.id}${nodeId ? `#${nodeId}` : ""}`);
@@ -202,77 +202,57 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
       <div className="max-h-[400px] min-h-[200px] overflow-y-auto custom-scrollbar">
         {loading && <Loading />}
 
-        {!loading && keyword && documents.length === 0 && contentMatches?.length === 0 && (
+        {!loading && keyword && titleMatches.length === 0 && contentMatches?.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
             <FileSearch className="h-8 w-8" />
             <p>{t("No documents found")}</p>
           </div>
         )}
 
-        {!loading && (documents.length > 0 || (contentMatches && contentMatches.length > 0)) && (
+        {!loading && (titleMatches.length > 0 || contentMatches?.length > 0) && (
           <div className="flex flex-col gap-1 mt-2">
             {/* Title matches */}
-            {documents.length > 0 && (
-              <div className="mb-4">
-                <div className="text-sm font-medium text-muted-foreground mb-2">{t("Title matches")}</div>
-                {documents.map((doc, index) => (
-                  <Button
-                    key={doc.id}
-                    variant="ghost"
-                    className={cn("flex items-center gap-2 justify-start h-auto py-2 px-3", index === currentIndex && "bg-accent/50 dark:bg-accent/25")}
-                    onClick={() => handleDocumentClick(doc)}
-                  >
-                    <FileText className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 truncate text-left">{doc.title || t("Untitled")}</span>
-                  </Button>
-                ))}
-              </div>
-            )}
+            {titleMatches.map((doc, index) => (
+              <Button
+                key={`title-${doc.id}`}
+                variant="ghost"
+                className={cn("flex items-center gap-2 justify-start h-auto py-2 px-3 w-full", index === currentIndex && "bg-accent/50 dark:bg-accent/25")}
+                onClick={() => handleDocumentClick(doc)}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 text-left">{highlightKeyword(doc.title || t("Untitled"), keyword)}</div>
+                </div>
+              </Button>
+            ))}
 
             {/* Content matches */}
-            {contentMatches && contentMatches.length > 0 && (
-              <div>
-                <div className="text-sm font-medium text-muted-foreground mb-2">{t("Content matches")}</div>
-                {contentMatches.map((match) => (
-                  <div key={match.id} className="mb-4">
-                    <div className="text-sm font-medium mb-1">{match.title || t("Untitled")}</div>
-                    {match.matches.map((m, i) => (
-                      <Button
-                        key={`${m.text}-${i}`}
-                        variant="ghost"
-                        className="flex items-center gap-2 justify-start h-auto py-2 px-3 w-full"
-                        onClick={() =>
-                          handleDocumentClick(
-                            {
-                              id: match.id.toString(),
-                              title: match.title,
-                              parentId: null,
-                              icon: null,
-                              isStarred: false,
-                              createdAt: new Date(),
-                              updatedAt: new Date(),
-                              isArchived: false,
-                              isLeaf: true,
-                              position: 0,
-                            },
-                            m.nodeId,
-                          )
-                        }
-                      >
-                        <FileText className="h-4 w-4 shrink-0" />
-                        <div className="flex-1 text-left">
-                          <div className="text-sm text-muted-foreground">
-                            {m.beforeText && <span className="opacity-75">{m.beforeText}</span>}
-                            {highlightKeyword(m.text, keyword)}
-                            {m.afterText && <span className="opacity-75">{m.afterText}</span>}
-                          </div>
-                          {/* <div className="text-xs text-muted-foreground mt-1">{t(m.type)}</div> */}
-                        </div>
-                      </Button>
-                    ))}
+            {contentMatches?.map((match) =>
+              match.matches.map((m, i) => (
+                <Button
+                  key={`content-${match.id}-${i}`}
+                  variant="ghost"
+                  className="flex items-center gap-2 justify-start h-auto py-2 px-3 w-full"
+                  onClick={() =>
+                    handleDocumentClick(
+                      {
+                        id: match.id.toString(),
+                        title: match.title,
+                      },
+                      m.nodeId,
+                    )
+                  }
+                >
+                  <div className="flex-1 text-left">
+                    <div className="text-sm">{match.title || t("Untitled")}</div>
+                    <div className="flex items-center gap-1">
+                      <FileText className="h-4 w-4 shrink-0" />
+                      {m.beforeText && <span className="opacity-75">{m.beforeText}</span>}
+                      <div className="text-sm text-muted-foreground mt-1">{highlightKeyword(m.text, keyword)}</div>
+                      {m.afterText && <span className="opacity-75">{m.afterText}</span>}
+                    </div>
                   </div>
-                ))}
-              </div>
+                </Button>
+              )),
             )}
           </div>
         )}
