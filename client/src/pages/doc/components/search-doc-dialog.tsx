@@ -64,7 +64,7 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
   useDebounce(
     () => {
       if (!keyword.trim()) {
-        setDocuments([]);
+        setTitleMatches([]);
         setContentMatches([]);
         setLoading(false);
         return;
@@ -172,13 +172,13 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setCurrentIndex((prev) => (prev < documents.length - 1 ? prev + 1 : prev));
+      setCurrentIndex((prev) => (prev < titleMatches.length - 1 ? prev + 1 : prev));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
     } else if (e.key === "Enter" && currentIndex >= 0) {
       e.preventDefault();
-      const selectedDoc = documents[currentIndex];
+      const selectedDoc = titleMatches[currentIndex];
       if (selectedDoc) handleDocumentClick(selectedDoc);
     }
   };
