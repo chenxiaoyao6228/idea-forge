@@ -77,3 +77,4 @@ api/uploads
 # deploy
 scripts/builder/build-job.env
 scripts/deploy/run.env
+scripts/i18n/trans.env

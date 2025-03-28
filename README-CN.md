@@ -16,6 +16,8 @@ Idea Forge 是一个强大的文档协作平台，结合了类 Notion 的功能�
 
 立即体验 Idea Forge：[ideaforge.link](https://ideaforge.link/)
 
+> 更多功能正在路上：团队工作区、思维导图、白板、PDF 导出，敬请期待。
+
 ## 📸 功能展示
 
 ### 文档编辑

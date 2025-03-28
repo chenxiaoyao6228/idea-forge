@@ -16,6 +16,8 @@ Idea Forge is a powerful document collaboration platform that combines Notion-li
 
 Try Idea Forge now at [ideaforge.link](https://ideaforge.link/)
 
+> And more features & elements are on the way: Team workspace, Mindmap, Whiteboard, PDF Export, please stay tuned.
+
 ## 📸 Screenshots
 
 ### Document Editing
