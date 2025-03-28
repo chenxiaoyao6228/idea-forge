@@ -51,6 +51,11 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
     }
     // parser
     this.storage.parse = (markdown: string) => {
+      // Handle empty or whitespace-only content
+      if (!markdown?.trim()) {
+        return this.editor.schema.node("doc", null, [this.editor.schema.node("paragraph")]);
+      }
+
       return new ParserState(this.editor, this.storage.processor).parse(markdown);
     };
     // serializer
