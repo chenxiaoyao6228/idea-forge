@@ -25,7 +25,7 @@ Create rich documents with multiple elements including text, tables, task lists,
 <div align="center">
   <figure>
     <a target="_blank" rel="noopener">
-       <img src="./docs/images/idea-forge-banner.png" alt="Idea Forge interface showcase" width="90%" />
+       <img src="./docs/marketing/images/idea-forge-banner.png" alt="Idea Forge interface showcase" width="90%" />
     </a>
   </figure>
 </div>
@@ -34,13 +34,13 @@ Create rich documents with multiple elements including text, tables, task lists,
 
 Simply press Space to activate AI-powered writing suggestions.
 
-![AI Writing Assistant Demo](./docs/images/ai-writing.gif)
+![AI Writing Assistant Demo](./docs/marketing/images/ai-writing.gif)
 
 ### Real-time Collaboration
 
 Work together with your team in real-time by sharing documents.
 
-![Real-time Collaboration Demo](./docs/images/real-time-collab.gif)
+![Real-time Collaboration Demo](./docs/marketing/images/real-time-collab.gif)
 
 ## 🛠️ Tech Stack
 

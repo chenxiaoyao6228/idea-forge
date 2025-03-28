@@ -1,6 +1,6 @@
 {
   "name": "idea-forge",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Powerful document tool that combines the functionality of Notion with the intelligence of AI",
   "keywords": [
     "notion",
@@ -33,13 +33,17 @@
     "setup": "node scripts/setup-vscode.js && cd ./api && npm run setup",
     "i18n:extract": "cd client && npm run i18n:extract",
     "i18n:translate": "node scripts/i18n/update-translation.js",
-    "i18n:process": "pnpm i18n:extract && pnpm i18n:translate"
+    "i18n:process": "pnpm i18n:extract && pnpm i18n:translate",
+    "bump:patch": "node scripts/bump-version.js patch",
+    "bump:minor": "node scripts/bump-version.js minor",
+    "bump:major": "node scripts/bump-version.js major"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.2",
     "@commitlint/cli": "^17.8.1",
     "@commitlint/config-conventional": "^17.8.1",
     "concurrently": "^8.2.2",
+    "conventional-changelog-cli": "^5.0.0",
     "dotenv": "^16.4.5",
     "kill-port-process": "^3.2.1",
     "lefthook": "^1.8.2",

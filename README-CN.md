@@ -25,7 +25,7 @@ Idea Forge 是一个强大的文档协作平台，结合了类 Notion 的功能�
 <div align="center">
   <figure>
     <a target="_blank" rel="noopener">
-       <img src="./docs/images/idea-forge-banner.png" alt="Idea Forge 界面展示" width="90%" />
+       <img src="./docs/marketing/images/idea-forge-banner.png" alt="Idea Forge 界面展示" width="90%" />
     </a>
   </figure>
 </div>
@@ -34,13 +34,13 @@ Idea Forge 是一个强大的文档协作平台，结合了类 Notion 的功能�
 
 只需按 Space 即可激活 AI 驱动的写作建议。
 
-![AI 写作助手演示](./docs/images/ai-writing.gif)
+![AI 写作助手演示](./docs/marketing/images/ai-writing.gif)
 
 ### 实时协作
 
 通过共享文档与团队实时协作。
 
-![实时协作演示](./docs/images/real-time-collab.gif)
+![实时协作演示](./docs/marketing/images/real-time-collab.gif)
 
 ## 🛠️ 技术栈
 
