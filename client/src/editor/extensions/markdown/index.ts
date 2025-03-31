@@ -9,6 +9,7 @@ import { ParserState } from "./parser/state";
 import { SerializerState } from "./serializer/state";
 import type { MarkMarkdownStorage, NodeMarkdownStorage } from "./types";
 import { Selection } from "@tiptap/pm/state";
+import { createMarkdownPasteHandler } from "./plugins/create-markdown-paste-handler";
 
 export * from "./types";
 
@@ -35,6 +36,9 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
   name: "markdown",
   addStorage() {
     return {} as MarkdownStorage;
+  },
+  addProseMirrorPlugins() {
+    return [createMarkdownPasteHandler(this.editor)];
   },
   onBeforeCreate() {
     // processor
