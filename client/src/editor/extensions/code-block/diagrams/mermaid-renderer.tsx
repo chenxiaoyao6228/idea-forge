@@ -9,6 +9,13 @@ import { v4 as uuidv4 } from "uuid";
 import { mermaidTemplates } from "../constant";
 
 let isMermaidInitialized = false;
+
+const cleanupErrorMermaid = () => {
+  document
+    .querySelectorAll('svg[id^="mermaid-diagram-"][role="graphics-document document"][aria-roledescription="error"]')
+    .forEach((element) => element.remove());
+};
+
 export function initializeMermaid() {
   if (isMermaidInitialized) return;
   isMermaidInitialized = true;
@@ -39,6 +46,9 @@ const MermaidComponent: React.FC<MermaidComponentProps> = ({ code }) => {
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : "An error occurred while rendering the diagram");
+      // FIXME: find a better way to clean up the error SVGs
+      //  https://github.com/mermaid-js/mermaid/issues/4730
+      setTimeout(() => cleanupErrorMermaid(), 0);
     }
   }, 100);
 
@@ -52,6 +62,11 @@ const MermaidComponent: React.FC<MermaidComponentProps> = ({ code }) => {
       debouncedRender.cancel();
     };
   }, [code]);
+
+  useEffect(() => {
+    cleanupErrorMermaid();
+    return () => cleanupErrorMermaid();
+  }, []);
 
   if (error && code.length > 1) {
     return (
