@@ -59,8 +59,8 @@ const ImageBlock = TImage.extend({
         }),
       },
       alignment: {
-        default: "center",
-        parseHTML: (element) => element.getAttribute("data-alignment") || "center",
+        default: "left",
+        parseHTML: (element) => element.getAttribute("data-alignment") || "left",
         renderHTML: (attributes) => ({
           "data-alignment": attributes.alignment,
           class: `image-align-${attributes.alignment}`,

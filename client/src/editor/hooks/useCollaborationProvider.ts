@@ -92,18 +92,6 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
           lastSyncedAt: new Date(),
         });
       },
-      onDisconnect: () => {
-        setCollaborationState(documentId, {
-          status: "offline",
-          error: "Disconnected from server",
-        });
-      },
-      onClose: () => {
-        setCollaborationState(documentId, {
-          status: "offline",
-          error: "Disconnected from server",
-        });
-      },
       onSynced: ({ state }) => {
         setCollaborationState(documentId, {
           lastSyncedAt: state ? new Date() : undefined,
@@ -149,14 +137,19 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
   useEffect(() => {
     if (!editable) return;
 
-    const status = provider.status;
-    if (status !== "connected") {
+    // initiate connection if not connected
+    if (provider.status !== "connected") {
+      console.log("Initiating connection...");
       provider.connect();
     }
 
     return () => {
+      const status = provider.status;
       if (status === "disconnected" || status === "connecting") return;
-      // https://github.com/ueberdosis/hocuspocus/issues/594#issuecomment-1740599461
+
+      console.log("Cleaning up connection...");
+
+      // Fix for: https://github.com/ueberdosis/hocuspocus/issues/594#issuecomment-1740599461
       provider.configuration.websocketProvider.disconnect();
       provider.disconnect();
     };

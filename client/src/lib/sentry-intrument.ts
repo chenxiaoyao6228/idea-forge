@@ -4,8 +4,9 @@ import * as Sentry from "@sentry/react";
 import { createRoutesFromChildren, matchRoutes, useLocation, useNavigationType } from "react-router-dom";
 import { getEnvVariable } from "./env";
 
+const isDev = import.meta.env.MODE === "development";
+
 if (getEnvVariable("CLIENT_SENTRY_DSN")) {
-  console.log("=====Initializing Sentry=====");
   Sentry.init({
     dsn: getEnvVariable("CLIENT_SENTRY_DSN"),
     integrations: [
@@ -25,7 +26,7 @@ if (getEnvVariable("CLIENT_SENTRY_DSN")) {
     // of transactions for tracing.
     // Learn more at
     // https://docs.sentry.io/platforms/javascript/configuration/options/#traces-sample-rate
-    tracesSampleRate: 1.0,
+    tracesSampleRate: 0.2,
 
     // Set `tracePropagationTargets` to control for which URLs trace propagation should be enabled
     tracePropagationTargets: [/^\//, /^https:\/\/yourserver\.io\/api/],
@@ -36,5 +37,13 @@ if (getEnvVariable("CLIENT_SENTRY_DSN")) {
     // https://docs.sentry.io/platforms/javascript/session-replay/configuration/#general-integration-configuration
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
+
+    beforeSend(event) {
+      // Don't send events in development
+      if (isDev) {
+        return null;
+      }
+      return event;
+    },
   });
 }

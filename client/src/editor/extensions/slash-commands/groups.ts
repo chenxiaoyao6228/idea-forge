@@ -11,7 +11,7 @@ export const commandGroups: CommandGroup[] = [
         label: "Heading 1",
         description: "Large section heading",
         Icon: Heading1,
-        aliases: ["h1"],
+        aliases: ["h1", "bt", "biaoti"],
         command: ({ editor }) => {
           editor.chain().focus().setHeading({ level: 1 }).run();
         },
@@ -21,7 +21,7 @@ export const commandGroups: CommandGroup[] = [
         label: "Heading 2",
         description: "Medium section heading",
         Icon: Heading2,
-        aliases: ["h2"],
+        aliases: ["h2", "bt2", "biaoti2"],
         command: ({ editor }) => {
           editor.chain().focus().setHeading({ level: 2 }).run();
         },
@@ -31,7 +31,7 @@ export const commandGroups: CommandGroup[] = [
         label: "Heading 3",
         description: "Small section heading",
         Icon: Heading3,
-        aliases: ["h3"],
+        aliases: ["h3", "bt3", "biaoti3"],
         command: ({ editor }) => {
           editor.chain().focus().setHeading({ level: 3 }).run();
         },
@@ -41,7 +41,7 @@ export const commandGroups: CommandGroup[] = [
         label: "Bullet List",
         description: "Create a simple bullet list",
         Icon: List,
-        aliases: ["ul"],
+        aliases: ["ul", "lb", "liebiao", "wuxu", "wx"],
         command: ({ editor }) => {
           editor.chain().focus().toggleBulletList().run();
         },
@@ -51,7 +51,7 @@ export const commandGroups: CommandGroup[] = [
         label: "Numbered List",
         description: "Create a numbered list",
         Icon: ListOrdered,
-        aliases: ["ol"],
+        aliases: ["ol", "szlb", "shuzi"],
         command: ({ editor }) => {
           editor.chain().focus().toggleOrderedList().run();
         },
@@ -61,7 +61,7 @@ export const commandGroups: CommandGroup[] = [
         label: "Task List",
         description: "Create a task list",
         Icon: ListTodo,
-        aliases: ["todo"],
+        aliases: ["todo", "dblb", "daiban"],
         command: ({ editor }) => {
           editor.chain().focus().toggleTaskList().run();
         },
@@ -71,6 +71,7 @@ export const commandGroups: CommandGroup[] = [
         label: "Quote",
         description: "Add a quote block",
         Icon: Quote,
+        aliases: ["yswz", "yinshuwenzi", "quote"],
         command: ({ editor }) => {
           editor.chain().focus().setBlockquote().run();
         },
@@ -81,7 +82,7 @@ export const commandGroups: CommandGroup[] = [
         label: "Image",
         Icon: Image,
         description: "Insert an image",
-        aliases: ["img"],
+        aliases: ["img", "tp", "tupian", "image", "picture"],
         command: ({ editor }) => {
           editor.chain().focus().insertLocalImage().run();
         },
@@ -99,7 +100,7 @@ export const commandGroups: CommandGroup[] = [
         name: "codeBlock",
         label: "CodeBlock ",
         Icon: SquareCode,
-        aliases: ["code"],
+        aliases: ["code", "dmpd", "daimapianduan"],
         description: "Code block with syntax highlighting",
         command: ({ editor }) => {
           editor.chain().focus().setCodeBlock({ language: "typescript" }).run();
@@ -121,7 +122,7 @@ export const commandGroups: CommandGroup[] = [
         label: "Horizontal Line",
         description: "Add a horizontal divider",
         Icon: Minus,
-        aliases: ["hr"],
+        aliases: ["hr", "fgx", "fengexian"],
         command: ({ editor }) => {
           editor.chain().focus().setHorizontalRule().run();
         },
