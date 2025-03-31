@@ -3,6 +3,7 @@ on:
     branches:
       # remove after testing
       - feature/test-deploy-github-action
+      - pre-production
       - test
       - staging
       - master
@@ -18,7 +19,12 @@ jobs:
 
       - name: Set environment
         run: |
-          if [[ $GITHUB_REF == 'refs/heads/master' ]]; then
+          if [[ $GITHUB_REF == 'refs/heads/pre-production' ]]; then
+            ENV="production"
+            VM_IP="${{ secrets.VM_IP_PRODUCTION }}"
+            VM_PASSWORD="${{ secrets.VM_PASSWORD_PRODUCTION }}"
+            DOTENV_KEY="${{ secrets.DOTENV_KEY_PRODUCTION }}"
+          elif [[ $GITHUB_REF == 'refs/heads/master' ]]; then
             ENV="production"
             VM_IP="${{ secrets.VM_IP_PRODUCTION }}"
             VM_PASSWORD="${{ secrets.VM_PASSWORD_PRODUCTION }}"

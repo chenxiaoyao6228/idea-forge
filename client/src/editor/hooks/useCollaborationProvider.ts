@@ -3,7 +3,6 @@ import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
 import { CollabUser, useEditorStore } from "../../pages/doc/stores/editor-store";
-import { getEnvVariable } from "@/lib/env";
 
 const CONNECTION_TIMEOUT = 10000;
 
@@ -59,6 +58,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       name: documentId,
       document: doc,
       token: collabToken,
+      connect: false, // Don't connect immediately
       onAuthenticationFailed: ({ reason }) => {
         setCollaborationState(documentId, {
           status: "unauthorized",
@@ -144,6 +144,52 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       }
     };
   }, [provider, documentId, editable]);
+
+  // Add connect/disconnect handling
+  useEffect(() => {
+    if (!editable) return;
+
+    const status = provider.status;
+    if (status !== "connected") {
+      provider.connect();
+    }
+
+    return () => {
+      if (status === "disconnected" || status === "connecting") return;
+      // https://github.com/ueberdosis/hocuspocus/issues/594#issuecomment-1740599461
+      provider.configuration.websocketProvider.disconnect();
+      provider.disconnect();
+    };
+  }, [documentId, provider, editable]);
+
+  // Add disconnect detection
+  useEffect(() => {
+    const onConnect = () => {
+      console.log("Provider connected");
+    };
+
+    const onDisconnect = ({ event }: { event: CloseEvent }) => {
+      console.log("Provider disconnected", event);
+      if (event.type === "close") {
+        setTimeout(() => {
+          console.log("3s timeout after disconnect, Provider status is: ", provider.status);
+          if (provider.status === "connected") return; // maybe reconnect soon itself
+          setCollaborationState(documentId, {
+            status: "offline",
+            error: "Disconnected from server",
+          });
+        }, 3000);
+      }
+    };
+
+    provider.on("connect", onConnect);
+    provider.on("disconnect", onDisconnect);
+
+    return () => {
+      provider.off("connect", onConnect);
+      provider.off("disconnect", onDisconnect);
+    };
+  }, [provider, documentId]);
 
   // Cleanup
   useEffect(() => {
