@@ -5,6 +5,7 @@ import { useAIPanelStore } from "./ai-panel-store";
 import { useCallback, useEffect, useRef, useState } from "react";
 import debounce from "lodash.debounce";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { useTranslation } from "react-i18next";
 
 export function UserPrompt() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -20,8 +21,9 @@ export function UserPrompt() {
   const submitUserPrompt = useAIPanelStore.use.submitUserPrompt();
   const setVisible = useAIPanelStore.use.setVisible();
   const stopStream = useAIPanelStore.use.stopStream();
+  const { t } = useTranslation();
 
-  const placeholder = isThinking ? "AI is thinking..." : isStreaming ? "AI is writing..." : "Ask AI anything...";
+  const placeholder = isThinking ? t("AI is thinking...") : isStreaming ? t("AI is writing...") : t("Ask AI anything...");
 
   const isEmptyPrompt = !prompt.trim();
 

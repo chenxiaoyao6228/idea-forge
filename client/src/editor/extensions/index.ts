@@ -36,6 +36,7 @@ import { Table, TableCell, TableHeader, TableRow } from "./table";
 import AddParagraph from "./paragraph/plugins/add-paragraph";
 import { AutoFocus } from "./auto-fucus";
 import { HighlightMark } from "./highlight-marker";
+import i18next from "i18next";
 
 const nodes = [
   Document,
@@ -88,7 +89,7 @@ const _extensions = [
   TextAlign.configure({
     types: ["heading", "paragraph"],
   }),
-  Placeholder.configure({ placeholder: "Type / to set format, or type a space to use AI" }),
+  Placeholder.configure({ placeholder: i18next.t("Type / to set format, or type a space to use AI") }),
   CustomKeys,
   SlashCommands,
   Dropcursor.configure({

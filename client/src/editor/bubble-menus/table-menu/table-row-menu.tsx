@@ -5,8 +5,10 @@ import type { MenuProps, ShouldShowProps } from "../type";
 import { isRowGripSelected } from "./utils";
 import Wrapper from "../bubble-menu-wrapper";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 function AddRowBeforeButton({ editor }: { editor: MenuProps["editor"] }) {
+  const { t } = useTranslation();
   const onAddRowBefore = useCallback(() => {
     editor?.chain().focus().addRowBefore().run();
   }, [editor]);
@@ -14,12 +16,13 @@ function AddRowBeforeButton({ editor }: { editor: MenuProps["editor"] }) {
   return (
     <Button onClick={onAddRowBefore} size="sm" variant="ghost">
       <ArrowUpToLine className="w-4 h-4 mr-1" />
-      Insert row before
+      {t("Insert row before")}
     </Button>
   );
 }
 
 function AddRowAfterButton({ editor }: { editor: MenuProps["editor"] }) {
+  const { t } = useTranslation();
   const onAddRowAfter = useCallback(() => {
     editor?.chain().focus().addRowAfter().run();
   }, [editor]);
@@ -27,12 +30,13 @@ function AddRowAfterButton({ editor }: { editor: MenuProps["editor"] }) {
   return (
     <Button onClick={onAddRowAfter} size="sm" variant="ghost">
       <ArrowDownToLine className="w-4 h-4 mr-1" />
-      Insert row after
+      {t("Insert row after")}
     </Button>
   );
 }
 
 function DeleteRowButton({ editor }: { editor: MenuProps["editor"] }) {
+  const { t } = useTranslation();
   const onDeleteRow = useCallback(() => {
     editor?.chain().focus().deleteRow().run();
   }, [editor]);
@@ -40,7 +44,7 @@ function DeleteRowButton({ editor }: { editor: MenuProps["editor"] }) {
   return (
     <Button onClick={onDeleteRow} size="sm" className="w-full flex justify-start" variant="ghost">
       <Trash2 className="w-4 h-4 mr-1" />
-      Delete row
+      {t("Delete row")}
     </Button>
   );
 }

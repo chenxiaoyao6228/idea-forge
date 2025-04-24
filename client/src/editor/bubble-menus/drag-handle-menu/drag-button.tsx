@@ -7,9 +7,11 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { IButtonProps } from "./type";
 import copy from "copy-to-clipboard";
+import { useTranslation } from "react-i18next";
 
 // Clear formatting button
 function ClearFormattingButton({ editor, currentNode, currentNodePos }: IButtonProps) {
+  const { t } = useTranslation();
   const resetTextFormatting = useCallback(() => {
     if (editor == null) return;
     const chain = editor.chain();
@@ -23,7 +25,7 @@ function ClearFormattingButton({ editor, currentNode, currentNodePos }: IButtonP
   return (
     <Button size="sm" variant="ghost" className="justify-start w-full mx-0 px-1" onClick={resetTextFormatting}>
       <RemoveFormatting className="h-4 w-4 mr-1" />
-      Clear Formatting
+      {t("Clear Formatting")}
     </Button>
   );
 }
@@ -31,6 +33,7 @@ function ClearFormattingButton({ editor, currentNode, currentNodePos }: IButtonP
 // Copy button
 function CopyButton({ editor, currentNodePos }: IButtonProps) {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const copyNodeToClipboard = useCallback(() => {
     if (editor == null) return;
@@ -38,19 +41,23 @@ function CopyButton({ editor, currentNodePos }: IButtonProps) {
     const content = editor.state.selection.content().toJSON();
     copy(JSON.stringify(content));
     editor.commands.focus(currentNodePos);
-    toast({ title: "Success", description: "Copied to clipboard" });
-  }, [editor, currentNodePos, toast]);
+    toast({
+      title: t("Success"),
+      description: t("Copied to clipboard"),
+    });
+  }, [editor, currentNodePos, toast, t]);
 
   return (
     <Button size="sm" variant="ghost" className="justify-start w-full mx-0 px-1" onClick={copyNodeToClipboard}>
       <Clipboard className="h-4 w-4 mr-1" />
-      Copy to Clipboard
+      {t("Copy to Clipboard")}
     </Button>
   );
 }
 
 // Duplicate button
 function DuplicateButton({ editor, currentNode, currentNodePos }: IButtonProps) {
+  const { t } = useTranslation();
   const duplicateNode = useCallback(() => {
     if (editor == null) return;
     editor.commands.setNodeSelection(currentNodePos);
@@ -64,13 +71,14 @@ function DuplicateButton({ editor, currentNode, currentNodePos }: IButtonProps) 
   return (
     <Button size="sm" variant="ghost" className="justify-start w-full mx-0 px-1" onClick={duplicateNode}>
       <Copy className="h-4 w-4 mr-1" />
-      Duplicate
+      {t("Duplicate")}
     </Button>
   );
 }
 
 // Delete button
 function DeleteButton({ editor, currentNodePos }: IButtonProps) {
+  const { t } = useTranslation();
   const deleteNode = useCallback(() => {
     if (editor == null) return;
     editor.chain().setNodeSelection(currentNodePos).deleteSelection().focus(currentNodePos).run();
@@ -79,7 +87,7 @@ function DeleteButton({ editor, currentNodePos }: IButtonProps) {
   return (
     <Button size="sm" variant="destructive" className="justify-start w-full mx-0 px-1" onClick={deleteNode}>
       <Trash2 className="h-4 w-4 mr-1" />
-      Delete
+      {t("Delete")}
     </Button>
   );
 }

@@ -5,6 +5,7 @@ import createSelectors from "@/stores/utils/createSelector";
 import { PresetType, getStreamOptions, buildUserPromptMessage, buildPresetPromptMessage, markdownToHtml } from "./util";
 import { AIStreamRequest } from "shared";
 import scrollIntoView from "scroll-into-view-if-needed";
+// import i18next from "i18next";
 
 interface AIPanelState {
   // Services
@@ -210,6 +211,7 @@ export const store = create<AIPanelState>((set, get) => ({
             error: {
               message: error.message,
               action: {
+                // label: i18next.t("Retry"),
                 label: "Retry",
                 handler: () => get().retryStream(),
               },

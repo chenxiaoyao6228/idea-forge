@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Pencil, Unlink } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 interface LinkViewBlockProps {
   editor: Editor;
@@ -12,6 +13,7 @@ interface LinkViewBlockProps {
 }
 
 export function LinkViewBlock({ link, onClear, onEdit }: LinkViewBlockProps) {
+  const { t } = useTranslation();
   const truncate = (str: string, length: number) => {
     return str?.length > length ? str.substring(0, length) + "…" : str;
   };
@@ -29,7 +31,7 @@ export function LinkViewBlock({ link, onClear, onEdit }: LinkViewBlockProps) {
               <Pencil className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Edit link</TooltipContent>
+          <TooltipContent>{t("Edit link")}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -37,7 +39,7 @@ export function LinkViewBlock({ link, onClear, onEdit }: LinkViewBlockProps) {
               <Unlink className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Remove link</TooltipContent>
+          <TooltipContent>{t("Remove link")}</TooltipContent>
         </Tooltip>
       </div>
     </div>

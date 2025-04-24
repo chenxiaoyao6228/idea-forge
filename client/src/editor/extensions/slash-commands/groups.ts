@@ -1,15 +1,18 @@
 import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout, Image, Table } from "lucide-react";
 import type { CommandGroup } from "./types";
+import i18next from "i18next";
+
+const { t } = i18next;
 
 export const commandGroups: CommandGroup[] = [
   {
     name: "block",
-    title: "Basic Block",
+    title: t("Basic Block"),
     commands: [
       {
         name: "heading1",
-        label: "Heading 1",
-        description: "Large section heading",
+        label: t("Heading 1"),
+        description: t("Large section heading"),
         Icon: Heading1,
         aliases: ["h1", "bt", "biaoti"],
         command: ({ editor }) => {
@@ -18,8 +21,8 @@ export const commandGroups: CommandGroup[] = [
       },
       {
         name: "heading2",
-        label: "Heading 2",
-        description: "Medium section heading",
+        label: t("Heading 2"),
+        description: t("Medium section heading"),
         Icon: Heading2,
         aliases: ["h2", "bt2", "biaoti2"],
         command: ({ editor }) => {
@@ -28,8 +31,8 @@ export const commandGroups: CommandGroup[] = [
       },
       {
         name: "heading3",
-        label: "Heading 3",
-        description: "Small section heading",
+        label: t("Heading 3"),
+        description: t("Small section heading"),
         Icon: Heading3,
         aliases: ["h3", "bt3", "biaoti3"],
         command: ({ editor }) => {
@@ -38,8 +41,8 @@ export const commandGroups: CommandGroup[] = [
       },
       {
         name: "bulletList",
-        label: "Bullet List",
-        description: "Create a simple bullet list",
+        label: t("Bullet List"),
+        description: t("Create a simple bullet list"),
         Icon: List,
         aliases: ["ul", "lb", "liebiao", "wuxu", "wx"],
         command: ({ editor }) => {
@@ -48,8 +51,8 @@ export const commandGroups: CommandGroup[] = [
       },
       {
         name: "orderedList",
-        label: "Numbered List",
-        description: "Create a numbered list",
+        label: t("Numbered List"),
+        description: t("Create a numbered list"),
         Icon: ListOrdered,
         aliases: ["ol", "szlb", "shuzi"],
         command: ({ editor }) => {
@@ -58,8 +61,8 @@ export const commandGroups: CommandGroup[] = [
       },
       {
         name: "taskList",
-        label: "Task List",
-        description: "Create a task list",
+        label: t("Task List"),
+        description: t("Create a task list"),
         Icon: ListTodo,
         aliases: ["todo", "dblb", "daiban"],
         command: ({ editor }) => {
@@ -68,20 +71,19 @@ export const commandGroups: CommandGroup[] = [
       },
       {
         name: "blockquote",
-        label: "Quote",
-        description: "Add a quote block",
+        label: t("Quote"),
+        description: t("Add a quote block"),
         Icon: Quote,
         aliases: ["yswz", "yinshuwenzi", "quote"],
         command: ({ editor }) => {
           editor.chain().focus().setBlockquote().run();
         },
       },
-
       {
         name: "image",
-        label: "Image",
+        label: t("Image"),
         Icon: Image,
-        description: "Insert an image",
+        description: t("Insert an image"),
         aliases: ["img", "tp", "tupian", "image", "picture"],
         command: ({ editor }) => {
           editor.chain().focus().insertLocalImage().run();
@@ -89,38 +91,36 @@ export const commandGroups: CommandGroup[] = [
       },
       {
         name: "mermaid",
-        label: "Mermaid Diagram",
+        label: t("Mermaid Diagram"),
         Icon: Sprout,
-        description: "Insert a Mermaid diagram",
+        description: t("Insert a Mermaid diagram"),
         command: ({ editor }) => {
           editor.chain().focus().setCodeBlock({ language: "mermaid" }).run();
         },
       },
       {
         name: "codeBlock",
-        label: "CodeBlock ",
+        label: t("CodeBlock"),
         Icon: SquareCode,
         aliases: ["code", "dmpd", "daimapianduan"],
-        description: "Code block with syntax highlighting",
+        description: t("Code block with syntax highlighting"),
         command: ({ editor }) => {
           editor.chain().focus().setCodeBlock({ language: "typescript" }).run();
         },
       },
-
       {
         name: "table",
-        label: "Table",
+        label: t("Table"),
         Icon: Table,
-        description: "Insert a table",
+        description: t("Insert a table"),
         command: ({ editor }) => {
           editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: false }).run();
         },
       },
-
       {
         name: "horizontalRule",
-        label: "Horizontal Line",
-        description: "Add a horizontal divider",
+        label: t("Horizontal Line"),
+        description: t("Add a horizontal divider"),
         Icon: Minus,
         aliases: ["hr", "fgx", "fengexian"],
         command: ({ editor }) => {
@@ -129,8 +129,8 @@ export const commandGroups: CommandGroup[] = [
       },
       {
         name: "link",
-        label: "Link",
-        description: "Add a link",
+        label: t("Link"),
+        description: t("Add a link"),
         Icon: Link,
         command: ({ editor }) => {
           editor.chain().focus().setLink({ href: "" }).run();

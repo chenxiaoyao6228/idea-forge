@@ -3,6 +3,8 @@ import type { Editor } from "@tiptap/react";
 import { findParentNode } from "@tiptap/core";
 import copy from "copy-to-clipboard";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 
 interface CopyCodeButtonProps {
   editor: Editor;
@@ -10,6 +12,7 @@ interface CopyCodeButtonProps {
 
 const CopyCodeButton: React.FC<CopyCodeButtonProps> = ({ editor }) => {
   const toast = useToast();
+  const { t } = useTranslation();
   const handleCopy = () => {
     const { state } = editor;
 
@@ -19,16 +22,16 @@ const CopyCodeButton: React.FC<CopyCodeButtonProps> = ({ editor }) => {
       copy(codeBlock.node.textContent);
       editor.chain().focus().run();
       toast.toast({
-        title: "Code copied",
+        title: t("Code copied"),
       });
       return;
     }
   };
 
   return (
-    <button onClick={handleCopy} className="text-sm">
-      Copy
-    </button>
+    <Button size="sm" variant="ghost" onClick={handleCopy} className="text-sm">
+      {t("Copy")}
+    </Button>
   );
 };
 

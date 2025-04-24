@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Link2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useClickAway } from "react-use";
+import { useTranslation } from "react-i18next";
 
 interface LinkEditBlockProps {
   editor: Editor;
@@ -15,6 +16,7 @@ interface LinkEditBlockProps {
 
 export function LinkEditBlock({ editor, onSetLink, onClickOutside }: LinkEditBlockProps) {
   const ref = useRef(null);
+  const { t } = useTranslation();
   useClickAway(ref, onClickOutside);
 
   const [form, setForm] = useState({
@@ -53,21 +55,28 @@ export function LinkEditBlock({ editor, onSetLink, onClickOutside }: LinkEditBlo
     <div ref={ref} className="p-2 bg-background rounded-lg shadow-sm border">
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <div className="grid gap-1.5">
-          <Label>Text</Label>
+          <Label>{t("Text")}</Label>
           <Input
             type="text"
             value={form.text}
             onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
             required
             className="w-80"
-            placeholder="Enter text"
+            placeholder={t("Enter text")}
           />
         </div>
 
         <div className="grid gap-1.5">
-          <Label>Link</Label>
+          <Label>{t("Link")}</Label>
           <div className="relative">
-            <Input type="url" value={form.link} onChange={(e) => setForm((prev) => ({ ...prev, link: e.target.value }))} required className="pl-10" />
+            <Input
+              type="url"
+              value={form.link}
+              onChange={(e) => setForm((prev) => ({ ...prev, link: e.target.value }))}
+              required
+              className="pl-10"
+              placeholder={t("Enter URL")}
+            />
             <span className="absolute left-0 inset-y-0 flex items-center justify-center px-2">
               <Link2 className="h-5 w-5 text-muted-foreground" />
             </span>
@@ -76,11 +85,11 @@ export function LinkEditBlock({ editor, onSetLink, onClickOutside }: LinkEditBlo
 
         <div className="flex items-center space-x-2 mt-1">
           <Checkbox id="openInNewTab" checked={openInNewTab} onCheckedChange={(checked) => setOpenInNewTab(checked as boolean)} />
-          <Label htmlFor="openInNewTab">Open in new tab</Label>
+          <Label htmlFor="openInNewTab">{t("Open in new tab")}</Label>
         </div>
 
         <Button type="submit" className="mt-2 self-end">
-          Apply
+          {t("Apply")}
         </Button>
       </form>
     </div>

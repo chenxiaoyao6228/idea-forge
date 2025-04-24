@@ -3,6 +3,7 @@ import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { markdownToHtml } from "./util";
+import { useTranslation } from "react-i18next";
 
 interface AIResultPanelProps {
   result?: string;
@@ -18,12 +19,14 @@ interface AIResultPanelProps {
 }
 
 export default function AIResultPanel({ result, error, className }: AIResultPanelProps) {
+  const { t } = useTranslation();
+
   if (error) {
     return (
       <div className="bg-popover dark:bg-popover mb-4  ">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>{t("Error")}</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
             <p>{error.message}</p>
             {error.action && (

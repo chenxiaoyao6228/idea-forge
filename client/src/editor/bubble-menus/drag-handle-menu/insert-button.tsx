@@ -2,9 +2,11 @@ import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { IButtonProps } from "./type";
+import { useTranslation } from "react-i18next";
 
 export default function InsertNodeButton(props: IButtonProps) {
   const { editor, currentNode, currentNodePos } = props;
+  const { t } = useTranslation();
 
   // Early return if editor is not initialized
   if (!editor) return null;
@@ -49,7 +51,15 @@ export default function InsertNodeButton(props: IButtonProps) {
   }, [currentNode, currentNodePos, editor]);
 
   return (
-    <Button size="sm" variant="ghost" onClick={handleInsertNode} tabIndex={-1} title="Insert new block" aria-label="Insert new block" className="px-1">
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={handleInsertNode}
+      tabIndex={-1}
+      title={t("Insert new block")}
+      aria-label={t("Insert new block")}
+      className="px-1"
+    >
       <Plus className="h-4 w-4" />
     </Button>
   );

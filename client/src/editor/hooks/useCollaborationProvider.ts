@@ -3,6 +3,7 @@ import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
 import { CollabUser, useEditorStore } from "../../pages/doc/stores/editor-store";
+import { useTranslation } from "react-i18next";
 
 const CONNECTION_TIMEOUT = 10000;
 
@@ -19,6 +20,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
   const setCollaborationState = useEditorStore((state) => state.setCollaborationState);
   const resetDocumentState = useEditorStore((state) => state.resetDocumentState);
   const setCurrentDocument = useEditorStore((state) => state.setCurrentDocument);
+  const { t } = useTranslation();
   const timeoutRef = useRef<any>();
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       onAuthenticationFailed: ({ reason }) => {
         setCollaborationState(documentId, {
           status: "unauthorized",
-          error: reason || "You don't have permission to access this document",
+          error: reason || t("You don't have permission to access this document"),
         });
       },
       onAwarenessUpdate: ({ states }) => {
@@ -121,7 +123,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       if (provider.status !== "connected") {
         setCollaborationState(documentId, {
           status: "error",
-          error: "Connection timed out. Please check your internet connection and try again.",
+          error: t("Connection timed out. Please check your internet connection and try again."),
         });
       }
     }, CONNECTION_TIMEOUT);
@@ -131,7 +133,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [provider, documentId, editable]);
+  }, [provider, documentId, editable, t]);
 
   // Add connect/disconnect handling
   useEffect(() => {
@@ -169,7 +171,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
           if (provider.status === "connected") return; // maybe reconnect soon itself
           setCollaborationState(documentId, {
             status: "offline",
-            error: "Disconnected from server",
+            error: t("Disconnected from server"),
           });
         }, 3000);
       }
@@ -182,7 +184,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       provider.off("connect", onConnect);
       provider.off("disconnect", onDisconnect);
     };
-  }, [provider, documentId]);
+  }, [provider, documentId, t]);
 
   // Cleanup
   useEffect(() => {

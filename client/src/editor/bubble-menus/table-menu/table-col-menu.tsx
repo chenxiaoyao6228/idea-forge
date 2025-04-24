@@ -5,8 +5,10 @@ import Wrapper from "../bubble-menu-wrapper";
 import { Button } from "@/components/ui/button";
 import { isColumnGripSelected } from "./utils";
 import { ShouldShowProps, MenuProps } from "../type";
+import { useTranslation } from "react-i18next";
 
 function AddColumnBeforeButton({ editor }: { editor: MenuProps["editor"] }) {
+  const { t } = useTranslation();
   const onAddColumnBefore = useCallback(() => {
     editor?.chain().focus().addColumnBefore().run();
   }, [editor]);
@@ -14,12 +16,13 @@ function AddColumnBeforeButton({ editor }: { editor: MenuProps["editor"] }) {
   return (
     <Button onClick={onAddColumnBefore} size="sm" variant="ghost">
       <ArrowLeftToLine className="w-4 h-4 mr-1" />
-      Insert column before
+      {t("Insert column before")}
     </Button>
   );
 }
 
 function AddColumnAfterButton({ editor }: { editor: MenuProps["editor"] }) {
+  const { t } = useTranslation();
   const onAddColumnAfter = useCallback(() => {
     editor?.chain().focus().addColumnAfter().run();
   }, [editor]);
@@ -27,12 +30,13 @@ function AddColumnAfterButton({ editor }: { editor: MenuProps["editor"] }) {
   return (
     <Button onClick={onAddColumnAfter} size="sm" variant="ghost">
       <ArrowRightToLine className="w-4 h-4 mr-1" />
-      Insert column after
+      {t("Insert column after")}
     </Button>
   );
 }
 
 function DeleteColumnButton({ editor }: { editor: MenuProps["editor"] }) {
+  const { t } = useTranslation();
   const onDeleteColumn = useCallback(() => {
     editor?.chain().focus().deleteColumn().run();
   }, [editor]);
@@ -40,7 +44,7 @@ function DeleteColumnButton({ editor }: { editor: MenuProps["editor"] }) {
   return (
     <Button onClick={onDeleteColumn} size="sm" className="w-full flex justify-start" variant="ghost">
       <Trash2 className="w-4 h-4 mr-1" />
-      Delete column
+      {t("Delete column")}
     </Button>
   );
 }

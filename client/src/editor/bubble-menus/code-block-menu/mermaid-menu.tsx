@@ -2,6 +2,9 @@ import type React from "react";
 import type { Editor } from "@tiptap/react";
 import { ChevronDown, HelpCircle } from "lucide-react";
 import { mermaidTemplates } from "../../extensions/code-block/constant";
+import { useTranslation } from "react-i18next";
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface MermaidMenuProps {
   editor: Editor;
@@ -179,6 +182,7 @@ title History of Social Media Platform
 };
 
 const MermaidMenu: React.FC<MermaidMenuProps> = ({ editor }) => {
+  const { t } = useTranslation();
   const insertTemplate = (template: string) => {
     const templateCode = getTemplateCode(template);
     editor.chain().focus().insertContent(templateCode).run();
@@ -188,54 +192,60 @@ const MermaidMenu: React.FC<MermaidMenuProps> = ({ editor }) => {
     <div className="flex items-center space-x-2">
       {/* template */}
       <div className="relative">
-        <select
-          onChange={(e) => insertTemplate(e.target.value)}
-          className="mermaid-template-selector max-w-32 appearance-none bg-transparent text-sm focus:outline-none cursor-pointer mr-2"
-        >
-          <option value="">Insert Template</option>
-          {mermaidTemplates.map((template) => (
-            <option key={template.value} value={template.value}>
-              {template.name}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Select onValueChange={(value) => insertTemplate(value)} defaultValue="">
+          <SelectTrigger className="px-1 border-none bg-transparent text-sm">
+            <SelectValue placeholder={t("Insert Template")} />
+          </SelectTrigger>
+          <SelectContent>
+            {mermaidTemplates.map((template) => (
+              <SelectItem key={template.value} value={template.value}>
+                {template.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       {/* HelpCircle */}
-      <div className="w-px h-4 bg-gray-300" />
-      <a
-        href="https://mermaid.js.org/intro/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center text-sm text-blue-500 hover:underline px-1 cursor-pointer text-decoration-none"
+      <div className="w-[1px] h-4 bg-gray-300" />
+      <div
+        onClick={(e) => {
+          e.preventDefault();
+          window.open("https://mermaid.js.org/intro/", "_blank");
+        }}
+        className="flex items-center text-sm text-blue-500 hover:underline px-2 cursor-pointer text-decoration-none"
       >
         <HelpCircle className="w-4 h-4 mr-1 inline-block" />
-        Syntax
-      </a>
+        <span className="text-nowrap">{t("Syntax")}</span>
+      </div>
       {/* layout */}
-      <div className="w-px h-4 bg-gray-300" />
+      <div className="w-[1px] h-4 bg-gray-300" />
+      {/* display selector */}
       <MermaidDisplaySelector editor={editor} />
     </div>
   );
 };
 
 const MermaidDisplaySelector: React.FC<{ editor: Editor }> = ({ editor }) => {
-  const handleDisplayChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newDisplay = event.target.value;
-    editor.chain().focus().updateAttributes("codeBlock", { mermaidDisplay: newDisplay }).run();
-  };
-
+  const { t } = useTranslation();
   const currentDisplay = editor.getAttributes("codeBlock").mermaidDisplay || "split";
 
   return (
-    <div className="relative flex items-center">
-      <select value={currentDisplay} onChange={handleDisplayChange} className="appearance-none bg-transparent text-sm focus:outline-none mr-2 cursor-pointer">
-        <option value="code">Code</option>
-        <option value="preview">Preview</option>
-        <option value="split">Split</option>
-      </select>
-
-      <ChevronDown className=" w-4 h-4 text-gray-400" />
+    <div className="px-1">
+      <Select
+        value={currentDisplay}
+        onValueChange={(value) => {
+          editor.chain().focus().updateAttributes("codeBlock", { mermaidDisplay: value }).run();
+        }}
+      >
+        <SelectTrigger className="px-1 h-8 border-none bg-transparent text-sm">
+          <SelectValue placeholder={t("Select display")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="code">{t("Code")}</SelectItem>
+          <SelectItem value="preview">{t("Preview")}</SelectItem>
+          <SelectItem value="split">{t("Split")}</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 };
