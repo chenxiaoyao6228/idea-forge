@@ -163,6 +163,9 @@ async function updateTranslations() {
             }),
           );
 
+          // Remove the "undefined" key if it exists
+        delete updatedTranslations["undefined"];
+
           // Write updated translations
           if (writeJsonFile(filePath, updatedTranslations)) {
             console.log(`✅ Updated translations for ${langCode}`);
@@ -182,5 +185,4 @@ async function updateTranslations() {
   }
 }
 
-// 运行脚本
 updateTranslations().catch(console.error);

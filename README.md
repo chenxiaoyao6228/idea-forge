@@ -2,7 +2,7 @@ English | [简体中文](README-CN.md)
 
 <h1 align="center">Idea Forge</h1>
 
-Idea Forge is a powerful document collaboration platform that combines Notion-like functionality with AI capabilities. It offers a seamless environment for real-time collaborative editing, AI-powered writing assistance, and intuitive document management.
+`Idea Forge` is a powerful document collaboration platform that combines Notion-like functionality with AI capabilities. It offers a seamless environment for real-time collaborative editing, AI-powered writing assistance, and intuitive document management.
 
 ## ✨ Key Features
 

@@ -3,8 +3,10 @@
     "yoavbls.pretty-ts-errors",
     "bradlc.vscode-tailwindcss",
     "biomejs.biome",
-		"prisma.prisma",
-		"github.vscode-github-actions",
-    "peterschmalfeldt.explorer-exclude"
+    "prisma.prisma",
+    "github.vscode-github-actions",
+    "peterschmalfeldt.explorer-exclude",
+    "streetsidesoftware.code-spell-checker",
+    "d-koppenhagen.vscode-code-review",
   ]
 }

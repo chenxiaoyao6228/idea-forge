@@ -6,7 +6,7 @@
 
 依赖了 `React-dev-inspector` 开发调试, `shift + Z + X` 可快速跳转到组件所在的代码
 
-![组件调试](./images/react-dev-inspector.gif)
+![组件调试](../images/react-dev-inspector.gif)
 
 ### vscode 调试
 
@@ -14,7 +14,7 @@
 
 接着你就可以在 `vscode` 中打断点调试了, 像和浏览器一样
 
-![vscode 调试](./images/vscode-debug.png)
+![vscode 调试](../images/vscode-debug.png)
 
 ### file-exclude 隐藏文件
 
@@ -22,4 +22,4 @@
 
 `file.exclue-example.json` 是 `vscode` 的文件排除配置, 拷贝到 `.vscode/settings.json` 中添加, 这样目录就很清新了
 
-![file-exclude](./images/file-exclude.png)
+![file-exclude](../images/file-exclude.png)

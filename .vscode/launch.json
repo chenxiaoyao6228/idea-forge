@@ -6,10 +6,13 @@
       "request": "launch",
       "type": "chrome",
       "url": "http://localhost:5000",
-      "webRoot": "${workspaceFolder}/client"
+      "webRoot": "${workspaceFolder}/client",
+      "skipFiles": [
+        "${workspaceFolder}/client/node_modules/**/*.js",
+        "<node_internals>/**/*.js"
+      ]
     },
    
-    // # https://nextjs.org/docs/pages/building-your-application/configuring/debugging
     {
       "name": "NestJS: debug server",
       "type": "node",
@@ -17,10 +20,12 @@
       "port": 9333,
       "cwd": "${workspaceFolder}/api",
       "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/api/dist/**/*.js"]
-    },
-
-
+      "outFiles": ["${workspaceFolder}/api/dist/**/*.js"],
+      "skipFiles": [
+        "${workspaceFolder}/api/node_modules/**/*.js",
+        "<node_internals>/**/*.js"
+      ]
+    }
   ],
   "compounds": [
     {

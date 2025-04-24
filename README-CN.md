@@ -1,8 +1,8 @@
 简体中文 | [English](README.md)
 
-<h1 align="center">Idea Forge</h1>
+<h1 align="center">思连笔记</h1>
 
-Idea Forge 是一个强大的文档协作平台，结合了类 Notion 的功能和 AI 能力。它提供了一个无缝的环境，用于实时协作编辑、AI 驱动的写作辅助和直观的文档管理。
+`思连笔记` 是一个强大的文档协作平台，结合了类 Notion 的功能和 AI 能力。它提供了一个无缝的环境，用于实时协作编辑、AI 驱动的写作辅助和直观的文档管理。
 
 ## ✨ 主要特性
 
@@ -80,6 +80,8 @@ pnpm install && pnpm run setup
 # 启动开发服务器
 pnpm run dev
 ```
+
+更多可以参考 [开发文档](./docs/development/CN/README.md)
 
 ## 🤝 参与贡献
 
