@@ -3,8 +3,8 @@ import type { Editor } from "@tiptap/react";
 import { ChevronDown, HelpCircle } from "lucide-react";
 import { mermaidTemplates } from "../../extensions/code-block/constant";
 import { useTranslation } from "react-i18next";
-
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 interface MermaidMenuProps {
   editor: Editor;
@@ -192,18 +192,23 @@ const MermaidMenu: React.FC<MermaidMenuProps> = ({ editor }) => {
     <div className="flex items-center space-x-2">
       {/* template */}
       <div className="relative">
-        <Select onValueChange={(value) => insertTemplate(value)} defaultValue="">
-          <SelectTrigger className="px-1 border-none bg-transparent text-sm">
-            <SelectValue placeholder={t("Insert Template")} />
-          </SelectTrigger>
-          <SelectContent>
-            {mermaidTemplates.map((template) => (
-              <SelectItem key={template.value} value={template.value}>
-                {template.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button size="sm" variant="ghost" className="px-2 border-none bg-transparent text-sm">
+              {t("Insert Template")}
+              <ChevronDown className="h-2 w-2 ml-1" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2 max-h-[300px] overflow-y-auto">
+            <div className="flex flex-col gap-1">
+              {mermaidTemplates.map((template) => (
+                <Button key={template.value} size="sm" onClick={() => insertTemplate(template.value)} variant="ghost" tabIndex={-1}>
+                  {template.name}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
       {/* HelpCircle */}
       <div className="w-[1px] h-4 bg-gray-300" />
@@ -225,27 +230,50 @@ const MermaidMenu: React.FC<MermaidMenuProps> = ({ editor }) => {
   );
 };
 
+// ❗ When using Select component in Bubble menu, the SelectContent will jump to the top left corner
+// unable to fix now, so change to Popover for now
 const MermaidDisplaySelector: React.FC<{ editor: Editor }> = ({ editor }) => {
   const { t } = useTranslation();
   const currentDisplay = editor.getAttributes("codeBlock").mermaidDisplay || "split";
 
   return (
     <div className="px-1">
-      <Select
-        value={currentDisplay}
-        onValueChange={(value) => {
-          editor.chain().focus().updateAttributes("codeBlock", { mermaidDisplay: value }).run();
-        }}
-      >
-        <SelectTrigger className="px-1 h-8 border-none bg-transparent text-sm">
-          <SelectValue placeholder={t("Select display")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="code">{t("Code")}</SelectItem>
-          <SelectItem value="preview">{t("Preview")}</SelectItem>
-          <SelectItem value="split">{t("Split")}</SelectItem>
-        </SelectContent>
-      </Select>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button size="sm" variant="ghost" className="px-2 h-8 border-none bg-transparent text-sm">
+            {currentDisplay === "code" ? t("Code") : currentDisplay === "preview" ? t("Preview") : t("Split")}
+            <ChevronDown className="h-2 w-2 ml-1" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-2">
+          <div className="flex flex-col gap-1">
+            <Button
+              size="sm"
+              onClick={() => editor.chain().focus().updateAttributes("codeBlock", { mermaidDisplay: "code" }).run()}
+              variant={currentDisplay === "code" ? "secondary" : "ghost"}
+              tabIndex={-1}
+            >
+              {t("Code")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => editor.chain().focus().updateAttributes("codeBlock", { mermaidDisplay: "preview" }).run()}
+              variant={currentDisplay === "preview" ? "secondary" : "ghost"}
+              tabIndex={-1}
+            >
+              {t("Preview")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => editor.chain().focus().updateAttributes("codeBlock", { mermaidDisplay: "split" }).run()}
+              variant={currentDisplay === "split" ? "secondary" : "ghost"}
+              tabIndex={-1}
+            >
+              {t("Split")}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };
