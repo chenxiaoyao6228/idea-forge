@@ -6,7 +6,8 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
-  overflow-x: hidden;
+  /* TODO: This line of code case table of content failed */
+  /* overflow-x: hidden; */
 }
 
 html {
