@@ -3,8 +3,8 @@ import { OssService } from "./oss.service";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { validImageExts } from "./constant";
-import { ApiException } from "@/_shared/exeptions/api.exception";
-import { ErrorCodeEnum, UploadCredentialsResponse } from "shared";
+import { ApiException } from "@/_shared/exceptions/api.exception";
+import { ErrorCodeEnum, UploadCredentialsResponse } from "contracts";
 
 @Injectable()
 export class FileService {

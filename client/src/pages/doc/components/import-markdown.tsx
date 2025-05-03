@@ -1,7 +1,7 @@
 import { fileOpen } from "@/lib/filesystem";
 import { Button } from "../../../components/ui/button";
 import { FileUp } from "lucide-react";
-import { useEditorStore } from "../stores/editor-store";
+import { useEditorStore } from "../../../stores/editor-store";
 import { useTranslation } from "react-i18next";
 
 export default function ImportMarkdownButton() {

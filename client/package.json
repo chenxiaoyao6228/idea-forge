@@ -126,7 +126,7 @@
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "scroll-into-view-if-needed": "^3.1.0",
-    "shared": "workspace:*",
+    "contracts": "workspace:*",
     "sonner": "^1.7.1",
     "spin-delay": "^2.0.1",
     "tailwind-merge": "^2.5.5",

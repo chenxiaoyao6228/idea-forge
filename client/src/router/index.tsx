@@ -10,7 +10,7 @@ import ErrorBoundary from "@/components/error-boundary";
 import WithHomeNav from "@/hocs/with-home-nav";
 
 const App = React.lazy(() => import(/* webpackChunkName: "App" */ "@/App"));
-const Home = React.lazy(() => import(/* webpackChunkName: "Home" */ "@/pages/home"));
+const Marketing = React.lazy(() => import(/* webpackChunkName: "Marketing" */ "@/pages/marketing"));
 const Login = React.lazy(() => import(/* webpackChunkName: "Login" */ "@/pages/login"));
 const Register = React.lazy(() => import(/* webpackChunkName: "Register" */ "@/pages/register"));
 const Verify = React.lazy(() => import(/* webpackChunkName: "Verify" */ "@/pages/verify"));
@@ -18,7 +18,8 @@ const NotFound = React.lazy(() => import(/* webpackChunkName: "NotFound" */ "@/p
 const ForgotPassword = React.lazy(() => import(/* webpackChunkName: "ForgotPassword" */ "@/pages/forgot-password"));
 const ResetPassword = React.lazy(() => import(/* webpackChunkName: "ResetPassword" */ "@/pages/reset-password"));
 const AuthCallback = React.lazy(() => import(/* webpackChunkName: "AuthCallback" */ "@/pages/auth-callback"));
-const Doc = React.lazy(() => import(/* webpackChunkName: "Doc" */ "@/pages/doc"));
+const Main = React.lazy(() => import(/* webpackChunkName: "Doc" */ "@/pages/main"));
+const CreateWorkspace = React.lazy(() => import(/* webpackChunkName: "CreateWorkspace" */ "@/pages/create-workspace"));
 const TokenUsage = React.lazy(() => import(/* webpackChunkName: "TokenUsage" */ "@/pages/admin/token-usage"));
 const TestSentry = React.lazy(() => import(/* webpackChunkName: "TestSentry" */ "@/pages/test-sentry"));
 
@@ -29,10 +30,17 @@ const AuthRouteConfig: IRouteObject = {
   errorElement: LazyBoundary(ErrorBoundary as any),
   wrapper: [WithAuth],
   children: [
-    { path: "/", wrapper: [WithHomeNav], element: LazyBoundary(Home) },
     {
-      path: "doc/:docId",
-      element: LazyBoundary(Doc),
+      path: "/",
+      element: LazyBoundary(Main),
+    },
+    {
+      path: "/:docId",
+      element: LazyBoundary(Main),
+    },
+    {
+      path: "create-workspace",
+      element: LazyBoundary(CreateWorkspace),
     },
     // TODO: make it nested
     {
@@ -56,6 +64,7 @@ const UnAuthRouteConfig: IRouteObject = {
   errorElement: LazyBoundary(ErrorBoundary as any),
   wrapper: [WithHomeNav],
   children: [
+    { path: "/marketing", wrapper: [WithHomeNav], element: LazyBoundary(Marketing) },
     {
       path: "/login",
       element: LazyBoundary(Login),

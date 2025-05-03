@@ -1,5 +1,5 @@
 import { createZodDto } from "nestjs-zod";
-import { createDocumentSchema, searchDocumentSchema, updateDocumentSchema, moveDocumentsSchema } from "shared";
+import { createDocumentSchema, searchDocumentSchema, updateDocumentSchema, moveDocumentsSchema } from "contracts";
 
 export class SearchDocumentDto extends createZodDto(searchDocumentSchema) {}
 

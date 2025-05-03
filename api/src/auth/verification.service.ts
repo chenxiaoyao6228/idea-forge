@@ -1,11 +1,11 @@
 import { Injectable, Inject } from "@nestjs/common";
 import { RedisService } from "@/_shared/database/redis/redis.service";
 import { MailService } from "@/_shared/email/mail.service";
-import { ApiException } from "@/_shared/exeptions/api.exception";
-import { ErrorCodeEnum } from "shared";
+import { ApiException } from "@/_shared/exceptions/api.exception";
+import { ErrorCodeEnum } from "contracts";
 import { UserService } from "@/user/user.service";
 import { DocumentService } from "@/document/ document.service";
-import { UserStatus, VerificationCodeType } from "shared";
+import { UserStatus, VerificationCodeType } from "contracts";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 

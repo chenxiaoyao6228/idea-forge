@@ -1,7 +1,7 @@
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkHtml from "remark-html";
-import { ChatMessage } from "shared";
+import { ChatMessage } from "contracts";
 import { Editor } from "@tiptap/core";
 import { Selection } from "@tiptap/pm/state";
 import { DOCUMENT_TITLE_ID, MAX_CONTEXT_LENGTH } from "../constant";

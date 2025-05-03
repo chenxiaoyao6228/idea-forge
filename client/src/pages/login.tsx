@@ -4,7 +4,7 @@ import { Link, useSearchParams, useNavigate, useLocation } from "react-router-do
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import useUserStore from "@/stores/user";
-import { LoginRequestSchema, type LoginRequest } from "shared";
+import { LoginRequestSchema, type LoginRequest } from "contracts";
 import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";
 import Logo from "@/components/logo";

@@ -11,12 +11,12 @@ import {
   DuplicateDocumentResponse,
   Permission,
   UpdateCoverDto,
-} from "shared";
-import { MoveDocumentsDto } from "shared";
+} from "contracts";
+import { MoveDocumentsDto } from "contracts";
 import { FileService } from "@/file-store/file-store.service";
 import { omit, pick } from "lodash";
-import { ApiException } from "@/_shared/exeptions/api.exception";
-import { ErrorCodeEnum } from "shared";
+import { ApiException } from "@/_shared/exceptions/api.exception";
+import { ErrorCodeEnum } from "contracts";
 import { Cron } from "@nestjs/schedule";
 
 const POSITION_GAP = 1024; // Define position gap

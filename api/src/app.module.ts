@@ -26,6 +26,8 @@ import { I18nNextMiddleware } from "./_shared/i18next/i18n.middleware";
 import { HttpExceptionFilter } from "./_shared/filters/http-exception.filter";
 import { AllExceptionsFilter } from "./_shared/filters/all-exception.filter";
 import { SystemDocumentService } from "./document/system-document.service";
+import { WorkspaceModule } from "./workspace/workspace.module";
+import { SubspaceModule } from "./subspace/subspace.module";
 
 @Module({
   controllers: [AppController],
@@ -67,7 +69,9 @@ import { SystemDocumentService } from "./document/system-document.service";
     FileStoreModule,
     CollaborationModule,
     AIModule,
+    WorkspaceModule,
     I18nNextModule,
+    SubspaceModule,
   ],
   providers: [
     {

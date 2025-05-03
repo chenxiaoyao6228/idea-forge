@@ -1,15 +1,14 @@
-import { Inject, Injectable, NestMiddleware } from "@nestjs/common";
+import { Injectable, NestMiddleware } from "@nestjs/common";
 import { Request, Response, NextFunction } from "express";
 import { join } from "node:path";
 import * as fs from "node:fs";
-import { jwtConfig } from "@/_shared/config/configs";
-import { ConfigService, ConfigType } from "@nestjs/config";
+import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { AuthService } from "@/auth/auth.service";
 import { UserService } from "@/user/user.service";
 import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
 import { ClientEnv } from "@/_shared/config/config-validation";
-import { UserResponseData } from "shared";
+import { UserResponseData } from "contracts";
 import { CollaborationService } from "@/collaboration/collaboration.service";
 
 interface Manifest {
@@ -21,7 +20,7 @@ interface Manifest {
 // https://stackoverflow.com/questions/55335096/excluding-all-api-routes-in-nest-js-to-serve-react-app
 @Injectable()
 export class FallbackMiddleware implements NestMiddleware {
-  private static readonly SKIP_AUTH_PATHS = ["/login", "/register", "/verify", "/reset-password", "/forgot-password", "/auth-callback"];
+  private static readonly SKIP_AUTH_PATHS = ["/marketing", "/login", "/register", "/verify", "/reset-password", "/forgot-password", "/auth-callback"];
   private static readonly STATIC_ASSETS_REGEX = /\.(jpg|jpeg|png|gif|ico|css|js|json|svg|mp3|mp4|wav|ogg|ttf|woff|woff2|eot|html|txt)$/;
   private static readonly API_PATH = "/api";
   private static readonly STACK_FRAME_PATH = "/__open-stack-frame-in-editor";
@@ -56,11 +55,17 @@ export class FallbackMiddleware implements NestMiddleware {
     );
   }
 
-  private redirectToLogin(req: Request, res: Response) {
+  private redirectToLoginOrMarketing(req: Request, res: Response, hasLoggedInBefore = false) {
     const currentPath = req.url;
     const redirectTo = encodeURIComponent(currentPath);
     clearAuthCookies(res);
-    return res.redirect(`/login?redirectTo=${redirectTo}`);
+
+    // use product before, not need to show intro
+    if (hasLoggedInBefore) {
+      return res.redirect(`/login?redirectTo=${redirectTo}`);
+    }
+    // jump to marketing page
+    return res.redirect(`/marketing?redirectTo=${redirectTo}`);
   }
 
   private async renderApp(req: Request, res: Response) {
@@ -76,7 +81,7 @@ export class FallbackMiddleware implements NestMiddleware {
 
     if (needAuth && !accessToken && !refreshToken) {
       // No tokens, redirect to login page with current path
-      return this.redirectToLogin(req, res);
+      return this.redirectToLoginOrMarketing(req, res, false);
     }
 
     const userInfo = needAuth ? await this.getUserInfo(req, res) : null;
@@ -243,7 +248,7 @@ export class FallbackMiddleware implements NestMiddleware {
     const { accessToken, refreshToken } = req.cookies;
 
     if (!accessToken || !refreshToken) {
-      this.redirectToLogin(req, res);
+      this.redirectToLoginOrMarketing(req, res, false);
       return null;
     }
 
@@ -255,8 +260,9 @@ export class FallbackMiddleware implements NestMiddleware {
 
       const user = await this.userService.getUserById(payload.sub);
 
+      // Although wired, but just redirect to login page
       if (!user) {
-        this.redirectToLogin(req, res);
+        this.redirectToLoginOrMarketing(req, res, true);
         return null;
       }
 
@@ -291,12 +297,12 @@ export class FallbackMiddleware implements NestMiddleware {
           }
         } catch (refreshError) {
           console.log("Failed to refresh token:", refreshError);
-          this.redirectToLogin(req, res);
+          this.redirectToLoginOrMarketing(req, res, true);
         }
       }
 
       if ((error as any).message.includes("invalid signature")) {
-        this.redirectToLogin(req, res);
+        this.redirectToLoginOrMarketing(req, res, true);
       }
     }
     return null;

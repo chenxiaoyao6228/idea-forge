@@ -6,7 +6,7 @@ import {
   ProxyImageResponse,
   UploadCredentialsRequest,
   UploadCredentialsResponse,
-} from "shared";
+} from "contracts";
 
 export const fileApi = {
   proxyImage: (data: ProxyImageRequest) => request.post<ProxyImageRequest, ProxyImageResponse>("/api/files/proxy-image", data),

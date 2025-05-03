@@ -1,7 +1,7 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
-import { useCurrentDocumentState, useEditorStore } from "@/pages/doc/stores/editor-store";
+import { useCurrentDocumentState, useEditorStore } from "@/stores/editor-store";
 
 export function CollabUsers({
   className,

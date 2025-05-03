@@ -1,4 +1,4 @@
-import HomeNav from "@/pages/home/nav";
+import HomeNav from "@/components/header";
 
 export default function WithHomeNav(Component: React.ComponentType<any>) {
   return function WithHomeNavInner(props: any) {

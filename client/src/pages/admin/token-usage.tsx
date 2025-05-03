@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { aiApi } from "@/apis/ai";
-import { TokenUsageResponse } from "shared";
+import { TokenUsageResponse } from "contracts";
 import { useTranslation } from "react-i18next";
 
 export default function TokenUsage() {

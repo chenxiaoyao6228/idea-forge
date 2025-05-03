@@ -1,4 +1,4 @@
-import { useEditorStore } from "@/pages/doc/stores/editor-store";
+import { useEditorStore } from "@/stores/editor-store";
 import { Editor } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 

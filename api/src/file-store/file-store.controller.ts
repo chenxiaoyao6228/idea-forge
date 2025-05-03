@@ -3,8 +3,8 @@ import { FileService } from "./file-store.service";
 import { Controller, Post, Body } from "@nestjs/common";
 import { User } from "@prisma/client";
 import { UploadCredentialsDto, ConfirmUploadDto, ProxyImageDto } from "./file.dto";
-import { ConfirmUploadResponse, ProxyImageResponse } from "shared";
-import { UploadCredentialsResponse } from "shared";
+import { ConfirmUploadResponse, ProxyImageResponse } from "contracts";
+import { UploadCredentialsResponse } from "contracts";
 
 @Controller("api/files")
 export class FileController {

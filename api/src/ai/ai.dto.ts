@@ -1,4 +1,4 @@
 import { createZodDto } from "nestjs-zod";
-import { UpdateUserTokenLimitRequestSchema } from "shared";
+import { UpdateUserTokenLimitRequestSchema } from "contracts";
 
 export class UpdateUserTokenLimitDto extends createZodDto(UpdateUserTokenLimitRequestSchema) {}

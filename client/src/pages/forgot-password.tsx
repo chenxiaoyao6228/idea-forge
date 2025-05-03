@@ -4,12 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
-import { ForgotPasswordRequestSchema, ForgotPasswordRequest } from "shared";
+import { ForgotPasswordRequestSchema, ForgotPasswordRequest } from "contracts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
-import HomeNav from "./home/nav";
+import HomeNav from "../components/header";
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();

@@ -10,7 +10,7 @@ import {
   CreateUserRequestSchema,
   UpdateUserRequestSchema,
   CreateOAuthUserRequestSchema,
-} from "shared";
+} from "contracts";
 
 export class RegisterDto extends createZodDto(RegisterRequestSchema) {}
 export class EmailVerifyDto extends createZodDto(EmailVerifyRequestSchema) {}

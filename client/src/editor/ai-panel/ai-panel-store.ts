@@ -3,7 +3,7 @@ import { Editor } from "@tiptap/core";
 import { EventSourceService } from "@/lib/event-source";
 import createSelectors from "@/stores/utils/createSelector";
 import { PresetType, getStreamOptions, buildUserPromptMessage, buildPresetPromptMessage, markdownToHtml } from "./util";
-import { AIStreamRequest } from "shared";
+import { AIStreamRequest } from "contracts";
 import scrollIntoView from "scroll-into-view-if-needed";
 // import i18next from "i18next";
 

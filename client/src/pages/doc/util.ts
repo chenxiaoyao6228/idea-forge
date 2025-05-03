@@ -1,5 +1,5 @@
-import { CommonDocumentResponse } from "shared";
-import { DocTreeDataNode } from "./stores/doc-store";
+import { CommonDocumentResponse } from "contracts";
+import { DocTreeDataNode } from "../../stores/doc-store";
 
 export const treeUtils = {
   findParentKey: (nodes: DocTreeDataNode[], targetKey: string): string | null => {

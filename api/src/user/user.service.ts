@@ -1,9 +1,9 @@
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ConflictException, Inject, Injectable } from "@nestjs/common";
 import { hash } from "argon2";
-import { ApiException } from "@/_shared/exeptions/api.exception";
+import { ApiException } from "@/_shared/exceptions/api.exception";
 import { CreateUserDto, UpdateUserDto } from "@/auth/auth.dto";
-import { ErrorCodeEnum, UserStatus } from "shared";
+import { ErrorCodeEnum, UserStatus } from "contracts";
 
 @Injectable()
 export class UserService {

@@ -78,3 +78,6 @@ api/uploads
 scripts/builder/build-job.env
 scripts/deploy/run.env
 scripts/i18n/trans.env
+
+# design
+_design

@@ -4,11 +4,11 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { ErrorList, OTPField } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState, useCallback } from "react";
-import request from "@/lib/request";
-import { CodeValidateRequestSchema, type CodeValidateRequest } from "shared";
+import { CodeValidateRequestSchema, type CodeValidateRequest } from "contracts";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
+import { useTranslation } from "react-i18next";
 
 // Define query parameter names
 export const emailQueryParam = "email";
@@ -24,6 +24,7 @@ function VerifyPage() {
   const type = searchParams.get(typeQueryParam) as CodeValidateRequest["type"];
   const email = searchParams.get(emailQueryParam) as CodeValidateRequest["email"];
   const redirectTo = searchParams.get(redirectToQueryParam) || "";
+  const { t } = useTranslation();
 
   if (!type || !email) {
     return <div>Invalid verification type or email or code</div>;
@@ -53,8 +54,8 @@ function VerifyPage() {
   // Define headings based on verification type
   const checkEmail = (
     <>
-      <CardTitle className="text-xl">Check your email</CardTitle>
-      <CardDescription>We've sent you a code to verify your email address.</CardDescription>
+      <CardTitle className="text-xl">{t("Check your email")}</CardTitle>
+      <CardDescription>{t("We've sent you a code to verify your email address")}</CardDescription>
     </>
   );
 
@@ -64,8 +65,8 @@ function VerifyPage() {
     "change-email": checkEmail,
     "2fa": (
       <>
-        <CardTitle className="text-xl">Check your 2FA app</CardTitle>
-        <CardDescription>Please enter your 2FA code to verify your identity.</CardDescription>
+        <CardTitle className="text-xl">{t("Check your 2FA app")}</CardTitle>
+        <CardDescription>{t("Please enter your 2FA code to verify your identity")}</CardDescription>
       </>
     ),
   };
@@ -104,9 +105,9 @@ function VerifyPage() {
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <Logo />
               </div>
-              Idea Forge
+              {t("Idea Forge")}
             </span>
-            {type ? headings[type] : "Invalid Verification Type"}
+            {type ? headings[type] : t("Invalid Verification Type")}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
@@ -131,7 +132,7 @@ function VerifyPage() {
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
               <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
-                Submit
+                {t("Submit")}
               </StatusButton>
             </form>
           </CardContent>

@@ -1,6 +1,6 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
 import { Response } from "express";
-import { ApiException } from "../exeptions/api.exception";
+import { ApiException } from "../exceptions/api.exception";
 import { I18nNextService } from "../i18next/i18n.service";
 import { I18nContextManager } from "../i18next/i18n.context";
 

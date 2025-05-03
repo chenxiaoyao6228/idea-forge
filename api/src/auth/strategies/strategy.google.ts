@@ -5,7 +5,7 @@ import { Inject } from "@nestjs/common";
 import { AuthService } from "../auth.service";
 import { googleOAuthConfig } from "@/_shared/config/configs";
 import type { ConfigType } from "@nestjs/config";
-import { Provider, UserStatus } from "shared";
+import { Provider, UserStatus } from "contracts";
 export class GoogleStrategy extends PassportStrategy(PassportGoogleStrategy) {
   constructor(
     @Inject(googleOAuthConfig.KEY)

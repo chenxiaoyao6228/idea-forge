@@ -4,7 +4,7 @@ import { type Profile, Strategy } from "passport-github2";
 import type { ConfigService, ConfigType } from "@nestjs/config";
 import { githubOAuthConfig } from "@/_shared/config/configs";
 import { AuthService } from "../auth.service";
-import { Provider, UserStatus } from "shared";
+import { Provider, UserStatus } from "contracts";
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, "github") {
   constructor(

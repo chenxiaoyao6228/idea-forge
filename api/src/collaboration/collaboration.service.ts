@@ -7,7 +7,7 @@ import { Logger } from "@hocuspocus/extension-logger";
 import { PrismaService } from "../_shared/database/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import { UserService } from "@/user/user.service";
-import { Permission } from "shared";
+import { Permission } from "contracts";
 import { TiptapTransformer } from "@hocuspocus/transformer";
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 

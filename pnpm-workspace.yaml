@@ -3,6 +3,4 @@ auto-install-peers: true
 packages:
   - "client"
   - "api"
-  - "shared"
-  - "apps/*"
-  - "packages/*"
+  - "contracts"

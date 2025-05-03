@@ -1,7 +1,7 @@
 import { fileApi } from "@/apis/file";
 import { compressImage } from "./image";
 import type { z } from "zod";
-import { ConfirmUploadResponseSchema } from "shared";
+import { ConfirmUploadResponseSchema } from "contracts";
 import { getFileInfo } from "./file";
 
 export const uploadFile = async ({ file }: { file: File }): Promise<z.infer<typeof ConfirmUploadResponseSchema>> => {

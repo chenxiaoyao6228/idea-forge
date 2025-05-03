@@ -1,11 +1,11 @@
 import { Controller, Post, Body, Res, HttpStatus, Query, Get } from "@nestjs/common";
 import { Response } from "express";
 import { AIProviderService } from "./ai.service";
-import { AIStreamRequest, TokenUsageResponse } from "shared";
+import { AIStreamRequest, TokenUsageResponse } from "contracts";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { User } from "@prisma/client";
-import { ApiException } from "@/_shared/exeptions/api.exception";
-import { ErrorCodeEnum } from "shared";
+import { ApiException } from "@/_shared/exceptions/api.exception";
+import { ErrorCodeEnum } from "contracts";
 import { TokenUsageService } from "./token-usage.service";
 import { ConfigService } from "@nestjs/config";
 import { UserService } from "@/user/user.service";

@@ -4,8 +4,8 @@ import { Public } from "./auth/decorators/public.decorator";
 import { AppService } from "./app.service";
 import { I18nNextService } from "./_shared/i18next/i18n.service";
 import { MailService } from "./_shared/email/mail.service";
-import { ErrorCodeEnum } from "shared";
-import { ApiException } from "./_shared/exeptions/api.exception";
+import { ErrorCodeEnum } from "contracts";
+import { ApiException } from "./_shared/exceptions/api.exception";
 
 @Controller("/api")
 export class AppController {

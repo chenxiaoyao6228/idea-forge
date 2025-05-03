@@ -1,6 +1,6 @@
 import { authApi } from "@/apis/auth";
 import { create } from "zustand";
-import { UserResponseData } from "shared";
+import { UserResponseData } from "contracts";
 
 export interface UserInfo extends UserResponseData {}
 

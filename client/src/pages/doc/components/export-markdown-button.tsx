@@ -2,8 +2,8 @@ import { fileSave } from "@/lib/filesystem";
 
 import { Button } from "../../../components/ui/button";
 import { FileDown } from "lucide-react";
-import { useCurrentDocumentState, useEditorStore } from "../stores/editor-store";
-import { useDocumentStore } from "../stores/doc-store";
+import { useCurrentDocumentState, useEditorStore } from "../../../stores/editor-store";
+import { useDocumentStore } from "../../../stores/doc-store";
 import { useTranslation } from "react-i18next";
 export default function ExportMarkdownButton() {
   const { t } = useTranslation();

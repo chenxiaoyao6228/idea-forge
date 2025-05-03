@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
-import { CollabUser, useEditorStore } from "../../pages/doc/stores/editor-store";
+import { CollabUser, useEditorStore } from "../../stores/editor-store";
 import { useTranslation } from "react-i18next";
 
 const CONNECTION_TIMEOUT = 10000;

@@ -9,7 +9,7 @@ import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
 import { useRef, useMemo, useEffect } from "react";
-import { useCurrentDocumentState, useEditorStore } from "@/pages/doc/stores/editor-store";
+import { useCurrentDocumentState, useEditorStore } from "@/stores/editor-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";

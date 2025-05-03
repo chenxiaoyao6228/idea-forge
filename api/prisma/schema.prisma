@@ -1,5 +1,3 @@
-// NOTE: do not use Enum in this file, use contracts to constrain the data
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
@@ -31,6 +29,14 @@ model User {
   File               File[]
   aiTokenUsage       AITokenUsage?
   UserLoginHistory   UserLoginHistory[]
+
+  workspaceMembers WorkspaceMember[]
+  subspaceMembers  SubspaceMember[]
+  memberGroups     MemberGroupUser[]
+  guestInvitations GuestCollaborator[] @relation("InvitedBy")
+
+  currentWorkspace   Workspace? @relation("CurrentWorkspace", fields: [currentWorkspaceId], references: [id])
+  currentWorkspaceId String?
 }
 
 model Password {
@@ -54,6 +60,121 @@ model Connection {
   @@unique([providerName, providerId])
 }
 
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subspaces    Subspace[]
+  members      WorkspaceMember[]
+  guests       GuestCollaborator[]
+  memberGroups MemberGroup[]
+  currentUsers User[]              @relation("CurrentWorkspace")
+}
+
+model WorkspaceMember {
+  id        String        @id @default(cuid())
+  role      WorkspaceRole @default(MEMBER)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+
+  @@unique([workspaceId, userId])
+}
+
+model Subspace {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  type        SubspaceType @default(PUBLIC)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  docs        Doc[]
+  members     SubspaceMember[]
+}
+
+model SubspaceMember {
+  id        String       @id @default(cuid())
+  role      SubspaceRole @default(MEMBER)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  subspace   Subspace @relation(fields: [subspaceId], references: [id])
+  subspaceId String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+
+  @@unique([subspaceId, userId])
+}
+
+model MemberGroup {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  validUntil  DateTime?
+
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  members     MemberGroupUser[]
+}
+
+model MemberGroupUser {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  group   MemberGroup @relation(fields: [groupId], references: [id])
+  groupId String
+  user    User        @relation(fields: [userId], references: [id])
+  userId  Int
+
+  @@unique([groupId, userId])
+}
+
+model GuestCollaborator {
+  id        String      @id @default(cuid())
+  email     String
+  name      String?
+  status    GuestStatus @default(PENDING)
+  expireAt  DateTime
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  invitedBy      User                 @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedById    Int
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id])
+  workspaceId    String
+  docPermissions GuestDocPermission[]
+
+  @@unique([email, workspaceId])
+}
+
+model GuestDocPermission {
+  id         String     @id @default(cuid())
+  permission Permission @default(READ)
+  expireAt   DateTime
+  createdAt  DateTime   @default(now())
+
+  guest   GuestCollaborator @relation(fields: [guestId], references: [id])
+  guestId String
+  doc     Doc               @relation(fields: [docId], references: [id])
+  docId   String
+
+  @@unique([guestId, docId])
+}
+
 model Doc {
   id            String      @id @default(cuid())
   title         String
@@ -61,10 +182,11 @@ model Doc {
   contentBinary Bytes?
   isArchived    Boolean     @default(false)
   isStarred     Boolean     @default(false)
+  isPrivate     Boolean     @default(false)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   owner         User        @relation(fields: [ownerId], references: [id])
-  ownerId       Int // Changed from String to Int to match User.id type
+  ownerId       Int
   parent        Doc?        @relation("ChildrenDocs", fields: [parentId], references: [id])
   parentId      String?
   children      Doc[]       @relation("ChildrenDocs")
@@ -73,6 +195,10 @@ model Doc {
   coverImage    CoverImage?
   position      Int         @default(0)
   sharedWith    DocShare[]
+
+  subspace         Subspace?            @relation(fields: [subspaceId], references: [id])
+  subspaceId       String?
+  guestPermissions GuestDocPermission[]
 }
 
 model CoverImage {
@@ -93,10 +219,9 @@ model DocShare {
   sharedTo User   @relation("SharedToUser", fields: [userId], references: [id], onDelete: Cascade)
   userId   Int
 
-  permission String   @default("READ") // EDIT/READ
-  noticeType String   @default("NEW") // NEW/UPDATE/NONE
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  permission Permission @default(READ)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
   @@unique([docId, userId])
 }
@@ -130,11 +255,45 @@ model AITokenUsage {
 
 model UserLoginHistory {
   id        String   @id @default(cuid())
-  userId    Int // Changed from String to Int
+  userId    Int
   ip        String?
   location  String?
   loginTime DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
+}
+
+enum SubspaceType {
+  WORKSPACE_WIDE // global
+  PUBLIC
+  INVITE_ONLY
+  PRIVATE
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum SubspaceRole {
+  ADMIN
+  MEMBER
+}
+
+enum GuestStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum Permission {
+  MANAGE
+  SHARE
+  EDIT
+  READ
+  COMMENT
+  NONE
 }

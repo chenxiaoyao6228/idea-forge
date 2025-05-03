@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { SearchDocumentDto } from "./document.dto";
-import { ContentMatch, SearchDocumentResponse } from "shared";
+import { ContentMatch, SearchDocumentResponse } from "contracts";
 
 @Injectable()
 export class SearchDocumentService {

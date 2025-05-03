@@ -1,5 +1,5 @@
 import request from "@/lib/request";
-import { CodeValidateRequest, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, LoginResponseData } from "shared";
+import { CodeValidateRequest, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, LoginResponseData } from "contracts";
 
 export const authApi = {
   register: async (data: RegisterRequest) => request.post<RegisterRequest, void>("/api/auth/register", data),

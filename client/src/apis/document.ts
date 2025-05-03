@@ -15,7 +15,7 @@ import type {
   SearchDocumentDto,
   SearchDocumentResponse,
   DuplicateDocumentResponse,
-} from "shared";
+} from "contracts";
 
 export const documentApi = {
   getSharedDocuments: async () => {
