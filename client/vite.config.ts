@@ -1,3 +1,4 @@
+import path from "path";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig, PluginOption, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
@@ -16,6 +17,12 @@ export default ({ mode }) => {
   console.log('isDev', isDev)
 
   return defineConfig({
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+        '@api': path.resolve(__dirname, '../api/src'),
+      },
+    },
     plugins: [
       isDev && checker({
         typescript: true,

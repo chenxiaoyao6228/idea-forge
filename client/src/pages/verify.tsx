@@ -4,11 +4,11 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { ErrorList, OTPField } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState, useCallback } from "react";
-import { CodeValidateRequestSchema, type CodeValidateRequest } from "contracts";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
+import { CodeValidateRequest, CodeValidateRequestSchema } from "contracts";
 
 // Define query parameter names
 export const emailQueryParam = "email";

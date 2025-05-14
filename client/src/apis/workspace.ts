@@ -1,6 +1,5 @@
 import request from "@/lib/request";
 import {
-  CreateWorkspaceRequest,
   UpdateWorkspaceRequest,
   WorkspaceDetailResponse,
   WorkspaceListResponse,
@@ -9,11 +8,13 @@ import {
   UpdateWorkspaceMemberRequest,
 } from "contracts";
 
+import { WorkspaceOptionalDefaults, Workspace } from "contracts";
+
 export const workspaceApi = {
   // Workspace operations
-  createWorkspace: async (data: CreateWorkspaceRequest) => request.post<CreateWorkspaceRequest, WorkspaceDetailResponse>("/api/workspaces", data),
+  createWorkspace: async (data: WorkspaceOptionalDefaults) => request.post<WorkspaceOptionalDefaults, Workspace>("/api/workspaces", data),
 
-  getWorkspace: async (id: string) => request.get<void, WorkspaceDetailResponse>(`/api/workspaces/${id}`),
+  getWorkspace: async (id: string) => request.get<void, Workspace>(`/api/workspaces/${id}`),
 
   getWorkspaces: async () => request.get<void, WorkspaceListResponse>("/api/workspaces"),
 

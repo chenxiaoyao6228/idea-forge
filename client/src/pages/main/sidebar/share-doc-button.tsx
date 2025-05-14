@@ -7,7 +7,7 @@ import { useSharedDocumentStore } from "../../../stores/shared-store";
 import { Permission } from "contracts";
 import { useDocumentStore } from "../../../stores/doc-store";
 import { Select, SelectValue, SelectItem, SelectTrigger, SelectContent } from "@/components/ui/select";
-import { treeUtils } from "../../doc/util";
+import { treeUtils } from "../../../stores/utils/tree-util";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";

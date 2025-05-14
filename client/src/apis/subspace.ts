@@ -1,19 +1,15 @@
 import request from "@/lib/request";
-import {
-  CreateSubspaceRequest,
-  UpdateSubspaceRequest,
-  AddSubspaceMemberRequest,
-  UpdateSubspaceMemberRequest,
-  SubspaceListResponse,
-  SubspaceDetailResponse,
-  SubspaceMemberListResponse,
-} from "contracts";
+import { UpdateSubspaceRequest, AddSubspaceMemberRequest, UpdateSubspaceMemberRequest, SubspaceDetailResponse, SubspaceMemberListResponse } from "contracts";
+
+import { Subspace, SubspaceOptionalDefaults } from "contracts";
 
 export const subspaceApi = {
   // Subspace operations
-  createSubspace: async (data: CreateSubspaceRequest) => request.post<CreateSubspaceRequest, SubspaceDetailResponse>("/api/subspaces", data),
+  createSubspace: async (data: SubspaceOptionalDefaults) => request.post<SubspaceOptionalDefaults, Subspace>("/api/subspaces", data),
 
   getSubspace: async (id: string) => request.get<void, SubspaceDetailResponse>(`/api/subspaces/${id}`),
+
+  getSubspaces: async () => request.get<any, Subspace[]>("/api/subspaces"),
 
   updateSubspace: async (id: string, data: UpdateSubspaceRequest) => request.put<UpdateSubspaceRequest, SubspaceDetailResponse>(`/api/subspaces/${id}`, data),
 

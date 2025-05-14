@@ -8,7 +8,7 @@ import { MoreHorizontalIcon } from "lucide-react";
 import { useDocumentStore } from "../../../stores/doc-store";
 import { AddDocButton } from "./add-doc-button";
 import { logger } from "@/lib/logger";
-import { treeUtils } from "../../doc/util";
+import { treeUtils } from "../../../stores/utils/tree-util";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 

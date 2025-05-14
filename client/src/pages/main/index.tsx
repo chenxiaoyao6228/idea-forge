@@ -16,13 +16,14 @@ import { useEffect } from "react";
 import { TrashDialog } from "@/pages/main/sidebar/trash-dialog";
 import { SearchDocDialog } from "@/pages/main/sidebar/search-doc-dialog";
 import { usePrepareDoc } from "@/hooks/use-prepare-doc";
-import Loading from "@/components/loading";
+import Loading from "@/components/ui/loading";
 import { useDocumentStore } from "../../stores/doc-store";
 import WorkspaceSwitcher from "./sidebar/workspace-switcher";
 import { OthersDocs } from "./sidebar/others-docs";
 import { MyDocs } from "./sidebar/my-docs";
 import UserSettings from "./sidebar/setting";
 import Doc from "../doc";
+import Subspaces from "./sidebar/subspaces";
 
 export default function Main() {
   const { docId } = useParams();
@@ -64,6 +65,7 @@ export default function Main() {
           </SidebarGroup>
         </SidebarHeader>
         <SidebarContent className="custom-scrollbar">
+          <Subspaces />
           <OthersDocs />
           <MyDocs />
         </SidebarContent>

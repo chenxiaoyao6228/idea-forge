@@ -1,3 +1,4 @@
+import { SubspaceMemberSchema, SubspaceSchema } from "../schema";
 import { z } from "zod";
 
 export enum SubspaceRole {
@@ -12,37 +13,16 @@ export enum SubspaceType {
   INVITE_ONLY = 'INVITE_ONLY'
 }
 
-const BaseSubspaceSchema = z.object({
-  name: z.string().min(1, "Subspace name cannot be empty").max(50, "Subspace name cannot exceed 50 characters"),
-  description: z.string().max(200, "Subspace description cannot exceed 200 characters").optional().nullish(),
-  avatar: z.string().optional().nullish(),
-  type: z.nativeEnum(SubspaceType).default(SubspaceType.PUBLIC),
-});
-
-const SubspaceSchema = BaseSubspaceSchema.extend({
-  id: z.string(),
-  workspaceId: z.string(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-});
-export type Subspace = z.infer<typeof SubspaceSchema>;
-
-const SubspaceMemberSchema = z.object({
-  id: z.string(),
-  userId: z.number(),
-  role: z.nativeEnum(SubspaceRole),
-  createdAt: z.string(),
-});
-export type SubspaceMember = z.infer<typeof SubspaceMemberSchema>;
-
 // Create subspace
-export const CreateSubspaceRequestSchema = BaseSubspaceSchema.extend({
+export const CreateSubspaceRequestSchema = SubspaceSchema.extend({
   workspaceId: z.string(),
-});
+  type: z.nativeEnum(SubspaceType).default(SubspaceType.PUBLIC) // default to public ty
+})
+
 export type CreateSubspaceRequest = z.infer<typeof CreateSubspaceRequestSchema>;
 
 // Update subspace
-export const UpdateSubspaceRequestSchema = BaseSubspaceSchema.partial();
+export const UpdateSubspaceRequestSchema = SubspaceSchema.partial();
 export type UpdateSubspaceRequest = z.infer<typeof UpdateSubspaceRequestSchema>;
 
 // Add subspace member

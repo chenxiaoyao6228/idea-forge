@@ -9,7 +9,7 @@ import { documentApi } from "@/apis/document";
 import type { ContentMatch } from "contracts";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import Loading from "../../../components/loading";
+import Loading from "../../../components/ui/loading";
 import { TextSelection } from "@tiptap/pm/state";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { useEditorStore } from "../../../stores/editor-store";

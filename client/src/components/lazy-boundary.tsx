@@ -1,4 +1,4 @@
-import Loading from "@/components/loading";
+import Loading from "@/components/ui/loading";
 import { LazyExoticComponent, Suspense } from "react";
 
 const LazyBoundary = (WrapComp: LazyExoticComponent<() => JSX.Element | null>) => (

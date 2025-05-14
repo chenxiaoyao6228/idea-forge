@@ -12,6 +12,10 @@ import i18n from "./lib/i18n";
 const mounter = createReactTreeMounter();
 export const MountPoint = createMountPoint(mounter);
 
+// FIXME: the contract package export DocSchema, which contains contentBinary which is a Buffer type.
+// @ts-ignore
+window.Buffer = () => {};
+
 createRoot(document.getElementById("root")!).render(
   // <StrictMode>
   <>

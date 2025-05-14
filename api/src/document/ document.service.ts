@@ -16,7 +16,7 @@ import { MoveDocumentsDto } from "contracts";
 import { FileService } from "@/file-store/file-store.service";
 import { omit, pick } from "lodash";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { ErrorCodeEnum } from "contracts";
+import { type ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { Cron } from "@nestjs/schedule";
 
 const POSITION_GAP = 1024; // Define position gap

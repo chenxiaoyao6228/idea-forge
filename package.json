@@ -14,6 +14,7 @@
   "main": "index.js",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
+    "reinstall": "rimraf pnpm-lock.yaml && rimraf package.lock.json && rimraf node_modules && pnpm install --force",
     "dev": "turbo run dev",
     "dev:api": "cd api && npm run dev",
     "dev:client": "cd client && npm dev",
@@ -36,12 +37,17 @@
     "i18n:process": "pnpm i18n:extract && pnpm i18n:translate",
     "bump:patch": "node scripts/bump-version.js patch",
     "bump:minor": "node scripts/bump-version.js minor",
-    "bump:major": "node scripts/bump-version.js major"
+    "bump:major": "node scripts/bump-version.js major",
+    "prisma:push": "pnpm -F database push",
+    "prisma:studio": "pnpm -F database studio",
+    "migrate:dev": "pnpm -F database migrate:dev",
+    "migrate:deploy": "pnpm -F database migrate:deploy"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.2",
     "@commitlint/cli": "^17.8.1",
     "@commitlint/config-conventional": "^17.8.1",
+    "@types/node": "18.11.18",
     "concurrently": "^8.2.2",
     "conventional-changelog-cli": "^5.0.0",
     "dotenv": "^16.4.5",
@@ -63,5 +69,8 @@
     "pnpm": ">=8.5.1",
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
+  },
+  "dependencies": {
+    "rimraf": "^5.0.0"
   }
 }

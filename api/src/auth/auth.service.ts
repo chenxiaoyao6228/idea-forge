@@ -11,7 +11,7 @@ import { MailService } from "@/_shared/email/mail.service";
 import { User } from "@prisma/client";
 import { VerificationService } from "./verification.service";
 import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto } from "./auth.dto";
-import { AuthResponse, ErrorCodeEnum, LoginResponseData, UserResponseData } from "contracts";
+import { AuthResponse, LoginResponseData, UserResponseData } from "contracts";
 import { DocumentService } from "@/document/ document.service";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 import { UserStatus } from "contracts";
@@ -20,6 +20,7 @@ import { ipToCity } from "@/_shared/utils/common";
 import { Logger } from "winston";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { SystemDocumentService } from "@/document/system-document.service";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 
 interface LoginMetadata {
   ip?: string;

@@ -4,11 +4,18 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
-import { RegisterRequestSchema, RegisterRequest } from "contracts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
+import { z } from "zod";
+import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
+
+const RegisterRequestSchemaFactory = (t) =>
+  z.object({
+    email: z.string().email(t("Invalid email address")),
+    password: z.string().min(8, t("Password must be at least 8 characters")),
+  });
 
 function Register() {
   const navigate = useNavigate();
@@ -18,11 +25,13 @@ function Register() {
   const [isPending, setIsPending] = useState(false);
   const { t } = useTranslation();
 
+  const RegisterRequestSchema = RegisterRequestSchemaFactory(t);
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterRequest>({
+  } = useForm<z.infer<typeof RegisterRequestSchema>>({
     resolver: zodResolver(RegisterRequestSchema),
     defaultValues: {
       email: "",
@@ -30,13 +39,18 @@ function Register() {
     },
   });
 
-  const onSubmit = async (data: RegisterRequest) => {
+  const onSubmit = async (data) => {
     setIsPending(true);
     try {
       await authApi.register(data);
 
       navigate(`/verify?email=${encodeURIComponent(data.email)}&type=register`);
     } catch (err: any) {
+      const code = err.code;
+      if (code === ErrorCodeEnum.UserAlreadyExists) {
+        setError(t("Email already exists"));
+        return;
+      }
       setError(err.message || "Registration failed");
     } finally {
       setIsPending(false);

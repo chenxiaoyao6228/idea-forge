@@ -3,8 +3,8 @@ import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
 import { DuplicateDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "contracts";
-import createSelectors from "@/stores/utils/createSelector";
-import { treeUtils } from "../pages/doc/util";
+import createSelectors from "@/stores/utils/create-selectors";
+import { treeUtils } from "./utils/tree-util";
 import { PRESET_CATEGORIES } from "../pages/doc/constants";
 
 export interface DocTreeDataNode extends TreeDataNode {

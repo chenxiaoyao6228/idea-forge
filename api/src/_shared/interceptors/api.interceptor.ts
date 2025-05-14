@@ -1,7 +1,7 @@
 import { Injectable, type NestInterceptor, type ExecutionContext, type CallHandler } from "@nestjs/common";
 import type { Observable } from "rxjs";
 import { map } from "rxjs/operators";
-import { RESPONSE_SUCCESS_CODE, RESPONSE_SUCCESS_MSG } from "contracts";
+import { RESPONSE_SUCCESS_CODE, RESPONSE_SUCCESS_MSG } from "@/_shared/constants/api-response-constant";
 import { I18nNextService } from "../i18next/i18n.service";
 import { I18nContextManager } from "../i18next/i18n.context";
 

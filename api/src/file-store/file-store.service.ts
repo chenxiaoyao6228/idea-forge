@@ -4,7 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { validImageExts } from "./constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { ErrorCodeEnum, UploadCredentialsResponse } from "contracts";
+import { UploadCredentialsResponse } from "contracts";
+import { type ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 
 @Injectable()
 export class FileService {

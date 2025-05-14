@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import useUserStore, { UserInfo } from "@/stores/user";
+import useUserStore, { UserInfo } from "@/stores/user-store";
 import type { AuthResponseType, AuthResponseData } from "contracts";
 import { useTranslation } from "react-i18next";
 

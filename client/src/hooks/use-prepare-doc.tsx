@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { documentApi } from "@/apis/document";
 import { useDocumentStore } from "@/stores/doc-store";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { useEffect, useState } from "react";
 
 // TODO: add check from localstorage

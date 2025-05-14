@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { LoginRequestSchema, type LoginRequest } from "contracts";
 import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { StatusButton } from "@/components/status-button";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
+import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -47,14 +48,21 @@ function LoginPage() {
     try {
       const res = await authApi.login(data);
       if (!res.user) {
-        throw new Error("Login failed");
+        setError(t("User not found"));
+        return;
       }
       setUserInfo(res.user);
       navigate(redirectTo || "/");
     } catch (err: any) {
-      const errorCode = err.statusCode;
-      const errorMessage = err.message || "Login failed";
-      setError(errorMessage);
+      const errorCode = err.code;
+      switch (errorCode) {
+        case ErrorCodeEnum.PasswordIncorrect:
+          setError(t("Password is incorrect"));
+          break;
+        case ErrorCodeEnum.UserNotFound:
+          setError(t("User not found"));
+          break;
+      }
     } finally {
       setIsPending(false);
     }

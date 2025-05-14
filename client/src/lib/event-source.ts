@@ -1,4 +1,4 @@
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import axios from "axios";
 

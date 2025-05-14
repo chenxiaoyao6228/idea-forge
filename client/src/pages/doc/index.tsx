@@ -1,11 +1,11 @@
 import { useParams } from "react-router-dom";
 import DocHome from "./home";
-import Loading from "@/components/loading";
+import Loading from "@/components/ui/loading";
 import { useDocumentStore } from "../../stores/doc-store";
 import { Toolbar } from "./toolbar";
 import Cover from "./cover";
 import TiptapEditor from "../../editor";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { getEnvVariable } from "@/lib/env";
 import { TableOfContent } from "./components/table-of-content";
 import { useTranslation } from "react-i18next";

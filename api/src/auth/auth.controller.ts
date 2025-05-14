@@ -10,7 +10,7 @@ import { EmailVerifyDto, ForgotPasswordDto, CodeValidateDto, ResetPasswordDto, R
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { UserService } from "@/user/user.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { ErrorCodeEnum } from "contracts";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { VerificationService } from "./verification.service";
 import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
 import { UserResponseData } from "contracts";

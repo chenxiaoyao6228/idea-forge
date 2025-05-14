@@ -3,7 +3,8 @@ import { ConflictException, Inject, Injectable } from "@nestjs/common";
 import { hash } from "argon2";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { CreateUserDto, UpdateUserDto } from "@/auth/auth.dto";
-import { ErrorCodeEnum, UserStatus } from "contracts";
+import { UserStatus } from "contracts";
+import { type ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 
 @Injectable()
 export class UserService {

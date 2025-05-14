@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../_shared/database/prisma/prisma.service";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
-import { ErrorCodeEnum, WorkspaceListResponse } from "contracts";
+import { WorkspaceListResponse } from "contracts";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
 

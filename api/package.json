@@ -103,7 +103,8 @@
     "winston-daily-rotate-file": "^5.0.0",
     "yjs": "^13.6.18",
     "zod": "^3.23.8",
-    "zod-i18n-map": "^2.27.0"
+    "zod-i18n-map": "^2.27.0",
+     "zod-prisma-types": "2.8.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

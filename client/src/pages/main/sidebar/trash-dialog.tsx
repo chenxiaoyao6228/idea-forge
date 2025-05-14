@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { documentApi } from "@/apis/document";
-import { ErrorCodeEnum, type TrashDocumentResponse } from "contracts";
+import { type TrashDocumentResponse } from "contracts";
+import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useSharedDocumentStore } from "@/stores/shared-store";
@@ -13,7 +14,7 @@ import { useDocumentStore } from "@/stores/doc-store";
 import { confirmModal } from "../../../components/ui/confirm-modal";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import Loading from "../../../components/loading";
+import Loading from "../../../components/ui/loading";
 
 export function TrashDialog() {
   const { t } = useTranslation();

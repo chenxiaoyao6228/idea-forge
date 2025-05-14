@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ErrorList, Field } from "@/components/forms";
 import { StatusButton } from "@/components/ui/status-button";
 import { useState } from "react";
-import { PasswordSchema } from "contracts";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
@@ -13,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { TFunction } from "i18next";
 
 const createPasswordAndConfirmPasswordSchema = (t: TFunction) =>
-  z.object({ password: PasswordSchema, confirmPassword: PasswordSchema }).superRefine(({ confirmPassword, password }, ctx) => {
+  z.object({ password: z.string(), confirmPassword: z.string() }).superRefine(({ confirmPassword, password }, ctx) => {
     if (confirmPassword !== password) {
       ctx.addIssue({
         path: ["confirmPassword"],

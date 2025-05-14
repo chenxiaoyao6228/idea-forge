@@ -2,7 +2,7 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { CommonSharedDocumentResponse, DocSharesResponse, Permission, RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "contracts";
-import { ErrorCodeEnum } from "contracts";
+import { type ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 
 @Injectable()
 export class ShareDocumentService {

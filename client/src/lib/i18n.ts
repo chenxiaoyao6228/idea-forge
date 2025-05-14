@@ -2,7 +2,6 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import Backend from "i18next-http-backend";
-import { initZodI18n } from "contracts";
 
 i18n.on("languageChanged", (lng) => {
   localStorage.setItem("lng", lng);
@@ -39,8 +38,6 @@ i18n
   .then(() => {
     console.log("=====i18n initialized =======");
   });
-
-initZodI18n(i18n);
 
 export const LANGUAGE_NAME_MAP = {
   en: "English",

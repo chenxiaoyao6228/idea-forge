@@ -20,10 +20,7 @@ export default function CreateWorkspace() {
 
     setIsSubmitting(true);
     try {
-      await workspaceApi.createWorkspace({
-        name,
-        description,
-      });
+      await workspaceApi.createWorkspace({ name, description, avatar: null });
 
       // reload page
       navigate("/"); // TODO: redirect to workspace dat

@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "rootDir": "../", 
+    "baseUrl": ".", 
     "strict": true,
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
@@ -9,20 +11,18 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "moduleResolution": "Bundler", // 更新为现代打包工具推荐配置
-    "target": "ESNext", // 如果不需要支持旧浏览器
-    "sourceMap": true, // 添加 source map 支持
-    // "noImplicitReturns": true,     // 检查函数隐式返回
+    "moduleResolution": "Bundler", 
+    "target": "ESNext", 
+    "sourceMap": true, 
     "noImplicitAny": false,
-    "useDefineForClassFields": true, // 现代类字段定义方式
+    "useDefineForClassFields": true, 
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "baseUrl": ".", // 用于解析非相对模块名的基准目录,设置为"."表示以tsconfig.json所在目录作为基准
-    "rootDir": ".", // 指定TypeScript项目的根目录,用于控制输出目录结构,通常与baseUrl相同
     "outDir": "./dist",
     "types": ["vite/client"],
     "paths": {
       "@/*": ["./src/*"],
+      "@api/*": ["../api/src/*"],
     },
   },
   "include": ["src", "src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"]

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import useUserStore, { UserInfo } from "@/stores/user";
-import Loading from "@/components/loading";
+import useUserStore, { UserInfo } from "@/stores/user-store";
+import Loading from "@/components/ui/loading";
 
 /**
  * Get userInfo from local window object and destroy local storage

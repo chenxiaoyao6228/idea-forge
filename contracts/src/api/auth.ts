@@ -1,4 +1,4 @@
-import { z } from "./utils/zod";
+import { z } from "zod";
 
 export const VERIFICATION_CODE_TYPES = ["register", "reset-password", "change-email", "2fa"] as const;
 
@@ -22,26 +22,18 @@ export type Provider = (typeof Provider)[keyof typeof Provider];
 
 //  ============== request ==============
 // TODO: the error message need to show to the client
-export const EmailSchema = z
-  .string()
-  .email()
-  // users can type the email in any case, but we store it in lowercase
-  .transform((value) => value.toLowerCase().trim());
+export const EmailSchema = z.string().email()
 
-export const PasswordSchema = z.string().min(6).max(100);
+export const PwdSchema = z.string().min(6).max(30);
 
-export const DisplayNameSchema = z
-  .string()
-  .min(1)
-  .max(20)
-  .transform((val) => val.trim().toLowerCase().trim());
+export const DisplayNameSchema = z.string().min(1).max(50);
 
 // ==============================================================
 
 // register
 export const RegisterRequestSchema = z.object({
   email: EmailSchema,
-  password: PasswordSchema,
+  password: PwdSchema,
 });
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 
@@ -49,7 +41,7 @@ export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 // login
 export const LoginRequestSchema = z.object({
   email: EmailSchema,
-  password: PasswordSchema,
+  password: PwdSchema,
   remember: z.boolean().optional(),
 });
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
@@ -90,7 +82,7 @@ export type CodeValidateRequest = z.infer<typeof CodeValidateRequestSchema>;
 
 export const ResetPasswordRequestSchema = z.object({
   email: EmailSchema,
-  password: PasswordSchema,
+  password: PwdSchema,
 });
 export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
 

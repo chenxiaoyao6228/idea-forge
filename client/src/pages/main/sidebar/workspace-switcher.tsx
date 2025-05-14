@@ -8,8 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import useUserStore from "@/stores/user";
-import useWorkspaceStore from "@/stores/workspace";
+import useUserStore from "@/stores/user-store";
+import useWorkspaceStore from "@/stores/workspace-store";
 
 export default function WorkspaceSwitcher() {
   const { t } = useTranslation();

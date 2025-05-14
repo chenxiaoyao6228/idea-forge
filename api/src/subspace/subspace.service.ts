@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../_shared/database/prisma/prisma.service";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
-import { ErrorCodeEnum, SubspaceMemberListResponse, SubspaceType } from "contracts";
+import { ErrorCodeEnum } from "contracts";
+import { SubspaceTypeSchema } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 
 @Injectable()
@@ -15,7 +16,7 @@ export class SubspaceService {
         name: "Global Space",
         description: "Global subspace",
         avatar: "",
-        type: SubspaceType.WORKSPACE_WIDE,
+        type: SubspaceTypeSchema.enum.PUBLIC,
       },
       userId,
     );
@@ -61,6 +62,29 @@ export class SubspaceService {
       createdAt: subspace.createdAt.toISOString(),
       updatedAt: subspace.updatedAt.toISOString(),
     };
+  }
+
+  async getUserSubWorkspaces(userId: number) {
+    const workspaces = await this.prismaService.workspaceMember.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        workspace: {
+          include: {
+            subspaces: true,
+          },
+        },
+      },
+    });
+
+    return workspaces.flatMap((workspaceMember) =>
+      workspaceMember.workspace.subspaces.map((subspace) => ({
+        ...subspace,
+        createdAt: subspace.createdAt.toISOString(),
+        updatedAt: subspace.updatedAt.toISOString(),
+      })),
+    );
   }
 
   async getSubspace(id: string, userId: number) {
@@ -271,7 +295,7 @@ export class SubspaceService {
     return { success: true };
   }
 
-  async getSubspaceMembers(subspaceId: string, userId: number): Promise<SubspaceMemberListResponse> {
+  async getSubspaceMembers(subspaceId: string, userId: number) {
     // Check if user has access to this subspace
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
