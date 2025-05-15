@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Tree, TreeDataNode, TreeProps } from "@/components/ui/tree";
-import { MoreHorizontalIcon } from "lucide-react";
+import { MoreHorizontalIcon, ChevronRight } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useDocumentStore } from "../../../stores/doc-store";
 import { AddDocButton } from "./add-doc-button";
 import { logger } from "@/lib/logger";
@@ -26,6 +27,8 @@ export function MyDocs() {
   const duplicateDocument = useDocumentStore.use.duplicateDocument();
   const { t } = useTranslation();
   const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+
   useEffect(() => {
     loadNestedTree(curDocId || null);
   }, []);
@@ -91,55 +94,62 @@ export function MyDocs() {
 
   return (
     <SidebarGroup>
-      <div className="flex items-center justify-between group/label">
-        <SidebarGroupLabel>{t("My Docs")}</SidebarGroupLabel>
-        <div className="flex items-center gap-1 invisible group-hover/label:visible">
-          <AddDocButton parentId={null} />
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex items-center justify-between group/label">
+          <CollapsibleTrigger className="flex items-center gap-1 hover:opacity-70">
+            <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+            <SidebarGroupLabel>{t("My Docs")}</SidebarGroupLabel>
+          </CollapsibleTrigger>
+          <div className="flex items-center gap-1 invisible group-hover/label:visible">
+            <AddDocButton parentId={null} />
+          </div>
         </div>
-      </div>
-      <SidebarMenu>
-        <Tree
-          treeData={treeData}
-          draggable
-          blockNode
-          onDragEnter={handleDragEnter}
-          onDrop={handleDrop}
-          expandedKeys={expandedKeys}
-          selectedKeys={curDocId ? [curDocId] : []}
-          showIcon={true}
-          onExpand={(keys) => setExpandedKeys(keys)}
-          onRename={handleRenameComplete}
-          fieldNames={{
-            key: "id",
-          }}
-          onSelect={handleSelect}
-          loadData={async (node) => {
-            if (!node.isLeaf) {
-              await loadChildren(node.key);
-            }
-          }}
-          actionsOnHover
-          renderActions={({ node, onDropdownOpenChange, onStartRename }) => (
-            <div className="flex items-center">
-              <DropdownMenu onOpenChange={onDropdownOpenChange}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-4 w-4 p-0 mr-1 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25">
-                    <MoreHorizontalIcon className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={onStartRename}>{t("Rename")}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDuplicateDoc(node.key)}>{t("Duplicate")}</DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteDoc(node.key)}>
-                    {t("Delete")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <AddDocButton parentId={node.key} />
-            </div>
-          )}
-        />
-      </SidebarMenu>
+        <CollapsibleContent>
+          <SidebarMenu>
+            <Tree
+              treeData={treeData}
+              draggable
+              blockNode
+              onDragEnter={handleDragEnter}
+              onDrop={handleDrop}
+              expandedKeys={expandedKeys}
+              selectedKeys={curDocId ? [curDocId] : []}
+              showIcon={true}
+              onExpand={(keys) => setExpandedKeys(keys)}
+              onRename={handleRenameComplete}
+              fieldNames={{
+                key: "id",
+              }}
+              onSelect={handleSelect}
+              loadData={async (node) => {
+                if (!node.isLeaf) {
+                  await loadChildren(node.key);
+                }
+              }}
+              actionsOnHover
+              renderActions={({ node, onDropdownOpenChange, onStartRename }) => (
+                <div className="flex items-center">
+                  <DropdownMenu onOpenChange={onDropdownOpenChange}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0 mr-1 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25">
+                        <MoreHorizontalIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={onStartRename}>{t("Rename")}</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicateDoc(node.key)}>{t("Duplicate")}</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteDoc(node.key)}>
+                        {t("Delete")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <AddDocButton parentId={node.key} />
+                </div>
+              )}
+            />
+          </SidebarMenu>
+        </CollapsibleContent>
+      </Collapsible>
     </SidebarGroup>
   );
 }

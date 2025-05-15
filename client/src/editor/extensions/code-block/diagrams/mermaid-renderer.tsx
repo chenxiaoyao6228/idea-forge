@@ -4,7 +4,7 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
-import debounce from "lodash.debounce";
+import { debounce } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { mermaidTemplates } from "../constant";
 

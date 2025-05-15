@@ -6,7 +6,7 @@ import TextareaAutosize from "react-textarea-autosize";
 import { IconPicker } from "./icon-picker";
 import { Emoji } from "emoji-picker-react";
 import { DOCUMENT_TITLE_ID } from "../../editor/constant";
-import debounce from "lodash.debounce";
+import { debounce } from "lodash-es";
 import { useTranslation } from "react-i18next";
 
 interface ToolbarProps {

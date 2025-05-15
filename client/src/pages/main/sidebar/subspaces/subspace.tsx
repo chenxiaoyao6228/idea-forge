@@ -73,6 +73,8 @@ function MoreOperations() {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onClick={onAddMembers}>{t("Add members")}</DropdownMenuItem>
+        <DropdownMenuItem>{t("Subspace setting")}</DropdownMenuItem>
+        <DropdownMenuItem>{t("Leave subspace")}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

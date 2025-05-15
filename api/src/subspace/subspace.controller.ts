@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from "@nestjs/common";
 import { SubspaceService } from "./subspace.service";
-import { ISubspace, SubspaceListResponse, SubspaceMemberListResponse } from "contracts";
+import { SubspaceMemberListResponse } from "contracts";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
 
 @Controller("api/subspaces")

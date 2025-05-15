@@ -1,18 +1,13 @@
-import { WorkspaceMemberSchema, WorkspaceSchema } from "../schema";
+import { WorkspaceMemberSchema, WorkspaceOptionalDefaultsSchema, WorkspaceSchema, WorkspaceRoleSchema  } from "../schema";
+
 import { z } from "zod";
 
-export enum WorkspaceRole {
-  OWNER = "OWNER",
-  ADMIN = "ADMIN",
-  MEMBER = "MEMBER",
-}
-
 // Create workspace
-export const CreateWorkspaceRequestSchema = WorkspaceSchema;
+export const CreateWorkspaceRequestSchema = WorkspaceOptionalDefaultsSchema;
 export type CreateWorkspaceRequest = z.infer<typeof CreateWorkspaceRequestSchema>;
 
 // Update workspace
-export const UpdateWorkspaceRequestSchema = WorkspaceSchema.partial();
+export const UpdateWorkspaceRequestSchema = WorkspaceOptionalDefaultsSchema
 export type UpdateWorkspaceRequest = z.infer<typeof UpdateWorkspaceRequestSchema>;
 
 export const UpdateWorkspaceMemberResponseSchema = z.object({
@@ -25,12 +20,12 @@ export type UpdateWorkspaceMemberResponse = z.infer<typeof UpdateWorkspaceMember
 // Add workspace member
 export const AddWorkspaceMemberRequestSchema = z.object({
   userId: z.number(),
-  role: z.nativeEnum(WorkspaceRole),
+  role: WorkspaceRoleSchema,
 });
 export type AddWorkspaceMemberRequest = z.infer<typeof AddWorkspaceMemberRequestSchema>;
 
 export const UpdateWorkspaceMemberRequestSchema = z.object({
-  role: z.nativeEnum(WorkspaceRole),
+  role: WorkspaceRoleSchema
 });
 export type UpdateWorkspaceMemberRequest = z.infer<typeof UpdateWorkspaceMemberRequestSchema>;
 

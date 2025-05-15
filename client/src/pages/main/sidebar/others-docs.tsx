@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { Tree, TreeDataNode } from "@/components/ui/tree";
 import { useTranslation } from "react-i18next";
-
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronRight } from "lucide-react";
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
 import { useSharedDocumentStore } from "../../../stores/shared-store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 export function OthersDocs() {
@@ -15,6 +16,7 @@ export function OthersDocs() {
   const setSelectedKeys = useSharedDocumentStore.use.setSelectedKeys();
   const setExpandedKeys = useSharedDocumentStore.use.setExpandedKeys();
   const loadSharedDocuments = useSharedDocumentStore.use.loadSharedDocuments();
+  const [isOpen, setIsOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -40,12 +42,19 @@ export function OthersDocs() {
 
   return (
     <SidebarGroup>
-      <div className="flex items-center justify-between group/label">
-        <SidebarGroupLabel>{t("Others Docs")}</SidebarGroupLabel>
-      </div>
-      <SidebarMenu>
-        <Tree treeData={sharedTreeData} onSelect={handleSelect} expandedKeys={expandedKeys} onExpand={(keys) => setExpandedKeys(keys)} />
-      </SidebarMenu>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex items-center justify-between group/label">
+          <CollapsibleTrigger className="flex items-center gap-1 hover:opacity-70">
+            <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+            <SidebarGroupLabel>{t("Others Docs")}</SidebarGroupLabel>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent>
+          <SidebarMenu>
+            <Tree treeData={sharedTreeData} onSelect={handleSelect} expandedKeys={expandedKeys} onExpand={(keys) => setExpandedKeys(keys)} />
+          </SidebarMenu>
+        </CollapsibleContent>
+      </Collapsible>
     </SidebarGroup>
   );
 }

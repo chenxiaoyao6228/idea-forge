@@ -5,14 +5,16 @@ import { subspaceApi } from "@/apis/subspace";
 import { useSubSpaceStore } from "@/stores/subspace-store";
 import { SubspaceComp } from "./subspace";
 import { Button } from "@/components/ui/button";
-import { Layers, PlusIcon } from "lucide-react";
+import { Layers, PlusIcon, ChevronRight } from "lucide-react";
 import { SubspaceType } from "contracts";
-import useWorkspaceStore from "@/stores/workspace-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function Subspaces() {
   const { t } = useTranslation();
   const { subspaces, setSubspaces } = useSubSpaceStore();
   const [isCreating, setIsCreating] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const fetchSubspaces = async () => {
@@ -49,34 +51,30 @@ export default function Subspaces() {
     }
   };
 
-  console.log(subspaces, "subspaces"); // TODO: Remove this lin
-
   return (
     <SidebarGroup>
-      <div className="flex items-center justify-between group/label">
-        <SidebarGroupLabel>{t("Subspaces")}</SidebarGroupLabel>
-        <div className="flex items-center gap-1 invisible group-hover/label:visible">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-4 w-4 p-0  cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25"
-            onClick={handleViewAllSubspaces}
-            disabled={isCreating}
-          >
-            <Layers className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25"
-            onClick={handleSubspaceCreate}
-            disabled={isCreating}
-          >
-            <PlusIcon className="h-4 w-4" />
-          </Button>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex items-center justify-between group/label">
+          <CollapsibleTrigger className="flex items-center gap-1 hover:opacity-70">
+            <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+            <SidebarGroupLabel>{t("Subspaces")}</SidebarGroupLabel>
+          </CollapsibleTrigger>
+          <div className="flex items-center gap-1 invisible group-hover/label:visible">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25"
+              onClick={handleSubspaceCreate}
+              disabled={isCreating}
+            >
+              <PlusIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </div>
-      <SidebarMenu>{subspaces.length && subspaces.map((subspace) => <SubspaceComp key={subspace.id} subspace={subspace} />)}</SidebarMenu>
+        <CollapsibleContent>
+          <SidebarMenu>{subspaces.length && subspaces.map((subspace) => <SubspaceComp key={subspace.id} subspace={subspace} />)}</SidebarMenu>
+        </CollapsibleContent>
+      </Collapsible>
     </SidebarGroup>
   );
 }

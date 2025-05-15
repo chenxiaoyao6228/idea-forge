@@ -1,19 +1,27 @@
 import { create } from "zustand";
 import { workspaceApi } from "@/apis/workspace";
 import { Workspace } from "contracts";
+import createSelectors from "./utils/create-selectors";
 
-interface WorkspaceStoreState {
+interface State {
   loading: boolean;
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
+}
+
+interface Actions {
   fetchWorkspaces: () => Promise<void>;
   switchWorkspace: (workspaceId: string) => Promise<void>;
 }
 
-const useWorkspaceStore = create<WorkspaceStoreState>()((set) => ({
+const defaultState: State = {
   loading: false,
   workspaces: [],
   currentWorkspace: null,
+};
+
+const store = create<State & Actions>()((set) => ({
+  ...defaultState,
   fetchWorkspaces: async () => {
     set({ loading: true });
     try {
@@ -41,4 +49,4 @@ const useWorkspaceStore = create<WorkspaceStoreState>()((set) => ({
   },
 }));
 
-export default useWorkspaceStore;
+export const useWorkspaceStore = createSelectors(store);

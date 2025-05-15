@@ -1,5 +1,5 @@
 import { fileOpen as _fileOpen, fileSave as _fileSave, type FileSystemHandle, supported as nativeFileSystemSupported } from "browser-fs-access";
-import debounce from "lodash.debounce";
+import { debounce } from "lodash-es";
 import { EVENT, MIME_TYPES } from "@/constants";
 
 type FILE_EXTENSION = Exclude<keyof typeof MIME_TYPES, "binary">;

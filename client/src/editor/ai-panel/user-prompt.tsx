@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAIPanelStore } from "./ai-panel-store";
 import { useCallback, useEffect, useRef, useState } from "react";
-import debounce from "lodash.debounce";
+import { debounce } from "lodash-es";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { useTranslation } from "react-i18next";
 
