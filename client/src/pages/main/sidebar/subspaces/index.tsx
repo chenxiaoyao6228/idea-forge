@@ -2,17 +2,19 @@ import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/si
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { subspaceApi } from "@/apis/subspace";
-import { useSubSpaceStore } from "@/stores/subspace-store";
 import { SubspaceComp } from "./subspace";
 import { Button } from "@/components/ui/button";
 import { Layers, PlusIcon, ChevronRight } from "lucide-react";
 import { SubspaceType } from "contracts";
-import { useWorkspaceStore } from "@/stores/workspace-store";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import useSubSpaceStore from "@/stores/subspace-store";
+import useWorkspaceStore from "@/stores/workspace-store";
 
 export default function Subspaces() {
   const { t } = useTranslation();
-  const { subspaces, setSubspaces } = useSubSpaceStore();
+  const currentWorkspace = useWorkspaceStore.use.currentWorkspace();
+  const subspaces = useSubSpaceStore.use.subspaces();
+  const setSubspaces = useSubSpaceStore.use.setSubspaces();
   const [isCreating, setIsCreating] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -41,7 +43,7 @@ export default function Subspaces() {
         description: "New Subspace Description",
         avatar: "",
         type: SubspaceType.PUBLIC,
-        workspaceId: useWorkspaceStore.getState().currentWorkspace?.id!,
+        workspaceId: currentWorkspace?.id!,
       });
       setSubspaces([...subspaces, response]);
     } catch (error) {

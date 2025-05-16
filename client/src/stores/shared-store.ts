@@ -3,7 +3,7 @@ import { devtools } from "zustand/middleware";
 import { CommonSharedDocumentResponse, DocShareUser, Permission, ShareDocumentDto } from "contracts";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
-import createSelectors from "@/stores/utils/create-selectors";
+import { createSelectorFunctions } from "auto-zustand-selectors-hook";
 
 interface SharedDocTreeDataNode extends TreeDataNode {
   content?: string;
@@ -108,4 +108,4 @@ const store = create<SharedStoreState>()(
   })),
 );
 
-export const useSharedDocumentStore = createSelectors(store);
+export const useSharedDocumentStore = createSelectorFunctions(store);

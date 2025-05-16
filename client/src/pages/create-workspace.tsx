@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { workspaceApi } from "@/apis/workspace";
 import { useTranslation } from "react-i18next";
-import { useWorkspaceStore } from "@/stores/workspace-store";
+import useWorkspaceStore from "@/stores/workspace-store";
 
 export default function CreateWorkspace() {
   const { t } = useTranslation();

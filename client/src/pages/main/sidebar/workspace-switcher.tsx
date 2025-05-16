@@ -9,13 +9,17 @@ import { Plus, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import useUserStore from "@/stores/user-store";
-import { useWorkspaceStore } from "@/stores/workspace-store";
+import useWorkspaceStore from "@/stores/workspace-store";
 
 export default function WorkspaceSwitcher() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const userInfo = useUserStore((state) => state.userInfo);
-  const { workspaces, currentWorkspace, fetchWorkspaces, switchWorkspace } = useWorkspaceStore();
+
+  const workspaces = useWorkspaceStore.use.workspaces();
+  const currentWorkspace = useWorkspaceStore.use.currentWorkspace();
+  const fetchWorkspaces = useWorkspaceStore.use.fetchWorkspaces();
+  const switchWorkspace = useWorkspaceStore.use.switchWorkspace();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {

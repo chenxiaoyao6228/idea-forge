@@ -89,6 +89,7 @@
     "@tiptap/react": "^2.2.4",
     "@tiptap/starter-kit": "^2.2.4",
     "@tiptap/suggestion": "^2.2.6",
+    "auto-zustand-selectors-hook": "^3.0.1",
     "axios": "^1.7.9",
     "browser-fs-access": "^0.35.0",
     "class-variance-authority": "^0.7.1",
@@ -105,6 +106,7 @@
     "i18next-browser-languagedetector": "^8.0.4",
     "i18next-fs-backend": "^2.6.0",
     "i18next-http-backend": "^3.0.1",
+    "immer": "^10.1.1",
     "input-otp": "^1.4.1",
     "lodash-es": "^4.17.21",
     "lowlight": "^3.3.0",
@@ -140,7 +142,8 @@
     "y-indexeddb": "^9.0.12",
     "yjs": "^13.6.20",
     "zod": "^3.23.8",
-    "zustand": "^5.0.2"
+    "zustand": "^5.0.2",
+    "zustand-computed": "^2.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

@@ -1,10 +1,10 @@
 import { create } from "zustand";
 import { Editor } from "@tiptap/core";
 import { EventSourceService } from "@/lib/event-source";
-import createSelectors from "@/stores/utils/create-selectors";
 import { PresetType, getStreamOptions, buildUserPromptMessage, buildPresetPromptMessage, markdownToHtml } from "./util";
 import { AIStreamRequest } from "contracts";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { createSelectorFunctions } from "auto-zustand-selectors-hook";
 // import i18next from "i18next";
 
 interface AIPanelState {
@@ -266,4 +266,4 @@ export const store = create<AIPanelState>((set, get) => ({
   },
 }));
 
-export const useAIPanelStore = createSelectors(store);
+export const useAIPanelStore = createSelectorFunctions(store);

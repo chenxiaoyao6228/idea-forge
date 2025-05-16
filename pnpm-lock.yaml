@@ -595,6 +595,9 @@ importers:
       '@tiptap/suggestion':
         specifier: ^2.2.6
         version: 2.12.0(@tiptap/core@2.12.0)(@tiptap/pm@2.12.0)
+      auto-zustand-selectors-hook:
+        specifier: ^3.0.1
+        version: 3.0.1(zustand@5.0.4)
       axios:
         specifier: ^1.7.9
         version: 1.9.0
@@ -643,15 +646,15 @@ importers:
       i18next-http-backend:
         specifier: ^3.0.1
         version: 3.0.2
+      immer:
+        specifier: ^10.1.1
+        version: 10.1.1
       input-otp:
         specifier: ^1.4.1
         version: 1.4.2(react-dom@18.3.1)(react@18.3.1)
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
-      lodash.debounce:
-        specifier: ^4.0.8
-        version: 4.0.8
       lowlight:
         specifier: ^3.3.0
         version: 3.3.0
@@ -753,7 +756,10 @@ importers:
         version: 3.24.4
       zustand:
         specifier: ^5.0.2
-        version: 5.0.4(@types/react@18.3.21)(react@18.3.1)
+        version: 5.0.4(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1)
+      zustand-computed:
+        specifier: ^2.0.2
+        version: 2.0.2(react@18.3.1)(zustand@5.0.4)
     devDependencies:
       '@eslint/js':
         specifier: ^9.15.0
@@ -764,9 +770,6 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.12
         version: 0.5.16(tailwindcss@3.4.17)
-      '@types/lodash.debounce':
-        specifier: ^4.0.9
-        version: 4.0.9
       '@types/mdast':
         specifier: ^4.0.4
         version: 4.0.4
@@ -8893,12 +8896,6 @@ packages:
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
     dev: false
 
-  /@types/lodash.debounce@4.0.9:
-    resolution: {integrity: sha512-Ma5JcgTREwpLRwMM+XwBR7DaWe96nC38uCBDFKZWbNKD+osjVzdpnUSwBcqCptrp16sSOLBAUb50Car5I0TCsQ==}
-    dependencies:
-      '@types/lodash': 4.17.16
-    dev: true
-
   /@types/lodash@4.17.16:
     resolution: {integrity: sha512-HX7Em5NYQAXKW+1T+FiuG27NGwzJfCX3s1GjOa7ujxZa52kjJLOr4FUxT+giF6Tgxv1e+/czV/iTtBw27WTU9g==}
     dev: true
@@ -9815,6 +9812,15 @@ packages:
   /attr-accept@2.2.5:
     resolution: {integrity: sha512-0bDNnY/u6pPwHDMoF0FieU354oBi0a8rD9FcsLwzcGWbc8KS8KPIi7y+s13OlVY+gMWc/9xEMUgNE6Qm8ZllYQ==}
     engines: {node: '>=4'}
+    dev: false
+
+  /auto-zustand-selectors-hook@3.0.1(zustand@5.0.4):
+    resolution: {integrity: sha512-BJHzxqdVPd0GKjieej0eALqUjXlb8SnDskeKXR85f0rEzErsXB3ttVOOZWy3IpMDle/F5F6ESAHm4tGsYP2hRw==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      zustand: '>=5.0.0'
+    dependencies:
+      zustand: 5.0.4(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1)
     dev: false
 
   /autoprefixer@10.4.21(postcss@8.5.3):
@@ -13390,6 +13396,10 @@ packages:
     engines: {node: '>= 4'}
     dev: true
 
+  /immer@10.1.1:
+    resolution: {integrity: sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw==}
+    dev: false
+
   /immer@9.0.21:
     resolution: {integrity: sha512-bc4NBHqOqSfRW7POMkHd51LvClaeMXpm8dx0e8oE2GORbq5aRK7Bxl4FyzVLdGtLmvLKL7BTDBG5ACQm4HWjTA==}
     dev: true
@@ -14697,10 +14707,6 @@ packages:
   /lodash.castarray@4.4.0:
     resolution: {integrity: sha512-aVx8ztPv7/2ULbArGJ2Y42bG1mEQ5mGjpdvrbJcJFU3TbYybe+QlLS4pst9zV52ymy2in1KpFPiZnAOATxD4+Q==}
     dev: true
-
-  /lodash.debounce@4.0.8:
-    resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
-    dev: false
 
   /lodash.includes@4.3.0:
     resolution: {integrity: sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==}
@@ -20306,7 +20312,17 @@ packages:
   /zod@3.24.4:
     resolution: {integrity: sha512-OdqJE9UDRPwWsrHjLN2F8bPxvwJBK22EHLWtanu0LSYr5YqzsaaW3RMgmjwr8Rypg5k+meEJdSPXJZXE/yqOMg==}
 
-  /zustand@5.0.4(@types/react@18.3.21)(react@18.3.1):
+  /zustand-computed@2.0.2(react@18.3.1)(zustand@5.0.4):
+    resolution: {integrity: sha512-G70p9Ve3alqc36p77jHljEJk/UHBbYmaIyZ5zyXXLLR/b1oTh1vG0+3P1rGeWeZyjVZ4fCRfuG9QwB/x5pzC8w==}
+    peerDependencies:
+      react: ^18.2.0
+      zustand: ^5.0.0
+    dependencies:
+      react: 18.3.1
+      zustand: 5.0.4(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1)
+    dev: false
+
+  /zustand@5.0.4(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1):
     resolution: {integrity: sha512-39VFTN5InDtMd28ZhjLyuTnlytDr9HfwO512Ai4I8ZABCoyAj4F1+sr7sD1jP/+p7k77Iko0Pb5NhgBFDCX0kQ==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
@@ -20325,6 +20341,7 @@ packages:
         optional: true
     dependencies:
       '@types/react': 18.3.21
+      immer: 10.1.1
       react: 18.3.1
     dev: false
 

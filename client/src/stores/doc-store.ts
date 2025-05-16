@@ -3,9 +3,9 @@ import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
 import { DuplicateDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "contracts";
-import createSelectors from "@/stores/utils/create-selectors";
 import { treeUtils } from "./utils/tree-util";
 import { PRESET_CATEGORIES } from "../pages/doc/constants";
+import { createSelectorFunctions } from "auto-zustand-selectors-hook";
 
 export interface DocTreeDataNode extends TreeDataNode {
   content?: string;
@@ -465,4 +465,4 @@ const store = create<DocumentTreeState>()(
   ),
 );
 
-export const useDocumentStore = createSelectors(store);
+export const useDocumentStore = createSelectorFunctions(store);

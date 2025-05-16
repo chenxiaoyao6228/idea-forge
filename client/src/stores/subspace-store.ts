@@ -1,28 +1,31 @@
-import { create } from "zustand";
-import createSelectors from "./utils/create-selectors";
+import { createStore } from "./utils/creator";
 import { Subspace } from "contracts";
 
-interface Sate {
+interface State {
   subspaces: Subspace[];
 }
 
 interface Action {
   setSubspaces: (subspaces: Subspace[]) => void;
-  setStore: (state: Partial<Sate>) => void;
-  resetStore: () => void;
 }
 
-const defaultState: Sate = {
+type ComputedState = {};
+
+const defaultState: State = {
   subspaces: [],
 };
 
-const store = create<Sate & Action>()((set) => ({
-  ...defaultState,
-  setSubspaces: (subspaces: Subspace[]) => set({ subspaces }),
-  setStore: (state) => set(state),
-  resetStore: () => set(defaultState),
-}));
+const useSubSpaceStore = createStore<State & Action, ComputedState>(
+  (set) => ({
+    ...defaultState,
+    setSubspaces: (subspaces) => set({ subspaces }),
+  }),
+  (state) => ({}),
+  {
+    devtoolOptions: {
+      name: "subspaceStore",
+    },
+  },
+);
 
-// Computed selectors
-
-export const useSubSpaceStore = createSelectors(store);
+export default useSubSpaceStore;
