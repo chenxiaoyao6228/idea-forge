@@ -1,4 +1,4 @@
-import { createStore } from "./utils/creator";
+import { createStore } from "./utils/factory";
 
 interface DemoState {
   count: number;

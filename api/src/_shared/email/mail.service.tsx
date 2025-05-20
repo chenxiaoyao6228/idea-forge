@@ -5,8 +5,6 @@ import { createTransport } from "nodemailer";
 import { Template as RegisterEmail } from "./templates/RegisterEmail";
 import { Template as ResetPasswordEmail } from "./templates/ResetPasswordEmail";
 import { render } from "jsx-email";
-import { I18nTranslations } from "@/_generated/i18n.generated";
-import { I18nService } from "nestjs-i18n";
 import { I18nContextManager } from "../i18next/i18n.context";
 
 // jsx-email: https://jsx.email/docs/email-providers#nodemailer

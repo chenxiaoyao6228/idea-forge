@@ -1,15 +1,15 @@
-import { Injectable, OnModuleInit, UnauthorizedException } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Hocuspocus } from "@hocuspocus/server";
 import { Database } from "@hocuspocus/extension-database";
 import { Throttle } from "@hocuspocus/extension-throttle";
 import { Logger } from "@hocuspocus/extension-logger";
-import { PrismaService } from "../_shared/database/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import { UserService } from "@/user/user.service";
 import { Permission } from "contracts";
 import { TiptapTransformer } from "@hocuspocus/transformer";
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,8 +29,7 @@ export class CollaborationService implements OnModuleInit {
   private readonly secretKey: Buffer;
 
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
+    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
     private configService: ConfigService,
     private userService: UserService,
   ) {
@@ -55,7 +54,7 @@ export class CollaborationService implements OnModuleInit {
     }
 
     // Return owner permission if user is the owner
-    if (doc.ownerId === userId) {
+    if (doc.authorId === userId) {
       return { permission: "EDIT" };
     }
 

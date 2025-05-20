@@ -4,7 +4,7 @@ import { MailService } from "@/_shared/email/mail.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { UserService } from "@/user/user.service";
-import { DocumentService } from "@/document/ document.service";
+import { DocumentService } from "@/document/document.service";
 import { UserStatus, VerificationCodeType } from "contracts";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
@@ -86,7 +86,8 @@ export class VerificationService {
     switch (type) {
       case "register":
         await this.userService.updateUserStatus(email, UserStatus.ACTIVE);
-        await this.documentService.createDefault(user.id);
+        // FIXME: better organize this
+        // await this.documentService.createDefault(user.id);
         break;
       default:
         break;

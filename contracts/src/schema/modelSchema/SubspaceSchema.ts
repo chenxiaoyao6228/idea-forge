@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { NullableJsonValue } from '../inputTypeSchemas/NullableJsonValue'
 import { SubspaceTypeSchema } from '../inputTypeSchemas/SubspaceTypeSchema'
 
 /////////////////////////////////////////
@@ -13,6 +14,8 @@ export const SubspaceSchema = z.object({
   avatar: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
+  settings: NullableJsonValue.optional(),
+  isArchived: z.boolean(),
   workspaceId: z.string(),
 })
 
@@ -27,6 +30,7 @@ export const SubspaceOptionalDefaultsSchema = SubspaceSchema.merge(z.object({
   id: z.string().cuid().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
+  isArchived: z.boolean().optional(),
 }))
 
 export type SubspaceOptionalDefaults = z.infer<typeof SubspaceOptionalDefaultsSchema>

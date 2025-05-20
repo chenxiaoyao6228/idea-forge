@@ -1,15 +1,11 @@
 import React from "react";
 import { Body, Button, Container, Head, Hr, Html, Link, Preview, Section, Text, Tailwind } from "jsx-email";
+import { EmailTemplateProps } from "../type";
 
-interface TemplateProps {
+interface TemplateProps extends EmailTemplateProps {
   firstName: string;
   lastName: string;
 }
-
-export const previewProps: TemplateProps = {
-  firstName: "Bruce",
-  lastName: "Wayne",
-};
 
 export const templateName = "BatmanEmail";
 

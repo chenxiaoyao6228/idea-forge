@@ -2,16 +2,12 @@
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
   "sourceRoot": "src", 
+  "shell": false,
   "compilerOptions": {
     "builder": "webpack",
     "webpackConfigPath": "webpack.config.js",
     "deleteOutDir": true,
     "assets": [
-      {
-        "include": "_shared/i18n/**/*.json",
-        "outDir": "dist/_shared/i18n",
-        "watchAssets": true
-      },
       {
         "include": "../locales/**/*",
         "outDir": "dist/locales",

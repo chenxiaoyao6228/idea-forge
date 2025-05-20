@@ -1,16 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException, HttpStatus } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException, HttpStatus, Inject } from "@nestjs/common";
 import { OssService } from "./oss.service";
 import { v4 as uuidv4 } from "uuid";
-import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { validImageExts } from "./constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { UploadCredentialsResponse } from "contracts";
-import { type ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 
 @Injectable()
 export class FileService {
   constructor(
-    private prisma: PrismaService,
+    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
     private ossService: OssService,
   ) {}
 

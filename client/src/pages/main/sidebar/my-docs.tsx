@@ -101,7 +101,7 @@ export function MyDocs() {
             <SidebarGroupLabel>{t("My Docs")}</SidebarGroupLabel>
           </CollapsibleTrigger>
           <div className="flex items-center gap-1 invisible group-hover/label:visible">
-            <AddDocButton parentId={null} />
+            <AddDocButton parentId={null} subspaceId={null} />
           </div>
         </div>
         <CollapsibleContent>
@@ -143,7 +143,7 @@ export function MyDocs() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <AddDocButton parentId={node.key} />
+                  <AddDocButton parentId={node.key} subspaceId={null} />
                 </div>
               )}
             />

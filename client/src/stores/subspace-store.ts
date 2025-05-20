@@ -1,4 +1,4 @@
-import { createStore } from "./utils/creator";
+import { createStore } from "./utils/factory";
 import { Subspace } from "contracts";
 
 interface State {

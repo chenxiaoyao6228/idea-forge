@@ -13,7 +13,7 @@ import { GithubStrategy } from "./strategies/strategy.github";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { MailService } from "@/_shared/email/mail.service";
 import { VerificationService } from "./verification.service";
-import { DocumentService } from "@/document/ document.service";
+import { DocumentService } from "@/document/document.service";
 import { JwtService } from "@nestjs/jwt";
 import { FileService } from "@/file-store/file-store.service";
 import { FileStoreModule } from "../file-store/file-store.module";

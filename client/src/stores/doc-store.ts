@@ -2,10 +2,11 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { TreeDataNode } from "@/components/ui/tree";
 import { documentApi } from "@/apis/document";
-import { DuplicateDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "contracts";
+import { DocTypeSchema, DocVisibilitySchema, DuplicateDocumentResponse, MoveDocumentsDto, UpdateDocumentDto } from "contracts";
 import { treeUtils } from "./utils/tree-util";
 import { PRESET_CATEGORIES } from "../pages/doc/constants";
 import { createSelectorFunctions } from "auto-zustand-selectors-hook";
+import useWorkspaceStore from "./workspace-store";
 
 export interface DocTreeDataNode extends TreeDataNode {
   content?: string;
@@ -32,7 +33,7 @@ interface DocumentTreeState {
   setSelectedKeys: (keys: string[]) => void;
   setCurrentDocument: (doc: DocTreeDataNode) => void;
   loadChildren: (key: string | null) => Promise<void>;
-  createDocument: (parentId: string | null, title: string) => Promise<string>;
+  createDocument: (dto: { parentId: string | null; title: string; subspaceId: string | null }) => Promise<string>;
   deleteDocument: (id: string) => Promise<string | null>;
   moveDocuments: (data: MoveDocumentsDto) => Promise<void>;
   loadNestedTree: (key: string | null) => Promise<void>;
@@ -95,9 +96,13 @@ const store = create<DocumentTreeState>()(
         }
       },
 
-      createDocument: async (parentId, title) => {
+      createDocument: async ({ parentId, title, subspaceId }) => {
         const response = await documentApi.create({
+          workspaceId: useWorkspaceStore.getState().currentWorkspace?.id!,
+          subspaceId,
+          visibility: subspaceId ? DocVisibilitySchema.Enum.WORKSPACE : DocVisibilitySchema.Enum.PRIVATE,
           parentId: parentId || null,
+          type: DocTypeSchema.Enum.NOTE,
           title,
           content: "",
         });
@@ -164,17 +169,19 @@ const store = create<DocumentTreeState>()(
           return remainingSiblings[0].key;
         }
 
+        // FIXME:
         // If no documents remain, create a new empty document
-        const newDoc = await documentApi.create({
-          title: "Untitled",
-          content: "",
-          parentId: null,
-        });
-        const newNode = treeUtils.convertToTreeNode(newDoc);
+        // const newDoc = await documentApi.create({
+        //   workspaceId: useWorkspaceStore().currentWorkspace?.id!,
+        //   title: "Untitled",
+        //   content: "",
+        //   parentId: null,
+        // });
+        // const newNode = treeUtils.convertToTreeNode(newDoc);
 
-        set({ treeData: [...updatedTree, newNode] });
+        // set({ treeData: [...updatedTree, newNode] });
 
-        return newNode.key;
+        // return newNode.key;
       },
 
       updateDocument: async (id, update) => {

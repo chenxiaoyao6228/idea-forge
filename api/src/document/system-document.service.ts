@@ -1,11 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class SystemDocumentService {
   constructor(
-    private prisma: PrismaService,
+    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
     private configService: ConfigService,
   ) {}
 
@@ -27,7 +27,7 @@ export class SystemDocumentService {
     const welcomeDoc = await this.prisma.doc.findFirst({
       where: {
         title: this.WELCOME_DOC_TITLE,
-        ownerId: systemUser.id,
+        authorId: systemUser.id,
       },
     });
 

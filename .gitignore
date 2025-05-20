@@ -56,6 +56,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Client
 client/node_modules
 client/dist
+client/src/components/ui/icons.d.ts
 
 # Api
 api/node_modules

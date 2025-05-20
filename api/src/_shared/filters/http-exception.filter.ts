@@ -13,12 +13,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = http.getResponse<Response>();
     const request = http.getRequest<Request>();
     const statusCode = exception.getStatus();
-    const t = I18nContextManager.getT();
 
     if (exception instanceof ApiException) {
       response.status(statusCode).json({
         code: exception.gerErrorCode(),
-        message: t(exception.message),
+        message: exception.message,
         data: exception.getData(),
         path: request.url,
       });
@@ -26,7 +25,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const res = exception.getResponse() as { message: string[] };
       response.status(statusCode).json({
         code: statusCode,
-        message: t(res?.message?.join ? res?.message?.join(",") : exception.message),
+        message: res?.message?.join ? res?.message?.join(",") : exception.message,
         path: request.url,
       });
     }

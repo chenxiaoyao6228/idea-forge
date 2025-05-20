@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { DocOptionalDefaultsSchema, DocSchema } from "../schema";
+import { BasePageResult, basePagerSchema } from "./_base";
 
 const commonDocumentSchema = z.object({
   id: z.string().cuid(),
@@ -15,11 +17,9 @@ const commonDocumentSchema = z.object({
 
 export type CommonDocumentResponse = z.infer<typeof commonDocumentSchema>;
 
-const noticeType = ["NEW", "UPDATE", "NONE"] as const;
 const permission = ["EDIT", "READ", "NONE"] as const;
 
 export type Permission = (typeof permission)[number];
-export type NoticeType = (typeof noticeType)[number];
 
 const commonSharedDocumentSchema = commonDocumentSchema
   .omit({
@@ -31,7 +31,6 @@ const commonSharedDocumentSchema = commonDocumentSchema
       email: z.string(),
     }),
     permission: z.enum(permission).optional(),
-    noticeType: z.enum(noticeType).optional(),
     coverImage: z
       .object({
         scrollY: z.number(),
@@ -42,15 +41,37 @@ const commonSharedDocumentSchema = commonDocumentSchema
 
 export type CommonSharedDocumentResponse = z.infer<typeof commonSharedDocumentSchema>;
 
-//  ============== request ==============
-export const createDocumentSchema = z.object({
-  title: z.string(),
-  content: z.string(),
-  parentId: z.string().nullable(),
+// create doc
+export const createDocumentSchema = DocSchema.pick({
+  title: true,
+  content: true,
+  parentId: true,
+  workspaceId: true,
+  subspaceId: true,
+  type: true,
+  visibility: true,
 });
-
 export type CreateDocumentDto = z.infer<typeof createDocumentSchema>;
 
+export interface CreateDocumentResponse extends CommonDocumentResponse {}
+
+// list doc
+export const listDocumentSchema = basePagerSchema.merge(DocSchema.pick({
+  parentId: true, 
+  workspaceId: true,
+  subspaceId: true,
+  visibility: true,
+})).merge(DocOptionalDefaultsSchema.pick({
+  isArchived: true,
+  isStarred: true,
+  type: true,
+ }));
+export type ListDocumentDto = z.infer<typeof listDocumentSchema>;
+
+export type ListDocumentResponse = BasePageResult<CommonDocumentResponse>
+
+
+// update doc
 export const updateDocumentSchema = z.object({
   title: z.string().optional(),
   content: z.string().optional(),
@@ -61,6 +82,7 @@ export const updateDocumentSchema = z.object({
 
 export type UpdateDocumentDto = z.infer<typeof updateDocumentSchema>;
 
+// search doc
 export const searchDocumentSchema = z.object({
   keyword: z.string().optional(),
   sort: z.string().default("createdAt"),
@@ -107,15 +129,19 @@ export interface SearchDocumentResponse {
   contentMatches: ContentMatch[];
 }
 
+// move doc
 export const moveDocumentsSchema = z.object({
   id: z.string().cuid(),
   targetId: z.string(),
   // -1 represents moving before the target document, 0 represents moving after the target document, 1 represents moving after the target document
   dropPosition: z.number(),
+  subspaceId: z.string().optional() // exist when moving to another subspace
 });
 
 export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;
 
+
+// share doc
 export const docShareUserSchema = z.object({
   id: z.number(),
   email: z.string(),
@@ -133,6 +159,7 @@ export const shareDocumentSchema = z.object({
 
 export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
 
+// update doc
 export const updateSharePermissionSchema = z.object({
   userId: z.number(),
   permission: z.enum(permission),
@@ -155,7 +182,7 @@ export const updateCoverSchema = z.object({
 export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
 
 //  ============== response ==============
-export interface CreateDocumentResponse extends CommonDocumentResponse {}
+
 export interface UpdateDocumentResponse extends CommonDocumentResponse {}
 
 export const detailDocumentSchema = commonDocumentSchema

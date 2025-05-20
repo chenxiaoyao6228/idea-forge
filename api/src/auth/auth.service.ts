@@ -6,21 +6,20 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { JwtService } from "@nestjs/jwt";
 import type { ConfigType } from "@nestjs/config";
 import { RedisService } from "@/_shared/database/redis/redis.service";
-import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { MailService } from "@/_shared/email/mail.service";
 import { User } from "@prisma/client";
 import { VerificationService } from "./verification.service";
 import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto } from "./auth.dto";
 import { AuthResponse, LoginResponseData, UserResponseData } from "contracts";
-import { DocumentService } from "@/document/ document.service";
+import { DocumentService } from "@/document/document.service";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 import { UserStatus } from "contracts";
 import { CollaborationService } from "@/collaboration/collaboration.service";
 import { ipToCity } from "@/_shared/utils/common";
 import { Logger } from "winston";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
-import { SystemDocumentService } from "@/document/system-document.service";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { type ExtendedPrismaClient, InjectPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 
 interface LoginMetadata {
   ip?: string;
@@ -30,15 +29,14 @@ interface LoginMetadata {
 export class AuthService {
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly redis: RedisService,
-    private readonly prisma: PrismaService,
     private readonly mailService: MailService,
     private readonly verificationService: VerificationService,
     private readonly documentService: DocumentService,
     private readonly collaborationService: CollaborationService,
-    private readonly systemDocumentService: SystemDocumentService,
   ) {}
 
   @Inject(refreshJwtConfig.KEY)
@@ -58,14 +56,6 @@ export class AuthService {
         ...data,
         status: UserStatus.SUSPENDED,
       });
-
-      // Share welcome document when creating new user
-      try {
-        await this.systemDocumentService.shareWelcomeDocument(user.id);
-      } catch (error) {
-        console.error("Failed to share welcome document:", error);
-        // Don't throw error as this is not critical for registration
-      }
     }
 
     await this.verificationService.generateAndSendCode(data.email, "register");

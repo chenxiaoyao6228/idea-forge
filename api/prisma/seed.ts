@@ -1,4 +1,4 @@
-import { Doc, PrismaClient } from '@prisma/client';
+import { Doc, DocVisibility, PrismaClient, SubspaceRole } from '@prisma/client';
 import { hash } from 'argon2';
 
 const prisma = new PrismaClient();
@@ -33,6 +33,51 @@ async function seed() {
         });
         users.push(user);
 
+        // Create default workspace
+        const workspace = await prisma.workspace.create({
+          data: {
+            name: `${user.displayName}'s Workspace`,
+            description: 'default workspace for user',
+            members: {
+              create: {
+                userId: user.id,
+                role: 'OWNER',
+              },
+            },
+          },
+        });
+
+      
+        // Create a default WORKSPACE_WIDE subspace
+        const workspaceWideSubspace = await prisma.subspace.create({
+          data: {
+            name: 'WORKSPACE_WIDE',
+            description: 'WORKSPACE_WIDE',
+            workspaceId: workspace.id,
+            members: {
+              create: {
+                userId: user.id,
+                role: SubspaceRole.ADMIN,
+              },
+            },
+          },
+        });
+
+        // Create some docs for default subspace
+        for (let j = 0; j < 5; j++) {
+          await prisma.doc.create({
+            data: {
+              title: `Document ${j} for ${email}`,
+              content: `Content for document ${j}`,
+              authorId: user.id,
+              workspaceId: workspace.id,
+              subspaceId: workspaceWideSubspace.id,
+              visibility: DocVisibility.WORKSPACE,
+            }
+          })
+        }
+
+
         // Create document structure for each user
         for (let folderIndex = 0; folderIndex < 5; folderIndex++) {
           let parentId: string | null = null;
@@ -41,8 +86,10 @@ async function seed() {
               data: {
                 title: `Document ${folderIndex}-${level} for ${email}`,
                 content: `Content for document ${folderIndex}-${level}`,
-                ownerId: user.id,
+                authorId: user.id,
                 parentId,
+                workspaceId: workspace.id,
+                visibility: DocVisibility.PRIVATE
               },
             }) as Doc;
             parentId = document.id;

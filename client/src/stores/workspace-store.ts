@@ -1,4 +1,4 @@
-import { createStore } from "./utils/creator";
+import { createStore } from "./utils/factory";
 import { workspaceApi } from "@/apis/workspace";
 import { Workspace } from "contracts";
 
@@ -22,16 +22,17 @@ const defaultState: State = {
 };
 
 const useWorkspaceStore = createStore<State & Actions, ComputedState>(
-  (set) => ({
+  (set, get) => ({
     ...defaultState,
     fetchWorkspaces: async () => {
       set({ loading: true });
       try {
         const response = await workspaceApi.getWorkspaces();
+
         if (response && Array.isArray(response.workspaces)) {
           set({
             workspaces: response.workspaces,
-            currentWorkspace: response.workspaces.find((w) => w.id === response.currentWorkspaceId) || null,
+            currentWorkspace: response.workspaces.find((w) => w.id === get().currentWorkspace?.id) || response.workspaces[0] || null,
           });
         }
       } catch (error) {
@@ -53,6 +54,13 @@ const useWorkspaceStore = createStore<State & Actions, ComputedState>(
   {
     devtoolOptions: {
       name: "workspaceStore",
+    },
+    persistOptions: {
+      name: "workspaceStore",
+      version: 1,
+      partialize: (state: any) => ({
+        currentWorkspace: state.currentWorkspace,
+      }),
     },
   },
 );

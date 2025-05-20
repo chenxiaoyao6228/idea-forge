@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Subspace } from "contracts";
+import { AddDocButton } from "../add-doc-button";
 
 interface SubspaceProps {
   subspace: Subspace;
@@ -21,7 +22,7 @@ export function SubspaceComp({ subspace }: SubspaceProps) {
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <CollapsibleTrigger asChild className="flex items-center px-2">
+      <CollapsibleTrigger asChild className="flex items-center px-2 py-1">
         <div className="flex items-center">
           <div className="flex items-center flex-1">
             <Avatar className="h-6 w-6 mr-[2px] ">
@@ -37,7 +38,7 @@ export function SubspaceComp({ subspace }: SubspaceProps) {
             </div>
           </div>
           <MoreOperations />
-          <AddDocButton />
+          <AddDocButton parentId={null} subspaceId={subspace.id} />
         </div>
       </CollapsibleTrigger>
 
@@ -45,15 +46,6 @@ export function SubspaceComp({ subspace }: SubspaceProps) {
         <div className="pl-4 mt-1">{/* 这里将来会放置子空间的文档树 */}</div>
       </CollapsibleContent>
     </Collapsible>
-  );
-}
-
-function AddDocButton() {
-  const handleClick = () => {};
-  return (
-    <Button onClick={handleClick} variant="ghost" size="icon" className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25">
-      <PlusIcon className="h-4 w-4" />
-    </Button>
   );
 }
 

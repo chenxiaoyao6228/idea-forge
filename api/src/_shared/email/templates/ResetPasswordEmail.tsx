@@ -1,7 +1,5 @@
 import React from "react";
 import { Body, Container, Head, Html, Preview, Section, Text } from "jsx-email";
-import { I18nTranslations } from "@/_generated/i18n.generated";
-import { I18nService } from "nestjs-i18n";
 import { EmailTemplateProps } from "../type";
 
 interface TemplateProps extends EmailTemplateProps {

@@ -1,13 +1,13 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { Inject, Injectable } from "@nestjs/common";
 import { SearchDocumentDto } from "./document.dto";
 import { ContentMatch, SearchDocumentResponse } from "contracts";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 
 @Injectable()
 export class SearchDocumentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
-  async searchDocuments(ownerId: number, { keyword, sort, order, limit }: SearchDocumentDto): Promise<SearchDocumentResponse> {
+  async searchDocuments(authorId: number, { keyword, sort, order, limit }: SearchDocumentDto): Promise<SearchDocumentResponse> {
     try {
       if (!keyword) {
         return {
@@ -18,7 +18,7 @@ export class SearchDocumentService {
       // Title matches remain the same
       const titleMatches = await this.prisma.doc.findMany({
         where: {
-          ownerId,
+          authorId,
           title: { contains: keyword, mode: "insensitive" },
         },
         select: {
@@ -43,7 +43,7 @@ export class SearchDocumentService {
               ELSE d.content::jsonb
             END as content
           FROM "Doc" d
-          WHERE d."ownerId" = ${ownerId}
+          WHERE d."authorId" = ${authorId}
             AND NOT d."isArchived"
         ),
         Blocks AS (

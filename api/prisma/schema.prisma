@@ -30,68 +30,198 @@ datasource db {
 model User {
   id          Int     @id @default(autoincrement())
   email       String  @unique
-  displayName String? // Display name. Without displayName, user will unbind everything when changing email
-  imageUrl    String?
+  displayName String? // Display name (used as primary identifier)
+  imageUrl    String? // Profile image URL
 
-  emailVerified DateTime? // Email verification time
-  status        String // User status
+  // Account status
+  emailVerified DateTime? // Email verification timestamp
+  status        UserStatus @default(PENDING) // Account status
 
-  created_time DateTime @default(now()) @db.Timestamp()
-  updated_time DateTime @updatedAt @db.Timestamp()
+  // Timestamps
+  created_time DateTime @default(now()) @db.Timestamp() // Account creation time
+  updated_time DateTime @updatedAt // Last update time
 
-  hashedRefreshToken String?
-  password           Password?
-  connections        Connection[]
-  docs               Doc[]
-  sharedDocs         DocShare[]         @relation("SharedToUser")
-  DocShare           DocShare[]
-  File               File[]
-  aiTokenUsage       AITokenUsage?
-  UserLoginHistory   UserLoginHistory[]
+  // Security
+  hashedRefreshToken String? // Refresh token for authentication
+  password           Password? // Hashed password
+  connections        Connection[] // OAuth connections
 
-  workspaceMembers WorkspaceMember[]
-  subspaceMembers  SubspaceMember[]
-  memberGroups     MemberGroupUser[]
-  guestInvitations GuestCollaborator[] @relation("InvitedBy")
+  // Document relationships
+  authoredDocs Doc[]      @relation("DocAuthor") // Documents created by user
+  sharedDocs   DocShare[] @relation("SharedToUser") // Documents shared with user
+  docShare     DocShare[] // Documents shared by user
 
-  currentWorkspace   Workspace? @relation("CurrentWorkspace", fields: [currentWorkspaceId], references: [id])
-  currentWorkspaceId String?
+  // Public sharing
+  createdPublicShares PublicShare[] // Public shares created by user
+
+  // Version history
+  docRevisions DocRevision[] // Document revision history
+
+  // File storage
+  file         File[] // Files uploaded by user
+  aiTokenUsage AITokenUsage? // AI token usage tracking
+
+  // Activity logs
+  userLoginHistory UserLoginHistory[] // User login history records
+
+  // Workspace memberships
+  workspaceMembers WorkspaceMember[] // Workspace memberships
+  subspaceMembers  SubspaceMember[] // Subspace memberships
+
+  // Group memberships
+  memberGroups MemberGroupUser[] // Group memberships
+
+  // Guest invitations
+  guestInvitations         GuestCollaborator[]        @relation("InvitedBy") // Guest invitations sent
+  SubspaceMemberPermission SubspaceMemberPermission[]
 }
 
-model Password {
-  hash String
-
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId Int  @unique
-}
-
-model Connection {
-  id           String @id @default(cuid())
-  providerName String // Provider name: github, google etc.
-  providerId   String // Provider's user ID
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId Int // Changed to Int type to match User.id
-
-  @@unique([providerName, providerId])
+enum UserStatus {
+  PENDING // Registration pending verification (email/phone not verified)
+  ACTIVE // Normal active status
+  SUSPENDED // Temporarily suspended (violation of rules, etc.)
+  REVOKED // Permanently banned (serious violation)
+  ARCHIVED // Account archived (long-term inactive)
 }
 
 model Workspace {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  avatar      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  allowPublicDocs Boolean  @default(false)
+  name            String
+  description     String?
+  avatar          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  settings Json?
+
+  // relations
   subspaces    Subspace[]
   members      WorkspaceMember[]
   guests       GuestCollaborator[]
   memberGroups MemberGroup[]
-  currentUsers User[]              @relation("CurrentWorkspace")
+  docs         Doc[]
+}
+
+enum DocVisibility {
+  PUBLIC // visible to everyone, (eg: product user guide, etc.)
+  PRIVATE // visible to author
+  WORKSPACE // visible to workspace, need further permission control check
+}
+
+model Doc {
+  id            String  @id @default(cuid())
+  type          DocType @default(NOTE)
+  title         String
+  content       String  @default("{}") // doc json snapshot
+  contentBinary Bytes? // yjs collaborative document
+
+  // state mark
+  isArchived Boolean @default(false)
+  isStarred  Boolean @default(false)
+  isPrivate  Boolean @default(false)
+
+  // position
+  parentId String?
+  position Int     @default(0)
+
+  // timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // appearance
+  icon         String?
+  coverImage   CoverImage?
+  coverImageId String?
+
+  // visibility
+  visibility DocVisibility @default(WORKSPACE)
+
+  // relations
+  author   User @relation("DocAuthor", fields: [authorId], references: [id])
+  authorId Int
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+
+  subspace   Subspace? @relation(fields: [subspaceId], references: [id])
+  subspaceId String?
+
+  parent   Doc?  @relation("DocToDoc", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Doc[] @relation("DocToDoc")
+
+  // sharing and perissions
+  docShare           DocShare[]
+  guestDocPermission GuestDocPermission[]
+  publicShare        PublicShare?
+
+  // versions
+  revisions          DocRevision[]
+  DocGroupPermission DocGroupPermission[]
+}
+
+model DocRevision {
+  id            String   @id @default(cuid())
+  title         String
+  content       String
+  contentBinary Bytes?
+  createdAt     DateTime @default(now())
+
+  doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
+  docId    String
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId Int
+
+  @@index([docId, createdAt])
+}
+
+model PublicShare {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Associated document
+  doc   Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
+  docId String @unique
+
+  // Sharing configuration
+  expiresAt    DateTime? // Expiration time, null means never expires
+  allowEdit    Boolean   @default(false) // Allow editing
+  allowComment Boolean   @default(false) // Allow commenting
+  allowCopy    Boolean   @default(false) // Allow copying
+  showTemplate Boolean   @default(false) // Show template button
+  showSidebar  Boolean   @default(false) // Show left sidebar
+
+  // Access statistics
+  viewCount Int @default(0)
+
+  // Creator
+  creator   User @relation(fields: [creatorId], references: [id])
+  creatorId Int
+
+  // Security settings
+  accessCode String? // Access password, null means no password
+
+  // Edit history
+  editHistory PublicEditHistory[]
+}
+
+// Public edit history
+model PublicEditHistory {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Associated share
+  share   PublicShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  shareId String
+
+  // Editor information
+  editorId   String? // Logged-in user ID
+  editorName String // Editor name (anonymous users use temporary name)
+  editorIp   String // Editor IP address
+
+  // Edit content
+  operation Json // Record specific edit operations
 }
 
 model WorkspaceMember {
@@ -99,6 +229,8 @@ model WorkspaceMember {
   role      WorkspaceRole @default(MEMBER)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+
+  preferences Json? // User preferences
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId String
@@ -116,11 +248,16 @@ model Subspace {
   type        SubspaceType @default(PUBLIC)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  settings    Json?
 
-  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
-  workspaceId String
-  docs        Doc[]
-  members     SubspaceMember[]
+  isArchived Boolean @default(false)
+
+  // relations
+  workspace                Workspace                  @relation(fields: [workspaceId], references: [id])
+  workspaceId              String
+  docs                     Doc[]
+  members                  SubspaceMember[]
+  SubspaceMemberPermission SubspaceMemberPermission[]
 }
 
 model SubspaceMember {
@@ -131,12 +268,39 @@ model SubspaceMember {
 
   subspace   Subspace @relation(fields: [subspaceId], references: [id])
   subspaceId String
-  user       User     @relation(fields: [userId], references: [id])
-  userId     Int
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
 
   @@unique([subspaceId, userId])
 }
 
+enum SubspaceType {
+  WORKSPACE_WIDE //  All workspace members are automatically members of this space (cannot leave). 
+  PUBLIC // Any workspace member can join and leave freely. 
+  INVITE_ONLY // Visible to all members but requires invitation to join.
+  PRIVATE //  Only visible to invited members, completely hidden from others.
+}
+
+model SubspaceMemberPermission {
+  id         String     @id @default(cuid())
+  permission Permission @default(READ)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  // relations
+  subspace   Subspace @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
+  subspaceId String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+
+  // some roles' permission can not be modified
+  isEditable Boolean @default(true)
+
+  @@unique([subspaceId, userId])
+}
+
+// Group of users in workspace
 model MemberGroup {
   id          String    @id @default(cuid())
   name        String
@@ -145,9 +309,10 @@ model MemberGroup {
   updatedAt   DateTime  @updatedAt
   validUntil  DateTime?
 
-  workspace   Workspace         @relation(fields: [workspaceId], references: [id])
-  workspaceId String
-  members     MemberGroupUser[]
+  workspace          Workspace            @relation(fields: [workspaceId], references: [id])
+  workspaceId        String
+  members            MemberGroupUser[]
+  DocGroupPermission DocGroupPermission[]
 }
 
 model MemberGroupUser {
@@ -162,6 +327,22 @@ model MemberGroupUser {
   @@unique([groupId, userId])
 }
 
+model DocGroupPermission {
+  id         String     @id @default(cuid())
+  permission Permission @default(READ)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  doc     Doc         @relation(fields: [docId], references: [id], onDelete: Cascade)
+  docId   String
+  group   MemberGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+
+  @@unique([docId, groupId])
+}
+
+// User belongs to other workspace, but come to current workspace as a guest
+// can be upgraded to workspace member
 model GuestCollaborator {
   id        String      @id @default(cuid())
   email     String
@@ -194,30 +375,32 @@ model GuestDocPermission {
   @@unique([guestId, docId])
 }
 
-model Doc {
-  id            String      @id @default(cuid())
-  title         String
-  content       String
-  contentBinary Bytes?
-  isArchived    Boolean     @default(false)
-  isStarred     Boolean     @default(false)
-  isPrivate     Boolean     @default(false)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  owner         User        @relation(fields: [ownerId], references: [id])
-  ownerId       Int
-  parent        Doc?        @relation("ChildrenDocs", fields: [parentId], references: [id])
-  parentId      String?
-  children      Doc[]       @relation("ChildrenDocs")
-  icon          String?
-  coverImageId  String?     @unique
-  coverImage    CoverImage?
-  position      Int         @default(0)
-  sharedWith    DocShare[]
+enum GuestStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
 
-  subspace         Subspace?            @relation(fields: [subspaceId], references: [id])
-  subspaceId       String?
-  guestPermissions GuestDocPermission[]
+model Password {
+  hash String
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId Int  @unique
+}
+
+model Connection {
+  id           String @id @default(cuid())
+  providerName String // Provider name: github, google etc.
+  providerId   String // Provider's user ID
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int // Changed to Int type to match User.id
+
+  @@unique([providerName, providerId])
 }
 
 model CoverImage {
@@ -283,36 +466,29 @@ model UserLoginHistory {
   @@index([userId])
 }
 
-enum SubspaceType {
-  WORKSPACE_WIDE
-  PUBLIC
-  INVITE_ONLY
-  PRIVATE
-}
-
 enum WorkspaceRole {
-  OWNER
-  ADMIN
-  MEMBER
+  OWNER // Can delete the workspace/transfer ownership/has all ADMIN permissions
+  ADMIN // Can manage workspace settings, add/remove members, add/remove member groups, manage all documents in the workspace, etc
+  MEMBER // Can create documents/ join subspaces/ create member groups(if allowed in workspace settings) / Cannot see private content unless explicitly shared
 }
 
 enum SubspaceRole {
-  ADMIN
+  ADMIN // Can manage subspace settings, add/remove members, manage  all documents in the subspace, etc
   MEMBER
 }
 
-enum GuestStatus {
-  PENDING
-  ACTIVE
-  EXPIRED
-  REVOKED
-}
-
+// Doc permission
 enum Permission {
   MANAGE
   SHARE
   EDIT
-  READ
   COMMENT
+  READ
   NONE
+}
+
+enum DocType {
+  NOTE
+  WHITEBOARD
+  MIND
 }

@@ -12,6 +12,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "target": "ES2021",
     "jsx": "react-jsx",
     "sourceMap": true,
@@ -25,6 +26,6 @@
     "strictPropertyInitialization": false,
 
   },
-  "include": ["src/**/*", "dist/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }

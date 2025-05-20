@@ -5,7 +5,7 @@ import { AIStreamRequest, TokenUsageResponse } from "contracts";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { User } from "@prisma/client";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { type ErrorCodeEnum, ErrorCodeMsg } from "@/_shared/constants/api-response-constant";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { TokenUsageService } from "./token-usage.service";
 import { ConfigService } from "@nestjs/config";
 import { UserService } from "@/user/user.service";

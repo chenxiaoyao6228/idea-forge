@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { NullableJsonValue } from '../inputTypeSchemas/NullableJsonValue'
 import { WorkspaceRoleSchema } from '../inputTypeSchemas/WorkspaceRoleSchema'
 
 /////////////////////////////////////////
@@ -10,6 +11,7 @@ export const WorkspaceMemberSchema = z.object({
   id: z.string().cuid(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
+  preferences: NullableJsonValue.optional(),
   workspaceId: z.string(),
   userId: z.number().int(),
 })

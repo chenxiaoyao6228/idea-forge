@@ -28,6 +28,7 @@ import { AllExceptionsFilter } from "./_shared/filters/all-exception.filter";
 import { SystemDocumentService } from "./document/system-document.service";
 import { WorkspaceModule } from "./workspace/workspace.module";
 import { SubspaceModule } from "./subspace/subspace.module";
+import { CaslModule } from "./_shared/casl/casl.module";
 
 @Module({
   controllers: [AppController],
@@ -72,6 +73,7 @@ import { SubspaceModule } from "./subspace/subspace.module";
     WorkspaceModule,
     I18nNextModule,
     SubspaceModule,
+    CaslModule,
   ],
   providers: [
     {

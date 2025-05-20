@@ -7,9 +7,10 @@ import { useTranslation } from "react-i18next";
 
 interface AddDocButtonProps {
   parentId: string | null;
+  subspaceId: string | null;
 }
 
-export function AddDocButton({ parentId }: AddDocButtonProps) {
+export function AddDocButton({ parentId, subspaceId }: AddDocButtonProps) {
   const { t } = useTranslation();
   const createDocument = useDocumentStore.use.createDocument();
   const navigate = useNavigate();
@@ -20,7 +21,11 @@ export function AddDocButton({ parentId }: AddDocButtonProps) {
 
     setIsCreating(true);
     try {
-      const newDocId = await createDocument(parentId, t("Untitled"));
+      const newDocId = await createDocument({
+        title: t("Untitled"),
+        parentId,
+        subspaceId,
+      });
       navigate(`/${newDocId}`);
     } finally {
       setIsCreating(false);

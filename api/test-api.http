@@ -1,0 +1,77 @@
+// This file is for temporary test, with cursor or other ai editors, we can test api easily with the template 
+// vscode extension:  https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+// ============== example ==============
+
+@baseUrl=http://localhost:5000
+
+### login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "1@qq.com",
+  "password": "Aa111111"
+}
+
+### get access token from cookie response of login
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImlhdCI6MTc0NzYzNDY3NSwiZXhwIjoxNzQ3NzIxMDc1fQ.YEihvdG0zlOuVDrQtbjx2xuP1ppX9N9jZcMpPZXbMQg
+
+
+### test pagination
+GET {{baseUrl}}/api/documents/list?page=1&limit=2&workspaceId=cmasgd22l00005aw8w7i31ykz
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+// ========== other test ============
+@workspaceId = cmaupg3yy0000blcncjf435pg
+@subspaceId = cmauteb7c0000ibtz3x5pzz3l
+
+### create workspace
+POST {{baseUrl}}/api/workspaces
+Content-Type: application/json
+
+{
+  "name": "workspace-test",
+  "description": "test"
+}
+
+### create subspace
+POST {{baseUrl}}/api/subspaces
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+{
+   "workspaceId": "{{workspaceId}}",
+   "name": "subspace-test",
+   "description": "test",
+   "type": "WORKSPACE_WIDE",
+   "avatar": ""
+}
+
+### get subspaces list
+GET {{baseUrl}}/api/subspaces/list
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+### create doc
+POST {{baseUrl}}/api/documents/create
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+{
+  "name": "test",
+  "title": "test",
+  "content": "test",
+  "type": "NOTE",
+  "visibility": "WORKSPACE",
+  "workspaceId": "{{workspaceId}}",
+  "subspaceId": "{{subspaceId}}",
+  "parentId": null
+}
+
+
+### get doc of subspace
+GET  {{baseUrl}}/api/documents/list?page=1&limit=2&workspaceId={{workspaceId}}&subspaceId={{subspaceId}}&parentId=null&visibility=WORKSPACE&type=NOTE
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}

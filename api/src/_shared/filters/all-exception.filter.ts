@@ -2,7 +2,6 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from "@nestjs/commo
 import { SentryExceptionCaptured } from "@sentry/nestjs";
 import { Response } from "express";
 import { I18nNextService } from "../i18next/i18n.service";
-import { I18nContextManager } from "../i18next/i18n.context";
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -13,11 +12,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const t = I18nContextManager.getT();
-
     response.status(HttpStatus.SERVICE_UNAVAILABLE).send({
       statusCode: HttpStatus.SERVICE_UNAVAILABLE,
-      message: t(exception.message),
+      message: exception.message,
       path: request.url,
     });
   }

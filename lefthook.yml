@@ -12,7 +12,7 @@ pre-commit:
         echo "Running i18n process..."
         pnpm i18n:process
         echo "Adding translation files..."
-        git add **/**/locales/*.json
+        git add api/locales/*.json && git add api/public/locales/*.json
     format:
       glob: "*.{js,ts,jsx,tsx,json}"
       run: |

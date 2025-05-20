@@ -1,15 +1,15 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../_shared/database/prisma/prisma.service";
+import { Inject, Injectable } from "@nestjs/common";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
 import { WorkspaceListResponse } from "contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 
 @Injectable()
 export class WorkspaceService {
   constructor(
-    private readonly prismaService: PrismaService,
+    @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient,
     private readonly subspaceService: SubspaceService,
   ) {}
 
@@ -92,80 +92,68 @@ export class WorkspaceService {
     if (workspaces.length === 0) {
       // Create a default workspace when there is none for backwards compatibility
       const workspace = await this.CreateDefaultWorkspace(currentUserId);
-      return {
-        workspaces: [
-          {
-            ...workspace,
-            createdAt: workspace.createdAt.toISOString(),
-            updatedAt: workspace.updatedAt.toISOString(),
-          },
-        ],
-        currentWorkspaceId: workspace.id,
-      };
-    }
-
-    return {
-      workspaces: workspaces.map((workspace) => ({
-        ...workspace,
-        createdAt: workspace.createdAt.toISOString(),
-        updatedAt: workspace.updatedAt.toISOString(),
-      })),
-      currentWorkspaceId: user.currentWorkspaceId!,
-    };
-  }
-
-  async getCurrentWorkspace(userId: number) {
-    const user = await this.prismaService.user.findUnique({
-      where: { id: userId },
-      include: { currentWorkspace: true },
-    });
-
-    if (!user || !user.currentWorkspaceId) {
-      const firstWorkspace = await this.prismaService.workspace.findFirst({
-        where: {
-          members: {
-            some: {
-              userId,
-            },
-          },
+      return [
+        {
+          ...workspace,
         },
-      });
-
-      if (firstWorkspace) {
-        await this.setCurrentWorkspace(userId, firstWorkspace.id);
-        return {
-          ...firstWorkspace,
-          createdAt: firstWorkspace.createdAt.toISOString(),
-          updatedAt: firstWorkspace.updatedAt.toISOString(),
-        };
-      }
-
-      return null;
+      ];
     }
 
-    if (user.currentWorkspace) {
-      return {
-        ...user.currentWorkspace,
-        createdAt: user.currentWorkspace.createdAt.toISOString(),
-        updatedAt: user.currentWorkspace.updatedAt.toISOString(),
-      };
-    }
-
-    // Fallback if currentWorkspace is null but currentWorkspaceId exists
-    const workspace = await this.prismaService.workspace.findUnique({
-      where: { id: user.currentWorkspaceId },
-    });
-
-    if (!workspace) {
-      return null;
-    }
-
-    return {
-      ...workspace,
-      createdAt: workspace.createdAt.toISOString(),
-      updatedAt: workspace.updatedAt.toISOString(),
-    };
+    return workspaces;
   }
+
+  // async getCurrentWorkspace(userId: number) {
+  //   const user = await this.prismaService.user.findUnique({
+  //     where: { id: userId },
+  //     include: { currentWorkspace: true },
+  //   });
+
+  //   if (!user || !user.currentWorkspaceId) {
+  //     const firstWorkspace = await this.prismaService.workspace.findFirst({
+  //       where: {
+  //         members: {
+  //           some: {
+  //             userId,
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     if (firstWorkspace) {
+  //       await this.setCurrentWorkspace(userId, firstWorkspace.id);
+  //       return {
+  //         ...firstWorkspace,
+  //         createdAt: firstWorkspace.createdAt.toISOString(),
+  //         updatedAt: firstWorkspace.updatedAt.toISOString(),
+  //       };
+  //     }
+
+  //     return null;
+  //   }
+
+  //   if (user.currentWorkspace) {
+  //     return {
+  //       ...user.currentWorkspace,
+  //       createdAt: user.currentWorkspace.createdAt.toISOString(),
+  //       updatedAt: user.currentWorkspace.updatedAt.toISOString(),
+  //     };
+  //   }
+
+  //   // Fallback if currentWorkspace is null but currentWorkspaceId exists
+  //   const workspace = await this.prismaService.workspace.findUnique({
+  //     where: { id: user.currentWorkspaceId },
+  //   });
+
+  //   if (!workspace) {
+  //     return null;
+  //   }
+
+  //   return {
+  //     ...workspace,
+  //     createdAt: workspace.createdAt.toISOString(),
+  //     updatedAt: workspace.updatedAt.toISOString(),
+  //   };
+  // }
 
   async setCurrentWorkspace(userId: number, workspaceId: string) {
     await this.prismaService.user.update({

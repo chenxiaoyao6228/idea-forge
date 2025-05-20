@@ -16,7 +16,7 @@ export const workspaceApi = {
 
   getWorkspace: async (id: string) => request.get<void, Workspace>(`/api/workspaces/${id}`),
 
-  getWorkspaces: async () => request.get<void, WorkspaceListResponse>("/api/workspaces"),
+  getWorkspaces: async () => request.get<void, WorkspaceListResponse>("/api/workspaces/list"),
 
   switchWorkspace: async (id: string) => request.post<{ workspaceId: string }, { success: boolean }>(`/api/workspaces/switch`, { workspaceId: id }),
 

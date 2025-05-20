@@ -9,7 +9,7 @@ export const subspaceApi = {
 
   getSubspace: async (id: string) => request.get<void, SubspaceDetailResponse>(`/api/subspaces/${id}`),
 
-  getSubspaces: async () => request.get<any, Subspace[]>("/api/subspaces"),
+  getSubspaces: async () => request.get<any, Subspace[]>("/api/subspaces/list"),
 
   updateSubspace: async (id: string, data: UpdateSubspaceRequest) => request.put<UpdateSubspaceRequest, SubspaceDetailResponse>(`/api/subspaces/${id}`, data),
 

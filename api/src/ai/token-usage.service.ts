@@ -1,15 +1,15 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { Inject, Injectable } from "@nestjs/common";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { TokenUsageResponse } from "contracts";
-import { type ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { UpdateUserTokenLimitDto } from "./ai.dto";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 
 const MONTHLY_TOKEN_LIMIT = 10000;
 
 @Injectable()
 export class TokenUsageService {
-  constructor(private prisma: PrismaService) {}
+  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
   async updateTokenUsage(userId: number, usedTokens: number) {
     const usage = await this.getOrCreateTokenUsage(userId);

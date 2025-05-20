@@ -1,15 +1,14 @@
-import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ConflictException, Inject, Injectable } from "@nestjs/common";
 import { hash } from "argon2";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { CreateUserDto, UpdateUserDto } from "@/auth/auth.dto";
 import { UserStatus } from "contracts";
-import { type ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 
 @Injectable()
 export class UserService {
-  @Inject(PrismaService)
-  private readonly prisma: PrismaService;
+  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
   async createUser(data: CreateUserDto) {
     const { password, ...userData } = data;

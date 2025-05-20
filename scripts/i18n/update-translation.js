@@ -17,7 +17,6 @@ const keysToUpdate = [
 const localeDirs = [
   path.join(__dirname, "../../api/locales"),
   path.join(__dirname, "../../api/public/locales"),
-  path.join(__dirname, "../../shared/src/contracts/locales"),
 ];
 
 const config = {

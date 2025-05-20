@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
-import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto } from "./document.dto";
-import { DocumentService } from "./ document.service";
+import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto, DocumentPagerDto } from "./document.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
-import { UpdateCoverDto } from "contracts";
+import { UpdateCoverDto, User } from "contracts";
 import { SearchDocumentService } from "./search-document.service";
+import { DocumentService } from "./document.service";
 
 @Controller("/api/documents")
 export class DocumentController {
@@ -12,6 +12,22 @@ export class DocumentController {
     private readonly searchDocumentService: SearchDocumentService,
   ) {}
 
+  @Post("create")
+  create(@GetUser("id") userId: number, @Body() dto: CreateDocumentDto) {
+    return this.documentService.create(userId, dto);
+  }
+
+  @Get("list")
+  async list(@GetUser("id") userId: number, @Query() dto: DocumentPagerDto) {
+    return this.documentService.list(userId, dto);
+  }
+
+  @Post("move")
+  async moveDocuments(@GetUser("id") userId: number, @Body() dto: MoveDocumentsDto) {
+    return this.documentService.moveDocs(userId, dto);
+  }
+
+  // TODO: remove this
   @Get("tree")
   async getNestedTree(@GetUser("id") userId: number, @Query("parentId") parentId?: string) {
     return this.documentService.getNestedTree(userId, parentId);
@@ -32,10 +48,7 @@ export class DocumentController {
     return this.documentService.findLatestOrCreate(userId);
   }
 
-  @Post("move")
-  async moveDocuments(@GetUser("id") userId: number, @Body() dto: MoveDocumentsDto) {
-    return this.documentService.moveDocuments(userId, dto);
-  }
+  // ================== trash =====================
 
   @Get("trash")
   getTrash(@GetUser("id") userId: number) {
@@ -54,11 +67,6 @@ export class DocumentController {
     return this.documentService.findOne(id, userId);
   }
 
-  @Post()
-  create(@GetUser("id") userId: number, @Body() dto: CreateDocumentDto) {
-    return this.documentService.create(userId, dto);
-  }
-
   @Patch(":id")
   update(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: UpdateDocumentDto) {
     return this.documentService.update(id, userId, dto);
@@ -67,16 +75,6 @@ export class DocumentController {
   @Delete(":id")
   remove(@GetUser("id") userId: number, @Param("id") id: string) {
     return this.documentService.remove(id, userId);
-  }
-
-  @Patch(":id/cover")
-  async uploadCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: UpdateCoverDto) {
-    return this.documentService.updateCover(id, userId, dto);
-  }
-
-  @Delete(":id/cover")
-  async deleteCover(@GetUser("id") userId: number, @Param("id") id: string) {
-    return this.documentService.removeCover(id, userId);
   }
 
   @Post(":id/restore")
@@ -92,5 +90,16 @@ export class DocumentController {
   @Post(":id/duplicate")
   duplicate(@GetUser("id") userId: number, @Param("id") id: string) {
     return this.documentService.duplicate(userId, id);
+  }
+
+  // ============== cover =======================
+  @Patch(":id/cover")
+  async uploadCover(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: UpdateCoverDto) {
+    return this.documentService.updateCover(id, userId, dto);
+  }
+
+  @Delete(":id/cover")
+  async deleteCover(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.removeCover(id, userId);
   }
 }

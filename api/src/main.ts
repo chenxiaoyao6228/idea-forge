@@ -8,9 +8,9 @@ import "./_shared/utils/sentry";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import type { NestExpressApplication } from "@nestjs/platform-express";
-import * as session from "express-session";
+import session from "express-session";
 import { mw as requestIpMw } from "request-ip";
-import * as cookieParser from "cookie-parser";
+import cookieParser from "cookie-parser";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { ConfigService } from "@nestjs/config";
 import { AllExceptionsFilter } from "./_shared/filters/all-exception.filter";
@@ -72,10 +72,26 @@ async function bootstrap() {
     console.log(`Application is running on: ${await app.getUrl()}`);
   }
 
-  if (module.hot) {
-    module.hot.accept();
-    module.hot.dispose(() => app.close());
-  }
+  process.on("SIGINT", async () => {
+    console.log("Received SIGINT signal, shutting down application...");
+    await app.close();
+    process.exit(0);
+  });
+
+  process.on("SIGTERM", async () => {
+    console.log("Received SIGTERM signal, shutting down application...");
+    console.log("======= will take a few seconds for nestjs to restart ========");
+    await app.close();
+    process.exit(0);
+  });
+
+  // if (module.hot) {
+  //   module.hot.accept(() => {
+  //     console.log("Module updated, reloading...");
+  //     app.close();
+  //   });
+  //   module.hot.dispose(() => app.close());
+  // }
 }
 
 bootstrap();

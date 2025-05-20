@@ -1,13 +1,13 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../_shared/database/prisma/prisma.service";
+import { Inject, Injectable } from "@nestjs/common";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
-import { ErrorCodeEnum } from "contracts";
 import { SubspaceTypeSchema } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 
 @Injectable()
 export class SubspaceService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(@Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient) {}
 
   async createDefaultGlobalSubspace(userId: number, workspaceId: string) {
     return await this.createSubspace(
@@ -123,10 +123,10 @@ export class SubspaceService {
         workspace: undefined,
         members: subspace.members.map((member) => ({
           ...member,
-          createdAt: member.createdAt.toISOString(),
+          createdAt: member.createdAt,
         })),
-        createdAt: subspace.createdAt.toISOString(),
-        updatedAt: subspace.updatedAt.toISOString(),
+        createdAt: subspace.createdAt,
+        updatedAt: subspace.updatedAt,
       },
     };
   }
@@ -324,10 +324,7 @@ export class SubspaceService {
     });
 
     return {
-      members: members.map((member) => ({
-        ...member,
-        createdAt: member.createdAt.toISOString(),
-      })),
+      members: members,
       total: members.length,
     };
   }

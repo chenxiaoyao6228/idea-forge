@@ -29,14 +29,10 @@ export const UpdateWorkspaceMemberRequestSchema = z.object({
 });
 export type UpdateWorkspaceMemberRequest = z.infer<typeof UpdateWorkspaceMemberRequestSchema>;
 
-export const WorkspaceListResponseSchema = z.object({
-  workspaces: z.array(WorkspaceSchema),
-  currentWorkspaceId: z.string()
-});
+export const WorkspaceListResponseSchema =  z.array(WorkspaceSchema);
 export type WorkspaceListResponse = z.infer<typeof WorkspaceListResponseSchema>;
 
-export const WorkspaceDetailResponseSchema = z.object({
-  workspace: WorkspaceSchema.extend({
+export const WorkspaceDetailResponseSchema = WorkspaceSchema.extend({
     members: z.array(WorkspaceMemberSchema),
     subspaces: z.array(
       z.object({
@@ -44,10 +40,8 @@ export const WorkspaceDetailResponseSchema = z.object({
         name: z.string(),
         createdAt: z.string(),
         updatedAt: z.string(),
-      }),
-    ),
-  }),
-});
+      }))});
+
 export type WorkspaceDetailResponse = z.infer<typeof WorkspaceDetailResponseSchema>;
 
 export const WorkspaceMemberListResponseSchema = z.object({
