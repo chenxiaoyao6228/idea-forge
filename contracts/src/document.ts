@@ -1,30 +1,31 @@
 import { z } from "zod";
-import { DocOptionalDefaultsSchema, DocSchema } from "../schema";
+import {  DocOptionalDefaultsSchema, DocSchema } from "./schema";
 import { BasePageResult, basePagerSchema } from "./_base";
 
-const commonDocumentSchema = z.object({
-  id: z.string().cuid(),
-  title: z.string(),
-  isArchived: z.boolean(),
-  isStarred: z.boolean(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
-  parentId: z.string().nullable(),
-  icon: z.string().nullable(),
-  isLeaf: z.boolean(),
-  position: z.number(),
-});
+const commonDocumentSchema = DocSchema.pick({
+  id: true,
+  title: true,
+  isArchived: true,
+  isStarred: true,
+  createdAt: true,
+  updatedAt: true,
+  parentId: true,
+  icon: true,
+  position: true,
+})
+export type CommonDocument = z.infer<typeof commonDocumentSchema>;
 
-export type CommonDocumentResponse = z.infer<typeof commonDocumentSchema>;
+const commonDocumentResponseSchema = commonDocumentSchema.merge(z.object({
+  isLeaf: z.boolean(),
+}))
+
+export type CommonDocumentResponse = z.infer<typeof commonDocumentResponseSchema>;
 
 const permission = ["EDIT", "READ", "NONE"] as const;
 
 export type Permission = (typeof permission)[number];
 
 const commonSharedDocumentSchema = commonDocumentSchema
-  .omit({
-    isLeaf: true,
-  })
   .extend({
     owner: z.object({
       displayName: z.string().nullable(),
@@ -56,20 +57,19 @@ export type CreateDocumentDto = z.infer<typeof createDocumentSchema>;
 export interface CreateDocumentResponse extends CommonDocumentResponse {}
 
 // list doc
-export const listDocumentSchema = basePagerSchema.merge(DocSchema.pick({
+export const listDocumentSchema = basePagerSchema.merge(DocOptionalDefaultsSchema.pick({
   parentId: true, 
   workspaceId: true,
   subspaceId: true,
   visibility: true,
-})).merge(DocOptionalDefaultsSchema.pick({
   isArchived: true,
   isStarred: true,
   type: true,
- }));
+ })); 
 export type ListDocumentDto = z.infer<typeof listDocumentSchema>;
 
-export type ListDocumentResponse = BasePageResult<CommonDocumentResponse>
 
+export type ListDocumentResponse = BasePageResult<CommonDocumentResponse>
 
 // update doc
 export const updateDocumentSchema = z.object({
@@ -186,9 +186,6 @@ export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
 export interface UpdateDocumentResponse extends CommonDocumentResponse {}
 
 export const detailDocumentSchema = commonDocumentSchema
-  .omit({
-    isLeaf: true,
-  })
   .extend({
     content: z.string(),
     coverImage: z

@@ -15,7 +15,9 @@ export class DocumentService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
   async list(userId: number, dto: DocumentPagerDto) {
-    const { isArchived, isStarred, subspaceId, parentId, page, limit, sortBy, sortOrder, visibility } = dto;
+    const { isArchived, isStarred, subspaceId, parentId, page, limit, sortBy, sortOrder } = dto;
+
+    console.log("dto", dto);
 
     const where: any = {
       AND: [
@@ -23,12 +25,12 @@ export class DocumentService {
         isArchived ? { isArchived } : {},
         subspaceId ? { subspaceId } : {},
         parentId === "null" ? { parentId: null } : parentId ? { parentId } : {},
-        visibility ? { visibility } : {},
+        // visibility ? { visibility } : {},
         {
           OR: [
             { authorId: userId },
             {
-              DocShare: {
+              docShare: {
                 some: { userId },
               },
             },
@@ -47,7 +49,7 @@ export class DocumentService {
     const [items, total] = await Promise.all([
       this.prisma.doc.findMany({
         where,
-        orderBy: { [sortBy || "createdAt"]: sortOrder },
+        orderBy: { [sortBy || "createdAt"]: sortOrder || "desc" },
         skip: (page - 1) * limit,
         take: limit,
         include: {
@@ -65,20 +67,24 @@ export class DocumentService {
 
     const data = items.map((doc) => ({
       id: doc.id,
-      title: doc.title,
-      isStarred: doc.isStarred,
-      position: doc.position,
+      title: doc.title || "",
+      isStarred: doc.isStarred || false,
+      position: doc.position || 0,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
-      isArchived: doc.isArchived,
+      isArchived: doc.isArchived || false,
       isLeaf: doc._count.children === 0,
       parentId: doc.parentId || null,
       icon: doc.icon || null,
+      visibility: doc.visibility || "PRIVATE",
+      workspaceId: doc.workspaceId || null,
+      subspaceId: doc.subspaceId || null,
     }));
 
     return {
       pagination: { page, limit, total },
       data,
+      policies: {},
     };
   }
 
@@ -260,28 +266,30 @@ export class DocumentService {
     }
   }
 
-  async findLatestOrCreate(authorId: number) {
-    // let doc = await this.prisma.doc.findFirst({
-    //   where: {
-    //     authorId,
-    //     isArchived: false,
-    //   },
-    //   orderBy: {
-    //     updatedAt: "desc",
-    //   },
-    // });
-    // if (!doc) {
-    //   // Create a new document if none exists
-    //   doc = await this.prisma.doc.create({
-    //     data: {
-    //       title: "Untitled",
-    //       authorId,
-    //       content: "",
-    //       position: 0,
-    //     },
-    //   });
-    // }
-    // return doc;
+  async findLatestOrCreate(authorId: number, workspaceId: string) {
+    let doc = await this.prisma.doc.findFirst({
+      where: {
+        authorId,
+        isArchived: false,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+    if (!doc) {
+      // Create a new document if none exists
+      doc = await this.prisma.doc.create({
+        data: {
+          title: "Untitled",
+          authorId,
+          content: "",
+          position: 0,
+          workspaceId,
+          isPrivate: true,
+        },
+      });
+    }
+    return doc;
   }
 
   async countByUser(authorId: number) {

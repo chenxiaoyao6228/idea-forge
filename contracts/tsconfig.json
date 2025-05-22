@@ -16,6 +16,6 @@
     "module": "ESNext",
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/_base.ts"],
   "exclude": ["node_modules", "dist"]
 }

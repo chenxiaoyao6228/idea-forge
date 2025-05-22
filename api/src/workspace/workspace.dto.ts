@@ -2,13 +2,7 @@ import z from "zod";
 import { createZodDto } from "nestjs-zod";
 import { CreateWorkspaceRequestSchema, UpdateWorkspaceRequestSchema, SwitchWorkspaceSchema } from "contracts";
 
-export class CreateWorkspaceDto extends createZodDto(
-  z.object({
-    avatar: z.string().optional(),
-    name: z.string(),
-    description: z.string().optional(),
-  }),
-) {}
+export class CreateWorkspaceDto extends createZodDto(CreateWorkspaceRequestSchema) {}
 
 export class UpdateWorkspaceDto extends createZodDto(UpdateWorkspaceRequestSchema) {}
 

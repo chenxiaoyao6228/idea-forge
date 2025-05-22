@@ -1,4 +1,4 @@
-import { SubspaceMemberSchema, SubspaceRoleSchema, SubspaceSchema, SubspaceTypeSchema } from "../schema";
+import { SubspaceMemberSchema, SubspaceRoleSchema, SubspaceSchema, SubspaceTypeSchema } from "./schema";
 import { z } from "zod";
 
 // Create subspace

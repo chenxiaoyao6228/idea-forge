@@ -5,12 +5,12 @@ import { subspaceApi } from "@/apis/subspace";
 import { SubspaceComp } from "./subspace";
 import { Button } from "@/components/ui/button";
 import { Layers, PlusIcon, ChevronRight } from "lucide-react";
-import { SubspaceType } from "contracts";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import useSubSpaceStore from "@/stores/subspace-store";
+import { SubspaceTypeSchema } from "contracts";
 import useWorkspaceStore from "@/stores/workspace-store";
 
-export default function Subspaces() {
+export default function SubspacesArea() {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore.use.currentWorkspace();
   const subspaces = useSubSpaceStore.use.subspaces();
@@ -39,13 +39,13 @@ export default function Subspaces() {
     try {
       setIsCreating(true);
       const response = await subspaceApi.createSubspace({
-        name: "New Subspace" + (subspaces.length + 1),
+        name: "New Subspace" + (Object.keys(subspaces).length + 1),
         description: "New Subspace Description",
         avatar: "",
-        type: SubspaceType.PUBLIC,
+        type: SubspaceTypeSchema.Enum.PUBLIC,
         workspaceId: currentWorkspace?.id!,
       });
-      setSubspaces([...subspaces, response]);
+      setSubspaces([response]);
     } catch (error) {
       console.error("Failed to create subspace:", error);
     } finally {
@@ -74,7 +74,12 @@ export default function Subspaces() {
           </div>
         </div>
         <CollapsibleContent>
-          <SidebarMenu>{subspaces.length && subspaces.map((subspace) => <SubspaceComp key={subspace.id} subspace={subspace} />)}</SidebarMenu>
+          <SidebarMenu>
+            {/* Show all visible subspaces */}
+            {Object.values(subspaces).map((subspace) => (
+              <SubspaceComp key={subspace.id} subspaceId={subspace.id} />
+            ))}
+          </SidebarMenu>
         </CollapsibleContent>
       </Collapsible>
     </SidebarGroup>

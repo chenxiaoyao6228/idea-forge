@@ -84,6 +84,7 @@
   "Enter text": "输入文本",
   "Enter your email below to login to your account": "请输入您的电子邮件以登录您的帐户",
   "Error": "错误",
+  "Error loading items. Please try again.": "加载项目时出错。请重试。",
   "Explain": "解释",
   "Export Markdown": "导出 Markdown",
   "Failed to delete document": "删除文档失败",

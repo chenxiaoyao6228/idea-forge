@@ -4,15 +4,17 @@ import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { UpdateCoverDto, User } from "contracts";
 import { SearchDocumentService } from "./search-document.service";
 import { DocumentService } from "./document.service";
+import { MoveDocumentService } from "./move-document.service";
 
 @Controller("/api/documents")
 export class DocumentController {
   constructor(
     private readonly documentService: DocumentService,
     private readonly searchDocumentService: SearchDocumentService,
+    private readonly moveDocumentService: MoveDocumentService,
   ) {}
 
-  @Post("create")
+  @Post("")
   create(@GetUser("id") userId: number, @Body() dto: CreateDocumentDto) {
     return this.documentService.create(userId, dto);
   }
@@ -24,7 +26,7 @@ export class DocumentController {
 
   @Post("move")
   async moveDocuments(@GetUser("id") userId: number, @Body() dto: MoveDocumentsDto) {
-    return this.documentService.moveDocs(userId, dto);
+    return this.moveDocumentService.moveDocs(userId, dto);
   }
 
   // TODO: remove this
@@ -43,10 +45,10 @@ export class DocumentController {
     return this.searchDocumentService.searchDocuments(userId, dto);
   }
 
-  @Get("latest")
-  findLatest(@GetUser("id") userId: number) {
-    return this.documentService.findLatestOrCreate(userId);
-  }
+  // @Get("latest")
+  // findLatest(@GetUser("id") userId: number, ) {
+  //   return this.documentService.findLatestOrCreate(userId);
+  // }
 
   // ================== trash =====================
 

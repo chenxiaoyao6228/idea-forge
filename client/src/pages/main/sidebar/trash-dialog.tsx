@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { Trash2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,9 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import Loading from "../../../components/ui/loading";
 
-export function TrashDialog() {
+type Props = {};
+
+export const TrashDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -159,4 +161,4 @@ export function TrashDialog() {
       </DialogContent>
     </Dialog>
   );
-}
+});

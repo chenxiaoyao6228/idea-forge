@@ -29,10 +29,10 @@ const useWorkspaceStore = createStore<State & Actions, ComputedState>(
       try {
         const response = await workspaceApi.getWorkspaces();
 
-        if (response && Array.isArray(response.workspaces)) {
+        if (response && Array.isArray(response)) {
           set({
-            workspaces: response.workspaces,
-            currentWorkspace: response.workspaces.find((w) => w.id === get().currentWorkspace?.id) || response.workspaces[0] || null,
+            workspaces: response,
+            currentWorkspace: response[0],
           });
         }
       } catch (error) {

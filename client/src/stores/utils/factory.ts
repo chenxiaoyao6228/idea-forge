@@ -1,6 +1,5 @@
 import { createSelectorFunctions } from "auto-zustand-selectors-hook";
 import type { StateCreator, StoreApi, UseBoundStore } from "zustand";
-import { immer } from "zustand/middleware/immer";
 import { devtools, persist, subscribeWithSelector } from "zustand/middleware";
 import { createWithEqualityFn as create } from "zustand/traditional";
 import { createComputed } from "zustand-computed";
@@ -22,7 +21,7 @@ interface StoreOptions {
 }
 
 export const createStore = <T extends object, C extends object>(
-  fn: StateCreator<T, [["zustand/subscribeWithSelector", never], ["zustand/immer", never], ["zustand/devtools", never], ["zustand/persist", C]], []>,
+  fn: StateCreator<T, [["zustand/subscribeWithSelector", never], ["zustand/devtools", never], ["zustand/persist", C]], []>,
   computedFn: (state: T) => C,
   options: StoreOptions,
 ) => {
@@ -32,11 +31,9 @@ export const createStore = <T extends object, C extends object>(
 
   const baseStore = create<ComputedState<T, C>>()(
     subscribeWithSelector(
-      immer(
-        devtools(options.persistOptions ? persist(computedConfig as any, persistOptions as typeof persist) : (computedConfig as any), {
-          ...devtoolOptions,
-        }) as any,
-      ),
+      devtools(options.persistOptions ? persist(computedConfig as any, persistOptions as typeof persist) : (computedConfig as any), {
+        ...devtoolOptions,
+      }) as any,
     ),
   );
 

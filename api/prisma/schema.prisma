@@ -5,7 +5,7 @@ generator client {
 
 generator zod {
   provider                         = "zod-prisma-types"
-  output                           = "../../contracts/src/schema" // default is ./generated/zod
+  output                           = "../../contracts/src/schema"
   useMultipleFiles                 = true // default is false
   writeBarrelFiles                 = true // default is true
   createInputTypes                 = false // default is true

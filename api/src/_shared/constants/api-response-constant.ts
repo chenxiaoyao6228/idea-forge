@@ -47,7 +47,7 @@ export enum ErrorCodeEnum {
   FileAccessDenied = "file_access_denied",
 
   // Workspace
-  WorkspaceNotFoundOrNotInWorkspace = "workspace_not_found_or_not_in_workspace",
+  WorkspaceNotFoundOrNotInWorkspace = "workspace_not_found_or_user_not_in_workspace",
 
   // Subspace related errors (using subspace prefix for subspaces)
   SubspaceNotFound = "subspace_not_found",

@@ -13,8 +13,10 @@ import Loading from "../../../components/ui/loading";
 import { TextSelection } from "@tiptap/pm/state";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { useEditorStore } from "../../../stores/editor-store";
+import { forwardRef } from "react";
 
-export function SearchDocDialog() {
+type Props = {};
+export const SearchDocDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -44,7 +46,7 @@ export function SearchDocDialog() {
       </DialogContent>
     </Dialog>
   );
-}
+});
 
 function SearchPanel({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();

@@ -15,23 +15,34 @@ import type {
   SearchDocumentDto,
   SearchDocumentResponse,
   DuplicateDocumentResponse,
+  ListDocumentResponse,
+  ListDocumentDto,
 } from "contracts";
 
 export const documentApi = {
+  list: async (data: ListDocumentDto) => {
+    const params = new URLSearchParams();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined) {
+        params.set(key, value === null ? "null" : String(value));
+      }
+    });
+    return request.get<ListDocumentDto, ListDocumentResponse>(`/api/documents/list?${params.toString()}`);
+  },
+  // ================
   getSharedDocuments: async () => {
     const url = `/api/share-documents/shared-docs`;
     return request<null, CommonSharedDocumentResponse[]>(url);
   },
-
   shareDocument: (data: ShareDocumentDto) => request.post<ShareDocumentDto, DocSharesResponse>(`/api/share-documents`, data),
   getDocShares: (id: string) => request.get<null, DocSharesResponse>(`/api/share-documents/${id}`),
   removeShare: (id: string, data: RemoveShareDto) => request.delete<DocSharesResponse>(`/api/share-documents/${id}`, { data }),
   updateSharePermission: (id: string, data: UpdateSharePermissionDto) =>
     request.patch<UpdateSharePermissionDto, DocSharesResponse>(`/api/share-documents/${id}`, data),
 
-  getLatestDocument: async () => {
-    return request.get<null, CommonDocumentResponse>(`/api/documents/latest`);
-  },
+  // getLatestDocument: async () => {
+  //   return request.get<null, CommonDocumentResponse>(`/api/documents/latest`);
+  // },
 
   getChildren: async (parentId?: string | null) => {
     const searchParams = new URLSearchParams();

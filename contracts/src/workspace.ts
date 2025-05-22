@@ -1,4 +1,4 @@
-import { WorkspaceMemberSchema, WorkspaceOptionalDefaultsSchema, WorkspaceSchema, WorkspaceRoleSchema  } from "../schema";
+import { WorkspaceMemberSchema, WorkspaceOptionalDefaultsSchema, WorkspaceSchema, WorkspaceRoleSchema  } from "./schema";
 
 import { z } from "zod";
 
