@@ -6,6 +6,7 @@ import {
   SubspaceDetailResponse,
   SubspaceMemberListResponse,
   NavigationNode,
+  MoveSubspaceRequest,
 } from "contracts";
 
 import { Subspace, SubspaceOptionalDefaults } from "contracts";
@@ -21,6 +22,8 @@ export const subspaceApi = {
   updateSubspace: async (id: string, data: UpdateSubspaceRequest) => request.put<UpdateSubspaceRequest, SubspaceDetailResponse>(`/api/subspaces/${id}`, data),
 
   deleteSubspace: async (id: string) => request.delete<void, { success: boolean }>(`/api/subspaces/${id}`),
+
+  moveSubspace: async (id: string, data: MoveSubspaceRequest) => request.post<MoveSubspaceRequest, { index: string }>(`/api/subspaces/${id}/move`, data),
 
   // Subspace member operations
   getSubspaceMembers: async (subspaceId: string) => request.get<void, SubspaceMemberListResponse>(`/api/subspaces/${subspaceId}/members`),

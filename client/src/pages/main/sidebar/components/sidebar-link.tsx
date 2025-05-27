@@ -19,6 +19,8 @@ export interface SidebarLinkProps extends Omit<NavLinkProps, "children"> {
   isDraft?: boolean;
   isActiveDrop?: boolean;
   active?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 export function SidebarLink({
@@ -36,13 +38,15 @@ export function SidebarLink({
   active,
   to,
   className,
+  style,
   ...rest
 }: SidebarLinkProps) {
-  const style = useMemo(
+  const computedStyle = useMemo(
     () => ({
       paddingLeft: `${depth * 16 + 12}px`,
+      ...style,
     }),
-    [depth],
+    [depth, style],
   );
 
   const linkContent = (
@@ -51,12 +55,12 @@ export function SidebarLink({
         "group relative flex w-full items-center gap-2 rounded-lg px-3 py-1 text-sm transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
         active && "bg-accent text-accent-foreground",
-        isActiveDrop && "bg-accent text-accent-foreground",
+        // isActiveDrop && "bg-accent text-accent-foreground",
         disabled && "pointer-events-none opacity-50",
         isDraft && "border border-dashed border-muted-foreground/50",
         className,
       )}
-      style={style}
+      style={computedStyle}
     >
       {expanded !== undefined && (
         <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={onDisclosureClick}>

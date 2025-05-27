@@ -1,30 +1,32 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { FolderIcon, PlusIcon, MoreHorizontal } from "lucide-react";
+import { PlusIcon, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
-import useSubSpaceStore, { subspaceSelectors } from "@/stores/subspace";
+import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
 import { SidebarLink } from "./sidebar-link";
 import { DocumentLink } from "./document-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface SubspaceLinkProps {
-  subspaceId: string;
+  subspace: SubspaceEntity;
   depth?: number;
+  isDragging?: boolean; // subspace being dragged
+  isActiveDrop?: boolean; // subspace is the active drop target
 }
 
-export function SubspaceLink({ subspaceId, depth = 0 }: SubspaceLinkProps) {
+export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActiveDrop = false }: SubspaceLinkProps) {
   const { t } = useTranslation();
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
-  const subspace = useSubSpaceStore((state) => subspaceSelectors.selectById(subspaceId)(state));
   const fetchNavigationTree = useSubSpaceStore((state) => state.fetchNavigationTree);
   const createDocument = useDocumentStore((state) => state.createDocument);
   const getPathToDocument = useSubSpaceStore((state) => state.getPathToDocument);
+  const subspaceId = subspace.id;
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -64,7 +66,8 @@ export function SubspaceLink({ subspaceId, depth = 0 }: SubspaceLinkProps) {
       try {
         setIsCreating(true);
         const newDocId = await createDocument({
-          title: "New Document",
+          // FIXME:
+          title: "New Document" + Math.floor(Math.random() * 1000),
           parentId: null,
           subspaceId,
         });
@@ -135,18 +138,27 @@ export function SubspaceLink({ subspaceId, depth = 0 }: SubspaceLinkProps) {
     </div>
   );
 
+  const dragStyle = {
+    opacity: isDragging ? 0.8 : 1,
+  };
+
   return (
     <>
-      <SidebarLink
-        to={`/subspace/${subspaceId}`}
-        icon={icon}
-        label={subspace.name}
-        expanded={hasDocuments ? isExpanded : undefined}
-        onDisclosureClick={hasDocuments ? handleDisclosureClick : undefined}
-        depth={depth}
-        menu={menu}
-        showActions={isExpanded}
-      />
+      <div className="subspace-link">
+        <SidebarLink
+          // to={`/subspace/${subspaceId}`}
+          to={""}
+          icon={icon}
+          label={subspace.name}
+          expanded={hasDocuments ? isExpanded : undefined}
+          onDisclosureClick={hasDocuments ? handleDisclosureClick : undefined}
+          depth={depth}
+          menu={menu}
+          showActions={isExpanded}
+          isActiveDrop={isActiveDrop}
+          style={dragStyle}
+        />
+      </div>
 
       {hasDocuments && isExpanded && (
         <div className="ml-4">

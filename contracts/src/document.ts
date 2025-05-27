@@ -5,8 +5,8 @@ import { BasePageResult, basePagerSchema } from "./_base";
 const commonDocumentSchema = DocSchema.pick({
   id: true,
   title: true,
-  isArchived: true,
-  isStarred: true,
+  archivedAt: true,
+  deletedAt: true,
   createdAt: true,
   updatedAt: true,
   parentId: true,

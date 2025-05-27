@@ -5,7 +5,6 @@ import { createComputed } from "zustand-computed";
 import { Doc, NavigationNode, NavigationNodeType } from "contracts";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
-import { get } from "react-hook-form";
 
 export interface SubspaceEntity {
   id: string;
@@ -13,9 +12,11 @@ export interface SubspaceEntity {
   avatar?: string | null;
   workspaceId: string;
   type: string;
-  index: number;
+  index: string;
   navigationTree: NavigationNode[];
   url?: string;
+  updatedAt: Date;
+  createdAt: Date;
 }
 
 interface State {
@@ -44,6 +45,7 @@ interface Action {
   containsDocument: (subspaceId: string, documentId: string) => boolean;
   getExpandedKeysForDocument: (subspaceId: string, documentId: string) => string[];
   setActiveSubspace: (id?: string) => void;
+  move: (subspaceId: string, index: string) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -59,7 +61,9 @@ const useSubSpaceStore = create(
   subscribeWithSelector(
     devtools(
       createComputed((state: State & Action & ReturnType<typeof subspaceEntitySlice.getState> & ReturnType<typeof subspaceEntitySlice.getActions>) => ({
-        allSubspaces: subspaceSelectors.selectAll(state),
+        allSubspaces: subspaceSelectors.selectAll(state).sort((a, b) => {
+          return a.index < b.index ? -1 : 1;
+        }),
         allSubspacesAsNavigationNodes: subspaceSelectors.selectAll(state).map((subspace) => ({
           type: NavigationNodeType.Subspace,
           id: subspace.id,
@@ -125,7 +129,9 @@ const useSubSpaceStore = create(
               avatar: response.avatar,
               workspaceId: response.workspaceId,
               type: response.type,
-              index: response.index || 0,
+              index: response.index,
+              createdAt: response.createdAt,
+              updatedAt: response.updatedAt,
               navigationTree: [],
             };
             get().addOne(subspace);
@@ -293,6 +299,25 @@ const useSubSpaceStore = create(
         getExpandedKeysForDocument: (subspaceId: string, documentId: string): string[] => {
           const path = get().getPathToDocument(subspaceId, documentId);
           return path.slice(0, -1).map((node) => node.id); // 排除文档本身，只返回父节点
+        },
+
+        move: async (subspaceId: string, index: string) => {
+          try {
+            const response = await subspaceApi.moveSubspace(subspaceId, { index });
+
+            if (response) {
+              const subspace = get().entities[subspaceId];
+              if (subspace) {
+                get().updateOne({
+                  id: subspaceId,
+                  changes: { index: response.index },
+                });
+              }
+            }
+          } catch (error) {
+            console.error("Failed to move subspace:", error);
+            throw error;
+          }
         },
 
         // UI State

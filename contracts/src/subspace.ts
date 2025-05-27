@@ -2,12 +2,22 @@ import { SubspaceMemberSchema, SubspaceRoleSchema, SubspaceSchema, SubspaceTypeS
 import { z } from "zod";
 
 // Create subspace
-export const CreateSubspaceRequestSchema = SubspaceSchema.extend({
+export const CreateSubspaceRequestSchema = z.object({
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  type: SubspaceTypeSchema.default(SubspaceTypeSchema.enum.PUBLIC),
+  avatar: z.string().nullable().optional(),
   workspaceId: z.string(),
-  type: SubspaceTypeSchema.default(SubspaceTypeSchema.Enum.WORKSPACE_WIDE) // default to public ty
+  parentId: z.number().nullable().optional(),
 })
 
 export type CreateSubspaceRequest = z.infer<typeof CreateSubspaceRequestSchema>;
+
+export const MoveSubspaceRequestSchema = z.object({
+  index: z.string(),
+})
+export type MoveSubspaceRequest = z.infer<typeof MoveSubspaceRequestSchema>;
+
 
 // Update subspace
 export const UpdateSubspaceRequestSchema = SubspaceSchema.partial();

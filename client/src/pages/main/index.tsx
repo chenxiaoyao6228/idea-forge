@@ -25,8 +25,13 @@ import UserSettings from "./sidebar/setting";
 import Doc from "../doc";
 import SubspacesArea from "./sidebar/subspaces";
 import { PrivateDocs } from "./sidebar/private";
+import { useDragAndDropContext } from "./sidebar/hooks/use-dnd";
+import useSubSpaceStore from "@/stores/subspace";
+import { DndContext } from "@dnd-kit/core";
 
 export default function Main() {
+  const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
+
   const { docId } = useParams();
   const setCurrentDocId = useDocumentStore.use.setCurrentDocId();
 
@@ -44,44 +49,46 @@ export default function Main() {
   }
 
   return (
-    <SidebarProvider>
-      {/* sidebar */}
-      <Sidebar collapsible="offcanvas">
-        <SidebarHeader>
-          {/* WorkspaceSwitcher */}
-          <WorkspaceSwitcher />
-          {/* Quick start */}
-          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  {/* search doc */}
-                  <SearchDocDialog />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  {/* trash */}
-                  <TrashDialog />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-        </SidebarHeader>
-        {/* docs */}
-        <SidebarContent className="custom-scrollbar">
-          <SubspacesArea />
-          {/* <OthersDocs /> */}
-          {/* <MyDocs /> */}
-          {/* <PrivateDocs /> */}
-        </SidebarContent>
-        <SidebarFooter>
-          <UserSettings />
-        </SidebarFooter>
-        <SidebarRail />
-      </Sidebar>
-      {/* content */}
-      <SidebarInset className={cn("h-full relative")}>{content}</SidebarInset>
-    </SidebarProvider>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragMove={handleDragMove} onDragOver={handleDragOver}>
+      <SidebarProvider>
+        {/* sidebar */}
+        <Sidebar collapsible="offcanvas">
+          <SidebarHeader>
+            {/* WorkspaceSwitcher */}
+            <WorkspaceSwitcher />
+            {/* Quick start */}
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    {/* search doc */}
+                    <SearchDocDialog />
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    {/* trash */}
+                    <TrashDialog />
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarHeader>
+          {/* docs */}
+          <SidebarContent className="custom-scrollbar">
+            <SubspacesArea />
+            {/* <OthersDocs /> */}
+            {/* <MyDocs /> */}
+            {/* <PrivateDocs /> */}
+          </SidebarContent>
+          <SidebarFooter>
+            <UserSettings />
+          </SidebarFooter>
+          <SidebarRail />
+        </Sidebar>
+        {/* content */}
+        <SidebarInset className={cn("h-full relative")}>{content}</SidebarInset>
+      </SidebarProvider>
+    </DndContext>
   );
 }

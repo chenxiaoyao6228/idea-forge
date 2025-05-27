@@ -77,6 +77,7 @@
     "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.1",
     "form-data": "^4.0.1",
+    "fractional-index": "^1.0.0",
     "i18next": "^24.0.5",
     "i18next-fs-backend": "^2.6.0",
     "i18next-http-middleware": "^3.7.1",

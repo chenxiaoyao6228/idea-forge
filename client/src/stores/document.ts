@@ -116,7 +116,7 @@ const useDocumentStore = create(
 
             get().upsertOne(data.document);
             const document = data.document;
-            // FIXME: temporary set
+            // FIXME: temporary set, might need to be moved to components or other places
             get().setActiveDocument(document.id);
             if (document.subspaceId) {
               useSubSpaceStore.getState().setActiveSubspace(document.subspaceId);

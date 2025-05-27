@@ -1,13 +1,15 @@
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, ChevronRight, FolderIcon } from "lucide-react";
+import { PlusIcon, ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SubspaceTypeSchema } from "contracts";
 import useWorkspaceStore from "@/stores/workspace-store";
 import useSubSpaceStore from "@/stores/subspace";
-import { SubspaceLink } from "./components/subspace-link";
+import { DraggableSubspaceContainer } from "./components/draggable-subspace-container";
+import DropCursor from "./components/drop-cursor";
+import { useDroppable } from "@dnd-kit/core";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
@@ -19,15 +21,27 @@ export default function SubspacesArea() {
   const [isCreating, setIsCreating] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
 
-  console.log("subspaces", subspaces);
+  // drag target for drop to top
+  const { isOver: isTopDropOver, setNodeRef: setTopDropRef } = useDroppable({
+    id: "subspace-drop-top",
+    data: {
+      accept: ["subspace"],
+      dropType: "top",
+    },
+  });
+
+  //  drop target for drop to bottom
+  const { isOver: isBottomDropOver, setNodeRef: setBottomDropRef } = useDroppable({
+    id: "subspace-drop-bottom",
+    data: {
+      accept: ["subspace"],
+      dropType: "bottom",
+    },
+  });
 
   useEffect(() => {
     fetchList();
   }, []);
-
-  const handleViewAllSubspaces = () => {
-    // TODO: Implement view all subspaces
-  };
 
   const handleSubspaceCreate = async () => {
     try {
@@ -71,9 +85,17 @@ export default function SubspacesArea() {
           </div>
         </div>
         <CollapsibleContent>
-          {subspaces.map((subspace) => (
-            <SubspaceLink key={subspace.id} subspaceId={subspace.id} />
-          ))}
+          <div className="relative">
+            <div ref={setTopDropRef} className="h-[1px]">
+              <DropCursor isActiveDrop={isTopDropOver} innerRef={null} position="top" />
+            </div>
+            {subspaces.map((subspace) => (
+              <DraggableSubspaceContainer key={subspace.id} subspace={subspace} />
+            ))}
+            <div ref={setBottomDropRef} className="h-[1px]">
+              <DropCursor isActiveDrop={isBottomDropOver} innerRef={null} position="bottom" />
+            </div>
+          </div>
         </CollapsibleContent>
       </Collapsible>
     </SidebarGroup>

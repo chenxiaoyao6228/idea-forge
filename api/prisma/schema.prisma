@@ -253,6 +253,7 @@ model Subspace {
   isArchived Boolean @default(false)
 
   navigationTree Json?
+  index          String?
 
   // relations
   workspace                Workspace                  @relation(fields: [workspaceId], references: [id])

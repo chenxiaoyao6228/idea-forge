@@ -17,6 +17,7 @@ export const SubspaceSchema = z.object({
   settings: NullableJsonValue.optional(),
   isArchived: z.boolean(),
   navigationTree: NullableJsonValue.optional(),
+  index: z.string().nullable(),
   workspaceId: z.string(),
 })
 

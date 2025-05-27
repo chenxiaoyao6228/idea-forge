@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from "@nestjs/common";
 import { SubspaceService } from "./subspace.service";
 import { SubspaceDetailResponse, SubspaceMemberListResponse } from "contracts";
-import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
+import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, MoveSubspaceDto } from "./subspace.dto";
 
 @Controller("api/subspaces")
 export class SubspaceController {
@@ -30,6 +30,11 @@ export class SubspaceController {
   @Delete(":id")
   async deleteSubspace(@Param("id") id: string, @Req() req: any) {
     return this.subspaceService.deleteSubspace(id, req.user.id);
+  }
+
+  @Post(":id/move")
+  async moveSubspace(@Param("id") id: string, @Body() dto: MoveSubspaceDto, @Req() req: any) {
+    return this.subspaceService.moveSubspace(id, dto.index, req.user.id);
   }
 
   // ==== navigationTree ====

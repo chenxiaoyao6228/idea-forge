@@ -23,7 +23,6 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
   const createDocument = useDocumentStore((state) => state.createDocument);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-
   const isActiveDocument = activeDocumentId === node.id;
   const hasChildren = node.children && node.children.length > 0;
 
@@ -35,11 +34,11 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
     const path = getPathToDocument(subspaceId, activeDocumentId);
     const pathIds = path.map((entry) => entry.id);
 
-    // 检查当前节点是否在活动文档的路径中，或者当前节点就是活动文档
+    // check if current node is in the path of the active document, or current node is the active document
     return pathIds.includes(node.id) || isActiveDocument;
   }, [hasChildren, activeDocumentId, node.id, isActiveDocument, getPathToDocument, subspaceId]);
 
-  // 自动展开状态同步
+  // auto expand state sync
   useEffect(() => {
     if (showChildren) {
       setIsExpanded(true);
@@ -82,9 +81,12 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
   const icon = hasChildren ? <FolderIcon className="h-4 w-4" /> : <FileIcon className="h-4 w-4" />;
 
   const menu = (
-    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating}>
-      <PlusIcon className="h-3 w-3" />
-    </Button>
+    <>
+      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating}>
+        <PlusIcon className="h-3 w-3" />
+      </Button>
+      {/* TODO:  add update delete */}
+    </>
   );
 
   return (

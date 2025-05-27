@@ -1,9 +1,17 @@
 import { createZodDto } from "nestjs-zod";
-import { AddSubspaceMemberRequestSchema, UpdateSubspaceMemberRequestSchema, SubspaceOptionalDefaultsSchema } from "contracts";
+import {
+  AddSubspaceMemberRequestSchema,
+  UpdateSubspaceMemberRequestSchema,
+  MoveSubspaceRequestSchema,
+  CreateSubspaceRequestSchema,
+  UpdateSubspaceRequestSchema,
+} from "contracts";
 
-export class CreateSubspaceDto extends createZodDto(SubspaceOptionalDefaultsSchema) {}
+export class CreateSubspaceDto extends createZodDto(CreateSubspaceRequestSchema) {}
 
-export class UpdateSubspaceDto extends createZodDto(SubspaceOptionalDefaultsSchema) {}
+export class MoveSubspaceDto extends createZodDto(MoveSubspaceRequestSchema) {}
+
+export class UpdateSubspaceDto extends createZodDto(UpdateSubspaceRequestSchema) {}
 
 export class AddSubspaceMemberDto extends createZodDto(AddSubspaceMemberRequestSchema) {}
 

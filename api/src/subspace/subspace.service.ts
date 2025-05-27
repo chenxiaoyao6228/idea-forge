@@ -4,6 +4,7 @@ import { NavigationNode, NavigationNodeType, SubspaceTypeSchema } from "contract
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import fractionalIndex from "fractional-index";
 
 @Injectable()
 export class SubspaceService {
@@ -37,12 +38,30 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
     }
 
+    // Get the first subspace's index to generate new index
+    const firstSubspace = await this.prismaService.subspace.findFirst({
+      where: {
+        workspaceId: dto.workspaceId,
+        index: { not: null }, // Only include subspaces with index set
+      },
+      orderBy: {
+        index: "asc", // This will sort lexicographically which works for fractional indices
+      },
+    });
+
+    // Generate new index
+    const newIndex = fractionalIndex(null, firstSubspace?.index ?? null);
+
+    // Handle possible index collision
+    const finalIndex = await this.removeIndexCollision(dto.workspaceId, newIndex);
+
     const subspace = await this.prismaService.subspace.create({
       data: {
         name: dto.name,
         description: dto.description,
         avatar: dto.avatar,
         type: dto.type,
+        index: finalIndex, // Add index
         workspace: {
           connect: {
             id: dto.workspaceId,
@@ -64,6 +83,68 @@ export class SubspaceService {
     };
   }
 
+  async moveSubspace(id: string, newIndex: string, userId: number) {
+    const subspaceMember = await this.prismaService.subspaceMember.findFirst({
+      where: {
+        subspaceId: id,
+        userId,
+        role: "ADMIN",
+      },
+    });
+
+    if (!subspaceMember) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
+    }
+
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // handle index collision
+    const finalIndex = await this.removeIndexCollision(subspace.workspaceId, newIndex);
+
+    const updatedSubspace = await this.prismaService.subspace.update({
+      where: { id },
+      data: { index: finalIndex },
+    });
+
+    return {
+      index: updatedSubspace.index,
+    };
+  }
+
+  private async removeIndexCollision(workspaceId: string, index: string): Promise<string> {
+    const existingSubspace = await this.prismaService.subspace.findFirst({
+      where: {
+        workspaceId,
+        index,
+      },
+    });
+
+    if (!existingSubspace) {
+      return index;
+    }
+
+    const nextSubspace = await this.prismaService.subspace.findFirst({
+      where: {
+        workspaceId,
+        index: {
+          gt: index,
+        },
+      },
+      orderBy: {
+        index: "asc",
+      },
+    });
+
+    const nextIndex = nextSubspace?.index || null;
+    return fractionalIndex(index, nextIndex);
+  }
+
   async getUserSubWorkspaces(userId: number) {
     const workspaces = await this.prismaService.workspaceMember.findMany({
       where: {
@@ -72,7 +153,11 @@ export class SubspaceService {
       include: {
         workspace: {
           include: {
-            subspaces: true,
+            subspaces: {
+              orderBy: {
+                index: "asc",
+              },
+            },
           },
         },
       },
@@ -233,7 +318,8 @@ export class SubspaceService {
       // isDraft: !doc.publishedAt,
     };
   }
-  // 添加文档到 navigationTree
+
+  // add doc to navigationTree
   async addDocumentToNavigationTree(subspaceId: string, doc: any, parentId?: string) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
@@ -247,10 +333,10 @@ export class SubspaceService {
     const docNode = this.docToNavigationNode(doc);
 
     if (!parentId) {
-      // 添加到根级别
+      // add to root level
       navigationTree.unshift(docNode);
     } else {
-      // 递归添加到指定父文档下
+      // add to specific parentId recursively
       const addToParent = (nodes: NavigationNode[]): NavigationNode[] => {
         return nodes.map((node) => {
           if (node.id === parentId) {
@@ -258,7 +344,9 @@ export class SubspaceService {
               ...node,
               children: [docNode, ...node.children],
             };
-          } else if (node.children.length > 0) {
+          }
+
+          if (node.children.length > 0) {
             return {
               ...node,
               children: addToParent(node.children),
@@ -271,7 +359,6 @@ export class SubspaceService {
       navigationTree = addToParent(navigationTree);
     }
 
-    // 更新数据库
     await this.prismaService.subspace.update({
       where: { id: subspaceId },
       data: {
@@ -282,7 +369,7 @@ export class SubspaceService {
     return navigationTree;
   }
 
-  // 从 navigationTree 中移除文档
+  // remove doc from navigationTree
   async removeDocumentFromNavigationTree(subspaceId: string, docId: string) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
@@ -313,7 +400,6 @@ export class SubspaceService {
     });
   }
 
-  // 更新 navigationTree 中的文档信息
   async updateDocumentInNavigationTree(subspaceId: string, doc: any) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
@@ -331,9 +417,11 @@ export class SubspaceService {
         if (node.id === doc.id) {
           return {
             ...updatedNode,
-            children: node.children, // 保持原有的子节点
+            children: node.children, // keep the original child node
           };
-        } else if (node.children.length > 0) {
+        }
+
+        if (node.children.length > 0) {
           return {
             ...node,
             children: updateInTree(node.children),
