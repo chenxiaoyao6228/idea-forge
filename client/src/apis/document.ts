@@ -21,13 +21,7 @@ import type {
 
 export const documentApi = {
   list: async (data: ListDocumentDto) => {
-    const params = new URLSearchParams();
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined) {
-        params.set(key, value === null ? "null" : String(value));
-      }
-    });
-    return request.get<ListDocumentDto, ListDocumentResponse>(`/api/documents/list?${params.toString()}`);
+    return request.post<ListDocumentDto, ListDocumentResponse>(`/api/documents/list`, data);
   },
   // ================
   getSharedDocuments: async () => {
@@ -59,7 +53,7 @@ export const documentApi = {
   },
 
   getDocument: async (id: string) => {
-    return request.get<null, DetailDocumentResponse>(`/api/documents/${id}`);
+    return request.get<null, any>(`/api/documents/${id}`);
   },
 
   create: async (data: CreateDocumentDto) => {

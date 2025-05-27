@@ -117,9 +117,9 @@ model Doc {
   contentBinary Bytes? // yjs collaborative document
 
   // state mark
-  isArchived Boolean @default(false)
-  isStarred  Boolean @default(false)
-  isPrivate  Boolean @default(false)
+  archivedAt  DateTime?
+  publishedAt DateTime?
+  deletedAt   DateTime?
 
   // position
   parentId String?
@@ -252,6 +252,8 @@ model Subspace {
 
   isArchived Boolean @default(false)
 
+  navigationTree Json?
+
   // relations
   workspace                Workspace                  @relation(fields: [workspaceId], references: [id])
   workspaceId              String
@@ -280,6 +282,7 @@ enum SubspaceType {
   PUBLIC // Any workspace member can join and leave freely. 
   INVITE_ONLY // Visible to all members but requires invitation to join.
   PRIVATE //  Only visible to invited members, completely hidden from others.
+  PERSONAL // Only visible to the creator, completely hidden from others.
 }
 
 model SubspaceMemberPermission {

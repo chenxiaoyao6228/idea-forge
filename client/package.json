@@ -148,7 +148,8 @@
     "yjs": "^13.6.20",
     "zod": "^3.23.8",
     "zustand": "^5.0.2",
-    "zustand-computed": "^2.0.2"
+    "zustand-computed": "^2.0.2",
+    "zustand-entity-adapter": "^0.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

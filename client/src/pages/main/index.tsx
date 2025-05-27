@@ -24,6 +24,7 @@ import { MyDocs } from "./sidebar/my-docs";
 import UserSettings from "./sidebar/setting";
 import Doc from "../doc";
 import SubspacesArea from "./sidebar/subspaces";
+import { PrivateDocs } from "./sidebar/private";
 
 export default function Main() {
   const { docId } = useParams();
@@ -70,8 +71,9 @@ export default function Main() {
         {/* docs */}
         <SidebarContent className="custom-scrollbar">
           <SubspacesArea />
-          <OthersDocs />
-          <MyDocs />
+          {/* <OthersDocs /> */}
+          {/* <MyDocs /> */}
+          {/* <PrivateDocs /> */}
         </SidebarContent>
         <SidebarFooter>
           <UserSettings />

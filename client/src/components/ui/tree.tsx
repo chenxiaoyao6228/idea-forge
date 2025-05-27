@@ -3,7 +3,7 @@
  * TODO: 1. virtualize tree
  */
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronRight, Loader2, Folder, FolderOpen, File, Dot, Pen } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible";
 import { Checkbox } from "./checkbox";
@@ -153,16 +153,16 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
       return keys;
     };
 
-    const initialExpandedKeys = React.useMemo(() => {
+    const initialExpandedKeys = useMemo(() => {
       if (defaultExpandAll) {
         return getAllKeys(treeData);
       }
       return defaultExpandedKeys;
     }, []);
 
-    const [internalExpandedKeys, setInternalExpandedKeys] = React.useState<string[]>(initialExpandedKeys);
-    const [internalSelectedKeys, setInternalSelectedKeys] = React.useState<string[]>(defaultSelectedKeys);
-    const [internalCheckedKeys, setInternalCheckedKeys] = React.useState<string[]>(defaultCheckedKeys);
+    const [internalExpandedKeys, setInternalExpandedKeys] = useState<string[]>(initialExpandedKeys);
+    const [internalSelectedKeys, setInternalSelectedKeys] = useState<string[]>(defaultSelectedKeys);
+    const [internalCheckedKeys, setInternalCheckedKeys] = useState<string[]>(defaultCheckedKeys);
 
     const expandedKeys = controlledExpandedKeys ?? internalExpandedKeys;
     const selectedKeys = controlledSelectedKeys ?? internalSelectedKeys;
@@ -173,7 +173,7 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
       [treeData, fieldNames],
     );
 
-    const treeDataWithPos = React.useMemo(() => addTreePos(normalizedData), [normalizedData]);
+    const treeDataWithPos = useMemo(() => addTreePos(normalizedData), [normalizedData]);
 
     const handleExpand = (key: string) => {
       const newExpandedKeys = expandedKeys.includes(key) ? expandedKeys.filter((k) => k !== key) : [...expandedKeys, key];
@@ -215,7 +215,7 @@ const Tree = React.forwardRef<HTMLDivElement, TreeProps>(
       });
     };
 
-    React.useEffect(() => {
+    useEffect(() => {
       if (autoExpandParent && selectedKeys.length > 0) {
         const parentKeys = new Set<string>();
         const findParentKeys = (nodes: TreeDataNode[], parentKey?: string) => {
@@ -369,8 +369,8 @@ const TreeNode = ({
   const hasChildren = node.children && node.children.length > 0;
   const canLoadData = !node.isLeaf && loadData && !hasChildren;
 
-  const [dragOver, setDragOver] = React.useState<"top" | "bottom" | "inside" | false>(false);
-  const [loading, setLoading] = React.useState(false);
+  const [dragOver, setDragOver] = useState<"top" | "bottom" | "inside" | false>(false);
+  const [loading, setLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

@@ -1,5 +1,12 @@
 import request from "@/lib/request";
-import { UpdateSubspaceRequest, AddSubspaceMemberRequest, UpdateSubspaceMemberRequest, SubspaceDetailResponse, SubspaceMemberListResponse } from "contracts";
+import {
+  UpdateSubspaceRequest,
+  AddSubspaceMemberRequest,
+  UpdateSubspaceMemberRequest,
+  SubspaceDetailResponse,
+  SubspaceMemberListResponse,
+  NavigationNode,
+} from "contracts";
 
 import { Subspace, SubspaceOptionalDefaults } from "contracts";
 
@@ -26,4 +33,6 @@ export const subspaceApi = {
 
   removeSubspaceMember: async (subspaceId: string, memberId: string) =>
     request.delete<void, { success: boolean }>(`/api/subspaces/${subspaceId}/members/${memberId}`),
+
+  fetchNavigationTree: async (subspaceId: string) => request.get<void, NavigationNode>(`/api/subspaces/${subspaceId}/navigationTree`),
 };

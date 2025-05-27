@@ -11,6 +11,9 @@ importers:
       rimraf:
         specifier: ^5.0.0
         version: 5.0.10
+      utility-types:
+        specifier: ^3.11.0
+        version: 3.11.0
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.2
@@ -787,6 +790,9 @@ importers:
       zustand-computed:
         specifier: ^2.0.2
         version: 2.1.0(react@18.3.1)(zustand@5.0.4)
+      zustand-entity-adapter:
+        specifier: ^0.1.1
+        version: 0.1.1(zustand@5.0.4)
     devDependencies:
       '@eslint/js':
         specifier: ^9.15.0
@@ -20108,6 +20114,11 @@ packages:
       inherits: 2.0.3
     dev: true
 
+  /utility-types@3.11.0:
+    resolution: {integrity: sha512-6Z7Ma2aVEWisaL6TvBCy7P8rm2LQoPv6dJ7ecIaIixHcwfbJ0x7mWdbcwlIM5IGQxPZSFYeqRCqlOOeKoJYMkw==}
+    engines: {node: '>= 4'}
+    dev: false
+
   /utils-merge@1.0.1:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
@@ -20986,6 +20997,14 @@ packages:
       zustand: '>=5.0.0 <6.0.0'
     dependencies:
       react: 18.3.1
+      zustand: 5.0.4(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1)
+    dev: false
+
+  /zustand-entity-adapter@0.1.1(zustand@5.0.4):
+    resolution: {integrity: sha512-rgYVVmTRV1vz7QqHmOl10h6mxS/IhW/e6WCPRvZYJH/E98D95NeONisakFxTgNtxcuUB1NBsXsPYrQA7AVR4jg==}
+    peerDependencies:
+      zustand: ^4.5.4
+    dependencies:
       zustand: 5.0.4(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1)
     dev: false
 

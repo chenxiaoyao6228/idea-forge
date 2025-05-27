@@ -2,6 +2,7 @@ import { OTPInput, OTPInputContext } from "input-otp";
 import * as React from "react";
 
 import { cn } from "@/lib/utils.ts";
+import { useContext } from "react";
 
 const InputOTP = React.forwardRef<React.ElementRef<typeof OTPInput>, React.ComponentPropsWithoutRef<typeof OTPInput>>(
   ({ className, containerClassName, ...props }, ref) => (
@@ -22,7 +23,7 @@ InputOTPGroup.displayName = "InputOTPGroup";
 
 const InputOTPSlot = React.forwardRef<React.ElementRef<"div">, React.ComponentPropsWithoutRef<"div"> & { index: number }>(
   ({ index, className, ...props }, ref) => {
-    const inputOTPContext = React.useContext(OTPInputContext);
+    const inputOTPContext = useContext(OTPInputContext);
     const slot = inputOTPContext.slots[index];
     if (!slot) throw new Error("Invalid slot index");
     const { char, hasFakeCaret, isActive } = slot;

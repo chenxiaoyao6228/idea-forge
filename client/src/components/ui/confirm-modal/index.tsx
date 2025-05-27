@@ -15,6 +15,7 @@ import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createConfirmation } from "react-confirm";
 import { ButtonProps } from "@/components/ui/button";
+import { useState } from "react";
 
 export interface ConfirmModalProps {
   // basic info
@@ -68,7 +69,7 @@ const ConfirmModal: ConfirmDialog<ConfirmModalProps, boolean> = ({
   footer,
   hideFooter = false,
 }) => {
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { t } = useTranslation();
 
   const handleAction = async (action: (() => Promise<boolean> | boolean) | undefined, value: boolean) => {

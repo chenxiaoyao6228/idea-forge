@@ -13,10 +13,14 @@ interface DemoComputed {
   isEven: boolean;
 }
 
+const defaultStore: DemoState = {
+  count: 0,
+  countDown: 0,
+};
+
 const useTestStore = createStore<DemoState & DemoActions, DemoComputed>(
-  (set) => ({
-    count: 0,
-    countDown: 0,
+  (set, get) => ({
+    ...defaultStore,
     increment: () => set((state) => ({ count: state.count + 1 })),
     decrement: () => set((state) => ({ count: state.count - 1 })),
   }),

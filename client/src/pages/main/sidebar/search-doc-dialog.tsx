@@ -104,8 +104,8 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
 
   const handleDocumentClick = async (doc: { id: string; title: string }, nodeId?: string) => {
     // First navigate to the document if it's different from current
-    if (window.location.pathname !== `/doc/${doc.id}`) {
-      await navigate(`/doc/${doc.id}${nodeId ? `#${nodeId}` : ""}`);
+    if (window.location.pathname !== `/${doc.id}`) {
+      await navigate(`/${doc.id}${nodeId ? `#${nodeId}` : ""}`);
       onClose();
       return;
     }

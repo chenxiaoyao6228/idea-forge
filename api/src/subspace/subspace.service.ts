@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
-import { SubspaceTypeSchema } from "contracts";
+import { NavigationNode, NavigationNodeType, SubspaceTypeSchema } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
@@ -179,6 +179,181 @@ export class SubspaceService {
     await this.prismaService.subspace.delete({ where: { id } });
     return { success: true };
   }
+
+  // ==== navigationTree ====
+  async getSubspaceNavigationTree(subspaceId: string, userId: number) {
+    // 1. 检查用户是否有访问权限
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      include: {
+        members: {
+          where: {
+            userId,
+          },
+        },
+        workspace: {
+          include: {
+            members: {
+              where: {
+                userId,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // 2. 权限检查 - 类似于 authorize(user, "readDocument", collection)
+    const isWorkspaceMember = subspace.workspace.members.length > 0;
+    const isSubspaceMember = subspace.members.length > 0;
+    const isPublicSubspace = subspace.type === "PUBLIC";
+
+    if (!isWorkspaceMember || (!isSubspaceMember && !isPublicSubspace)) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
+    }
+
+    // 3. 返回文档结构
+    return subspace.navigationTree || [];
+  }
+
+  private docToNavigationNode(doc: any): NavigationNode {
+    return {
+      type: NavigationNodeType.Document,
+      subspaceId: doc.subspaceId,
+      id: doc.id,
+      title: doc.title,
+      url: `/${doc.id}`,
+      icon: doc.icon,
+      parent: null,
+      children: [],
+      // isDraft: !doc.publishedAt,
+    };
+  }
+  // 添加文档到 navigationTree
+  async addDocumentToNavigationTree(subspaceId: string, doc: any, parentId?: string) {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    let navigationTree = (subspace.navigationTree as NavigationNode[]) || [];
+    const docNode = this.docToNavigationNode(doc);
+
+    if (!parentId) {
+      // 添加到根级别
+      navigationTree.unshift(docNode);
+    } else {
+      // 递归添加到指定父文档下
+      const addToParent = (nodes: NavigationNode[]): NavigationNode[] => {
+        return nodes.map((node) => {
+          if (node.id === parentId) {
+            return {
+              ...node,
+              children: [docNode, ...node.children],
+            };
+          } else if (node.children.length > 0) {
+            return {
+              ...node,
+              children: addToParent(node.children),
+            };
+          }
+          return node;
+        });
+      };
+
+      navigationTree = addToParent(navigationTree);
+    }
+
+    // 更新数据库
+    await this.prismaService.subspace.update({
+      where: { id: subspaceId },
+      data: {
+        navigationTree: navigationTree as any,
+      },
+    });
+
+    return navigationTree;
+  }
+
+  // 从 navigationTree 中移除文档
+  async removeDocumentFromNavigationTree(subspaceId: string, docId: string) {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+    });
+
+    if (!subspace) {
+      return;
+    }
+
+    let navigationTree = (subspace.navigationTree as NavigationNode[]) || [];
+
+    const removeFromTree = (nodes: NavigationNode[]): NavigationNode[] => {
+      return nodes
+        .filter((node) => node.id !== docId)
+        .map((node) => ({
+          ...node,
+          children: removeFromTree(node.children),
+        }));
+    };
+
+    navigationTree = removeFromTree(navigationTree);
+
+    await this.prismaService.subspace.update({
+      where: { id: subspaceId },
+      data: {
+        navigationTree: navigationTree as any,
+      },
+    });
+  }
+
+  // 更新 navigationTree 中的文档信息
+  async updateDocumentInNavigationTree(subspaceId: string, doc: any) {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+    });
+
+    if (!subspace) {
+      return;
+    }
+
+    let navigationTree = (subspace.navigationTree as NavigationNode[]) || [];
+    const updatedNode = this.docToNavigationNode(doc);
+
+    const updateInTree = (nodes: NavigationNode[]): NavigationNode[] => {
+      return nodes.map((node) => {
+        if (node.id === doc.id) {
+          return {
+            ...updatedNode,
+            children: node.children, // 保持原有的子节点
+          };
+        } else if (node.children.length > 0) {
+          return {
+            ...node,
+            children: updateInTree(node.children),
+          };
+        }
+        return node;
+      });
+    };
+
+    navigationTree = updateInTree(navigationTree);
+
+    await this.prismaService.subspace.update({
+      where: { id: subspaceId },
+      data: {
+        navigationTree: navigationTree as any,
+      },
+    });
+  }
+
+  // ==== members
 
   async addSubspaceMember(subspaceId: string, dto: AddSubspaceMemberDto, currentUserId: number) {
     // Check if current user is an admin of the subspace

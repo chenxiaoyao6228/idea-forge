@@ -19,6 +19,7 @@ import { useSidebarResize } from "@/hooks/use-sidebar-resize";
 import { cn, mergeButtonRefs } from "@/lib/utils";
 
 import { Icon } from "./icon";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 const SIDEBAR_STORAGE_KEY = "sidebar:state";
 const SIDEBAR_WIDTH_STORAGE_KEY = "sidebar:width";
 const SIDEBAR_WIDTH = "16rem";
@@ -49,7 +50,7 @@ type SidebarContext = {
 const SidebarContext = React.createContext<SidebarContext | null>(null);
 
 function useSidebar() {
-  const context = React.useContext(SidebarContext);
+  const context = useContext(SidebarContext);
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.");
   }
@@ -69,16 +70,16 @@ const SidebarProvider = React.forwardRef<
   const isMobile = useIsMobile();
 
   // Load initial states from localStorage
-  const [width, setWidth] = React.useState(() => {
+  const [width, setWidth] = useState(() => {
     if (typeof window === "undefined") return defaultWidth;
     return localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY) || defaultWidth;
   });
 
-  const [openMobile, setOpenMobile] = React.useState(false);
-  const [isDraggingRail, setIsDraggingRail] = React.useState(false);
+  const [openMobile, setOpenMobile] = useState(false);
+  const [isDraggingRail, setIsDraggingRail] = useState(false);
 
   // Load initial open state from localStorage
-  const [_open, _setOpen] = React.useState(() => {
+  const [_open, _setOpen] = useState(() => {
     if (typeof window === "undefined") return defaultOpen;
     const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
     return stored ? stored === "true" : defaultOpen;
@@ -87,7 +88,7 @@ const SidebarProvider = React.forwardRef<
   const open = openProp ?? _open;
 
   // Update setOpen to use localStorage
-  const setOpen = React.useCallback(
+  const setOpen = useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value;
       if (setOpenProp) {
@@ -101,12 +102,12 @@ const SidebarProvider = React.forwardRef<
   );
 
   // Save width to localStorage when it changes
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, width);
   }, [width]);
 
   // Helper to toggle the sidebar.
-  const toggleSidebar = React.useCallback(() => {
+  const toggleSidebar = useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
   }, [
     isMobile,
@@ -116,7 +117,7 @@ const SidebarProvider = React.forwardRef<
   ]);
 
   // Adds a keyboard shortcut to toggle the sidebar.
-  // React.useEffect(() => {
+  // useEffect(() => {
   //   const handleKeyDown = (event: KeyboardEvent) => {
   //     if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
   //       event.preventDefault();
@@ -132,7 +133,7 @@ const SidebarProvider = React.forwardRef<
   // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed";
 
-  const contextValue = React.useMemo<SidebarContext>(
+  const contextValue = useMemo<SidebarContext>(
     () => ({
       state,
       open,
@@ -329,7 +330,7 @@ const SidebarRail = React.forwardRef<
   });
 
   //* Merge external ref with our dragRef
-  const combinedRef = React.useMemo(() => mergeButtonRefs([ref, dragRef]), [ref, dragRef]);
+  const combinedRef = useMemo(() => mergeButtonRefs([ref, dragRef]), [ref, dragRef]);
 
   return (
     <button
@@ -592,7 +593,7 @@ const SidebarMenuSkeleton = React.forwardRef<
   }
 >(({ className, showIcon = false, ...props }, ref) => {
   // Random width between 50 to 90%.
-  const width = React.useMemo(() => {
+  const width = useMemo(() => {
     return `${Math.floor(Math.random() * 40) + 50}%`;
   }, []);
 

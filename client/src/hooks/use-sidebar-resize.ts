@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 interface UseSidebarResizeProps {
   enableDrag?: boolean;
@@ -39,20 +39,20 @@ export function useSidebarResize({
   maxResizeWidth = "20rem",
   setIsDraggingRail,
 }: UseSidebarResizeProps) {
-  const dragRef = React.useRef<HTMLButtonElement>(null);
-  const isDragging = React.useRef(false);
-  const startX = React.useRef(0);
-  const startWidth = React.useRef(0);
-  const isInteractingWithRail = React.useRef(false);
-  const lastWidth = React.useRef(0);
-  const lastLoggedWidth = React.useRef(0);
-  const autoCollapseThreshold = React.useRef(toPx(minResizeWidth) * 0.55); // 55% of min width
+  const dragRef = useRef<HTMLButtonElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+  const isInteractingWithRail = useRef(false);
+  const lastWidth = useRef(0);
+  const lastLoggedWidth = useRef(0);
+  const autoCollapseThreshold = useRef(toPx(minResizeWidth) * 0.55); // 55% of min width
 
-  const persistWidth = React.useCallback((width: string) => {
+  const persistWidth = useCallback((width: string) => {
     localStorage.setItem(SIDEBAR_WIDTH_COOKIE_NAME, width);
   }, []);
 
-  const handleMouseDown = React.useCallback(
+  const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       isInteractingWithRail.current = true;
 
@@ -72,7 +72,7 @@ export function useSidebarResize({
     [enableDrag, isCollapsed, currentWidth],
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isInteractingWithRail.current || isCollapsed) return;
 

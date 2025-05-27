@@ -9,9 +9,10 @@ import { SystemDocumentService } from "./system-document.service";
 import { SearchDocumentService } from "./search-document.service";
 import { DocumentAbility } from "./document.ability";
 import { MoveDocumentService } from "./move-document.service";
+import { SubspaceModule } from "@/subspace/subspace.module";
 
 @Module({
-  imports: [FileStoreModule, ScheduleModule.forRoot()],
+  imports: [FileStoreModule, ScheduleModule.forRoot(), SubspaceModule],
   controllers: [DocumentController, ShareDocumentController],
   providers: [DocumentService, ShareDocumentService, SystemDocumentService, MoveDocumentService, SearchDocumentService, DocumentAbility],
   exports: [DocumentService, SystemDocumentService, SearchDocumentService, MoveDocumentService],

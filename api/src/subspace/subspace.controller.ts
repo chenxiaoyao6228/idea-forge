@@ -32,6 +32,15 @@ export class SubspaceController {
     return this.subspaceService.deleteSubspace(id, req.user.id);
   }
 
+  // ==== navigationTree ====
+
+  @Get(":id/navigationTree")
+  async getSubspaceNavigationTree(@Param("id") id: string, @Req() req: any) {
+    return this.subspaceService.getSubspaceNavigationTree(id, req.user.id);
+  }
+
+  // ==== members
+
   @Post(":id/members")
   async addSubspaceMember(@Param("id") id: string, @Body() dto: AddSubspaceMemberDto, @Req() req: any) {
     return this.subspaceService.addSubspaceMember(id, dto, req.user.id);

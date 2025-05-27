@@ -2,6 +2,7 @@ import { createStore } from "./utils/factory";
 
 interface State {
   isSidebarCollapsed: boolean;
+  activeDocumentId?: string;
 }
 
 type Action = {
@@ -13,6 +14,7 @@ type ComputedState = {};
 
 const defaultState: State = {
   isSidebarCollapsed: false,
+  activeDocumentId: undefined,
 };
 
 const useUIStore = createStore<State & Action, ComputedState>(

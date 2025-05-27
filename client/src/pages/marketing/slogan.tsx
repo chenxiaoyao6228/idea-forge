@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import Typed from "typed.js";
 import { useTranslation } from "react-i18next";
 
@@ -6,7 +6,7 @@ export default function Slogan() {
   const { t } = useTranslation();
   const el = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const typed = new Typed(el.current, {
       strings: [t("Your AI-powered writing and collaborative editing tools!")],
       startDelay: 0, // Set startDelay to 0 to start typing immediately
