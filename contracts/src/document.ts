@@ -62,8 +62,8 @@ export const listDocumentSchema = basePagerSchema.merge(DocOptionalDefaultsSchem
   workspaceId: true,
   subspaceId: true,
   visibility: true,
-  isArchived: true,
-  isStarred: true,
+  archivedAt: true,
+  // isStarred: true,
   type: true,
  })); 
 export type ListDocumentDto = z.infer<typeof listDocumentSchema>;
@@ -81,6 +81,7 @@ export const updateDocumentSchema = z.object({
 });
 
 export type UpdateDocumentDto = z.infer<typeof updateDocumentSchema>;
+
 
 // search doc
 export const searchDocumentSchema = z.object({
@@ -132,10 +133,9 @@ export interface SearchDocumentResponse {
 // move doc
 export const moveDocumentsSchema = z.object({
   id: z.string().cuid(),
-  targetId: z.string(),
-  // -1 represents moving before the target document, 0 represents moving after the target document, 1 represents moving after the target document
-  dropPosition: z.number(),
-  subspaceId: z.string().optional() // exist when moving to another subspace
+  parentId: z.string().cuid().optional().nullish(),
+  subspaceId: z.string().cuid().optional().nullish(), // exist when moving to another subspace  
+  index: z.number().gte(0).optional()
 });
 
 export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;

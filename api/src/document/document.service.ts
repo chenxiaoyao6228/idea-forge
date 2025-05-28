@@ -4,6 +4,7 @@ import { CreateDocumentResponse, NavigationNode, NavigationNodeType } from "cont
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { presentDocument } from "./document.presenter";
 
 @Injectable()
 export class DocumentService {
@@ -71,7 +72,7 @@ export class DocumentService {
     const isPublic = document.visibility === "PUBLIC";
 
     // Present document data (similar to presentDocument)
-    const serializedDocument = this.presentDocument(document, { isPublic });
+    const serializedDocument = presentDocument(document, { isPublic });
 
     const data = {
       document: serializedDocument,
@@ -84,45 +85,6 @@ export class DocumentService {
       data,
       // Placeholder for policies
       policies: isPublic ? undefined : this.presentPoliciesPlaceholder(userId, document),
-    };
-  }
-
-  private presentDocument(document: any, options: { isPublic: boolean }) {
-    return {
-      id: document.id,
-      title: document.title,
-      content: document.content,
-      type: document.type,
-      visibility: document.visibility,
-      icon: document.icon,
-      createdAt: document.createdAt,
-      updatedAt: document.updatedAt,
-      publishedAt: document.publishedAt,
-      archivedAt: document.archivedAt,
-      deletedAt: document.deletedAt,
-      position: document.position,
-      parentId: document.parentId,
-      workspaceId: document.workspaceId,
-      subspaceId: document.subspaceId,
-      // Include author info if not public
-      author: options.isPublic
-        ? undefined
-        : {
-            id: document.author.id,
-            displayName: document.author.displayName,
-            email: document.author.email,
-            imageUrl: document.author.imageUrl,
-          },
-      // Include workspace/subspace info
-      workspace: document.workspace,
-      subspace: document.subspace,
-      // Parent and children for navigation
-      parent: document.parent,
-      children: document.children,
-      // Cover image
-      coverImage: document.coverImage,
-      // Revision count
-      // revisionCount: document.revisions.length,
     };
   }
 
@@ -165,7 +127,7 @@ export class DocumentService {
       await this.updateSubspaceNavigationTree(doc.subspaceId, "add", doc);
     }
 
-    return this.presentDocument(doc, { isPublic: true });
+    return presentDocument(doc, { isPublic: true });
   }
 
   async update(id: string, userId: number, dto: UpdateDocumentDto) {

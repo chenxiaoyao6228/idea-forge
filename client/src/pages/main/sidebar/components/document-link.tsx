@@ -8,13 +8,16 @@ import { SidebarLink } from "./sidebar-link";
 import useSubSpaceStore from "@/stores/subspace";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { DraggableDocumentContainer } from "./draggable-document-container";
 
-interface DocumentLinkProps {
+export interface DocumentLinkProps {
   node: NavigationNode;
   subspaceId: string;
   depth: number;
   index: number;
   parentId?: string;
+  isDragging?: boolean; // item being dragged
+  isActiveDrop?: boolean; // item is the active drop target
 }
 
 export function DocumentLink({ node, subspaceId, depth, index, parentId }: DocumentLinkProps) {
@@ -62,7 +65,8 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
       try {
         setIsCreating(true);
         const newDocId = await createDocument({
-          title: "New Document",
+          // FIXME: remove the random number
+          title: "New Document" + Math.floor(Math.random() * 1000),
           parentId: node.id,
           subspaceId,
         });
@@ -106,7 +110,7 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
       {hasChildren && isExpanded && (
         <div>
           {node.children?.map((child, childIndex) => (
-            <DocumentLink key={child.id} node={child} subspaceId={subspaceId} depth={depth + 1} index={childIndex} parentId={node.id} />
+            <DraggableDocumentContainer key={child.id} node={child} subspaceId={subspaceId} depth={depth + 1} index={childIndex} parentId={node.id} />
           ))}
         </div>
       )}

@@ -3,6 +3,7 @@ import fractionalIndex from "fractional-index";
 import { useCallback, useState } from "react";
 import useSubSpaceStore from "@/stores/subspace";
 import { NavigationNode } from "contracts";
+import useDocumentStore from "@/stores/document";
 
 export interface DragItem extends NavigationNode {
   subspaceId: string;
@@ -14,6 +15,7 @@ export function useDragAndDropContext() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const allSubspaces = useSubSpaceStore((state) => state.allSubspaces);
   const moveSubspace = useSubSpaceStore((state) => state.move);
+  const moveDocument = useDocumentStore((state) => state.move);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -31,7 +33,7 @@ export function useDragAndDropContext() {
   }, []);
 
   const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
+    async (event: DragEndEvent) => {
       setActiveId(null);
 
       const { active, over } = event;
@@ -71,6 +73,13 @@ export function useDragAndDropContext() {
 
         moveSubspace(dragSubspace.id, newIndex);
       }
+
+      if (draggingItem?.type === "document" && toDropItem?.accept?.includes("document")) {
+        const params = calculateDocumentMoveParams(draggingItem, toDropItem);
+        if (params) {
+          await moveDocument(params);
+        }
+      }
     },
     [allSubspaces, moveSubspace],
   );
@@ -91,4 +100,26 @@ export function useDragAndDropContext() {
     handleDragMove,
     handleDragOver,
   };
+}
+
+function calculateDocumentMoveParams(draggingItem: DragItem, toDropItem: any) {
+  return {
+    id: draggingItem.id,
+    subspaceId: toDropItem.subspaceId || draggingItem.subspaceId,
+    parentId: toDropItem.dropType === "reparent" ? toDropItem.documentId : toDropItem.parentId,
+    index: calculateNewIndex(draggingItem, toDropItem),
+  };
+}
+
+function calculateNewIndex(draggingItem: DragItem, toDropItem: any): number {
+  if (toDropItem.dropType === "reorder") {
+    // 根据拖拽位置决定是插入到目标文档前面还是后面
+    const targetIndex = Number.parseInt(toDropItem.index);
+    return toDropItem.dropPosition === "top" ? targetIndex : targetIndex + 1;
+  }
+  if (toDropItem.dropType === "reparent") {
+    // 成为子文档：插入到子文档列表开头
+    return 0;
+  }
+  return 0;
 }

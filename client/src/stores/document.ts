@@ -53,6 +53,12 @@ interface Action {
     workspaceId?: string;
   }) => Promise<string>;
   setActiveDocument: (id?: string) => void;
+  move: (params: {
+    id: string;
+    subspaceId?: string | null;
+    parentId?: string | null;
+    index?: number;
+  }) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -172,6 +178,32 @@ const useDocumentStore = create(
             return response.id;
           } catch (error) {
             console.error("Failed to create document:", error);
+            throw error;
+          } finally {
+            set({ isSaving: false });
+          }
+        },
+
+        move: async ({ id, subspaceId, parentId, index }) => {
+          set({ isSaving: true });
+          try {
+            const { documents: affectedDocuments, policies } = await documentApi.moveDocument({
+              id,
+              subspaceId,
+              parentId,
+              index,
+            });
+
+            // FIXME: use websocket to inform update, so that everyone in the team can update immediately
+            // use updatedAt to compare to avoid unnecessary updates
+            if (subspaceId) {
+              useSubSpaceStore.getState().fetchNavigationTree(subspaceId, { force: true });
+            }
+
+            // update documents
+            get().upsertMany(affectedDocuments);
+          } catch (error) {
+            console.error("Failed to move document:", error);
             throw error;
           } finally {
             set({ isSaving: false });

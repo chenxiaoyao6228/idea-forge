@@ -35,7 +35,7 @@ interface Action {
     type: string;
     workspaceId: string;
   }) => Promise<SubspaceEntity>;
-
+  // FIXME: Doc type here
   addDocument: (subspaceId: string, document: Doc) => void;
   updateDocument: (subspaceId: string, documentId: string, updates: Partial<Doc>) => void;
   removeDocument: (subspaceId: string, documentId: string) => void;
@@ -143,7 +143,7 @@ const useSubSpaceStore = create(
         },
 
         // Document operations with navigation tree support
-        addDocument: (subspaceId: string, document: Doc) => {
+        addDocument: (subspaceId, document) => {
           try {
             const navigationNode: NavigationNode = {
               id: document.id,

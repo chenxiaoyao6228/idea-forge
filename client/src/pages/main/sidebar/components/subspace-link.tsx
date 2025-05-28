@@ -11,6 +11,7 @@ import useDocumentStore from "@/stores/document";
 import { SidebarLink } from "./sidebar-link";
 import { DocumentLink } from "./document-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DraggableDocumentContainer } from "./draggable-document-container";
 
 interface SubspaceLinkProps {
   subspace: SubspaceEntity;
@@ -163,7 +164,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
       {hasDocuments && isExpanded && (
         <div className="ml-4">
           {subspace.navigationTree.map((node, index) => (
-            <DocumentLink key={node.id} node={node} subspaceId={subspaceId} depth={depth + 1} index={index} />
+            <DraggableDocumentContainer key={node.id} node={node} subspaceId={subspaceId} depth={depth + 1} index={index} />
           ))}
         </div>
       )}

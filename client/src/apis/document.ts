@@ -72,7 +72,10 @@ export const documentApi = {
     return request.get<CommonDocumentResponse>(`/api/documents/${id}`);
   },
 
+  // TODO: remove this after remove the old doc-store
   moveDocuments: (dto: MoveDocumentsDto) => request.post<MoveDocumentsDto, CommonDocumentResponse[]>("/api/documents/move", dto),
+
+  moveDocument: (dto: MoveDocumentsDto) => request.post<MoveDocumentsDto, any>("/api/documents/move", dto),
 
   updateCover: (id: string, dto: UpdateCoverDto) => request.patch<UpdateCoverDto, CommonDocumentResponse>(`/api/documents/${id}/cover`, dto),
   removeCover: (id: string) => request.delete<null, CommonDocumentResponse>(`/api/documents/${id}/cover`),

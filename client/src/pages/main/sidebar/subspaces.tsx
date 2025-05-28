@@ -30,15 +30,6 @@ export default function SubspacesArea() {
     },
   });
 
-  //  drop target for drop to bottom
-  const { isOver: isBottomDropOver, setNodeRef: setBottomDropRef } = useDroppable({
-    id: "subspace-drop-bottom",
-    data: {
-      accept: ["subspace"],
-      dropType: "bottom",
-    },
-  });
-
   useEffect(() => {
     fetchList();
   }, []);
@@ -92,9 +83,6 @@ export default function SubspacesArea() {
             {subspaces.map((subspace) => (
               <DraggableSubspaceContainer key={subspace.id} subspace={subspace} />
             ))}
-            <div ref={setBottomDropRef} className="h-[1px]">
-              <DropCursor isActiveDrop={isBottomDropOver} innerRef={null} position="bottom" />
-            </div>
           </div>
         </CollapsibleContent>
       </Collapsible>
