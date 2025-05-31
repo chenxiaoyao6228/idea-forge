@@ -11,6 +11,16 @@ export interface DragItem extends NavigationNode {
   index: string;
 }
 
+interface DropTarget {
+  accept: string[];
+  dropType: "top" | "bottom" | "reorder" | "reparent";
+  subspaceId?: string;
+  documentId?: string;
+  parentId?: string;
+  index?: string;
+  dropPosition?: "top" | "bottom";
+}
+
 export function useDragAndDropContext() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const allSubspaces = useSubSpaceStore((state) => state.allSubspaces);
@@ -40,7 +50,7 @@ export function useDragAndDropContext() {
       if (!over) return;
 
       const draggingItem = active.data.current as DragItem;
-      const toDropItem = over.data.current;
+      const toDropItem = over.data.current as DropTarget;
 
       if (draggingItem?.type === "subspace" && toDropItem?.accept?.includes("subspace")) {
         const dragSubspace = allSubspaces.find((s) => s.id === draggingItem.subspaceId);
@@ -81,7 +91,7 @@ export function useDragAndDropContext() {
         }
       }
     },
-    [allSubspaces, moveSubspace],
+    [allSubspaces, moveSubspace, moveDocument],
   );
 
   const handleDragMove = useCallback((event: DragMoveEvent) => {
@@ -102,7 +112,7 @@ export function useDragAndDropContext() {
   };
 }
 
-function calculateDocumentMoveParams(draggingItem: DragItem, toDropItem: any) {
+function calculateDocumentMoveParams(draggingItem: DragItem, toDropItem: DropTarget) {
   return {
     id: draggingItem.id,
     subspaceId: toDropItem.subspaceId || draggingItem.subspaceId,
@@ -111,14 +121,14 @@ function calculateDocumentMoveParams(draggingItem: DragItem, toDropItem: any) {
   };
 }
 
-function calculateNewIndex(draggingItem: DragItem, toDropItem: any): number {
+function calculateNewIndex(draggingItem: DragItem, toDropItem: DropTarget): number {
   if (toDropItem.dropType === "reorder") {
-    // 根据拖拽位置决定是插入到目标文档前面还是后面
-    const targetIndex = Number.parseInt(toDropItem.index);
+    // Determine whether to insert before or after the target document based on drop position
+    const targetIndex = Number.parseInt(toDropItem.index || "0");
     return toDropItem.dropPosition === "top" ? targetIndex : targetIndex + 1;
   }
   if (toDropItem.dropType === "reparent") {
-    // 成为子文档：插入到子文档列表开头
+    // Become a child document: insert at the beginning of child document list
     return 0;
   }
   return 0;

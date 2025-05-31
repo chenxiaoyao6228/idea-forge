@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { FileIcon, FolderIcon, PlusIcon } from "lucide-react";
+import { EditIcon, FileIcon, FolderIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavigationNode } from "contracts";
 import useDocumentStore from "@/stores/document";
@@ -9,6 +9,7 @@ import useSubSpaceStore from "@/stores/subspace";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DraggableDocumentContainer } from "./draggable-document-container";
+import { EditableTitle } from "./editable-title";
 
 export interface DocumentLinkProps {
   node: NavigationNode;
@@ -23,9 +24,12 @@ export interface DocumentLinkProps {
 export function DocumentLink({ node, subspaceId, depth, index, parentId }: DocumentLinkProps) {
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
+
   const createDocument = useDocumentStore((state) => state.createDocument);
+  const updateDocument = useDocumentStore((state) => state.updateDocument);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const isActiveDocument = activeDocumentId === node.id;
   const hasChildren = node.children && node.children.length > 0;
 
@@ -82,6 +86,26 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
     [createDocument, node.id, subspaceId],
   );
 
+  const editableTitleRef = React.useRef<{ setIsEditing: (editing: boolean) => void }>(null);
+  const handleTitleChange = useCallback(
+    async (value: string) => {
+      try {
+        await updateDocument({
+          id: node.id,
+          title: value,
+          subspaceId,
+        });
+      } catch (error) {
+        console.error("Failed to update document title:", error);
+      }
+    },
+    [updateDocument, node.id],
+  );
+
+  const handleRename = useCallback(() => {
+    editableTitleRef.current?.setIsEditing(true);
+  }, []);
+
   const icon = hasChildren ? <FolderIcon className="h-4 w-4" /> : <FileIcon className="h-4 w-4" />;
 
   const menu = (
@@ -89,7 +113,10 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
       <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating}>
         <PlusIcon className="h-3 w-3" />
       </Button>
-      {/* TODO:  add update delete */}
+      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleRename} disabled={isEditing}>
+        <EditIcon className="h-3 w-3" />
+      </Button>
+      {/* TODO:  more operations  */}
     </>
   );
 
@@ -98,13 +125,23 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
       <SidebarLink
         to={`/${node.id}`}
         icon={icon}
-        label={node.title}
         expanded={hasChildren ? isExpanded : undefined}
         onDisclosureClick={hasChildren ? handleDisclosureClick : undefined}
         depth={depth}
         active={isActiveDocument}
         menu={menu}
         showActions={isActiveDocument}
+        label={
+          <EditableTitle
+            title={node.title}
+            onSubmit={handleTitleChange}
+            isEditing={isEditing}
+            onEditing={setIsEditing}
+            canUpdate={true} // Add proper permission check here
+            maxLength={255}
+            ref={editableTitleRef}
+          />
+        }
       />
 
       {hasChildren && isExpanded && (

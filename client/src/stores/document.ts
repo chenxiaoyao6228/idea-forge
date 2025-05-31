@@ -52,6 +52,7 @@ interface Action {
     subspaceId?: string;
     workspaceId?: string;
   }) => Promise<string>;
+  updateDocument: (UpdateDocumentDto) => Promise<void>;
   setActiveDocument: (id?: string) => void;
   move: (params: {
     id: string;
@@ -181,6 +182,14 @@ const useDocumentStore = create(
             throw error;
           } finally {
             set({ isSaving: false });
+          }
+        },
+
+        updateDocument: async ({ id, title, subspaceId }) => {
+          await documentApi.update(id, { title });
+          if (subspaceId) {
+            // TODO:
+            useSubSpaceStore.getState().fetchNavigationTree(subspaceId, { force: true });
           }
         },
 

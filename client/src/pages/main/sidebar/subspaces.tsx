@@ -4,22 +4,16 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { SubspaceTypeSchema } from "contracts";
-import useWorkspaceStore from "@/stores/workspace-store";
-import useSubSpaceStore from "@/stores/subspace";
 import { DraggableSubspaceContainer } from "./components/draggable-subspace-container";
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
 
+import { useSubspaceOperations } from "@/hooks/use-subspace-operations";
+
 export default function SubspacesArea() {
   const { t } = useTranslation();
-  const currentWorkspace = useWorkspaceStore.use.currentWorkspace();
-  const fetchList = useSubSpaceStore((state) => state.fetchList);
-  const ids = useSubSpaceStore((state) => state.ids);
-  const create = useSubSpaceStore((state) => state.create);
-  const subspaces = useSubSpaceStore((state) => state.allSubspaces);
-  const [isCreating, setIsCreating] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const { isCreating, subspaces, handleSubspaceCreate, fetchList } = useSubspaceOperations();
 
   // drag target for drop to top
   const { isOver: isTopDropOver, setNodeRef: setTopDropRef } = useDroppable({
@@ -32,28 +26,9 @@ export default function SubspacesArea() {
 
   useEffect(() => {
     fetchList();
-  }, []);
+  }, [fetchList]);
 
-  const handleSubspaceCreate = async () => {
-    try {
-      setIsCreating(true);
-      await create({
-        name: "New Subspace" + ids.length + 1,
-        description: "New Subspace Description",
-        avatar: "",
-        type: SubspaceTypeSchema.Enum.PUBLIC,
-        workspaceId: currentWorkspace?.id!,
-      });
-    } catch (error) {
-      console.error("Failed to create subspace:", error);
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  if (!subspaces) {
-    return null;
-  }
+  if (!subspaces) return null;
 
   return (
     <SidebarGroup>
