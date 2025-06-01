@@ -29,6 +29,7 @@ import { SystemDocumentService } from "./document/system-document.service";
 import { WorkspaceModule } from "./workspace/workspace.module";
 import { SubspaceModule } from "./subspace/subspace.module";
 import { CaslModule } from "./_shared/casl/casl.module";
+import { SocketModule } from "./_shared/socket/socket.module";
 
 @Module({
   controllers: [AppController],
@@ -74,6 +75,7 @@ import { CaslModule } from "./_shared/casl/casl.module";
     I18nNextModule,
     SubspaceModule,
     CaslModule,
+    SocketModule,
   ],
   providers: [
     {

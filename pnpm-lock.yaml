@@ -102,6 +102,9 @@ importers:
       '@nestjs/core':
         specifier: ^10.0.0
         version: 10.4.17(@nestjs/common@10.4.17)(@nestjs/platform-express@10.4.17)(@nestjs/websockets@10.4.17)(reflect-metadata@0.1.14)(rxjs@7.8.2)
+      '@nestjs/event-emitter':
+        specifier: ^3.0.1
+        version: 3.0.1(@nestjs/common@10.4.17)(@nestjs/core@10.4.17)
       '@nestjs/jwt':
         specifier: ^10.2.0
         version: 10.2.0(@nestjs/common@10.4.17)
@@ -115,7 +118,7 @@ importers:
         specifier: ^10.0.0
         version: 10.4.17(@nestjs/common@10.4.17)(@nestjs/core@10.4.17)
       '@nestjs/platform-socket.io':
-        specifier: ^10.4.7
+        specifier: ^10.4.17
         version: 10.4.17(@nestjs/common@10.4.17)(@nestjs/websockets@10.4.17)(rxjs@7.8.2)
       '@nestjs/schedule':
         specifier: ^5.0.1
@@ -127,7 +130,7 @@ importers:
         specifier: ^8.0.5
         version: 8.1.1(@nestjs/common@10.4.17)(@nestjs/core@10.4.17)(reflect-metadata@0.1.14)
       '@nestjs/websockets':
-        specifier: ^10.4.7
+        specifier: ^10.4.17
         version: 10.4.17(@nestjs/common@10.4.17)(@nestjs/core@10.4.17)(@nestjs/platform-socket.io@10.4.17)(reflect-metadata@0.1.14)(rxjs@7.8.2)
       '@prisma/client':
         specifier: 5.11.0
@@ -252,6 +255,9 @@ importers:
       rxjs:
         specifier: ^7.2.0
         version: 7.8.2
+      socket.io:
+        specifier: ^4.8.1
+        version: 4.8.1
       uuid:
         specifier: ^11.0.3
         version: 11.1.0
@@ -4017,6 +4023,17 @@ packages:
       uid: 2.0.2
     transitivePeerDependencies:
       - encoding
+
+  /@nestjs/event-emitter@3.0.1(@nestjs/common@10.4.17)(@nestjs/core@10.4.17):
+    resolution: {integrity: sha512-0Ln/x+7xkU6AJFOcQI9tIhUMXVF7D5itiaQGOyJbXtlAfAIt8gzDdJm+Im7cFzKoWkiW5nCXCPh6GSvdQd/3Dw==}
+    peerDependencies:
+      '@nestjs/common': ^10.0.0 || ^11.0.0
+      '@nestjs/core': ^10.0.0 || ^11.0.0
+    dependencies:
+      '@nestjs/common': 10.4.17(reflect-metadata@0.1.14)(rxjs@7.8.2)
+      '@nestjs/core': 10.4.17(@nestjs/common@10.4.17)(@nestjs/platform-express@10.4.17)(@nestjs/websockets@10.4.17)(reflect-metadata@0.1.14)(rxjs@7.8.2)
+      eventemitter2: 6.4.9
+    dev: false
 
   /@nestjs/jwt@10.2.0(@nestjs/common@10.4.17):
     resolution: {integrity: sha512-x8cG90SURkEiLOehNaN2aRlotxT0KZESUliOPKKnjWiyJOcWurkF3w345WOX0P4MgFzUjGoZ1Sy0aZnxeihT0g==}
@@ -12581,6 +12598,10 @@ packages:
   /event-target-shim@5.0.1:
     resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
     engines: {node: '>=6'}
+
+  /eventemitter2@6.4.9:
+    resolution: {integrity: sha512-JEPTiaOt9f04oa6NOkc4aH+nVp5I3wEjpHbIPqfgCdD5v5bUzy7xQqwcVO2aDQgOWhI28da57HksMrzK9HlRxg==}
+    dev: false
 
   /events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}

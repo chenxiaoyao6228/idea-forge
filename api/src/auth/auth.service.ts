@@ -27,6 +27,7 @@ interface LoginMetadata {
 
 @Injectable()
 export class AuthService {
+  private tokenUpdateLocks = new Map<number, Promise<{ accessToken: string; refreshToken: string; user: UserResponseData }>>();
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
@@ -277,7 +278,21 @@ export class AuthService {
     return currentUser;
   }
 
-  async refreshToken(user: User): Promise<{ accessToken: string; refreshToken: string; user: UserResponseData }> {
+  async refreshToken(user: User) {
+    let lock = this.tokenUpdateLocks.get(user.id);
+    if (!lock) {
+      lock = this._refreshToken(user);
+      this.tokenUpdateLocks.set(user.id, lock);
+
+      lock.finally(() => {
+        this.tokenUpdateLocks.delete(user.id);
+      });
+    }
+
+    return lock;
+  }
+
+  private async _refreshToken(user: User): Promise<{ accessToken: string; refreshToken: string; user: UserResponseData }> {
     const { accessToken, refreshToken } = await this.generateJWTToken(user.id);
 
     const hashedRefreshToken = await hash(refreshToken);

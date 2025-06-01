@@ -20,6 +20,7 @@ import { FileStoreModule } from "../file-store/file-store.module";
 import { CollaborationModule } from "@/collaboration/collaboration.module";
 import { LoggerModule } from "@/_shared/utils/logger.module";
 import { SystemDocumentService } from "@/document/system-document.service";
+import { WsJwtStrategy } from "./strategies/strategy.ws-jwt";
 
 @Module({
   // JwtModule.registerAsync(jwtConfig.asProvider()) - Asynchronously register JWT module using jwtConfig
@@ -28,6 +29,7 @@ import { SystemDocumentService } from "@/document/system-document.service";
   // Allows jwtConfig values to be injected throughout the module
   imports: [JwtModule.registerAsync(jwtConfig.asProvider()), FileStoreModule, CollaborationModule, LoggerModule],
   providers: [
+    WsJwtStrategy,
     LocalStrategy,
     JwtStrategy,
     GoogleStrategy,
@@ -47,6 +49,6 @@ import { SystemDocumentService } from "@/document/system-document.service";
     },
   ],
   controllers: [AuthController],
-  exports: [AuthService, VerificationService, JwtService],
+  exports: [AuthService, JwtService, VerificationService, MailService, DocumentService],
 })
 export class AuthModule {}
