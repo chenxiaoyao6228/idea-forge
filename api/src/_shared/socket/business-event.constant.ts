@@ -3,15 +3,16 @@ export enum BusinessEvents {
   GATEWAY_CONNECT = "gateway.connect",
   GATEWAY_DISCONNECT = "gateway.disconnect",
   AUTH_FAILED = "auth.failed",
+  AUTH_SUCCESS = "auth.success",
 
   // Subspace events
   SUBSPACE_REORDER = "subspace.reorder",
-  // SUBSPACE_UPDATE = "subspace.update",
+  SUBSPACE_UPDATE = "subspace.update",
 
   // User presence events
-  // USER_ONLINE = "user.online",
-  // USER_OFFLINE = "user.offline",
-  // USER_KICK = "user.kick",
+  USER_ONLINE = "user.online",
+  USER_OFFLINE = "user.offline",
+  USER_KICK = "user.kick",
 
   // Document collaboration events
   // DOCUMENT_UPDATE = "document.update",

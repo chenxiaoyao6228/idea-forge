@@ -32,8 +32,11 @@ const useWorkspaceStore = createStore<State & Actions, ComputedState>(
         if (response && Array.isArray(response)) {
           set({
             workspaces: response,
-            currentWorkspace: response[0],
           });
+
+          if (!get().currentWorkspace) {
+            set({ currentWorkspace: response[0] });
+          }
         }
       } catch (error) {
         console.error("Failed to fetch workspaces:", error);
@@ -43,8 +46,11 @@ const useWorkspaceStore = createStore<State & Actions, ComputedState>(
     },
     switchWorkspace: async (workspaceId) => {
       try {
-        await workspaceApi.switchWorkspace(workspaceId);
-        window.location.href = "/";
+        const currentWorkspace = get().workspaces.find((workspace) => workspace.id === workspaceId);
+        if (currentWorkspace) {
+          set({ currentWorkspace });
+          window.location.href = "/";
+        }
       } catch (error) {
         console.error("切换工作区失败:", error);
       }

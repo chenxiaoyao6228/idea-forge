@@ -27,7 +27,7 @@ interface State {
 
 interface Action {
   // api actions
-  fetchList: () => Promise<SubspaceEntity[]>;
+  fetchList: (workspaceId?: string) => Promise<SubspaceEntity[]>;
   create: (payload: {
     name: string;
     description: string;
@@ -94,10 +94,10 @@ const useSubSpaceStore = create(
         },
 
         // API Actions
-        fetchList: async () => {
+        fetchList: async (workspaceId?: string) => {
           set({ isLoading: true });
           try {
-            const response = (await subspaceApi.getSubspaces()) as any;
+            const response = (await subspaceApi.getSubspaces(workspaceId)) as any;
             const subspaces = response.map((subspace) => ({
               id: subspace.id,
               name: subspace.name,

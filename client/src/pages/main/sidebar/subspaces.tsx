@@ -9,11 +9,13 @@ import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
 
 import { useSubspaceOperations } from "@/hooks/use-subspace-operations";
+import useWorkspaceStore from "@/stores/workspace-store";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const { isCreating, subspaces, handleSubspaceCreate, fetchList } = useSubspaceOperations();
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
   // drag target for drop to top
   const { isOver: isTopDropOver, setNodeRef: setTopDropRef } = useDroppable({
@@ -25,8 +27,10 @@ export default function SubspacesArea() {
   });
 
   useEffect(() => {
-    fetchList();
-  }, [fetchList]);
+    if (currentWorkspace) {
+      fetchList(currentWorkspace.id);
+    }
+  }, [fetchList, currentWorkspace]);
 
   if (!subspaces) return null;
 

@@ -11,6 +11,7 @@ enum WebsocketStatus {
   CONNECTING = "connecting",
   CONNECTED = "connected",
   RECONNECTING = "reconnecting",
+  ERROR = "error",
 }
 
 enum DisconnectReason {
@@ -18,6 +19,10 @@ enum DisconnectReason {
   ERROR = "error",
   TIMEOUT = "timeout",
   USER_INACTIVITY = "user_inactivity",
+  AUTH_FAILED = "auth_failed",
+  SERVER_DISCONNECT = "server_disconnect",
+  CLIENT_DISCONNECT = "client_disconnect",
+  NETWORK_ERROR = "network_error",
 }
 
 class WebsocketError extends Error {
@@ -31,19 +36,21 @@ class WebsocketError extends Error {
   }
 }
 
-// TODO: add to shared package
-// Business event types from server
-enum BusinessEvents {
-  SUBSPACE_UPDATE = "subspace.update",
-  SUBSPACE_REORDER = "subspace.reorder",
+// Server custom events
+enum SocketEvents {
+  // basic
   GATEWAY_CONNECT = "gateway.connect",
   GATEWAY_DISCONNECT = "gateway.disconnect",
   AUTH_FAILED = "auth.failed",
+  AUTH_SUCCESS = "auth.success",
+
+  // business
+  SUBSPACE_UPDATE = "subspace.update",
+  SUBSPACE_REORDER = "subspace.reorder",
 }
 
-// TODO: add to shared package
 interface GatewayMessage {
-  type: BusinessEvents;
+  type: SocketEvents;
   data: any;
   timestamp: string;
 }
@@ -60,7 +67,37 @@ class WebsocketService {
   private setStatus(status: WebsocketStatus, reason?: DisconnectReason) {
     this.status = status;
     if (reason) this.disconnectReason = reason;
-    this.socket?.emit("status_change", status);
+    this.socket?.emit("status_change", { status, reason });
+  }
+
+  private handleSocketDisconnect(reason: string) {
+    console.log("[websocket]: Socket.IO disconnected:", reason);
+    let disconnectReason: DisconnectReason;
+
+    switch (reason) {
+      case "io server disconnect":
+        disconnectReason = DisconnectReason.SERVER_DISCONNECT;
+        break;
+      case "io client disconnect":
+        disconnectReason = DisconnectReason.CLIENT_DISCONNECT;
+        break;
+      case "ping timeout":
+        disconnectReason = DisconnectReason.TIMEOUT;
+        break;
+      case "transport close":
+      case "transport error":
+        disconnectReason = DisconnectReason.NETWORK_ERROR;
+        break;
+      default:
+        disconnectReason = DisconnectReason.ERROR;
+    }
+
+    this.setStatus(WebsocketStatus.DISCONNECTED, disconnectReason);
+
+    // Only attempt to reconnect for certain disconnect reasons
+    if ([DisconnectReason.TIMEOUT, DisconnectReason.NETWORK_ERROR, DisconnectReason.ERROR].includes(disconnectReason)) {
+      setTimeout(() => this.reconnect(), 1000);
+    }
   }
 
   async connect(): Promise<void> {
@@ -83,6 +120,7 @@ class WebsocketService {
       });
 
       this.setupSocketEvents();
+      this.setupBusinessEvents();
 
       // Wait for connection with timeout
       const timeoutPromise = resolvablePromise();
@@ -93,17 +131,21 @@ class WebsocketService {
       this.socket.on("connect", () => {
         clearTimeout(timeout);
         this.reconnectAttempts = 0;
+        console.log("[websocket]: Socket.IO connected");
       });
 
       this.socket.on("connect_error", (error) => {
         clearTimeout(timeout);
+        console.error("[websocket]: Socket.IO connection error:", error);
         const wsError = new WebsocketError("CONNECTION_ERROR", error.message, error);
+        this.setStatus(WebsocketStatus.ERROR, DisconnectReason.NETWORK_ERROR);
         this.socket?.emit("error", wsError);
       });
 
       return this.connectionPromise;
     } catch (error: any) {
       const wsError = error instanceof WebsocketError ? error : new WebsocketError("CONNECTION_FAILED", error.message, error);
+      this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
       this.socket?.emit("error", wsError);
       throw wsError;
     }
@@ -113,7 +155,7 @@ class WebsocketService {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       const error = new WebsocketError("MAX_RECONNECT_ATTEMPTS", "Maximum reconnection attempts reached");
       this.socket?.emit("error", error);
-      this.setStatus(WebsocketStatus.DISCONNECTED, DisconnectReason.ERROR);
+      this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
       return;
     }
 
@@ -134,14 +176,24 @@ class WebsocketService {
       this.socket.disconnect();
       this.socket = null;
     }
-    this.setStatus(WebsocketStatus.DISCONNECTED, DisconnectReason.NORMAL);
+    this.setStatus(WebsocketStatus.DISCONNECTED, DisconnectReason.CLIENT_DISCONNECT);
   }
 
   private setupSocketEvents() {
     if (!this.socket) return;
 
-    // Handle authentication
-    this.socket.on("authenticated", () => {
+    // Socket.IO built-in events
+    this.socket.on("disconnect", this.handleSocketDisconnect.bind(this));
+
+    this.socket.on("error", (error) => {
+      console.error("[websocket]: Socket.IO error:", error);
+      this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
+      this.socket?.emit("error", new WebsocketError("SOCKET_ERROR", error.message, error));
+    });
+
+    // Server custom events
+    this.socket.on(SocketEvents.AUTH_SUCCESS, (message: GatewayMessage) => {
+      console.log("[websocket]: Authentication successful:", message.data);
       if (this.socket) {
         this.socket.authenticated = true;
         this.setStatus(WebsocketStatus.CONNECTED);
@@ -149,40 +201,27 @@ class WebsocketService {
       }
     });
 
-    // Handle gateway connection confirmation
-    this.socket.on(BusinessEvents.GATEWAY_CONNECT, (message: GatewayMessage) => {
-      console.log("Connected to realtime gateway:", message.data);
+    this.socket.on(SocketEvents.AUTH_FAILED, (message: GatewayMessage) => {
+      console.log("[websocket]: Authentication failed:", message.data);
+      this.socket?.disconnect();
+      this.setStatus(WebsocketStatus.ERROR, DisconnectReason.AUTH_FAILED);
     });
 
-    this.socket.on(BusinessEvents.GATEWAY_DISCONNECT, (reason) => {
-      let disconnectReason: DisconnectReason;
-
-      switch (reason) {
-        case "io server disconnect":
-        case "io client disconnect":
-          disconnectReason = DisconnectReason.NORMAL;
-          break;
-        case "ping timeout":
-        case "transport close":
-          disconnectReason = DisconnectReason.TIMEOUT;
-          break;
-        default:
-          disconnectReason = DisconnectReason.ERROR;
-      }
-
-      this.setStatus(WebsocketStatus.DISCONNECTED, disconnectReason);
-
-      if (disconnectReason !== DisconnectReason.NORMAL) {
-        setTimeout(() => this.reconnect(), 1000);
-      }
+    this.socket.on(SocketEvents.GATEWAY_CONNECT, (message: GatewayMessage) => {
+      console.log("[websocket]: Connected to realtime gateway:", message.data);
     });
 
-    this.socket.on("connect_error", (error) => {
-      this.socket?.emit("error", new WebsocketError("SOCKET_ERROR", error.message, error));
+    this.socket.on(SocketEvents.GATEWAY_DISCONNECT, (message: GatewayMessage) => {
+      console.log("[websocket]: Disconnected from realtime gateway:", message.data);
+      // Handle business-level disconnection if needed
+      // This is separate from the Socket.IO disconnect event
     });
+  }
 
-    // Handle subspace events
-    this.socket.on(BusinessEvents.SUBSPACE_UPDATE, (message: GatewayMessage) => {
+  private setupBusinessEvents() {
+    if (!this.socket) return;
+
+    this.socket.on(SocketEvents.SUBSPACE_UPDATE, (message: GatewayMessage) => {
       const { data } = message;
       if (!data) return;
 
@@ -196,8 +235,7 @@ class WebsocketService {
       }
     });
 
-    // Handle subspace reorder events
-    this.socket.on(BusinessEvents.SUBSPACE_REORDER, (message: GatewayMessage) => {
+    this.socket.on(SocketEvents.SUBSPACE_REORDER, (message: GatewayMessage) => {
       const { data } = message;
       if (!data) return;
 
@@ -210,6 +248,15 @@ class WebsocketService {
         });
       }
     });
+  }
+
+  // Room management methods
+  joinRoom(roomId: string) {
+    this.socket?.emit("join", { roomId });
+  }
+
+  leaveRoom(roomId: string) {
+    this.socket?.emit("leave", { roomId });
   }
 
   // Public API

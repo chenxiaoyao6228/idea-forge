@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Query } from "@nestjs/common";
 import { SubspaceService } from "./subspace.service";
 import { SubspaceDetailResponse, SubspaceMemberListResponse } from "contracts";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, MoveSubspaceDto } from "./subspace.dto";
@@ -12,9 +12,9 @@ export class SubspaceController {
     return this.subspaceService.createSubspace(dto, req.user.id);
   }
 
-  @Get("list")
-  async getSubspaces(@Req() req: any) {
-    return this.subspaceService.getUserSubWorkspaces(req.user.id);
+  @Get("")
+  async getSubspaces(@Req() req: any, @Query("workspaceId") workspaceId?: string) {
+    return this.subspaceService.getUserSubWorkspaces(req.user.id, workspaceId);
   }
 
   @Get(":id")

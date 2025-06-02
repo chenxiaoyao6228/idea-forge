@@ -7,6 +7,7 @@ import { RedisService } from "@/_shared/database/redis/redis.service";
 import { AuthService } from "@/auth/auth.service";
 import { AuthGateway } from "../shared/auth.gateway";
 import { ConfigService } from "@nestjs/config";
+import { SubspaceService } from "@/subspace/subspace.service";
 
 @WebSocketGateway<GatewayMetadata>({
   path: "/api/realtime",
@@ -22,6 +23,7 @@ export class RealtimeGateway extends AuthGateway implements OnGatewayConnection,
   constructor(
     configService: ConfigService,
     private readonly workspaceService: WorkspaceService,
+    private readonly subspaceService: SubspaceService,
     jwtService: JwtService,
     redisService: RedisService,
     authService: AuthService,
@@ -41,6 +43,14 @@ export class RealtimeGateway extends AuthGateway implements OnGatewayConnection,
         client.join(`workspace:${workspace.id}`);
       });
 
+      // Join user's subspace rooms
+      const subspaces = await this.subspaceService.getUserSubWorkspaces(user.id);
+      subspaces.forEach((subspace) => {
+        client.join(`subspace:${subspace.id}`);
+      });
+
+      // TODO: join user's group rooms
+
       // Join user's personal room
       client.join(`user:${user.id}`);
 
@@ -48,7 +58,7 @@ export class RealtimeGateway extends AuthGateway implements OnGatewayConnection,
       client.send(this.gatewayMessageFormat(BusinessEvents.GATEWAY_CONNECT, "WebSocket connected"));
 
       // Broadcast user online
-      this.server.to(`workspace:${user.id}`).emit(BusinessEvents.USER_ONLINE, this.gatewayMessageFormat(BusinessEvents.USER_ONLINE, { userId: user.id }));
+      // this.server.to(`workspace:${user.id}`).emit(BusinessEvents.USER_ONLINE, this.gatewayMessageFormat(BusinessEvents.USER_ONLINE, { userId: user.id }));
     } catch (error) {
       console.error("handleConnection error", error);
       client.disconnect();
@@ -66,33 +76,33 @@ export class RealtimeGateway extends AuthGateway implements OnGatewayConnection,
   }
 
   @SubscribeMessage("join")
-  async handleJoin(client: Socket, payload: { workspaceId?: string; subspaceId?: string }) {
-    // const user = client.data.user;
-    // if (!user) return;
-    // if (payload.workspaceId) {
-    //   // Check workspace access
-    //   const hasAccess = await this.workspaceService.hasWorkspaceAccess(user.id, payload.workspaceId);
-    //   if (hasAccess) {
-    //     client.join(`workspace:${payload.workspaceId}`);
-    //   }
-    // }
-    // if (payload.subspaceId) {
-    //   // Check subspace access
-    //   const hasAccess = await this.workspaceService.hasSubspaceAccess(user.id, payload.subspaceId);
-    //   if (hasAccess) {
-    //     client.join(`subspace:${payload.subspaceId}`);
-    //   }
-    // }
+  async handleJoin(client: Socket, payload: { workspaceId?: string; subspaceId?: string; groupId?: string }) {
+    const user = client.data.user;
+    if (!user) return;
+    if (payload.workspaceId) {
+      // Check workspace access
+      const hasAccess = await this.workspaceService.hasWorkspaceAccess(user.id, payload.workspaceId);
+      if (hasAccess) {
+        client.join(`workspace:${payload.workspaceId}`);
+      }
+    }
+    if (payload.subspaceId) {
+      // Check subspace access
+      const hasAccess = await this.subspaceService.hasSubspaceAccess(user.id, payload.subspaceId);
+      if (hasAccess) {
+        client.join(`subspace:${payload.subspaceId}`);
+      }
+    }
   }
 
   @SubscribeMessage("leave")
   async handleLeave(client: Socket, payload: { workspaceId?: string; subspaceId?: string }) {
-    // if (payload.workspaceId) {
-    //   client.leave(`workspace:${payload.workspaceId}`);
-    // }
-    // if (payload.subspaceId) {
-    //   client.leave(`subspace:${payload.subspaceId}`);
-    // }
+    if (payload.workspaceId) {
+      client.leave(`workspace:${payload.workspaceId}`);
+    }
+    if (payload.subspaceId) {
+      client.leave(`subspace:${payload.subspaceId}`);
+    }
   }
 
   @SubscribeMessage(BusinessEvents.SUBSPACE_REORDER)

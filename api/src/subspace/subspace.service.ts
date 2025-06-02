@@ -82,6 +82,7 @@ export class SubspaceService {
 
     // Emit create event
     await this.eventPublisher.publishSubspaceCreateEvent({
+      name: "subspace.create",
       subspaceId: subspace.id,
       workspaceId: dto.workspaceId,
       actorId: userId.toString(),
@@ -99,7 +100,7 @@ export class SubspaceService {
       where: {
         subspaceId: id,
         userId,
-        role: "ADMIN",
+        // role: "ADMIN", // TODO:
       },
     });
 
@@ -165,10 +166,11 @@ export class SubspaceService {
     return fractionalIndex(index, nextIndex);
   }
 
-  async getUserSubWorkspaces(userId: number) {
+  async getUserSubWorkspaces(userId: number, workspaceId?: string) {
     const workspaces = await this.prismaService.workspaceMember.findMany({
       where: {
         userId,
+        ...(workspaceId && { workspaceId }),
       },
       include: {
         workspace: {
@@ -261,11 +263,11 @@ export class SubspaceService {
     });
 
     // Emit update event
-    await this.eventPublisher.publishSubspaceUpdateEvent({
-      subspaceId: id,
-      workspaceId: subspace.workspaceId,
-      actorId: userId.toString(),
-    });
+    // await this.eventPublisher.publishSubspaceUpdateEvent({
+    //   subspaceId: id,
+    //   workspaceId: subspace.workspaceId,
+    //   actorId: userId.toString(),
+    // });
 
     return {
       ...subspace,
@@ -617,5 +619,43 @@ export class SubspaceService {
       members: members,
       total: members.length,
     };
+  }
+
+  async hasSubspaceAccess(userId: number, subspaceId: string): Promise<boolean> {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      include: {
+        members: {
+          where: {
+            userId,
+          },
+        },
+        workspace: {
+          include: {
+            members: {
+              where: {
+                userId,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      return false;
+    }
+
+    // Check if user is a workspace member
+    const isWorkspaceMember = subspace.workspace.members.length > 0;
+    if (!isWorkspaceMember) {
+      return false;
+    }
+
+    // Check if user is a subspace member or if subspace is public
+    const isSubspaceMember = subspace.members.length > 0;
+    const isPublicSubspace = subspace.type === "PUBLIC";
+
+    return isSubspaceMember || isPublicSubspace;
   }
 }

@@ -49,8 +49,3 @@ export const WorkspaceMemberListResponseSchema = z.object({
   total: z.number(),
 });
 export type WorkspaceMemberListResponse = z.infer<typeof WorkspaceMemberListResponseSchema>;
-
-export const SwitchWorkspaceSchema = z.object({
-  workspaceId: z.string(),
-})
-export type SwitchWorkspaceRequest = z.infer<typeof SwitchWorkspaceSchema>;

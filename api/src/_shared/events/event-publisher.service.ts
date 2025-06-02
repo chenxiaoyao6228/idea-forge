@@ -1,8 +1,9 @@
-import { Injectable } from "@nestjs/common";
+import { Global, Injectable } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { SubspaceCreateEvent, SubspaceMoveEvent, SubspaceUpdateEvent } from "./types/subspace.event";
 
+@Global()
 @Injectable()
 export class EventPublisherService {
   constructor(@InjectQueue("websocket-events") private readonly websocketQueue: Queue) {}

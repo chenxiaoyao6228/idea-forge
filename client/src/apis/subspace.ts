@@ -17,7 +17,7 @@ export const subspaceApi = {
 
   getSubspace: async (id: string) => request.get<void, SubspaceDetailResponse>(`/api/subspaces/${id}`),
 
-  getSubspaces: async () => request.get<any, Subspace[]>("/api/subspaces/list"),
+  getSubspaces: async (workspaceId?: string) => request.get<any, Subspace[]>(`/api/subspaces${workspaceId ? `?workspaceId=${workspaceId}` : ""}`),
 
   updateSubspace: async (id: string, data: UpdateSubspaceRequest) => request.put<UpdateSubspaceRequest, SubspaceDetailResponse>(`/api/subspaces/${id}`, data),
 

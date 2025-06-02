@@ -92,11 +92,7 @@ export class WorkspaceService {
     if (workspaces.length === 0) {
       // Create a default workspace when there is none for backwards compatibility
       const workspace = await this.CreateDefaultWorkspace(currentUserId);
-      return [
-        {
-          ...workspace,
-        },
-      ];
+      return [workspace];
     }
 
     return workspaces;
@@ -155,15 +151,6 @@ export class WorkspaceService {
   //   };
   // }
 
-  async setCurrentWorkspace(userId: number, workspaceId: string) {
-    await this.prismaService.user.update({
-      where: { id: userId },
-      data: { currentWorkspaceId: workspaceId } as any,
-    });
-
-    return { success: true };
-  }
-
   async updateWorkspace(id: string, dto: UpdateWorkspaceDto) {
     const workspace = await this.prismaService.workspace.update({
       where: { id },
@@ -204,5 +191,18 @@ export class WorkspaceService {
         },
       },
     });
+  }
+
+  async hasWorkspaceAccess(userId: number, workspaceId: string): Promise<boolean> {
+    const workspaceMember = await this.prismaService.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId,
+        },
+      },
+    });
+
+    return !!workspaceMember;
   }
 }

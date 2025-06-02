@@ -18,8 +18,6 @@ export const workspaceApi = {
 
   getWorkspaces: async () => request.get<void, WorkspaceListResponse>("/api/workspaces"),
 
-  switchWorkspace: async (id: string) => request.post<{ workspaceId: string }, { success: boolean }>(`/api/workspaces/switch`, { workspaceId: id }),
-
   updateWorkspace: async (id: string, data: UpdateWorkspaceRequest) =>
     request.put<UpdateWorkspaceRequest, WorkspaceDetailResponse>(`/api/workspaces/${id}`, data),
 

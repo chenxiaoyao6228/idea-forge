@@ -28,6 +28,7 @@ import { PrivateDocs } from "./sidebar/private";
 import { useDragAndDropContext } from "./sidebar/hooks/use-dnd";
 import useSubSpaceStore from "@/stores/subspace";
 import { DndContext } from "@dnd-kit/core";
+import { websocketService } from "@/lib/websocket";
 
 export default function Main() {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
@@ -47,6 +48,10 @@ export default function Main() {
   if (docId) {
     content = <Doc />;
   }
+
+  useEffect(() => {
+    websocketService.connect();
+  }, []);
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragMove={handleDragMove} onDragOver={handleDragOver}>

@@ -62,6 +62,8 @@ export class AuthGateway extends BroadcastBaseGateway implements OnGatewayConnec
         return this.authFailed(client);
       }
 
+      client.send(this.gatewayMessageFormat(BusinessEvents.AUTH_SUCCESS, "Authentication successful"));
+
       this.tokenSocketIdMap.set(token, client.id);
       client.data.user = user;
 
