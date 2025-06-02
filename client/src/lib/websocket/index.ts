@@ -45,8 +45,13 @@ enum SocketEvents {
   AUTH_SUCCESS = "auth.success",
 
   // business
+  SUBSPACE_CREATE = "subspace.create",
   SUBSPACE_UPDATE = "subspace.update",
-  SUBSPACE_REORDER = "subspace.reorder",
+  SUBSPACE_MOVE = "subspace.move",
+  JOIN = "join",
+  JOIN_SUCCESS = "join.success",
+  JOIN_ERROR = "join.error",
+  ENTITIES = "entities",
 }
 
 interface GatewayMessage {
@@ -63,6 +68,7 @@ class WebsocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private connectionPromise = resolvablePromise();
+  private joinedRooms = new Set<string>();
 
   private setStatus(status: WebsocketStatus, reason?: DisconnectReason) {
     this.status = status;
@@ -221,42 +227,133 @@ class WebsocketService {
   private setupBusinessEvents() {
     if (!this.socket) return;
 
+    this.socket.on(SocketEvents.SUBSPACE_CREATE, (message: GatewayMessage) => {
+      const { data } = message;
+      if (!data) return;
+
+      const subspace = data.subspace;
+
+      const store = useSubSpaceStore.getState();
+      store.addOne({
+        ...subspace,
+        updatedAt: new Date(subspace.updatedAt),
+        createdAt: new Date(subspace.createdAt),
+      });
+    });
+
+    this.socket.on(SocketEvents.SUBSPACE_MOVE, (message: GatewayMessage) => {
+      const { data } = message;
+      if (!data) return;
+
+      const store = useSubSpaceStore.getState();
+      store.updateOne({
+        id: data.subspaceId,
+        changes: {
+          index: data.index,
+          updatedAt: new Date(data.updatedAt),
+        },
+      });
+    });
+
     this.socket.on(SocketEvents.SUBSPACE_UPDATE, (message: GatewayMessage) => {
       const { data } = message;
       if (!data) return;
 
-      // Handle subspace updates
-      if (data.event === "subspace.create" || data.event === "subspace.update") {
-        const { subspaceIds } = data;
-        if (subspaceIds?.length) {
-          // Fetch updated subspaces
-          useSubSpaceStore.getState().fetchList();
+      const store = useSubSpaceStore.getState();
+      store.updateOne({
+        id: data.id,
+        changes: {
+          name: data.name,
+          avatar: data.avatar,
+          type: data.type,
+          index: data.index,
+          navigationTree: data.navigationTree || [],
+          updatedAt: new Date(data.updatedAt),
+        },
+      });
+    });
+
+    this.socket.on(SocketEvents.JOIN, (message: GatewayMessage) => {
+      const { data } = message;
+      if (!data) return;
+
+      // Handle join events for new subspaces
+      if (data.event === "subspace.create" && data.subspaceId) {
+        const roomId = `subspace:${data.subspaceId}`;
+        if (!this.joinedRooms.has(roomId)) {
+          this.joinRoom(roomId);
         }
       }
     });
 
-    this.socket.on(SocketEvents.SUBSPACE_REORDER, (message: GatewayMessage) => {
+    this.socket.on(SocketEvents.JOIN_SUCCESS, (message: GatewayMessage) => {
       const { data } = message;
-      if (!data) return;
+      if (!data?.roomId) return;
+      this.joinedRooms.add(data.roomId);
+      console.log(`[websocket]: Successfully joined room: ${data.roomId}`);
+    });
 
-      const { subspaceId, index } = data;
-      if (subspaceId && index !== undefined) {
-        // Update the subspace index in the store
-        useSubSpaceStore.getState().updateOne({
-          id: subspaceId,
-          changes: { index },
-        });
+    this.socket.on(SocketEvents.JOIN_ERROR, (message: GatewayMessage) => {
+      const { data } = message;
+      if (!data?.roomId) return;
+      console.error(`[websocket]: Failed to join room: ${data.roomId}`, data.error);
+      this.joinedRooms.delete(data.roomId);
+    });
+
+    // Handle entities event as a fallback mechanism
+    this.socket.on(SocketEvents.ENTITIES, (message: GatewayMessage) => {
+      const { data } = message;
+      if (!data?.subspaceIds?.length) return;
+
+      const store = useSubSpaceStore.getState();
+      const needsUpdate = data.subspaceIds.some(({ id, updatedAt }) => store.needsUpdate(id, new Date(updatedAt)));
+
+      if (needsUpdate) {
+        store.fetchList();
       }
     });
   }
 
   // Room management methods
   joinRoom(roomId: string) {
-    this.socket?.emit("join", { roomId });
+    if (!this.socket?.connected) {
+      console.warn(`[websocket]: Cannot join room ${roomId}, socket not connected`);
+      return;
+    }
+
+    if (this.joinedRooms.has(roomId)) {
+      console.log(`[websocket]: Already joined room: ${roomId}`);
+      return;
+    }
+
+    console.log(`[websocket]: Joining room: ${roomId}`);
+    this.socket.emit("join", { roomId });
   }
 
   leaveRoom(roomId: string) {
-    this.socket?.emit("leave", { roomId });
+    if (!this.socket?.connected) {
+      console.warn(`[websocket]: Cannot leave room ${roomId}, socket not connected`);
+      return;
+    }
+
+    if (!this.joinedRooms.has(roomId)) {
+      console.log(`[websocket]: Not in room: ${roomId}`);
+      return;
+    }
+
+    console.log(`[websocket]: Leaving room: ${roomId}`);
+    this.socket.emit("leave", { roomId });
+    this.joinedRooms.delete(roomId);
+  }
+
+  // Helper method to check if we're in a room
+  isInRoom(roomId: string): boolean {
+    return this.joinedRooms.has(roomId);
+  }
+
+  // Helper method to get all joined rooms
+  getJoinedRooms(): string[] {
+    return Array.from(this.joinedRooms);
   }
 
   // Public API

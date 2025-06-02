@@ -6,8 +6,12 @@ export enum BusinessEvents {
   AUTH_SUCCESS = "auth.success",
 
   // Subspace events
-  SUBSPACE_REORDER = "subspace.reorder",
+  SUBSPACE_CREATE = "subspace.create",
   SUBSPACE_UPDATE = "subspace.update",
+  SUBSPACE_MOVE = "subspace.move",
+  JOIN = "join",
+  JOIN_SUCCESS = "join.success",
+  JOIN_ERROR = "join.error",
 
   // User presence events
   USER_ONLINE = "user.online",

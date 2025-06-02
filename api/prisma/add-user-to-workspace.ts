@@ -1,4 +1,4 @@
-// npx ts-node prisma/add-user-to-workspace.ts 3@qq.com cmb7pg27h0000er7khv5pm61l
+// npx ts-node prisma/add-user-to-workspace.ts 2@qq.com cmbf3eh3a00001kplfee9ctxe
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 async function addUserToWorkspace(userEmail: string, workspaceId: string) {
   console.log(`🌱 Adding user ${userEmail} to workspace ${workspaceId}...`);
   console.time(`🌱 Operation completed`);
+
 
   try {
     // 1. Find the user

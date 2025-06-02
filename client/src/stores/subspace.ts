@@ -46,6 +46,10 @@ interface Action {
   getExpandedKeysForDocument: (subspaceId: string, documentId: string) => string[];
   setActiveSubspace: (id?: string) => void;
   move: (subspaceId: string, index: string) => Promise<void>;
+  // Add method to check if subspace needs update
+  needsUpdate: (subspaceId: string, updatedAt: Date) => boolean;
+  // Add method to update subspace directly
+  updateSubspace: (subspace: SubspaceEntity) => void;
 }
 
 const defaultState: State = {
@@ -68,7 +72,6 @@ const useSubSpaceStore = create(
           type: NavigationNodeType.Subspace,
           id: subspace.id,
           title: subspace.name,
-          // color: subspace.color ?? undefined,
           icon: subspace.avatar ?? undefined,
           url: subspace.url ?? `/subspace/${subspace.id}`,
           children: subspace.navigationTree ?? [],
@@ -123,22 +126,45 @@ const useSubSpaceStore = create(
           try {
             // FIXME:
             const response = (await subspaceApi.createSubspace(payload as any)) as any;
-            const subspace = {
+
+            // Add the new subspace to the store immediately
+            get().addOne({
               id: response.id,
               name: response.name,
               avatar: response.avatar,
               workspaceId: response.workspaceId,
               type: response.type,
-              index: response.index,
-              createdAt: response.createdAt,
-              updatedAt: response.updatedAt,
+              index: response.index || 0,
               navigationTree: [],
-            };
-            get().addOne(subspace);
-            return subspace;
+              updatedAt: new Date(response.updatedAt),
+              createdAt: new Date(response.createdAt),
+            });
+
+            return response;
           } catch (error) {
             console.error("Failed to create subspace:", error);
             throw error;
+          }
+        },
+
+        // Add method to check if subspace needs update
+        needsUpdate: (subspaceId: string, updatedAt: Date) => {
+          const existing = get().entities[subspaceId];
+          return !existing || new Date(existing.updatedAt) < updatedAt;
+        },
+
+        // Add method to update subspace directly
+        updateSubspace: (subspace: SubspaceEntity) => {
+          const existing = get().entities[subspace.id];
+          if (!existing || new Date(existing.updatedAt) < new Date(subspace.updatedAt)) {
+            get().updateOne({
+              id: subspace.id,
+              changes: {
+                ...subspace,
+                updatedAt: new Date(subspace.updatedAt),
+                createdAt: new Date(subspace.createdAt),
+              },
+            });
           }
         },
 

@@ -151,6 +151,6 @@ export class AuthGateway extends BroadcastBaseGateway implements OnGatewayConnec
   override async broadcast(event: BusinessEvents, data: any) {
     const message = this.gatewayMessageFormat(event, data);
     // Publish to Redis channel for other instances to pick up
-    await this.redisService.getClient().publish(`socket:${namespace}:broadcast`, JSON.stringify(message));
+    await this.redisService.getClient().publish(`socket:${this.namespace}:broadcast`, JSON.stringify(message));
   }
 }

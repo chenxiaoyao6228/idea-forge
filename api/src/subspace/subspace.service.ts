@@ -6,6 +6,8 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import fractionalIndex from "fractional-index";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
+import { SubspacePresenter } from "./subspace.presenter";
+import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
 export class SubspaceService {
@@ -81,18 +83,17 @@ export class SubspaceService {
     });
 
     // Emit create event
-    await this.eventPublisher.publishSubspaceCreateEvent({
-      name: "subspace.create",
-      subspaceId: subspace.id,
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_CREATE,
       workspaceId: dto.workspaceId,
       actorId: userId.toString(),
+      data: {
+        subspace: SubspacePresenter.toWebsocketEvent(subspace),
+      },
+      timestamp: new Date().toISOString(),
     });
 
-    return {
-      ...subspace,
-      createdAt: subspace.createdAt.toISOString(),
-      updatedAt: subspace.updatedAt.toISOString(),
-    };
+    return SubspacePresenter.toResponse(subspace);
   }
 
   async moveSubspace(id: string, newIndex: string, userId: number) {
@@ -125,12 +126,16 @@ export class SubspaceService {
     });
 
     // Emit move event
-    await this.eventPublisher.publishSubspaceMoveEvent({
-      name: "subspace.move",
-      subspaceId: id,
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_MOVE,
       workspaceId: updatedSubspace.workspaceId,
       actorId: userId.toString(),
-      index: finalIndex,
+      data: {
+        subspaceId: id,
+        index: finalIndex,
+        updatedAt: updatedSubspace.updatedAt,
+      },
+      timestamp: new Date().toISOString(),
     });
 
     return {
@@ -263,17 +268,16 @@ export class SubspaceService {
     });
 
     // Emit update event
-    // await this.eventPublisher.publishSubspaceUpdateEvent({
-    //   subspaceId: id,
-    //   workspaceId: subspace.workspaceId,
-    //   actorId: userId.toString(),
-    // });
+    await this.eventPublisher.publishWebsocketEvent({
+      name: "subspace.update",
+      type: BusinessEvents.SUBSPACE_UPDATE,
+      workspaceId: subspace.workspaceId,
+      actorId: userId.toString(),
+      data: SubspacePresenter.toWebsocketEvent(subspace),
+      timestamp: new Date().toISOString(),
+    });
 
-    return {
-      ...subspace,
-      createdAt: subspace.createdAt.toISOString(),
-      updatedAt: subspace.updatedAt.toISOString(),
-    };
+    return SubspacePresenter.toResponse(subspace);
   }
 
   async deleteSubspace(id: string, userId: number) {
