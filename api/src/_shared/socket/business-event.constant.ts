@@ -1,25 +1,25 @@
 export enum BusinessEvents {
   // Connection events
-  GATEWAY_CONNECT = "GATEWAY_CONNECT",
-  GATEWAY_DISCONNECT = "GATEWAY_DISCONNECT",
-  AUTH_FAILED = "AUTH_FAILED",
-
-  // User presence events
-  USER_ONLINE = "USER_ONLINE",
-  USER_OFFLINE = "USER_OFFLINE",
-  USER_KICK = "USER_KICK",
-
-  // Document collaboration events
-  DOCUMENT_UPDATE = "DOCUMENT_UPDATE",
-  DOCUMENT_SYNC = "DOCUMENT_SYNC",
-  DOCUMENT_CURSOR = "DOCUMENT_CURSOR",
-  DOCUMENT_SELECTION = "DOCUMENT_SELECTION",
+  GATEWAY_CONNECT = "gateway.connect",
+  GATEWAY_DISCONNECT = "gateway.disconnect",
+  AUTH_FAILED = "auth.failed",
 
   // Subspace events
-  SUBSPACE_UPDATE = "SUBSPACE_UPDATE",
-  SUBSPACE_REORDER = "SUBSPACE_REORDER",
+  SUBSPACE_REORDER = "subspace.reorder",
+  // SUBSPACE_UPDATE = "subspace.update",
+
+  // User presence events
+  // USER_ONLINE = "user.online",
+  // USER_OFFLINE = "user.offline",
+  // USER_KICK = "user.kick",
+
+  // Document collaboration events
+  // DOCUMENT_UPDATE = "document.update",
+  // DOCUMENT_SYNC = "document.sync",
+  // DOCUMENT_CURSOR = "document.cursor",
+  // DOCUMENT_SELECTION = "document.selection",
 
   // Workspace events
-  WORKSPACE_UPDATE = "WORKSPACE_UPDATE",
-  WORKSPACE_MEMBER_UPDATE = "WORKSPACE_MEMBER_UPDATE",
+  // WORKSPACE_UPDATE = "workspace.update",
+  // WORKSPACE_MEMBER_UPDATE = "workspace.member.update",
 }

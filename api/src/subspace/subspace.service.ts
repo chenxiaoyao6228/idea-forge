@@ -5,10 +5,14 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import fractionalIndex from "fractional-index";
+import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 
 @Injectable()
 export class SubspaceService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient,
+    private readonly eventPublisher: EventPublisherService,
+  ) {}
 
   async createDefaultGlobalSubspace(userId: number, workspaceId: string) {
     return await this.createSubspace(
@@ -61,7 +65,7 @@ export class SubspaceService {
         description: dto.description,
         avatar: dto.avatar,
         type: dto.type,
-        index: finalIndex, // Add index
+        index: finalIndex,
         workspace: {
           connect: {
             id: dto.workspaceId,
@@ -74,6 +78,13 @@ export class SubspaceService {
           },
         },
       },
+    });
+
+    // Emit create event
+    await this.eventPublisher.publishSubspaceCreateEvent({
+      subspaceId: subspace.id,
+      workspaceId: dto.workspaceId,
+      actorId: userId.toString(),
     });
 
     return {
@@ -110,6 +121,15 @@ export class SubspaceService {
     const updatedSubspace = await this.prismaService.subspace.update({
       where: { id },
       data: { index: finalIndex },
+    });
+
+    // Emit move event
+    await this.eventPublisher.publishSubspaceMoveEvent({
+      name: "subspace.move",
+      subspaceId: id,
+      workspaceId: updatedSubspace.workspaceId,
+      actorId: userId.toString(),
+      index: finalIndex,
     });
 
     return {
@@ -238,6 +258,13 @@ export class SubspaceService {
         avatar: dto.avatar,
         type: dto.type,
       },
+    });
+
+    // Emit update event
+    await this.eventPublisher.publishSubspaceUpdateEvent({
+      subspaceId: id,
+      workspaceId: subspace.workspaceId,
+      actorId: userId.toString(),
     });
 
     return {

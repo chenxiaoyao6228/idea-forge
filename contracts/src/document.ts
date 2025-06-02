@@ -1,6 +1,28 @@
 import { z } from "zod";
-import {  DocOptionalDefaultsSchema, DocSchema } from "./schema";
+import {  DocOptionalDefaultsSchema,  DocTypeSchema, DocVisibilitySchema } from "./schema";
 import { BasePageResult, basePagerSchema } from "./_base";
+
+// FIXME: the contentBinary cause Buffer error in client
+ const DocSchema = z.object({
+  type: DocTypeSchema,
+  visibility: DocVisibilitySchema,
+  id: z.string().cuid(),
+  title: z.string(),
+  content: z.string(),
+  // contentBinary: z.instanceof(Buffer).nullable(),
+  archivedAt: z.coerce.date().nullable(),
+  publishedAt: z.coerce.date().nullable(),
+  deletedAt: z.coerce.date().nullable(),
+  parentId: z.string().nullable(),
+  position: z.number().int(),
+  updatedAt: z.coerce.date(),
+  createdAt: z.coerce.date(),
+  icon: z.string().nullable(),
+  coverImageId: z.string().nullable(),
+  authorId: z.number().int(),
+  workspaceId: z.string(),
+  subspaceId: z.string().nullable(),
+})
 
 const commonDocumentSchema = DocSchema.pick({
   id: true,

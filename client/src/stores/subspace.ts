@@ -305,15 +305,15 @@ const useSubSpaceStore = create(
           try {
             const response = await subspaceApi.moveSubspace(subspaceId, { index });
 
-            if (response) {
-              const subspace = get().entities[subspaceId];
-              if (subspace) {
-                get().updateOne({
-                  id: subspaceId,
-                  changes: { index: response.index },
-                });
-              }
-            }
+            // if (response) {
+            //   const subspace = get().entities[subspaceId];
+            //   if (subspace) {
+            //     get().updateOne({
+            //       id: subspaceId,
+            //       changes: { index: response.index },
+            //     });
+            //   }
+            // }
           } catch (error) {
             console.error("Failed to move subspace:", error);
             throw error;

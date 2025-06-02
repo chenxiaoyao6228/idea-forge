@@ -1,4 +1,9 @@
 
+if(typeof window !== 'undefined') {
+  // @ts-ignore
+  window.Buffer = () => {};
+}
+
 // schema
 export * from './schema';
 export * from './types';

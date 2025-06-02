@@ -8,7 +8,7 @@ export const DocRevisionSchema = z.object({
   id: z.string().cuid(),
   title: z.string(),
   content: z.string(),
-  contentBinary: z.instanceof(Buffer).nullable(),
+  // contentBinary: z.instanceof(Buffer).nullable(),
   createdAt: z.coerce.date(),
   docId: z.string(),
   authorId: z.number().int(),

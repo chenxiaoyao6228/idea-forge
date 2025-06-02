@@ -1,4 +1,4 @@
-import { OnEvent } from "@nestjs/event-emitter";
+import * as cookie from "cookie";
 import type { OnGatewayConnection, OnGatewayDisconnect } from "@nestjs/websockets";
 import { WebSocketServer } from "@nestjs/websockets";
 import type { Socket } from "socket.io";
@@ -38,10 +38,15 @@ export class AuthGateway extends BroadcastBaseGateway implements OnGatewayConnec
 
   async handleConnection(client: Socket) {
     try {
-      const token =
+      let token =
         client.handshake.query.token?.toString() ||
         client.handshake.headers.authorization?.toString().split(" ")[1] ||
         client.handshake.headers.Authorization?.toString().split(" ")[1];
+
+      if (!token && client.handshake.headers.cookie) {
+        const cookies = cookie.parse(client.handshake.headers.cookie);
+        token = cookies.accessToken;
+      }
 
       if (!token) {
         return this.authFailed(client);

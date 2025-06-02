@@ -9,12 +9,14 @@ import { Toaster } from "./components/ui/toaster";
 import { createConfirmationCreater, createReactTreeMounter, createMountPoint } from "react-confirm";
 import { I18nextProvider } from "react-i18next";
 import i18n from "./lib/i18n";
+import { websocketService } from "./lib/websocket";
 const mounter = createReactTreeMounter();
 export const MountPoint = createMountPoint(mounter);
 
-// FIXME: the contract package export DocSchema, which contains contentBinary which is a Buffer type.
-// @ts-ignore
-window.Buffer = () => {};
+// FIXME: find the right time to connect to the realtime gateway
+setTimeout(() => {
+  websocketService.connect();
+}, 2000);
 
 createRoot(document.getElementById("root")!).render(
   // <StrictMode>
