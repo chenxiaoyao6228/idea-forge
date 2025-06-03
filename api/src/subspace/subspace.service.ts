@@ -6,7 +6,7 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import fractionalIndex from "fractional-index";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
-import { SubspacePresenter } from "./subspace.presenter";
+import { presentSubspace } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
@@ -88,12 +88,12 @@ export class SubspaceService {
       workspaceId: dto.workspaceId,
       actorId: userId.toString(),
       data: {
-        subspace: SubspacePresenter.toWebsocketEvent(subspace),
+        subspace: presentSubspace(subspace),
       },
       timestamp: new Date().toISOString(),
     });
 
-    return SubspacePresenter.toResponse(subspace);
+    return presentSubspace(subspace);
   }
 
   async moveSubspace(id: string, newIndex: string, userId: number) {
@@ -249,7 +249,7 @@ export class SubspaceService {
       where: {
         subspaceId: id,
         userId,
-        role: "ADMIN",
+        // role: "ADMIN",
       },
     });
 
@@ -269,15 +269,16 @@ export class SubspaceService {
 
     // Emit update event
     await this.eventPublisher.publishWebsocketEvent({
-      name: "subspace.update",
-      type: BusinessEvents.SUBSPACE_UPDATE,
+      name: BusinessEvents.SUBSPACE_UPDATE,
       workspaceId: subspace.workspaceId,
       actorId: userId.toString(),
-      data: SubspacePresenter.toWebsocketEvent(subspace),
+      data: {
+        subspace: presentSubspace(subspace),
+      },
       timestamp: new Date().toISOString(),
     });
 
-    return SubspacePresenter.toResponse(subspace);
+    return presentSubspace(subspace);
   }
 
   async deleteSubspace(id: string, userId: number) {
@@ -300,7 +301,7 @@ export class SubspaceService {
 
   // ==== navigationTree ====
   async getSubspaceNavigationTree(subspaceId: string, userId: number) {
-    // 1. 检查用户是否有访问权限
+    // 1. Check if user has access permission
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
       include: {
@@ -325,7 +326,7 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
     }
 
-    // 2. 权限检查 - 类似于 authorize(user, "readDocument", collection)
+    // 2. Permission check - similar to authorize(user, "readDocument", collection)
     const isWorkspaceMember = subspace.workspace.members.length > 0;
     const isSubspaceMember = subspace.members.length > 0;
     const isPublicSubspace = subspace.type === "PUBLIC";
@@ -334,7 +335,7 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
     }
 
-    // 3. 返回文档结构
+    // 3. Return document structure
     return subspace.navigationTree || [];
   }
 
@@ -352,7 +353,7 @@ export class SubspaceService {
     };
   }
 
-  // add doc to navigationTree
+  // Add document to navigation tree
   async addDocumentToNavigationTree(subspaceId: string, doc: any, parentId?: string) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
@@ -366,10 +367,10 @@ export class SubspaceService {
     const docNode = this.docToNavigationNode(doc);
 
     if (!parentId) {
-      // add to root level
+      // Add to root level
       navigationTree.unshift(docNode);
     } else {
-      // add to specific parentId recursively
+      // Add to specific parent recursively
       const addToParent = (nodes: NavigationNode[]): NavigationNode[] => {
         return nodes.map((node) => {
           if (node.id === parentId) {
@@ -402,7 +403,7 @@ export class SubspaceService {
     return navigationTree;
   }
 
-  // remove doc from navigationTree
+  // Remove document from navigation tree
   async removeDocumentFromNavigationTree(subspaceId: string, docId: string) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
@@ -433,6 +434,7 @@ export class SubspaceService {
     });
   }
 
+  // Update document in navigation tree
   async updateDocumentInNavigationTree(subspaceId: string, doc: any) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
@@ -450,7 +452,7 @@ export class SubspaceService {
         if (node.id === doc.id) {
           return {
             ...updatedNode,
-            children: node.children, // keep the original child node
+            children: node.children, // Keep the original child nodes
           };
         }
 
@@ -474,7 +476,7 @@ export class SubspaceService {
     });
   }
 
-  // ==== members
+  // ==== Member Management ====
 
   async addSubspaceMember(subspaceId: string, dto: AddSubspaceMemberDto, currentUserId: number) {
     // Check if current user is an admin of the subspace

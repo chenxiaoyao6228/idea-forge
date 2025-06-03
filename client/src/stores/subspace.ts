@@ -74,6 +74,8 @@ const useSubSpaceStore = create(
           type: NavigationNodeType.Subspace,
           id: subspace.id,
           title: subspace.name,
+          createdAt: subspace.createdAt,
+          updatedAt: subspace.updatedAt,
           icon: subspace.avatar ?? undefined,
           url: subspace.url ?? `/subspace/${subspace.id}`,
           children: subspace.navigationTree ?? [],
@@ -104,13 +106,9 @@ const useSubSpaceStore = create(
           try {
             const response = (await subspaceApi.getSubspaces(workspaceId)) as any;
             const subspaces = response.map((subspace) => ({
-              id: subspace.id,
-              name: subspace.name,
-              avatar: subspace.avatar,
-              workspaceId: subspace.workspaceId,
-              type: subspace.type,
+              ...subspace,
               index: subspace.index || 0,
-              navigationTree: [],
+              navigationTree: subspace.navigationTree ?? [],
             }));
 
             get().setAll(subspaces);

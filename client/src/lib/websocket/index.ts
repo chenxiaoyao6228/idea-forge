@@ -69,9 +69,8 @@ interface WebsocketEntitiesEvent {
 
 // Interface for gateway message structure
 interface GatewayMessage {
-  type: SocketEvents;
-  data: any;
-  timestamp: string;
+  name: string;
+  [key: string]: any;
 }
 
 // Main WebSocket service class
@@ -251,15 +250,14 @@ class WebsocketService {
 
     // Handle entities updates (documents and subspaces)
     this.socket.on(SocketEvents.ENTITIES, async (message: GatewayMessage) => {
-      const { data } = message;
-      if (!data) return;
+      const { name, documentIds, subspaceIds, fetchIfMissing } = message;
 
       const documentStore = useDocumentStore.getState();
       const subspaceStore = useSubSpaceStore.getState();
 
       // Handle document updates
-      if (data.documentIds?.length > 0) {
-        for (const documentDescriptor of data.documentIds) {
+      if (documentIds?.length > 0) {
+        for (const documentDescriptor of documentIds) {
           const documentId = documentDescriptor.id;
           const localDocument = documentStore.entities[documentId];
           const previousTitle = localDocument?.title;
@@ -270,7 +268,7 @@ class WebsocketService {
           }
 
           // Skip if document doesn't exist locally and we don't need to fetch missing documents
-          if (!localDocument && !data.fetchIfMissing) {
+          if (!localDocument && !fetchIfMissing) {
             continue;
           }
 
@@ -295,8 +293,8 @@ class WebsocketService {
       }
 
       // Handle subspace updates
-      if (data.subspaceIds?.length > 0) {
-        for (const subspaceDescriptor of data.subspaceIds) {
+      if (subspaceIds?.length > 0) {
+        for (const subspaceDescriptor of subspaceIds) {
           const subspaceId = subspaceDescriptor.id;
           const localSubspace = subspaceStore.entities[subspaceId];
 
@@ -306,7 +304,7 @@ class WebsocketService {
           }
 
           // Skip if subspace doesn't exist locally and we don't need to fetch missing subspaces
-          if (!localSubspace && !data.fetchIfMissing) {
+          if (!localSubspace && !fetchIfMissing) {
             continue;
           }
 
@@ -325,10 +323,8 @@ class WebsocketService {
 
     // Handle subspace creation
     this.socket.on(SocketEvents.SUBSPACE_CREATE, (message: GatewayMessage) => {
-      const { data } = message;
-      if (!data) return;
-
-      const subspace = data.subspace;
+      const { name, subspace } = message;
+      if (!subspace) return;
 
       const store = useSubSpaceStore.getState();
       store.addOne({
@@ -354,30 +350,25 @@ class WebsocketService {
     });
 
     // Handle subspace updates
-    // this.socket.on(SocketEvents.SUBSPACE_UPDATE, (message: GatewayMessage) => {
-    //   const { data } = message;
-    //   if (!data) return;
+    this.socket.on(SocketEvents.SUBSPACE_UPDATE, (message: GatewayMessage) => {
+      const { name, subspace } = message;
+      if (!subspace) return;
 
-    //   const store = useSubSpaceStore.getState();
-    //   store.updateOne({
-    //     id: data.id,
-    //     changes: {
-    //       name: data.name,
-    //       avatar: data.avatar,
-    //       type: data.type,
-    //       index: data.index,
-    //       navigationTree: data.navigationTree || [],
-    //       updatedAt: new Date(data.updatedAt),
-    //     },
-    //   });
-    // });
+      const store = useSubSpaceStore.getState();
+      store.updateOne({
+        id: subspace.id,
+        changes: {
+          ...subspace,
+          updatedAt: new Date(subspace.updatedAt),
+          navigationTree: subspace.navigationTree || [],
+        },
+      });
+    });
 
     // Handle document creation
     this.socket.on(SocketEvents.DOCUMENT_UPDATE, (message: GatewayMessage) => {
-      const { data } = message;
-      if (!data) return;
-
-      const { document, subspaceId } = data;
+      const { name, document, subspaceId } = message;
+      if (!document) return;
 
       useDocumentStore.getState().updateDocument(document);
 
@@ -388,12 +379,12 @@ class WebsocketService {
 
     // Handle room joining events
     this.socket.on(SocketEvents.JOIN, (message: GatewayMessage) => {
-      const { data } = message;
-      if (!data) return;
+      const { name, subspaceId } = message;
+      if (!subspaceId) return;
 
       // Handle join events for new subspaces
-      if (data.event === "subspace.create" && data.subspaceId) {
-        const roomId = `subspace:${data.subspaceId}`;
+      if (name === "subspace.create" && subspaceId) {
+        const roomId = `subspace:${subspaceId}`;
         if (!this.joinedRooms.has(roomId)) {
           this.joinRoom(roomId);
         }
@@ -402,18 +393,19 @@ class WebsocketService {
 
     // Handle successful room joining
     this.socket.on(SocketEvents.JOIN_SUCCESS, (message: GatewayMessage) => {
-      const { data } = message;
-      if (!data?.roomId) return;
-      this.joinedRooms.add(data.roomId);
-      console.log(`[websocket]: Successfully joined room: ${data.roomId}`);
+      const { name, roomId } = message;
+      if (!roomId) return;
+
+      this.joinedRooms.add(roomId);
+      console.log(`[websocket]: Successfully joined room: ${roomId}`);
     });
 
     // Handle room joining errors
     this.socket.on(SocketEvents.JOIN_ERROR, (message: GatewayMessage) => {
-      const { data } = message;
-      if (!data?.roomId) return;
-      console.error(`[websocket]: Failed to join room: ${data.roomId}`, data.error);
-      this.joinedRooms.delete(data.roomId);
+      const { name, roomId, error } = message;
+      if (!roomId) return;
+      console.error(`[websocket]: Failed to join room: ${roomId}`, error);
+      this.joinedRooms.delete(roomId);
     });
   }
 

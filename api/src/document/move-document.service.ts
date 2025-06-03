@@ -3,10 +3,15 @@ import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/pri
 import { MoveDocumentsDto } from "./document.dto";
 import { presentDocument } from "./document.presenter";
 import { NavigationNode, NavigationNodeType } from "contracts";
+import { EventPublisherService } from "@/_shared/events/event-publisher.service";
+import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
 export class MoveDocumentService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
+    private readonly eventPublisher: EventPublisherService,
+  ) {}
 
   async moveDocs(authorId: number, dto: MoveDocumentsDto) {
     const { id, subspaceId, parentId, index } = dto;
@@ -49,7 +54,24 @@ export class MoveDocumentService {
     // 5. Update the navigationTree structure in the affected subspaces
     await this.updateNavigationTreeStructure(document, updatedDoc, index, subspaceChanged);
 
-    // 6. Return response structure
+    // 6. Publish websocket event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.DOCUMENT_MOVE,
+      workspaceId: document.workspaceId,
+      actorId: authorId.toString(),
+      timestamp: new Date().toISOString(),
+      data: {
+        affectedDocuments,
+        subspaceIds: subspaceChanged
+          ? [
+              { id: document.subspaceId }, // Original subspace
+              { id: targetSubspaceId }, // Target subspace
+            ]
+          : [{ id: targetSubspaceId }],
+      },
+    });
+
+    // 7. Return response structure
     return {
       data: {
         documents: affectedDocuments.map((doc) => presentDocument(doc, { isPublic: true })),

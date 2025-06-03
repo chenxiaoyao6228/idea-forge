@@ -94,7 +94,11 @@ const createEntitySlice = <T extends { id: string }>() => {
 
     upsertMany: (entities: T[]) => (state: EntityState<T>) =>
       produce(state, (draft) => {
+        if (!entities || !Array.isArray(entities)) return;
+
         entities.forEach((entity) => {
+          if (!entity || !entity.id) return;
+
           if (!draft.entities[entity.id]) {
             draft.ids.push(entity.id);
           }

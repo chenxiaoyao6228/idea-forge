@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { PlusIcon, MoreHorizontal } from "lucide-react";
+import { PlusIcon, MoreHorizontal, EditIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +12,8 @@ import { SidebarLink } from "./sidebar-link";
 import { DocumentLink } from "./document-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DraggableDocumentContainer } from "./draggable-document-container";
+import { EditableTitle } from "./editable-title";
+import { subspaceApi } from "@/apis/subspace";
 
 interface SubspaceLinkProps {
   subspace: SubspaceEntity;
@@ -31,6 +33,9 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const editableTitleRef = React.useRef<{ setIsEditing: (editing: boolean) => void }>(null);
 
   // Auto-expand if contains active document
   const shouldExpand = useMemo(() => {
@@ -100,6 +105,21 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     console.log("Leave subspace:", subspaceId);
   }, [subspaceId]);
 
+  const handleTitleChange = useCallback(
+    async (value: string) => {
+      try {
+        await subspaceApi.updateSubspace(subspaceId, { name: value });
+      } catch (error) {
+        console.error("Failed to update subspace name:", error);
+      }
+    },
+    [subspaceId],
+  );
+
+  const handleRename = useCallback(() => {
+    editableTitleRef.current?.setIsEditing(true);
+  }, []);
+
   if (!subspace) {
     return null;
   }
@@ -120,6 +140,9 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     <div className="flex items-center gap-1">
       <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateDocument} disabled={isCreating} title={t("Create new document")}>
         <PlusIcon className="h-3 w-3" />
+      </Button>
+      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleRename} disabled={isEditing} title={t("Rename subspace")}>
+        <EditIcon className="h-3 w-3" />
       </Button>
 
       <DropdownMenu>
@@ -147,10 +170,19 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     <>
       <div className="subspace-link">
         <SidebarLink
-          // to={`/subspace/${subspaceId}`}
           to={""}
           icon={icon}
-          label={subspace.name}
+          label={
+            <EditableTitle
+              title={subspace.name}
+              onSubmit={handleTitleChange}
+              isEditing={isEditing}
+              onEditing={setIsEditing}
+              canUpdate={true}
+              maxLength={255}
+              ref={editableTitleRef}
+            />
+          }
           expanded={hasDocuments ? isExpanded : undefined}
           onDisclosureClick={hasDocuments ? handleDisclosureClick : undefined}
           depth={depth}

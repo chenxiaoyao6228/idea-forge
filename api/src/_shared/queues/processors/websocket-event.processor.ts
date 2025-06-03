@@ -27,6 +27,9 @@ export class WebsocketEventProcessor {
         case BusinessEvents.SUBSPACE_MOVE:
           await this.handleSubspaceMoveEvent(event, server);
           break;
+        case BusinessEvents.DOCUMENT_MOVE:
+          await this.handleDocumentMoveEvent(event, server);
+          break;
         case BusinessEvents.DOCUMENT_UPDATE:
           await this.handleDocumentEvent(event, server);
           break;
@@ -40,6 +43,35 @@ export class WebsocketEventProcessor {
     }
   }
 
+  // Handle document move events
+  private async handleDocumentMoveEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId, actorId } = event;
+    const { affectedDocuments, subspaceIds } = data;
+
+    // Emit document updates
+    if (affectedDocuments?.length > 0) {
+      affectedDocuments.forEach(({ id, updatedAt, subspaceId }) => {
+        // Emit to relevant subspace rooms for each document
+        server.to(`subspace:${subspaceId}`).emit(BusinessEvents.ENTITIES, {
+          event: event.name,
+          documentIds: [{ id, updatedAt }],
+          fetchIfMissing: true,
+        });
+      });
+    }
+
+    // Emit subspace structure updates
+    if (subspaceIds?.length > 0) {
+      subspaceIds.forEach(({ id }) => {
+        server.to(`subspace:${id}`).emit(BusinessEvents.ENTITIES, {
+          event: event.name,
+          subspaceIds: [{ id }],
+          fetchIfMissing: true,
+        });
+      });
+    }
+  }
+
   // Handle document-related events (update)
   private async handleDocumentEvent(event: WebsocketEvent<any>, server: any) {
     const { data } = event;
@@ -49,7 +81,7 @@ export class WebsocketEventProcessor {
     const channels = this.getDocumentEventChannels(event, document);
 
     // Emit document update event to target channels
-    server.to(channels).emit(BusinessEvents.DOCUMENT_UPDATE, this.formatEventMessage(BusinessEvents.DOCUMENT_UPDATE, data));
+    server.to(channels).emit(BusinessEvents.DOCUMENT_UPDATE, data);
   }
 
   // Handle entities update events (documents and subspaces)
@@ -65,17 +97,17 @@ export class WebsocketEventProcessor {
     };
 
     // Emit to workspace room
-    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.ENTITIES, this.formatEventMessage(BusinessEvents.ENTITIES, eventData));
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.ENTITIES, eventData);
 
     // Emit to actor's user room
     if (actorId) {
-      server.to(`user:${actorId}`).emit(BusinessEvents.ENTITIES, this.formatEventMessage(BusinessEvents.ENTITIES, eventData));
+      server.to(`user:${actorId}`).emit(BusinessEvents.ENTITIES, eventData);
     }
 
     // Emit to relevant subspace rooms
     if (subspaceIds?.length > 0) {
       subspaceIds.forEach(({ id }) => {
-        server.to(`subspace:${id}`).emit(BusinessEvents.ENTITIES, this.formatEventMessage(BusinessEvents.ENTITIES, eventData));
+        server.to(`subspace:${id}`).emit(BusinessEvents.ENTITIES, eventData);
       });
     }
   }
@@ -88,46 +120,32 @@ export class WebsocketEventProcessor {
     const channels = this.getSubspaceEventChannels(event, data);
 
     // Emit subspace creation event
-    server.to(channels).emit(name, this.formatEventMessage(name, data));
+    server.to(channels).emit(name, data);
 
     // Emit join event to notify clients to join the new subspace room
-    server.to(channels).emit(
-      BusinessEvents.JOIN,
-      this.formatEventMessage(BusinessEvents.JOIN, {
-        event: name,
-        subspaceId: data.id,
-      }),
-    );
+    server.to(channels).emit(BusinessEvents.JOIN, {
+      event: name,
+      subspaceId: data.id,
+    });
   }
 
   // Handle subspace update events
   private async handleSubspaceUpdateEvent(event: WebsocketEvent<any>, server: any) {
     const { data, workspaceId, actorId } = event;
-
-    // Prepare event data for incremental update
-    const eventData = {
-      event: event.name,
-      fetchIfMissing: true,
-      subspaceIds: [{ id: data.id, updatedAt: data.updatedAt }],
-    };
+    const { subspace } = data;
 
     // Emit to workspace room
-    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.ENTITIES, this.formatEventMessage(BusinessEvents.ENTITIES, eventData));
-
-    // Emit to actor's user room
-    if (actorId) {
-      server.to(`user:${actorId}`).emit(BusinessEvents.ENTITIES, this.formatEventMessage(BusinessEvents.ENTITIES, eventData));
-    }
-
-    // Emit to subspace room
-    server.to(`subspace:${data.id}`).emit(BusinessEvents.ENTITIES, this.formatEventMessage(BusinessEvents.ENTITIES, eventData));
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.SUBSPACE_UPDATE, {
+      event: event.name,
+      subspace,
+    });
   }
 
   // Handle subspace movement events
   private async handleSubspaceMoveEvent(event: WebsocketEvent<any>, server: any) {
     const { data, name, workspaceId } = event;
     // Only emit to workspace room for movement events
-    server.to(`workspace:${workspaceId}`).emit(name, this.formatEventMessage(name, data));
+    server.to(`workspace:${workspaceId}`).emit(name, data);
   }
 
   // Determine target channels for document events based on visibility and permissions
@@ -168,14 +186,5 @@ export class WebsocketEventProcessor {
     }
 
     return channels;
-  }
-
-  // Format event message with timestamp
-  private formatEventMessage(type: BusinessEvents, data: any) {
-    return {
-      type,
-      data,
-      timestamp: new Date().toISOString(),
-    };
   }
 }
