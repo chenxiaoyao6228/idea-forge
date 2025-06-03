@@ -1,3 +1,11 @@
+export interface WebsocketEntitiesEvent {
+  fetchIfMissing?: boolean;
+  documentIds: { id: string; updatedAt?: string }[];
+  subspaceIds: { id: string; updatedAt?: string }[];
+  workspaceIds: string[];
+  event: string;
+}
+
 export enum BusinessEvents {
   // Connection events
   GATEWAY_CONNECT = "gateway.connect",
@@ -19,10 +27,14 @@ export enum BusinessEvents {
   USER_KICK = "user.kick",
 
   // Document collaboration events
-  // DOCUMENT_UPDATE = "document.update",
-  // DOCUMENT_SYNC = "document.sync",
-  // DOCUMENT_CURSOR = "document.cursor",
-  // DOCUMENT_SELECTION = "document.selection",
+  DOCUMENT_CREATE = "document.create",
+  DOCUMENT_UPDATE = "document.update",
+  DOCUMENT_MOVE = "document.move",
+  DOCUMENT_ARCHIVE = "document.archive",
+  DOCUMENT_DELETE = "document.delete",
+
+  // Entities events
+  ENTITIES = "entities",
 
   // Workspace events
   // WORKSPACE_UPDATE = "workspace.update",

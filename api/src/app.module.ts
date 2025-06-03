@@ -31,6 +31,7 @@ import { SubspaceModule } from "./subspace/subspace.module";
 import { CaslModule } from "./_shared/casl/casl.module";
 import { SocketModule } from "./_shared/socket/socket.module";
 import { QueueModule } from "./_shared/queues/queue.module";
+import { EventsModule } from "./_shared/events/events.module";
 
 @Module({
   controllers: [AppController],
@@ -78,6 +79,7 @@ import { QueueModule } from "./_shared/queues/queue.module";
     CaslModule,
     SocketModule,
     QueueModule,
+    EventsModule,
   ],
   providers: [
     {

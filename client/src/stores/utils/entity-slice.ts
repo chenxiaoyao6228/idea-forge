@@ -127,11 +127,24 @@ const createEntitySlice = <T extends { id: string }>() => {
         if (!draft.entities[id]) return;
 
         const entity = draft.entities[id];
+        const pathArray = Array.isArray(path) ? path : path.split(".");
+
+        // Navigate to the nested property
+        let current: any = entity;
+        for (let i = 0; i < pathArray.length - 1; i++) {
+          const key = pathArray[i];
+          if (!(key in current)) {
+            current[key] = {};
+          }
+          current = current[key];
+        }
+
+        // Update the final property
+        const lastKey = pathArray[pathArray.length - 1];
         if (typeof value === "function") {
-          const currentValue = get(entity, path);
-          set(entity as object, path, value(currentValue));
+          current[lastKey] = value(current[lastKey]);
         } else {
-          set(entity as object, path, value);
+          current[lastKey] = value;
         }
       }),
 

@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import { resolvablePromise } from "../async";
 import useSubSpaceStore from "@/stores/subspace";
+import useDocumentStore from "@/stores/document";
 
 type SocketWithAuthentication = Socket & {
   authenticated?: boolean;
@@ -14,6 +15,7 @@ enum WebsocketStatus {
   ERROR = "error",
 }
 
+// Disconnection reason enum for better error handling
 enum DisconnectReason {
   NORMAL = "normal",
   ERROR = "error",
@@ -25,6 +27,7 @@ enum DisconnectReason {
   NETWORK_ERROR = "network_error",
 }
 
+// Custom error class for WebSocket related errors
 class WebsocketError extends Error {
   constructor(
     public code: string,
@@ -36,15 +39,15 @@ class WebsocketError extends Error {
   }
 }
 
-// Server custom events
+// Server event types enum
 enum SocketEvents {
-  // basic
+  // Basic connection events
   GATEWAY_CONNECT = "gateway.connect",
   GATEWAY_DISCONNECT = "gateway.disconnect",
   AUTH_FAILED = "auth.failed",
   AUTH_SUCCESS = "auth.success",
 
-  // business
+  // Business events
   SUBSPACE_CREATE = "subspace.create",
   SUBSPACE_UPDATE = "subspace.update",
   SUBSPACE_MOVE = "subspace.move",
@@ -52,14 +55,26 @@ enum SocketEvents {
   JOIN_SUCCESS = "join.success",
   JOIN_ERROR = "join.error",
   ENTITIES = "entities",
+  DOCUMENT_UPDATE = "document.update",
 }
 
+// Interface for entities event data structure
+interface WebsocketEntitiesEvent {
+  fetchIfMissing?: boolean;
+  documentIds: { id: string; updatedAt?: string }[];
+  subspaceIds: { id: string; updatedAt?: string }[];
+  workspaceIds: string[];
+  event: string;
+}
+
+// Interface for gateway message structure
 interface GatewayMessage {
   type: SocketEvents;
   data: any;
   timestamp: string;
 }
 
+// Main WebSocket service class
 class WebsocketService {
   private socket: SocketWithAuthentication | null = null;
   private status: WebsocketStatus = WebsocketStatus.DISCONNECTED;
@@ -70,12 +85,14 @@ class WebsocketService {
   private connectionPromise = resolvablePromise();
   private joinedRooms = new Set<string>();
 
+  // Update connection status and emit status change event
   private setStatus(status: WebsocketStatus, reason?: DisconnectReason) {
     this.status = status;
     if (reason) this.disconnectReason = reason;
     this.socket?.emit("status_change", { status, reason });
   }
 
+  // Handle socket disconnection with appropriate reason
   private handleSocketDisconnect(reason: string) {
     console.log("[websocket]: Socket.IO disconnected:", reason);
     let disconnectReason: DisconnectReason;
@@ -106,6 +123,7 @@ class WebsocketService {
     }
   }
 
+  // Establish WebSocket connection with timeout
   async connect(): Promise<void> {
     if (this.status === WebsocketStatus.CONNECTED || this.status === WebsocketStatus.CONNECTING) {
       return this.connectionPromise;
@@ -115,6 +133,7 @@ class WebsocketService {
       this.setStatus(WebsocketStatus.CONNECTING);
       this.connectionPromise = resolvablePromise();
 
+      // Initialize Socket.IO client with configuration
       this.socket = io(window.location.origin, {
         path: "/api/realtime",
         transports: ["websocket"],
@@ -157,6 +176,7 @@ class WebsocketService {
     }
   }
 
+  // Handle reconnection with exponential backoff
   private async reconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       const error = new WebsocketError("MAX_RECONNECT_ATTEMPTS", "Maximum reconnection attempts reached");
@@ -177,6 +197,7 @@ class WebsocketService {
     }
   }
 
+  // Disconnect WebSocket connection
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();
@@ -185,6 +206,7 @@ class WebsocketService {
     this.setStatus(WebsocketStatus.DISCONNECTED, DisconnectReason.CLIENT_DISCONNECT);
   }
 
+  // Setup basic Socket.IO events
   private setupSocketEvents() {
     if (!this.socket) return;
 
@@ -197,7 +219,7 @@ class WebsocketService {
       this.socket?.emit("error", new WebsocketError("SOCKET_ERROR", error.message, error));
     });
 
-    // Server custom events
+    // Authentication events
     this.socket.on(SocketEvents.AUTH_SUCCESS, (message: GatewayMessage) => {
       console.log("[websocket]: Authentication successful:", message.data);
       if (this.socket) {
@@ -213,20 +235,95 @@ class WebsocketService {
       this.setStatus(WebsocketStatus.ERROR, DisconnectReason.AUTH_FAILED);
     });
 
+    // Gateway connection events
     this.socket.on(SocketEvents.GATEWAY_CONNECT, (message: GatewayMessage) => {
       console.log("[websocket]: Connected to realtime gateway:", message.data);
     });
 
     this.socket.on(SocketEvents.GATEWAY_DISCONNECT, (message: GatewayMessage) => {
       console.log("[websocket]: Disconnected from realtime gateway:", message.data);
-      // Handle business-level disconnection if needed
-      // This is separate from the Socket.IO disconnect event
     });
   }
 
+  // Setup business-specific event handlers
   private setupBusinessEvents() {
     if (!this.socket) return;
 
+    // Handle entities updates (documents and subspaces)
+    this.socket.on(SocketEvents.ENTITIES, async (message: GatewayMessage) => {
+      const { data } = message;
+      if (!data) return;
+
+      const documentStore = useDocumentStore.getState();
+      const subspaceStore = useSubSpaceStore.getState();
+
+      // Handle document updates
+      if (data.documentIds?.length > 0) {
+        for (const documentDescriptor of data.documentIds) {
+          const documentId = documentDescriptor.id;
+          const localDocument = documentStore.entities[documentId];
+          const previousTitle = localDocument?.title;
+
+          // Skip if document is already up to date
+          if (localDocument?.updatedAt === documentDescriptor.updatedAt) {
+            continue;
+          }
+
+          // Skip if document doesn't exist locally and we don't need to fetch missing documents
+          if (!localDocument && !data.fetchIfMissing) {
+            continue;
+          }
+
+          // Force fetch the latest version
+          try {
+            await documentStore.fetchDetail(documentId, { force: true });
+            const updatedDocument = documentStore.entities[documentId];
+
+            // If title has changed, update the collection as well
+            if (updatedDocument && previousTitle !== updatedDocument.title) {
+              if (updatedDocument.subspaceId) {
+                await subspaceStore.fetchNavigationTree(updatedDocument.subspaceId, { force: true });
+              }
+            }
+          } catch (err: any) {
+            // Remove from local store if fetch fails (due to permissions or non-existence)
+            if (err.status === 404 || err.status === 403) {
+              documentStore.removeOne(documentId);
+            }
+          }
+        }
+      }
+
+      // Handle subspace updates
+      if (data.subspaceIds?.length > 0) {
+        for (const subspaceDescriptor of data.subspaceIds) {
+          const subspaceId = subspaceDescriptor.id;
+          const localSubspace = subspaceStore.entities[subspaceId];
+
+          // Skip if subspace is already up to date
+          if (localSubspace?.updatedAt === subspaceDescriptor.updatedAt) {
+            continue;
+          }
+
+          // Skip if subspace doesn't exist locally and we don't need to fetch missing subspaces
+          if (!localSubspace && !data.fetchIfMissing) {
+            continue;
+          }
+
+          try {
+            // Force refresh the subspace's document structure
+            await subspaceStore.fetchNavigationTree(subspaceId, { force: true });
+          } catch (err: any) {
+            // Remove from local store if fetch fails (due to permissions or non-existence)
+            if (err.status === 404 || err.status === 403) {
+              subspaceStore.removeOne(subspaceId);
+            }
+          }
+        }
+      }
+    });
+
+    // Handle subspace creation
     this.socket.on(SocketEvents.SUBSPACE_CREATE, (message: GatewayMessage) => {
       const { data } = message;
       if (!data) return;
@@ -241,6 +338,7 @@ class WebsocketService {
       });
     });
 
+    // Handle subspace movement
     this.socket.on(SocketEvents.SUBSPACE_MOVE, (message: GatewayMessage) => {
       const { data } = message;
       if (!data) return;
@@ -255,24 +353,40 @@ class WebsocketService {
       });
     });
 
-    this.socket.on(SocketEvents.SUBSPACE_UPDATE, (message: GatewayMessage) => {
+    // Handle subspace updates
+    // this.socket.on(SocketEvents.SUBSPACE_UPDATE, (message: GatewayMessage) => {
+    //   const { data } = message;
+    //   if (!data) return;
+
+    //   const store = useSubSpaceStore.getState();
+    //   store.updateOne({
+    //     id: data.id,
+    //     changes: {
+    //       name: data.name,
+    //       avatar: data.avatar,
+    //       type: data.type,
+    //       index: data.index,
+    //       navigationTree: data.navigationTree || [],
+    //       updatedAt: new Date(data.updatedAt),
+    //     },
+    //   });
+    // });
+
+    // Handle document creation
+    this.socket.on(SocketEvents.DOCUMENT_UPDATE, (message: GatewayMessage) => {
       const { data } = message;
       if (!data) return;
 
-      const store = useSubSpaceStore.getState();
-      store.updateOne({
-        id: data.id,
-        changes: {
-          name: data.name,
-          avatar: data.avatar,
-          type: data.type,
-          index: data.index,
-          navigationTree: data.navigationTree || [],
-          updatedAt: new Date(data.updatedAt),
-        },
-      });
+      const { document, subspaceId } = data;
+
+      useDocumentStore.getState().updateDocument(document);
+
+      if (subspaceId) {
+        useSubSpaceStore.getState().updateDocument(subspaceId, document.id, document);
+      }
     });
 
+    // Handle room joining events
     this.socket.on(SocketEvents.JOIN, (message: GatewayMessage) => {
       const { data } = message;
       if (!data) return;
@@ -286,6 +400,7 @@ class WebsocketService {
       }
     });
 
+    // Handle successful room joining
     this.socket.on(SocketEvents.JOIN_SUCCESS, (message: GatewayMessage) => {
       const { data } = message;
       if (!data?.roomId) return;
@@ -293,24 +408,12 @@ class WebsocketService {
       console.log(`[websocket]: Successfully joined room: ${data.roomId}`);
     });
 
+    // Handle room joining errors
     this.socket.on(SocketEvents.JOIN_ERROR, (message: GatewayMessage) => {
       const { data } = message;
       if (!data?.roomId) return;
       console.error(`[websocket]: Failed to join room: ${data.roomId}`, data.error);
       this.joinedRooms.delete(data.roomId);
-    });
-
-    // Handle entities event as a fallback mechanism
-    this.socket.on(SocketEvents.ENTITIES, (message: GatewayMessage) => {
-      const { data } = message;
-      if (!data?.subspaceIds?.length) return;
-
-      const store = useSubSpaceStore.getState();
-      const needsUpdate = data.subspaceIds.some(({ id, updatedAt }) => store.needsUpdate(id, new Date(updatedAt)));
-
-      if (needsUpdate) {
-        store.fetchList();
-      }
     });
   }
 
@@ -356,11 +459,12 @@ class WebsocketService {
     return Array.from(this.joinedRooms);
   }
 
-  // Public API
+  // Public API methods
   getStatus = () => this.status;
   getDisconnectReason = () => this.disconnectReason;
   isConnected = () => this.status === WebsocketStatus.CONNECTED;
   waitForConnection = () => this.connectionPromise;
 }
 
+// Export singleton instance
 export const websocketService = new WebsocketService();

@@ -52,7 +52,7 @@ interface Action {
     subspaceId?: string;
     workspaceId?: string;
   }) => Promise<string>;
-  updateDocument: (UpdateDocumentDto) => Promise<void>;
+  updateDocument: (document: DocumentEntity) => void;
   setActiveDocument: (id?: string) => void;
   move: (params: {
     id: string;
@@ -60,6 +60,9 @@ interface Action {
     parentId?: string | null;
     index?: number;
   }) => Promise<void>;
+  needsUpdate: (id: string, updatedAt: Date) => boolean;
+  handleDocumentUpdate: (documentId: string, updatedAt?: string) => Promise<void>;
+  handleDocumentRemove: (documentId: string) => void;
 }
 
 const defaultState: State = {
@@ -170,10 +173,10 @@ const useDocumentStore = create(
               content: "",
             })) as any;
 
-            // Update subspace if needed
-            if (subspaceId) {
-              useSubSpaceStore.getState().addDocument(subspaceId, response);
-            }
+            // // Update subspace if needed
+            // if (subspaceId) {
+            //   useSubSpaceStore.getState().addDocument(subspaceId, response);
+            // }
 
             get().addOne(response);
             return response.id;
@@ -185,12 +188,8 @@ const useDocumentStore = create(
           }
         },
 
-        updateDocument: async ({ id, title, subspaceId }) => {
-          await documentApi.update(id, { title });
-          if (subspaceId) {
-            // TODO:
-            useSubSpaceStore.getState().fetchNavigationTree(subspaceId, { force: true });
-          }
+        updateDocument: (document: DocumentEntity) => {
+          get().upsertOne(document);
         },
 
         move: async ({ id, subspaceId, parentId, index }) => {
@@ -217,6 +216,43 @@ const useDocumentStore = create(
           } finally {
             set({ isSaving: false });
           }
+        },
+
+        handleDocumentUpdate: async (documentId: string, updatedAt?: string) => {
+          const existing = get().entities[documentId];
+
+          // Check if update is needed
+          if (existing && updatedAt && existing.updatedAt === updatedAt) {
+            return;
+          }
+
+          try {
+            // Force fetch latest version
+            await get().fetchDetail(documentId, { force: true });
+          } catch (error: any) {
+            console.error(`Failed to update document ${documentId}:`, error);
+            // Remove from local store if fetch fails (due to permissions or non-existence)
+            if (error.status === 404 || error.status === 403) {
+              get().removeOne(documentId);
+            }
+          }
+        },
+
+        handleDocumentRemove: (documentId: string) => {
+          const document = get().entities[documentId];
+          if (document?.subspaceId) {
+            // 从 subspace 的导航树中移除
+            useSubSpaceStore.getState().removeDocument(document.subspaceId, documentId);
+          }
+          get().removeOne(documentId);
+        },
+
+        needsUpdate: (id: string, updatedAt: Date) => {
+          const existing = get().entities[id];
+          if (!existing) return true;
+
+          const existingDate = new Date(existing.updatedAt);
+          return existingDate < updatedAt;
         },
 
         // UI state

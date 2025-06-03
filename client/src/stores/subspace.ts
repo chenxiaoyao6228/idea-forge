@@ -50,6 +50,8 @@ interface Action {
   needsUpdate: (subspaceId: string, updatedAt: Date) => boolean;
   // Add method to update subspace directly
   updateSubspace: (subspace: SubspaceEntity) => void;
+  handleSubspaceUpdate: (subspaceId: string, updatedAt?: string) => Promise<void>;
+  refreshNavigationTree: (subspaceId: string) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -147,12 +149,6 @@ const useSubSpaceStore = create(
           }
         },
 
-        // Add method to check if subspace needs update
-        needsUpdate: (subspaceId: string, updatedAt: Date) => {
-          const existing = get().entities[subspaceId];
-          return !existing || new Date(existing.updatedAt) < updatedAt;
-        },
-
         // Add method to update subspace directly
         updateSubspace: (subspace: SubspaceEntity) => {
           const existing = get().entities[subspace.id];
@@ -216,60 +212,55 @@ const useSubSpaceStore = create(
         },
 
         updateDocument: (subspaceId: string, documentId: string, updates: Partial<Doc>) => {
-          // Update the document
-          get().updateDeep(subspaceId, `navigationTree.${documentId}`, (doc: Doc) => ({
-            ...doc,
-            ...updates,
-          }));
+          console.log("updateDocument, updates", updates);
 
-          // Update navigation tree
-          const subspace = get().entities[subspaceId];
-          if (subspace?.navigationTree) {
-            const updateNodeInTree = (nodes: NavigationNode[]): boolean => {
-              for (const node of nodes) {
-                if (node.id === documentId) {
-                  Object.assign(node, {
-                    title: updates.title || node.title,
-                    type: updates.type ? (updates.type as NavigationNodeType) : node.type,
-                    // path: updates.path || node.path,
-                  });
-                  return true;
+          set(
+            produce((state) => {
+              const subspace = state.entities[subspaceId];
+              if (!subspace?.navigationTree) return;
+
+              const updateNodeInTree = (nodes: NavigationNode[]): boolean => {
+                for (const node of nodes) {
+                  if (node.id === documentId) {
+                    node.title = updates.title || node.title;
+                    node.type = updates.type ? (updates.type as NavigationNodeType) : node.type;
+                    return true;
+                  }
+                  if (node.children && updateNodeInTree(node.children)) {
+                    return true;
+                  }
                 }
-                if (node.children && updateNodeInTree(node.children)) {
-                  return true;
-                }
-              }
-              return false;
-            };
-            updateNodeInTree(subspace.navigationTree);
-          }
+                return false;
+              };
+
+              updateNodeInTree(subspace.navigationTree);
+            }),
+          );
         },
 
         removeDocument: (subspaceId: string, documentId: string) => {
-          // Remove the document
-          get().updateDeep(subspaceId, "navigationTree", (docs: Record<string, Doc> = {}) => {
-            const { [documentId]: _, ...rest } = docs;
-            return rest;
-          });
+          set(
+            produce((state) => {
+              const subspace = state.entities[subspaceId];
+              if (!subspace?.navigationTree) return;
 
-          // Update navigation tree
-          const subspace = get().entities[subspaceId];
-          if (subspace?.navigationTree) {
-            const removeFromTree = (nodes: NavigationNode[]): boolean => {
-              for (let i = 0; i < nodes.length; i++) {
-                const node = nodes[i];
-                if (node.id === documentId) {
-                  nodes.splice(i, 1);
-                  return true;
+              const removeFromTree = (nodes: NavigationNode[]): boolean => {
+                for (let i = 0; i < nodes.length; i++) {
+                  const node = nodes[i];
+                  if (node.id === documentId) {
+                    nodes.splice(i, 1);
+                    return true;
+                  }
+                  if (node.children && removeFromTree(node.children)) {
+                    return true;
+                  }
                 }
-                if (node.children && removeFromTree(node.children)) {
-                  return true;
-                }
-              }
-              return false;
-            };
-            removeFromTree(subspace.navigationTree);
-          }
+                return false;
+              };
+
+              removeFromTree(subspace.navigationTree);
+            }),
+          );
         },
 
         // Navigation Tree
@@ -344,6 +335,38 @@ const useSubSpaceStore = create(
             console.error("Failed to move subspace:", error);
             throw error;
           }
+        },
+
+        handleSubspaceUpdate: async (subspaceId: string, updatedAt?: string) => {
+          const existing = get().entities[subspaceId];
+
+          // Check if update is needed
+          if (existing && updatedAt && new Date(existing.updatedAt).getTime() === new Date(updatedAt).getTime()) {
+            return;
+          }
+
+          try {
+            // Refresh navigation tree
+            await get().fetchNavigationTree(subspaceId, { force: true });
+          } catch (error: any) {
+            console.error(`Failed to update subspace ${subspaceId}:`, error);
+            if (error.status === 404 || error.status === 403) {
+              get().removeOne(subspaceId);
+            }
+          }
+        },
+
+        refreshNavigationTree: async (subspaceId: string) => {
+          await get().fetchNavigationTree(subspaceId, { force: true });
+        },
+
+        // 改进 needsUpdate 方法
+        needsUpdate: (subspaceId: string, updatedAt: Date) => {
+          const existing = get().entities[subspaceId];
+          if (!existing) return true;
+
+          const existingDate = new Date(existing.updatedAt);
+          return existingDate < updatedAt;
         },
 
         // UI State

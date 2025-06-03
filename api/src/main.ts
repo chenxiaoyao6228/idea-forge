@@ -35,13 +35,14 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   // Get Real IP address
   app.use(requestIpMw({ attributeName: "ip" }));
+
   // Rate limit
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 1000, // limit each IP to 1000 requests per windowMs
-    }),
-  );
+  // app.use(
+  //   rateLimit({
+  //     windowMs: 15 * 60 * 1000, // 15 minutes
+  //     max: 1000, // limit each IP to 1000 requests per windowMs
+  //   }),
+  // );
 
   // Filters
   const i18nService = app.get(I18nNextService);

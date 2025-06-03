@@ -5,10 +5,15 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { presentDocument } from "./document.presenter";
+import { EventPublisherService } from "@/_shared/events/event-publisher.service";
+import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
 export class DocumentService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
+    private readonly eventPublisher: EventPublisherService,
+  ) {}
 
   async findOne(id: string, userId: number) {
     const document = await this.prisma.doc.findUnique({
@@ -127,6 +132,32 @@ export class DocumentService {
       await this.updateSubspaceNavigationTree(doc.subspaceId, "add", doc);
     }
 
+    // Emit entities event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.ENTITIES,
+      workspaceId: doc.workspaceId,
+      actorId: authorId.toString(),
+      data: {
+        event: BusinessEvents.DOCUMENT_CREATE,
+        fetchIfMissing: true,
+        documentIds: [
+          {
+            id: doc.id,
+            updatedAt: doc.updatedAt.toISOString(),
+          },
+        ],
+        subspaceIds: doc.subspaceId
+          ? [
+              {
+                id: doc.subspaceId,
+                updatedAt: doc.updatedAt.toISOString(),
+              },
+            ]
+          : [],
+      },
+      timestamp: new Date().toISOString(),
+    });
+
     return presentDocument(doc, { isPublic: true });
   }
 
@@ -144,6 +175,17 @@ export class DocumentService {
     if (shouldUpdateStructure) {
       await this.updateSubspaceNavigationTree(updatedDoc.subspaceId!, "update", updatedDoc);
     }
+
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.DOCUMENT_UPDATE,
+      workspaceId: updatedDoc.workspaceId,
+      actorId: userId.toString(),
+      data: {
+        document: presentDocument(updatedDoc, { isPublic: true }),
+        subspaceId: updatedDoc.subspaceId || null,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     return updatedDoc;
   }

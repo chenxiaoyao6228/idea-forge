@@ -51,6 +51,9 @@ export default function Main() {
 
   useEffect(() => {
     websocketService.connect();
+    return () => {
+      websocketService.disconnect();
+    };
   }, []);
 
   return (

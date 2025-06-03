@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
+import { documentApi } from "@/apis/document";
 
 export interface DocumentLinkProps {
   node: NavigationNode;
@@ -26,7 +27,6 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
   const navigate = useNavigate();
 
   const createDocument = useDocumentStore((state) => state.createDocument);
-  const updateDocument = useDocumentStore((state) => state.updateDocument);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -90,16 +90,12 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
   const handleTitleChange = useCallback(
     async (value: string) => {
       try {
-        await updateDocument({
-          id: node.id,
-          title: value,
-          subspaceId,
-        });
+        await documentApi.update(node.id, { title: value });
       } catch (error) {
         console.error("Failed to update document title:", error);
       }
     },
-    [updateDocument, node.id],
+    [node.id],
   );
 
   const handleRename = useCallback(() => {
