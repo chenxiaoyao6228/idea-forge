@@ -3,10 +3,11 @@ import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
 import { DocTypeSchema, DocVisibilitySchema } from "contracts";
 import { documentApi } from "@/apis/document";
-import useWorkspaceStore from "./workspace-store";
+
 import useSubSpaceStore from "./subspace";
 import useStarStore from "./star";
-import createEntitySlice, { EntityState } from "./utils/entity-slice";
+import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
+import useWorkspaceStore from "./workspace";
 
 interface FetchOptions {
   force?: boolean;
@@ -43,9 +44,7 @@ interface State {
 }
 
 interface Action {
-  isArchived: (doc: DocumentEntity) => boolean;
-  isDeleted: (doc: DocumentEntity) => boolean;
-  isDraft: (doc: DocumentEntity) => boolean;
+  // API actions
   fetchDetail: (id: string, options?: FetchOptions) => Promise<FetchDetailResult>;
   createDocument: (options: {
     title: string;
@@ -53,19 +52,24 @@ interface Action {
     subspaceId?: string;
     workspaceId?: string;
   }) => Promise<string>;
-  updateDocument: (document: DocumentEntity) => void;
-  setActiveDocument: (id?: string) => void;
   move: (params: {
     id: string;
     subspaceId?: string | null;
     parentId?: string | null;
     index?: number;
   }) => Promise<void>;
+
+  // Helper methods
+  star: (documentId: string, index?: string) => Promise<void>;
+  unStar: (documentId: string) => Promise<void>;
+  isArchived: (doc: DocumentEntity) => boolean;
+  isDeleted: (doc: DocumentEntity) => boolean;
+  isDraft: (doc: DocumentEntity) => boolean;
+  updateDocument: (document: DocumentEntity) => void;
+  setActiveDocument: (id?: string) => void;
   needsUpdate: (id: string, updatedAt: Date) => boolean;
   handleDocumentUpdate: (documentId: string, updatedAt?: string) => Promise<void>;
   handleDocumentRemove: (documentId: string) => void;
-  star: (documentId: string, index?: string) => Promise<void>;
-  unStar: (documentId: string) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -77,22 +81,22 @@ const defaultState: State = {
 };
 
 const documentEntitySlice = createEntitySlice<DocumentEntity>();
-export const documentSelectors = documentEntitySlice.getSelectors();
+export const documentSelectors = documentEntitySlice.selectors;
 
-const useDocumentStore = create(
+type StoreState = State & Action & EntityState<DocumentEntity> & EntityActions<DocumentEntity>;
+const useDocumentStore = create<StoreState>()(
   subscribeWithSelector(
     devtools(
-      createComputed((state: State & Action & ReturnType<typeof documentEntitySlice.getState> & ReturnType<typeof documentEntitySlice.getActions>) => ({
+      createComputed((state: StoreState) => ({
         archivedDocuments: documentSelectors.selectAll(state).filter((doc) => state.isArchived(doc)),
         deletedDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDeleted(doc)),
         draftDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDraft(doc)),
         activeDocument: state.activeDocumentId ? state.entities[state.activeDocumentId] : undefined,
       }))((set, get) => ({
         ...defaultState,
-        ...documentEntitySlice.getState(),
-        ...documentEntitySlice.getActions(set),
+        ...documentEntitySlice.initialState,
+        ...documentEntitySlice.createActions(set),
 
-        // Document status checkers
         isArchived: (doc: DocumentEntity) => !!doc.archivedAt,
         isDeleted: (doc: DocumentEntity) => !!doc.deletedAt,
         isDraft: (doc: DocumentEntity) => !doc.publishedAt,
@@ -103,24 +107,6 @@ const useDocumentStore = create(
           }
 
           try {
-            // check cache
-            // const existing = get().entities[id];
-
-            // if (existing && !options.shareId && !options.force) {
-            //   return {
-            //     data: { document: existing },
-            //   };
-            // }
-
-            // // check shared cache
-            // if (existing && options.shareId && !options.force && get().sharedCache[options.shareId]) {
-            //   const cached = get().sharedCache[options.shareId];
-            //   return {
-            //     document: existing,
-            //     ...cached,
-            //   };
-            // }
-
             const { data, policies } = (await documentApi.getDocument(id)) as FetchDetailResult;
 
             if (!data.document) {
@@ -129,27 +115,10 @@ const useDocumentStore = create(
 
             get().upsertOne(data.document);
             const document = data.document;
-            // FIXME: temporary set, might need to be moved to components or other places
             get().setActiveDocument(document.id);
             if (document.subspaceId) {
               useSubSpaceStore.getState().setActiveSubspace(document.subspaceId);
             }
-
-            // if (options.shareId && data.sharedTree) {
-            //   set((state) => ({
-            //     sharedCache: {
-            //       ...state.sharedCache,
-            //       [options.shareId!]: {
-            //         sharedTree: data.sharedTree,
-            //         workspace: data.workspace,
-            //       },
-            //     },
-            //   }));
-
-            //   return {
-            //     data: { document, sharedTree: data.sharedTree, workspace: data.workspace },
-            //   };
-            // }
 
             return {
               data: { document, sharedTree: data.sharedTree, workspace: data.workspace },
@@ -165,7 +134,6 @@ const useDocumentStore = create(
             const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
             if (!workspaceId) throw new Error("No active workspace");
 
-            // FIXME: ts error
             const response = (await documentApi.create({
               workspaceId,
               subspaceId: subspaceId || null,
@@ -175,11 +143,6 @@ const useDocumentStore = create(
               title,
               content: "",
             })) as any;
-
-            // // Update subspace if needed
-            // if (subspaceId) {
-            //   useSubSpaceStore.getState().addDocument(subspaceId, response);
-            // }
 
             get().addOne(response);
             return response.id;
@@ -205,13 +168,10 @@ const useDocumentStore = create(
               index,
             });
 
-            // FIXME: use websocket to inform update, so that everyone in the team can update immediately
-            // use updatedAt to compare to avoid unnecessary updates
             if (subspaceId) {
               useSubSpaceStore.getState().fetchNavigationTree(subspaceId, { force: true });
             }
 
-            // update documents
             get().upsertMany(affectedDocuments);
           } catch (error) {
             console.error("Failed to move document:", error);
@@ -224,17 +184,14 @@ const useDocumentStore = create(
         handleDocumentUpdate: async (documentId: string, updatedAt?: string) => {
           const existing = get().entities[documentId];
 
-          // Check if update is needed
           if (existing && updatedAt && existing.updatedAt === updatedAt) {
             return;
           }
 
           try {
-            // Force fetch latest version
             await get().fetchDetail(documentId, { force: true });
           } catch (error: any) {
             console.error(`Failed to update document ${documentId}:`, error);
-            // Remove from local store if fetch fails (due to permissions or non-existence)
             if (error.status === 404 || error.status === 403) {
               get().removeOne(documentId);
             }
@@ -244,7 +201,6 @@ const useDocumentStore = create(
         handleDocumentRemove: (documentId: string) => {
           const document = get().entities[documentId];
           if (document?.subspaceId) {
-            // 从 subspace 的导航树中移除
             useSubSpaceStore.getState().removeDocument(document.subspaceId, documentId);
           }
           get().removeOne(documentId);
@@ -258,7 +214,6 @@ const useDocumentStore = create(
           return existingDate < updatedAt;
         },
 
-        // UI state
         setActiveDocument: (id) => {
           set({ activeDocumentId: id });
         },
@@ -275,9 +230,9 @@ const useDocumentStore = create(
           }
         },
 
-        unStar: async () => {
+        unStar: async (documentId: string) => {
           try {
-            const star = useStarStore.getState().getStarByTarget(document.id);
+            const star = useStarStore.getState().getStarByTarget(documentId);
             if (star) {
               await useStarStore.getState().remove(star.id);
             }

@@ -1,6 +1,5 @@
 import { Draft, produce } from "immer";
 import { PartialExcept } from "@/types";
-import { set, get } from "lodash-es";
 
 export interface EntityState<T extends { id: string }> {
   ids: string[];
@@ -12,182 +11,244 @@ export type Update<T, K extends keyof T> = {
   changes: Partial<Omit<T, K>>;
 };
 
-const createEntitySlice = <T extends { id: string }>() => {
-  const slice = {
-    ids: [] as string[],
-    entities: {} as Record<string, T>,
+export interface EntityActions<T extends { id: string }> {
+  addOne: (entity: T) => void;
+  addMany: (entities: T[]) => void;
+  setOne: (entity: T) => void;
+  setMany: (entities: T[]) => void;
+  setAll: (entities: T[]) => void;
+  updateOne: (update: Update<T, "id">) => void;
+  updateMany: (updates: Update<T, "id">[]) => void;
+  upsertOne: (entity: T) => void;
+  upsertMany: (entities: T[]) => void;
+  removeOne: (id: string) => void;
+  removeMany: (ids: string[]) => void;
+  removeAll: () => void;
+  updateDeep: (id: string, path: string | string[], value: any | ((current: any) => any)) => void;
+  getDeep: (id: string, path: string | string[], defaultValue?: any) => any;
+}
 
-    addOne: (entity: T) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        if (!draft.entities[entity.id]) {
-          draft.ids.push(entity.id);
-        }
-        draft.entities[entity.id] = entity as Draft<T>;
-      }),
+export interface EntitySelectors<T extends { id: string }> {
+  selectAll: (state: EntityState<T>) => T[];
+  selectById: (state: EntityState<T>, id: string) => T | undefined;
+  selectIds: (state: EntityState<T>) => string[];
+  selectEntities: (state: EntityState<T>) => Record<string, T>;
+  selectTotal: (state: EntityState<T>) => number;
+}
 
-    addMany: (entities: T[]) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        entities.forEach((entity) => {
+export interface EntitySlice<T extends { id: string }> {
+  initialState: EntityState<T>;
+  selectors: EntitySelectors<T>;
+  createActions: <S extends EntityState<T>>(set: (fn: (state: S) => S | Partial<S>) => void) => EntityActions<T>;
+}
+
+// Create a stable selector function
+const createStableSelector = <T extends { id: string }, R>(selector: (state: EntityState<T>, ...args: any[]) => R) => {
+  // Use WeakMap to cache results for each state
+  const cache = new WeakMap<EntityState<T>, R>();
+
+  return (state: EntityState<T>, ...args: any[]): R => {
+    // Check cache
+    const cached = cache.get(state);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    // Calculate new result
+    const result = selector(state, ...args);
+    // Cache result
+    cache.set(state, result);
+    return result;
+  };
+};
+
+export function createEntitySlice<T extends { id: string }>(): EntitySlice<T> {
+  const initialState: EntityState<T> = {
+    ids: [],
+    entities: {},
+  };
+
+  const selectors: EntitySelectors<T> = {
+    selectAll: createStableSelector((state) => state.ids.map((id) => state.entities[id])),
+    selectById: createStableSelector((state, id: string) => state.entities[id]),
+    selectIds: createStableSelector((state) => state.ids),
+    selectEntities: createStableSelector((state) => state.entities),
+    selectTotal: createStableSelector((state) => state.ids.length),
+  };
+
+  const createActions = <S extends EntityState<T>>(set: (fn: (state: S) => S | Partial<S>) => void): EntityActions<T> => ({
+    addOne: (entity) =>
+      set((state) =>
+        produce(state, (draft) => {
           if (!draft.entities[entity.id]) {
             draft.ids.push(entity.id);
           }
           draft.entities[entity.id] = entity as Draft<T>;
-        });
-      }),
+        }),
+      ),
 
-    setOne: (entity: T) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        if (!draft.entities[entity.id]) {
-          draft.ids.push(entity.id);
-        }
-        draft.entities[entity.id] = entity as Draft<T>;
-      }),
+    addMany: (entities) =>
+      set((state) =>
+        produce(state, (draft) => {
+          entities.forEach((entity) => {
+            if (!draft.entities[entity.id]) {
+              draft.ids.push(entity.id);
+            }
+            draft.entities[entity.id] = entity as Draft<T>;
+          });
+        }),
+      ),
 
-    setMany: (entities: T[]) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        entities.forEach((entity) => {
+    setOne: (entity) =>
+      set((state) =>
+        produce(state, (draft) => {
           if (!draft.entities[entity.id]) {
             draft.ids.push(entity.id);
           }
           draft.entities[entity.id] = entity as Draft<T>;
-        });
-      }),
+        }),
+      ),
 
-    setAll: (entities: T[]) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        draft.ids = entities.map((e) => e.id);
-        draft.entities = {};
-        entities.forEach((entity) => {
-          draft.entities[entity.id] = entity as Draft<T>;
-        });
-      }),
+    setMany: (entities) =>
+      set((state) =>
+        produce(state, (draft) => {
+          entities.forEach((entity) => {
+            if (!draft.entities[entity.id]) {
+              draft.ids.push(entity.id);
+            }
+            draft.entities[entity.id] = entity as Draft<T>;
+          });
+        }),
+      ),
 
-    updateOne: (update: Update<T, "id">) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        if (draft.entities[update.id]) {
-          draft.entities[update.id] = {
-            ...draft.entities[update.id],
-            ...update.changes,
-          } as Draft<T>;
-        }
-      }),
+    setAll: (entities) =>
+      set((state) =>
+        produce(state, (draft) => {
+          draft.ids = entities.map((e) => e.id);
+          draft.entities = {};
+          entities.forEach((entity) => {
+            draft.entities[entity.id] = entity as Draft<T>;
+          });
+        }),
+      ),
 
-    updateMany: (updates: Update<T, "id">[]) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        updates.forEach((update) => {
+    updateOne: (update) =>
+      set((state) =>
+        produce(state, (draft) => {
           if (draft.entities[update.id]) {
             draft.entities[update.id] = {
               ...draft.entities[update.id],
               ...update.changes,
             } as Draft<T>;
           }
-        });
-      }),
+        }),
+      ),
 
-    upsertOne: (entity: T) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        if (!draft.entities[entity.id]) {
-          draft.ids.push(entity.id);
-        }
-        draft.entities[entity.id] = entity as Draft<T>;
-      }),
+    updateMany: (updates) =>
+      set((state) =>
+        produce(state, (draft) => {
+          updates.forEach((update) => {
+            if (draft.entities[update.id]) {
+              draft.entities[update.id] = {
+                ...draft.entities[update.id],
+                ...update.changes,
+              } as Draft<T>;
+            }
+          });
+        }),
+      ),
 
-    upsertMany: (entities: T[]) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        if (!entities || !Array.isArray(entities)) return;
-
-        entities.forEach((entity) => {
-          if (!entity || !entity.id) return;
-
+    upsertOne: (entity) =>
+      set((state) =>
+        produce(state, (draft) => {
           if (!draft.entities[entity.id]) {
             draft.ids.push(entity.id);
           }
           draft.entities[entity.id] = entity as Draft<T>;
-        });
-      }),
+        }),
+      ),
 
-    removeOne: (id: string) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        draft.ids = draft.ids.filter((entityId) => entityId !== id);
-        delete draft.entities[id];
-      }),
+    upsertMany: (entities) =>
+      set((state) =>
+        produce(state, (draft) => {
+          if (!entities || !Array.isArray(entities)) return;
 
-    removeMany: (ids: string[]) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        draft.ids = draft.ids.filter((id) => !ids.includes(id));
-        ids.forEach((id) => {
+          entities.forEach((entity) => {
+            if (!entity || !entity.id) return;
+
+            if (!draft.entities[entity.id]) {
+              draft.ids.push(entity.id);
+            }
+            draft.entities[entity.id] = entity as Draft<T>;
+          });
+        }),
+      ),
+
+    removeOne: (id) =>
+      set((state) =>
+        produce(state, (draft) => {
+          draft.ids = draft.ids.filter((entityId) => entityId !== id);
           delete draft.entities[id];
-        });
-      }),
+        }),
+      ),
 
-    removeAll: () => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        draft.ids = [];
-        draft.entities = {};
-      }),
+    removeMany: (ids) =>
+      set((state) =>
+        produce(state, (draft) => {
+          draft.ids = draft.ids.filter((id) => !ids.includes(id));
+          ids.forEach((id) => {
+            delete draft.entities[id];
+          });
+        }),
+      ),
 
-    updateDeep: (id: string, path: string | string[], value: any | ((current: any) => any)) => (state: EntityState<T>) =>
-      produce(state, (draft) => {
-        if (!draft.entities[id]) return;
+    removeAll: () =>
+      set((state) =>
+        produce(state, (draft) => {
+          draft.ids = [];
+          draft.entities = {};
+        }),
+      ),
 
-        const entity = draft.entities[id];
-        const pathArray = Array.isArray(path) ? path : path.split(".");
+    updateDeep: (id, path, value) =>
+      set((state) =>
+        produce(state, (draft) => {
+          if (!draft.entities[id]) return;
 
-        // Navigate to the nested property
-        let current: any = entity;
-        for (let i = 0; i < pathArray.length - 1; i++) {
-          const key = pathArray[i];
-          if (!(key in current)) {
-            current[key] = {};
+          const entity = draft.entities[id];
+          const pathArray = Array.isArray(path) ? path : path.split(".");
+
+          let current: any = entity;
+          for (let i = 0; i < pathArray.length - 1; i++) {
+            const key = pathArray[i];
+            if (!(key in current)) {
+              current[key] = {};
+            }
+            current = current[key];
           }
-          current = current[key];
-        }
 
-        // Update the final property
-        const lastKey = pathArray[pathArray.length - 1];
-        if (typeof value === "function") {
-          current[lastKey] = value(current[lastKey]);
-        } else {
-          current[lastKey] = value;
-        }
-      }),
+          const lastKey = pathArray[pathArray.length - 1];
+          if (typeof value === "function") {
+            current[lastKey] = value(current[lastKey]);
+          } else {
+            current[lastKey] = value;
+          }
+        }),
+      ),
 
-    getDeep: (id: string, path: string | string[], defaultValue?: any) => (state: EntityState<T>) => {
-      const entity = state.entities[id];
+    getDeep: (id, path, defaultValue) => {
+      const entity = selectors.selectById(initialState, id);
       if (!entity) return defaultValue;
-      return get(entity, path, defaultValue);
+      const pathArray = Array.isArray(path) ? path : path.split(".");
+      return pathArray.reduce((obj, key) => obj?.[key], entity) ?? defaultValue;
     },
+  });
 
-    // state and selectors
-    getState: () => ({ ids: slice.ids, entities: slice.entities }),
-
-    getSelectors: () => ({
-      selectAll: (state: EntityState<T>) => state.ids.map((id) => state.entities[id]),
-      selectById: (id: string) => (state: EntityState<T>) => state.entities[id],
-      selectIds: (state: EntityState<T>) => state.ids,
-      selectEntities: (state: EntityState<T>) => state.entities,
-      selectTotal: (state: EntityState<T>) => state.ids.length,
-    }),
-
-    getActions: (set: any) => ({
-      addOne: (entity: T) => set(slice.addOne(entity)),
-      addMany: (entities: T[]) => set(slice.addMany(entities)),
-      setOne: (entity: T) => set(slice.setOne(entity)),
-      setMany: (entities: T[]) => set(slice.setMany(entities)),
-      setAll: (entities: T[]) => set(slice.setAll(entities)),
-      updateOne: (update: Update<T, "id">) => set(slice.updateOne(update)),
-      updateMany: (updates: Update<T, "id">[]) => set(slice.updateMany(updates)),
-      upsertOne: (entity: T) => set(slice.upsertOne(entity)),
-      upsertMany: (entities: T[]) => set(slice.upsertMany(entities)),
-      removeOne: (id: string) => set(slice.removeOne(id)),
-      removeMany: (ids: string[]) => set(slice.removeMany(ids)),
-      removeAll: () => set(slice.removeAll()),
-      updateDeep: (id: string, path: string | string[], value: any | ((current: any) => any)) => set(slice.updateDeep(id, path, value)),
-      getDeep: (id: string, path: string | string[], defaultValue?: any) => slice.getDeep(id, path, defaultValue),
-    }),
+  return {
+    initialState,
+    selectors,
+    createActions,
   };
-
-  return slice;
-};
+}
 
 export default createEntitySlice;

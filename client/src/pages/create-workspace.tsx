@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { workspaceApi } from "@/apis/workspace";
 import { useTranslation } from "react-i18next";
-import useWorkspaceStore from "@/stores/workspace-store";
+import useWorkspaceStore from "@/stores/workspace";
 
 export default function CreateWorkspace() {
   const { t } = useTranslation();
@@ -14,8 +14,7 @@ export default function CreateWorkspace() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const switchWorkspace = useWorkspaceStore.use.switchWorkspace();
+  const switchWorkspace = useWorkspaceStore((state) => state.switchWorkspace);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

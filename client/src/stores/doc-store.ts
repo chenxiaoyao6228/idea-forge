@@ -6,7 +6,7 @@ import { DocTypeSchema, DocVisibilitySchema, DuplicateDocumentResponse, MoveDocu
 import { treeUtils } from "./utils/tree-util";
 import { PRESET_CATEGORIES } from "../pages/doc/constants";
 import { createSelectorFunctions } from "auto-zustand-selectors-hook";
-import useWorkspaceStore from "./workspace-store";
+import useWorkspaceStore from "./workspace";
 
 export interface DocTreeDataNode extends TreeDataNode {
   content?: string;
@@ -214,7 +214,7 @@ const store = create<DocumentTreeState>()(
         try {
           const parentId = treeUtils.findParentKey(get().treeData, id);
 
-          const result = (await documentApi.moveDocuments({
+          const result = (await documentApi.moveDocument({
             id,
             targetId,
             dropPosition,

@@ -20,7 +20,6 @@ import Loading from "@/components/ui/loading";
 import { useDocumentStore } from "../../stores/doc-store";
 import WorkspaceSwitcher from "./sidebar/workspace-switcher";
 import { OthersDocs } from "./sidebar/others-docs";
-import { MyDocs } from "./sidebar/my-docs";
 import UserSettings from "./sidebar/setting";
 import Doc from "../doc";
 import SubspacesArea from "./sidebar/subspaces";
@@ -88,7 +87,6 @@ export default function Main() {
             <StarsArea />
             <SubspacesArea />
             {/* <OthersDocs /> */}
-            {/* <MyDocs /> */}
             {/* <PrivateDocs /> */}
           </SidebarContent>
           <SidebarFooter>

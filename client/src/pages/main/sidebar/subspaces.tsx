@@ -7,9 +7,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DraggableSubspaceContainer } from "./components/draggable-subspace-container";
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
-
 import { useSubspaceOperations } from "@/hooks/use-subspace-operations";
-import useWorkspaceStore from "@/stores/workspace-store";
+import useWorkspaceStore from "@/stores/workspace";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();

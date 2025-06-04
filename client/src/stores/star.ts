@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
 import { starApi } from "@/apis/star";
-import createEntitySlice from "./utils/entity-slice";
+import createEntitySlice, { EntityState, EntityActions, EntitySelectors } from "./utils/entity-slice";
 import useDocumentStore from "./document";
 
 export interface StarEntity {
@@ -40,152 +40,158 @@ const defaultState: State = {
   isLoaded: false,
 };
 
-const starEntitySlice = createEntitySlice<StarEntity>();
-export const starSelectors = starEntitySlice.getSelectors();
+const { initialState, selectors, createActions } = createEntitySlice<StarEntity>();
 
-const useStarStore = create(
+export const starEntitySelectors = selectors;
+
+type StoreState = State & Action & EntityState<StarEntity> & EntityActions<StarEntity>;
+const useStarStore = create<StoreState>()(
   subscribeWithSelector(
     devtools(
-      createComputed((state: State & Action & ReturnType<typeof starEntitySlice.getState> & ReturnType<typeof starEntitySlice.getActions>) => ({
-        orderedStars: starSelectors.selectAll(state).sort((a, b) => {
+      createComputed((state: StoreState) => ({
+        orderedStars: selectors.selectAll(state).sort((a, b) => {
           if (!a.index || !b.index) return 0;
           return a.index < b.index ? -1 : 1;
         }),
-      }))((set, get) => ({
-        ...defaultState,
-        ...starEntitySlice.getState(),
-        ...starEntitySlice.getActions(set),
+      }))((set, get) => {
+        const store: StoreState = {
+          ...defaultState,
+          ...initialState,
+          ...createActions(set),
 
-        // API Actions
-        fetchList: async () => {
-          set({ isLoading: true });
-          try {
-            const response = await starApi.findAll();
-            const stars = response.data.stars.map((star) => ({
-              ...star,
-              createdAt: new Date(star.createdAt),
-              updatedAt: new Date(star.updatedAt),
-            }));
+          // API Actions
+          fetchList: async () => {
+            if (get().isLoading) return [];
+            set({ isLoading: true });
+            try {
+              const response = await starApi.findAll();
+              const stars = response.data.stars.map((star) => ({
+                ...star,
+                createdAt: new Date(star.createdAt),
+                updatedAt: new Date(star.updatedAt),
+              }));
 
-            // Fetch associated documents
-            const documentStore = useDocumentStore.getState();
-            for (const star of stars) {
-              if (star.docId) {
-                try {
-                  await documentStore.fetchDetail(star.docId);
-                } catch (error) {
-                  console.warn(`Failed to fetch document ${star.docId}:`, error);
-                }
+              const docIds = stars.filter((star) => star.docId).map((star) => star.docId!);
+              if (docIds.length > 0) {
+                const documentStore = useDocumentStore.getState();
+                await Promise.all(
+                  docIds.map((docId) =>
+                    documentStore.fetchDetail(docId).catch((error) => {
+                      console.warn(`Failed to fetch document ${docId}:`, error);
+                    }),
+                  ),
+                );
+              }
+
+              get().setAll(stars);
+              set({ isLoaded: true });
+              return stars;
+            } catch (error) {
+              console.error("Failed to fetch stars:", error);
+              return [];
+            } finally {
+              set({ isLoading: false });
+            }
+          },
+
+          create: async (params: { docId?: string; subspaceId?: string; index?: string }) => {
+            try {
+              const response = await starApi.create(params);
+              const star: StarEntity = {
+                id: response.data.id,
+                docId: response.data.docId,
+                subspaceId: response.data.subspaceId,
+                index: response.data.index,
+                createdAt: new Date(response.data.createdAt),
+                updatedAt: new Date(response.data.updatedAt),
+                userId: response.data.userId,
+              };
+
+              get().addOne(star);
+              return star;
+            } catch (error) {
+              console.error("Failed to create star:", error);
+              throw error;
+            }
+          },
+
+          remove: async (id) => {
+            try {
+              await starApi.remove(id);
+              get().removeOne(id);
+            } catch (error) {
+              console.error("Failed to remove star:", error);
+              throw error;
+            }
+          },
+
+          update: async (id, index) => {
+            try {
+              const response = await starApi.update(id, { index });
+              get().updateOne({
+                id,
+                changes: {
+                  index: response.data.index,
+                  updatedAt: new Date(response.data.updatedAt),
+                },
+              });
+            } catch (error) {
+              console.error("Failed to move star:", error);
+              throw error;
+            }
+          },
+
+          // Helper methods
+          isStarred: (docId, subspaceId) => {
+            if (!docId && !subspaceId) return false;
+            return get().getStarByTarget(docId, subspaceId) !== undefined;
+          },
+
+          getStarByTarget: (docId, subspaceId) => {
+            if (!docId && !subspaceId) return undefined;
+            return selectors.selectAll(get()).find((star) => (docId && star.docId === docId) || (subspaceId && star.subspaceId === subspaceId));
+          },
+
+          needsUpdate: (id, updatedAt) => {
+            const existing = selectors.selectById(get(), id);
+            if (!existing) return true;
+
+            const existingDate = new Date(existing.updatedAt);
+            return existingDate < updatedAt;
+          },
+
+          handleStarUpdate: async (starId, updatedAt) => {
+            const existing = selectors.selectById(get(), starId);
+
+            if (existing && updatedAt && new Date(existing.updatedAt).getTime() === new Date(updatedAt).getTime()) {
+              return;
+            }
+
+            try {
+              const response = await starApi.findOne(starId);
+              get().updateOne({
+                id: starId,
+                changes: {
+                  ...response,
+                  createdAt: new Date(response.createdAt),
+                  updatedAt: new Date(response.updatedAt),
+                },
+              });
+            } catch (error: any) {
+              console.error(`Failed to update star ${starId}:`, error);
+              if (error.status === 404 || error.status === 403) {
+                get().removeOne(starId);
               }
             }
+          },
 
-            get().setAll(stars);
-            set({ isLoaded: true });
-            return stars;
-          } catch (error) {
-            console.error("Failed to fetch stars:", error);
-            return [];
-          } finally {
-            set({ isLoading: false });
-          }
-        },
+          handleStarRemove: (starId) => {
+            get().removeOne(starId);
+          },
+        };
 
-        create: async ({ docId, subspaceId, index }) => {
-          try {
-            const response = await starApi.create({ docId, subspaceId, index });
-            const star: StarEntity = {
-              id: response.data.id,
-              docId: response.data.docId,
-              subspaceId: response.data.subspaceId,
-              index: response.data.index,
-              createdAt: new Date(response.data.createdAt),
-              updatedAt: new Date(response.data.updatedAt),
-              userId: response.data.userId,
-            };
-
-            get().addOne(star);
-            return star;
-          } catch (error) {
-            console.error("Failed to create star:", error);
-            throw error;
-          }
-        },
-
-        remove: async (id) => {
-          try {
-            await starApi.remove(id);
-            get().removeOne(id);
-          } catch (error) {
-            console.error("Failed to remove star:", error);
-            throw error;
-          }
-        },
-
-        update: async (id, index) => {
-          try {
-            const response = await starApi.update(id, { index });
-            get().updateOne({
-              id,
-              changes: {
-                index: response.data.index,
-                updatedAt: new Date(response.data.updatedAt),
-              },
-            });
-          } catch (error) {
-            console.error("Failed to move star:", error);
-            throw error;
-          }
-        },
-
-        // Helper methods
-        isStarred: (docId, subspaceId) => {
-          if (!docId && !subspaceId) return false;
-          return get().getStarByTarget(docId, subspaceId) !== undefined;
-        },
-
-        getStarByTarget: (docId, subspaceId) => {
-          if (!docId && !subspaceId) return undefined;
-          return starSelectors.selectAll(get()).find((star) => (docId && star.docId === docId) || (subspaceId && star.subspaceId === subspaceId));
-        },
-
-        needsUpdate: (id, updatedAt) => {
-          const existing = get().entities[id];
-          if (!existing) return true;
-
-          const existingDate = new Date(existing.updatedAt);
-          return existingDate < updatedAt;
-        },
-
-        handleStarUpdate: async (starId, updatedAt) => {
-          const existing = get().entities[starId];
-
-          // Check if update is needed
-          if (existing && updatedAt && new Date(existing.updatedAt).getTime() === new Date(updatedAt).getTime()) {
-            return;
-          }
-
-          try {
-            const response = await starApi.findOne(starId);
-            get().updateOne({
-              id: starId,
-              changes: {
-                ...response,
-                createdAt: new Date(response.createdAt),
-                updatedAt: new Date(response.updatedAt),
-              },
-            });
-          } catch (error: any) {
-            console.error(`Failed to update star ${starId}:`, error);
-            if (error.status === 404 || error.status === 403) {
-              get().removeOne(starId);
-            }
-          }
-        },
-
-        handleStarRemove: (starId) => {
-          get().removeOne(starId);
-        },
-      })),
+        return store;
+      }),
       {
         name: "starStore",
       },

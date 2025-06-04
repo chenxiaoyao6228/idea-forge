@@ -132,9 +132,9 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
 
       try {
         if (isStarred) {
-          await unStar({ id: subspaceId, title: subspace.name, type: "subspace" });
+          await unStar(subspaceId);
         } else {
-          await star({ id: subspaceId, title: subspace.name, type: "subspace" });
+          await star(subspaceId);
         }
       } catch (error) {
         console.error("Failed to toggle star:", error);

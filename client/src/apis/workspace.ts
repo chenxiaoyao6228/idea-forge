@@ -6,13 +6,13 @@ import {
   WorkspaceMemberListResponse,
   AddWorkspaceMemberRequest,
   UpdateWorkspaceMemberRequest,
+  CreateWorkspaceRequest,
+  Workspace,
 } from "contracts";
-
-import { WorkspaceOptionalDefaults, Workspace } from "contracts";
 
 export const workspaceApi = {
   // Workspace operations
-  createWorkspace: async (data: WorkspaceOptionalDefaults) => request.post<WorkspaceOptionalDefaults, Workspace>("/api/workspaces", data),
+  createWorkspace: async (data: CreateWorkspaceRequest) => request.post<CreateWorkspaceRequest, Workspace>("/api/workspaces", data),
 
   getWorkspace: async (id: string) => request.get<void, Workspace>(`/api/workspaces/${id}`),
 

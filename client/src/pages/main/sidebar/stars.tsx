@@ -7,13 +7,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useDroppable } from "@dnd-kit/core";
 import DropCursor from "./components/drop-cursor";
 import { StarLink } from "./components/star-link";
-import useStarStore, { starSelectors } from "@/stores/star";
+import useStarStore, { starEntitySelectors } from "@/stores/star";
 import { useDragAndDropContext } from "./hooks/use-dnd";
 
 export default function StarsArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const { fetchList, orderedStars } = useStarStore();
+  const stars = useStarStore(starEntitySelectors.selectAll);
+  console.log(stars, "stars");
   const { activeId } = useDragAndDropContext();
 
   // drag target for drop to top
@@ -27,7 +29,7 @@ export default function StarsArea() {
 
   useEffect(() => {
     fetchList();
-  }, [fetchList]);
+  }, []);
 
   if (!orderedStars.length) return null;
 

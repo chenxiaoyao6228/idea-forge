@@ -4,10 +4,10 @@ import { z } from "zod";
 // Create subspace
 export const CreateSubspaceRequestSchema = z.object({
   name: z.string(),
-  description: z.string().nullable().optional(),
-  type: SubspaceTypeSchema.default(SubspaceTypeSchema.enum.PUBLIC),
-  avatar: z.string().nullable().optional(),
   workspaceId: z.string(),
+  description: z.string().nullable().optional(),
+  type: SubspaceTypeSchema.default(SubspaceTypeSchema.enum.PUBLIC).optional(),
+  avatar: z.string().nullable().optional(),
   parentId: z.number().nullable().optional(),
 })
 

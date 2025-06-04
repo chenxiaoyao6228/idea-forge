@@ -2,11 +2,12 @@ import { create } from "zustand";
 import { subspaceApi } from "@/apis/subspace";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
-import { Doc, NavigationNode, NavigationNodeType } from "contracts";
+import { CreateSubspaceRequest, NavigationNode, NavigationNodeType } from "contracts";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
 import useStarStore from "./star";
-
+import { EntityActions } from "./utils/entity-slice";
+import { DocumentEntity } from "./document";
 export interface SubspaceEntity {
   id: string;
   name: string;
@@ -27,18 +28,16 @@ interface State {
 }
 
 interface Action {
-  // api actions
+  // API actions
   fetchList: (workspaceId?: string) => Promise<SubspaceEntity[]>;
-  create: (payload: {
-    name: string;
-    description: string;
-    avatar?: string;
-    type: string;
-    workspaceId: string;
-  }) => Promise<SubspaceEntity>;
-  // FIXME: Doc type here
-  addDocument: (subspaceId: string, document: Doc) => void;
-  updateDocument: (subspaceId: string, documentId: string, updates: Partial<Doc>) => void;
+  create: (payload: CreateSubspaceRequest) => Promise<SubspaceEntity>;
+  move: (subspaceId: string, index: string) => Promise<void>;
+
+  // Helper methods
+  star: (subspaceId: string, index?: string) => Promise<void>;
+  unStar: (subspaceId: string) => Promise<void>;
+  addDocument: (subspaceId: string, document: DocumentEntity) => void;
+  updateDocument: (subspaceId: string, documentId: string, updates: Partial<DocumentEntity>) => void;
   removeDocument: (subspaceId: string, documentId: string) => void;
   fetchNavigationTree: (subspaceId: string, options?: { force?: boolean }) => Promise<void>;
   asNavigationTree: (subspaceId: string) => NavigationNode;
@@ -46,15 +45,10 @@ interface Action {
   containsDocument: (subspaceId: string, documentId: string) => boolean;
   getExpandedKeysForDocument: (subspaceId: string, documentId: string) => string[];
   setActiveSubspace: (id?: string) => void;
-  move: (subspaceId: string, index: string) => Promise<void>;
-  // Add method to check if subspace needs update
   needsUpdate: (subspaceId: string, updatedAt: Date) => boolean;
-  // Add method to update subspace directly
   updateSubspace: (subspace: SubspaceEntity) => void;
   handleSubspaceUpdate: (subspaceId: string, updatedAt?: string) => Promise<void>;
   refreshNavigationTree: (subspaceId: string) => Promise<void>;
-  star: (subspace: SubspaceEntity, index?: string) => Promise<void>;
-  unStar: (subspace: SubspaceEntity) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -64,12 +58,14 @@ const defaultState: State = {
 };
 
 const subspaceEntitySlice = createEntitySlice<SubspaceEntity>();
-export const subspaceSelectors = subspaceEntitySlice.getSelectors();
+export const subspaceSelectors = subspaceEntitySlice.selectors;
 
-const useSubSpaceStore = create(
+type StoreState = State & Action & EntityState<SubspaceEntity> & EntityActions<SubspaceEntity>;
+
+const useSubSpaceStore = create<StoreState>()(
   subscribeWithSelector(
     devtools(
-      createComputed((state: State & Action & ReturnType<typeof subspaceEntitySlice.getState> & ReturnType<typeof subspaceEntitySlice.getActions>) => ({
+      createComputed((state: StoreState) => ({
         allSubspaces: subspaceSelectors.selectAll(state).sort((a, b) => {
           return a.index < b.index ? -1 : 1;
         }),
@@ -85,11 +81,11 @@ const useSubSpaceStore = create(
         })),
       }))((set, get) => ({
         ...defaultState,
-        ...subspaceEntitySlice.getState(),
-        ...subspaceEntitySlice.getActions(set),
+        ...subspaceEntitySlice.initialState,
+        ...subspaceEntitySlice.createActions(set),
 
         asNavigationTree: (subspaceId: string) => {
-          const subspace = get().entities[subspaceId];
+          const subspace = subspaceSelectors.selectById(get(), subspaceId);
           if (!subspace) return {} as NavigationNode;
           return {
             id: subspace.id,
@@ -98,7 +94,7 @@ const useSubSpaceStore = create(
             // FIXME:
             // url: doc.url || "",
             url: "",
-            children: subspaceSelectors.selectById(subspaceId)(get()).navigationTree,
+            children: subspace.navigationTree ?? [],
             parent: null,
           } as NavigationNode;
         },
@@ -127,30 +123,27 @@ const useSubSpaceStore = create(
 
         create: async (payload) => {
           try {
-            // FIXME:
-            const response = (await subspaceApi.createSubspace(payload as any)) as any;
-
-            // Add the new subspace to the store immediately
-            get().addOne({
+            const response = await subspaceApi.createSubspace(payload);
+            const subspace: SubspaceEntity = {
               id: response.id,
               name: response.name,
               avatar: response.avatar,
               workspaceId: response.workspaceId,
               type: response.type,
-              index: response.index || 0,
+              index: String(response.index || 0),
               navigationTree: [],
               updatedAt: new Date(response.updatedAt),
               createdAt: new Date(response.createdAt),
-            });
+            };
 
-            return response;
+            get().addOne(subspace);
+            return subspace;
           } catch (error) {
             console.error("Failed to create subspace:", error);
             throw error;
           }
         },
 
-        // Add method to update subspace directly
         updateSubspace: (subspace: SubspaceEntity) => {
           const existing = get().entities[subspace.id];
           if (!existing || new Date(existing.updatedAt) < new Date(subspace.updatedAt)) {
@@ -165,17 +158,9 @@ const useSubSpaceStore = create(
           }
         },
 
-        // Document operations with navigation tree support
         addDocument: (subspaceId, document) => {
           try {
-            const navigationNode: NavigationNode = {
-              id: document.id,
-              title: document.title,
-              type: NavigationNodeType.Document,
-              url: "",
-              children: [],
-              parent: null,
-            };
+            const navigationNode: NavigationNode = convertDocEntityToNavigationNode(document);
 
             set(
               produce((state) => {
@@ -212,9 +197,7 @@ const useSubSpaceStore = create(
           }
         },
 
-        updateDocument: (subspaceId: string, documentId: string, updates: Partial<Doc>) => {
-          console.log("updateDocument, updates", updates);
-
+        updateDocument: (subspaceId, documentId, updates) => {
           set(
             produce((state) => {
               const subspace = state.entities[subspaceId];
@@ -239,7 +222,7 @@ const useSubSpaceStore = create(
           );
         },
 
-        removeDocument: (subspaceId: string, documentId: string) => {
+        removeDocument: (subspaceId, documentId) => {
           set(
             produce((state) => {
               const subspace = state.entities[subspaceId];
@@ -264,13 +247,9 @@ const useSubSpaceStore = create(
           );
         },
 
-        // Navigation Tree
         fetchNavigationTree: async (subspaceId, options = {}) => {
           const { isLoading, entities } = get();
           const subspace = entities[subspaceId];
-
-          // TODO: determine which subspace should load when user enter the page
-          // if (!subspace || isLoading) return;
 
           if (subspace.navigationTree[subspaceId] && !options?.force) return;
 
@@ -316,22 +295,12 @@ const useSubSpaceStore = create(
 
         getExpandedKeysForDocument: (subspaceId: string, documentId: string): string[] => {
           const path = get().getPathToDocument(subspaceId, documentId);
-          return path.slice(0, -1).map((node) => node.id); // 排除文档本身，只返回父节点
+          return path.slice(0, -1).map((node) => node.id);
         },
 
         move: async (subspaceId: string, index: string) => {
           try {
             const response = await subspaceApi.moveSubspace(subspaceId, { index });
-
-            // if (response) {
-            //   const subspace = get().entities[subspaceId];
-            //   if (subspace) {
-            //     get().updateOne({
-            //       id: subspaceId,
-            //       changes: { index: response.index },
-            //     });
-            //   }
-            // }
           } catch (error) {
             console.error("Failed to move subspace:", error);
             throw error;
@@ -341,13 +310,11 @@ const useSubSpaceStore = create(
         handleSubspaceUpdate: async (subspaceId: string, updatedAt?: string) => {
           const existing = get().entities[subspaceId];
 
-          // Check if update is needed
           if (existing && updatedAt && new Date(existing.updatedAt).getTime() === new Date(updatedAt).getTime()) {
             return;
           }
 
           try {
-            // Refresh navigation tree
             await get().fetchNavigationTree(subspaceId, { force: true });
           } catch (error: any) {
             console.error(`Failed to update subspace ${subspaceId}:`, error);
@@ -361,7 +328,6 @@ const useSubSpaceStore = create(
           await get().fetchNavigationTree(subspaceId, { force: true });
         },
 
-        // 改进 needsUpdate 方法
         needsUpdate: (subspaceId: string, updatedAt: Date) => {
           const existing = get().entities[subspaceId];
           if (!existing) return true;
@@ -370,15 +336,14 @@ const useSubSpaceStore = create(
           return existingDate < updatedAt;
         },
 
-        // UI State
         setActiveSubspace: (id) => {
           set({ activeSubspaceId: id });
         },
 
-        star: async (subspace: SubspaceEntity, index?: string) => {
+        star: async (subspaceId, index?) => {
           try {
             await useStarStore.getState().create({
-              subspaceId: subspace.id,
+              subspaceId,
               index,
             });
           } catch (error) {
@@ -387,9 +352,9 @@ const useSubSpaceStore = create(
           }
         },
 
-        unStar: async (subspace: SubspaceEntity) => {
+        unStar: async (subspaceId: string) => {
           try {
-            const star = useStarStore.getState().getStarByTarget(undefined, subspace.id);
+            const star = useStarStore.getState().getStarByTarget(undefined, subspaceId);
             if (star) {
               await useStarStore.getState().remove(star.id);
             }
@@ -407,3 +372,14 @@ const useSubSpaceStore = create(
 );
 
 export default useSubSpaceStore;
+
+function convertDocEntityToNavigationNode(doc: DocumentEntity): NavigationNode {
+  return {
+    id: doc.id,
+    title: doc.title,
+    type: NavigationNodeType.Document,
+    url: "",
+    children: [],
+    parent: null,
+  };
+}

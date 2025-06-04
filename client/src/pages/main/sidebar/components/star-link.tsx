@@ -9,7 +9,7 @@ import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import DropCursor from "./drop-cursor";
-import useStarStore from "@/stores/star";
+import useStarStore, { starEntitySelectors } from "@/stores/star";
 import useDocumentStore from "@/stores/document";
 import useSubSpaceStore from "@/stores/subspace";
 import { StarEntity } from "@/stores/star";
@@ -31,6 +31,7 @@ export function StarLink({ star, isDragging = false }: StarLinkProps) {
 
   const document = useDocumentStore((state) => state.entities[star.docId || ""]);
   const subspace = useSubSpaceStore((state) => state.entities[star.subspaceId || ""]);
+  //   const _star = useStarStore((state) => starEntitySelectors.selectById(state, star.id));
   const removeStar = useStarStore((state) => state.remove);
 
   // Auto-expand if contains active document

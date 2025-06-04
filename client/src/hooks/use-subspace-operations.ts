@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { SubspaceTypeSchema } from "contracts";
-import useWorkspaceStore from "@/stores/workspace-store";
 import useSubSpaceStore from "@/stores/subspace";
+import useWorkspaceStore from "@/stores/workspace";
 
 export function useSubspaceOperations() {
   const [isCreating, setIsCreating] = useState(false);
-  const currentWorkspace = useWorkspaceStore.use.currentWorkspace();
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const fetchList = useSubSpaceStore((state) => state.fetchList);
   const ids = useSubSpaceStore((state) => state.ids);
   const create = useSubSpaceStore((state) => state.create);

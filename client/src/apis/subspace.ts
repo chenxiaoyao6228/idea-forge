@@ -7,13 +7,14 @@ import {
   SubspaceMemberListResponse,
   NavigationNode,
   MoveSubspaceRequest,
+  CreateSubspaceRequest,
 } from "contracts";
 
-import { Subspace, SubspaceOptionalDefaults } from "contracts";
+import { Subspace } from "contracts";
 
 export const subspaceApi = {
   // Subspace operations
-  createSubspace: async (data: SubspaceOptionalDefaults) => request.post<SubspaceOptionalDefaults, Subspace>("/api/subspaces", data),
+  createSubspace: async (data: CreateSubspaceRequest) => request.post<CreateSubspaceRequest, Subspace>("/api/subspaces", data),
 
   getSubspace: async (id: string) => request.get<void, SubspaceDetailResponse>(`/api/subspaces/${id}`),
 
