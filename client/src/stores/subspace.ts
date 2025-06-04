@@ -5,6 +5,7 @@ import { createComputed } from "zustand-computed";
 import { Doc, NavigationNode, NavigationNodeType } from "contracts";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
+import useStarStore from "./star";
 
 export interface SubspaceEntity {
   id: string;
@@ -52,6 +53,8 @@ interface Action {
   updateSubspace: (subspace: SubspaceEntity) => void;
   handleSubspaceUpdate: (subspaceId: string, updatedAt?: string) => Promise<void>;
   refreshNavigationTree: (subspaceId: string) => Promise<void>;
+  star: (subspace: SubspaceEntity, index?: string) => Promise<void>;
+  unStar: (subspace: SubspaceEntity) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -370,6 +373,30 @@ const useSubSpaceStore = create(
         // UI State
         setActiveSubspace: (id) => {
           set({ activeSubspaceId: id });
+        },
+
+        star: async (subspace: SubspaceEntity, index?: string) => {
+          try {
+            await useStarStore.getState().create({
+              subspaceId: subspace.id,
+              index,
+            });
+          } catch (error) {
+            console.error("Failed to star subspace:", error);
+            throw error;
+          }
+        },
+
+        unStar: async (subspace: SubspaceEntity) => {
+          try {
+            const star = useStarStore.getState().getStarByTarget(undefined, subspace.id);
+            if (star) {
+              await useStarStore.getState().remove(star.id);
+            }
+          } catch (error) {
+            console.error("Failed to unStar subspace:", error);
+            throw error;
+          }
         },
       })),
       {

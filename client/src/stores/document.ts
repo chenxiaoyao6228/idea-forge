@@ -5,6 +5,7 @@ import { DocTypeSchema, DocVisibilitySchema } from "contracts";
 import { documentApi } from "@/apis/document";
 import useWorkspaceStore from "./workspace-store";
 import useSubSpaceStore from "./subspace";
+import useStarStore from "./star";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 
 interface FetchOptions {
@@ -63,6 +64,8 @@ interface Action {
   needsUpdate: (id: string, updatedAt: Date) => boolean;
   handleDocumentUpdate: (documentId: string, updatedAt?: string) => Promise<void>;
   handleDocumentRemove: (documentId: string) => void;
+  star: (documentId: string, index?: string) => Promise<void>;
+  unStar: (documentId: string) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -258,6 +261,30 @@ const useDocumentStore = create(
         // UI state
         setActiveDocument: (id) => {
           set({ activeDocumentId: id });
+        },
+
+        star: async (documentId, index?) => {
+          try {
+            await useStarStore.getState().create({
+              docId: documentId,
+              index,
+            });
+          } catch (error) {
+            console.error("Failed to star document:", error);
+            throw error;
+          }
+        },
+
+        unStar: async () => {
+          try {
+            const star = useStarStore.getState().getStarByTarget(document.id);
+            if (star) {
+              await useStarStore.getState().remove(star.id);
+            }
+          } catch (error) {
+            console.error("Failed to unStar document:", error);
+            throw error;
+          }
         },
       })),
       {

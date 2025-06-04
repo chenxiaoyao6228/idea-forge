@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { CreateStarDto } from "./star.dto";
 import { UpdateStarDto } from "./star.dto";
-import { DeleteStarDto } from "./star.dto";
 import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { Inject } from "@nestjs/common";
 import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
@@ -212,7 +211,10 @@ export class StarService {
 
     await this.emitStarEvent(BusinessEvents.STAR_UPDATE, updatedStar, userId);
 
-    return presentStar(updatedStar);
+    return {
+      data: presentStar(updatedStar),
+      policies: [], // placeholder for policies
+    };
   }
 
   async findOne(id: string) {

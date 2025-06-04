@@ -3,7 +3,7 @@ import { StarService } from "./star.service";
 import { CreateStarDto, UpdateStarDto } from "./star.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 
-@Controller("stars")
+@Controller("/api/stars")
 export class StarController {
   constructor(private readonly starService: StarService) {}
 

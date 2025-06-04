@@ -29,6 +29,7 @@ import { useDragAndDropContext } from "./sidebar/hooks/use-dnd";
 import useSubSpaceStore from "@/stores/subspace";
 import { DndContext } from "@dnd-kit/core";
 import { websocketService } from "@/lib/websocket";
+import StarsArea from "./sidebar/stars";
 
 export default function Main() {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
@@ -84,6 +85,7 @@ export default function Main() {
           </SidebarHeader>
           {/* docs */}
           <SidebarContent className="custom-scrollbar">
+            <StarsArea />
             <SubspacesArea />
             {/* <OthersDocs /> */}
             {/* <MyDocs /> */}

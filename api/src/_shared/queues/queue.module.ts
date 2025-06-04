@@ -1,8 +1,10 @@
 import { BullModule, BullRootModuleOptions } from "@nestjs/bull";
-import { Module } from "@nestjs/common";
+import { Global, Module } from "@nestjs/common";
 import { WebsocketEventProcessor } from "./processors/websocket-event.processor";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 
+// FIXME: not global ?
+@Global()
 @Module({
   imports: [
     BullModule.forRootAsync({

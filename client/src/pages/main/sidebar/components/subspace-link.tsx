@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { PlusIcon, MoreHorizontal, EditIcon } from "lucide-react";
+import { PlusIcon, MoreHorizontal, EditIcon, StarIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useTranslation } from "react-i18next";
 import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
+import useStarStore from "@/stores/star";
 import { SidebarLink } from "./sidebar-link";
 import { DocumentLink } from "./document-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -36,6 +37,10 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   const [isEditing, setIsEditing] = useState(false);
 
   const editableTitleRef = React.useRef<{ setIsEditing: (editing: boolean) => void }>(null);
+
+  const star = useSubSpaceStore((state) => state.star);
+  const unStar = useSubSpaceStore((state) => state.unStar);
+  const isStarred = useStarStore((state) => state.isStarred(undefined, subspaceId));
 
   // Auto-expand if contains active document
   const shouldExpand = useMemo(() => {
@@ -120,6 +125,24 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     editableTitleRef.current?.setIsEditing(true);
   }, []);
 
+  const handleStar = useCallback(
+    async (ev: React.MouseEvent) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      try {
+        if (isStarred) {
+          await unStar({ id: subspaceId, title: subspace.name, type: "subspace" });
+        } else {
+          await star({ id: subspaceId, title: subspace.name, type: "subspace" });
+        }
+      } catch (error) {
+        console.error("Failed to toggle star:", error);
+      }
+    },
+    [isStarred, subspaceId, subspace.name, star, unStar],
+  );
+
   if (!subspace) {
     return null;
   }
@@ -138,6 +161,9 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
 
   const menu = (
     <div className="flex items-center gap-1">
+      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleStar} title={isStarred ? "Remove star" : "Add star"}>
+        <StarIcon className={`h-3 w-3 ${isStarred ? "text-yellow-500" : ""}`} />
+      </Button>
       <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateDocument} disabled={isCreating} title={t("Create new document")}>
         <PlusIcon className="h-3 w-3" />
       </Button>

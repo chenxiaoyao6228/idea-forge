@@ -1,11 +1,12 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { EditIcon, FileIcon, FolderIcon, PlusIcon } from "lucide-react";
+import { EditIcon, FileIcon, FolderIcon, PlusIcon, StarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavigationNode } from "contracts";
 import useDocumentStore from "@/stores/document";
 import { SidebarLink } from "./sidebar-link";
 import useSubSpaceStore from "@/stores/subspace";
+import useStarStore from "@/stores/star";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DraggableDocumentContainer } from "./draggable-document-container";
@@ -102,10 +103,35 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
     editableTitleRef.current?.setIsEditing(true);
   }, []);
 
+  const star = useDocumentStore((state) => state.star);
+  const unStar = useDocumentStore((state) => state.unStar);
+  const isStarred = useStarStore((state) => state.isStarred(node.id));
+
+  const handleStar = useCallback(
+    async (ev: React.MouseEvent) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      try {
+        if (isStarred) {
+          await unStar(node.id);
+        } else {
+          await star(node.id);
+        }
+      } catch (error) {
+        console.error("Failed to toggle star:", error);
+      }
+    },
+    [isStarred, node.id, node.title, star, unStar],
+  );
+
   const icon = hasChildren ? <FolderIcon className="h-4 w-4" /> : <FileIcon className="h-4 w-4" />;
 
   const menu = (
     <>
+      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleStar} title={isStarred ? "Remove star" : "Add star"}>
+        <StarIcon className={`h-3 w-3 ${isStarred ? "text-yellow-500" : ""}`} />
+      </Button>
       <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating}>
         <PlusIcon className="h-3 w-3" />
       </Button>
