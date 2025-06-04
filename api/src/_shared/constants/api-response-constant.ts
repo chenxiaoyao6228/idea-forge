@@ -55,4 +55,10 @@ export enum ErrorCodeEnum {
   SubspaceAccessDenied = "subspace_access_denied",
   UserNotInWorkspace = "user_not_in_workspace",
   UserAlreadyInSubspace = "user_already_in_subspace",
+
+  // Star related errors
+  StarNotFound = "STAR_NOT_FOUND",
+  StarAlreadyExists = "STAR_ALREADY_EXISTS",
+  DocNotFoundOrNoAccess = "DOC_NOT_FOUND_OR_NO_ACCESS",
+  SubspaceNotFoundOrNoAccess = "SUBSPACE_NOT_FOUND_OR_NO_ACCESS",
 }

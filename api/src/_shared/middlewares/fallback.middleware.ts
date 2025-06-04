@@ -204,6 +204,9 @@ export class FallbackMiddleware implements NestMiddleware {
               }
             }
           </style>
+          <script>
+              window.Buffer = () => {};
+          </script>
           ${_html.preload ? _html.preload : ""}
           ${_html.css ? _html.css : ""}
            <script>

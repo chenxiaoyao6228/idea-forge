@@ -74,6 +74,9 @@ model User {
   // Guest invitations
   guestInvitations         GuestCollaborator[]        @relation("InvitedBy") // Guest invitations sent
   SubspaceMemberPermission SubspaceMemberPermission[]
+
+  // Star relationships
+  stars Star[] // User's starred items
 }
 
 enum UserStatus {
@@ -150,7 +153,7 @@ model Doc {
   parent   Doc?  @relation("DocToDoc", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children Doc[] @relation("DocToDoc")
 
-  // sharing and perissions
+  // sharing and permissions
   docShare           DocShare[]
   guestDocPermission GuestDocPermission[]
   publicShare        PublicShare?
@@ -158,6 +161,9 @@ model Doc {
   // versions
   revisions          DocRevision[]
   DocGroupPermission DocGroupPermission[]
+
+  // star relationships
+  stars Star[] // Stars for this document
 }
 
 model DocRevision {
@@ -261,6 +267,9 @@ model Subspace {
   docs                     Doc[]
   members                  SubspaceMember[]
   SubspaceMemberPermission SubspaceMemberPermission[]
+
+  // star relationships
+  stars Star[] // Stars for this subspace
 }
 
 model SubspaceMember {
@@ -468,6 +477,27 @@ model UserLoginHistory {
   user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
+}
+
+model Star {
+  id        String   @id @default(cuid())
+  index     String?  @db.VarChar(256) // For sorting
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations 
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  doc        Doc?      @relation(fields: [docId], references: [id], onDelete: Cascade)
+  docId      String?
+  subspace   Subspace? @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
+  subspaceId String?
+
+  // Ensure each user can only star a resource once
+  @@unique([userId, docId])
+  @@unique([userId, subspaceId])
+  // Ensure docId and subspaceId cannot both be null
+  @@unique([docId, subspaceId])
 }
 
 enum WorkspaceRole {

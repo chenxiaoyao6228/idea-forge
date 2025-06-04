@@ -20,3 +20,4 @@ export * from './DocShareSchema';
 export * from './FileSchema';
 export * from './AITokenUsageSchema';
 export * from './UserLoginHistorySchema';
+export * from './StarSchema';

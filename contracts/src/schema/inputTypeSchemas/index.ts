@@ -21,6 +21,7 @@ export { DocShareScalarFieldEnumSchema } from './DocShareScalarFieldEnumSchema';
 export { FileScalarFieldEnumSchema } from './FileScalarFieldEnumSchema';
 export { AITokenUsageScalarFieldEnumSchema } from './AITokenUsageScalarFieldEnumSchema';
 export { UserLoginHistoryScalarFieldEnumSchema } from './UserLoginHistoryScalarFieldEnumSchema';
+export { StarScalarFieldEnumSchema } from './StarScalarFieldEnumSchema';
 export { SortOrderSchema } from './SortOrderSchema';
 export { NullableJsonNullValueInputSchema } from './NullableJsonNullValueInputSchema';
 export { JsonNullValueInputSchema } from './JsonNullValueInputSchema';

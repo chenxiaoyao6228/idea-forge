@@ -1,9 +1,4 @@
 
-if(typeof window !== 'undefined') {
-  // @ts-ignore
-  window.Buffer = () => {};
-}
-
 // schema
 export * from './schema';
 export * from './types';
@@ -15,4 +10,5 @@ export * from "./ai";
 export * from "./file";
 export * from "./workspace";
 export * from "./subspace";
+export * from "./star";
 

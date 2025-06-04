@@ -39,4 +39,9 @@ export enum BusinessEvents {
   // Workspace events
   // WORKSPACE_UPDATE = "workspace.update",
   // WORKSPACE_MEMBER_UPDATE = "workspace.member.update",
+
+  // Star events
+  STAR_CREATE = "stars.create",
+  STAR_UPDATE = "stars.update",
+  STAR_DELETE = "stars.delete",
 }

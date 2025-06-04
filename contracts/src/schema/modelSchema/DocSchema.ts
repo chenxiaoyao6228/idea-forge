@@ -12,7 +12,7 @@ export const DocSchema = z.object({
   id: z.string().cuid(),
   title: z.string(),
   content: z.string(),
-  // contentBinary: z.instanceof(Buffer).nullable(),
+  contentBinary: z.instanceof(Buffer).nullable(),
   archivedAt: z.coerce.date().nullable(),
   publishedAt: z.coerce.date().nullable(),
   deletedAt: z.coerce.date().nullable(),

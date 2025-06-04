@@ -4,10 +4,17 @@ import { Job } from "bull";
 import { RealtimeGateway } from "../../socket/events/realtime.gateway";
 import { WebsocketEvent } from "../../events/types/websocket.event";
 import { BusinessEvents } from "../../socket/business-event.constant";
+import { presentStar } from "../../../star/star.presenter";
+import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { Inject } from "@nestjs/common";
+import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
 
 @Processor("websocket-events")
 export class WebsocketEventProcessor {
-  constructor(private realtimeGateway: RealtimeGateway) {}
+  constructor(
+    private realtimeGateway: RealtimeGateway,
+    @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient,
+  ) {}
 
   // Process incoming WebSocket events from the queue
   @Process("websocket-event")
@@ -36,6 +43,24 @@ export class WebsocketEventProcessor {
         case BusinessEvents.ENTITIES:
           await this.handleEntitiesEvent(event, server);
           break;
+        case BusinessEvents.STAR_CREATE:
+        case BusinessEvents.STAR_UPDATE: {
+          const star = await this.prismaService.star.findUnique({
+            where: { id: data.id },
+          });
+          if (!star) return;
+
+          // Emit to user's room
+          server.to(`user:${star.userId}`).emit(name, presentStar(star));
+          break;
+        }
+        case BusinessEvents.STAR_DELETE: {
+          // Emit to user's room
+          server.to(`user:${data.userId}`).emit(name, {
+            id: data.id,
+          });
+          break;
+        }
       }
     } catch (error) {
       console.error(`Error processing websocket event: ${event.name}`, error);
