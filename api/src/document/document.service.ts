@@ -1,5 +1,5 @@
 import { Injectable, Inject } from "@nestjs/common";
-import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto } from "./document.dto";
+import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto, ShareDocumentDto } from "./document.dto";
 import { CreateDocumentResponse, NavigationNode, NavigationNodeType } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
@@ -7,12 +7,15 @@ import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/pri
 import { presentDocument } from "./document.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
+import { DocShare } from "@prisma/client";
+import { DocShareService } from "../doc-share/doc-share.service";
 
 @Injectable()
 export class DocumentService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
     private readonly eventPublisher: EventPublisherService,
+    private readonly docShareService: DocShareService,
   ) {}
 
   async findOne(id: string, userId: number) {
@@ -66,6 +69,20 @@ export class DocumentService {
             createdAt: "desc",
           },
         },
+        docShare: {
+          where: {
+            revokedAt: null,
+          },
+          include: {
+            sharedTo: {
+              select: {
+                id: true,
+                email: true,
+                displayName: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -82,8 +99,8 @@ export class DocumentService {
     const data = {
       document: serializedDocument,
       workspace: document.workspace,
-      // Placeholder for shared tree functionality
-      sharedTree: null,
+      // Include shared tree if document is shared
+      sharedTree: document.docShare?.some((share) => share.includeChildDocuments) ? await this.getSharedTree(document.id) : null,
     };
 
     return {
@@ -91,6 +108,28 @@ export class DocumentService {
       // Placeholder for policies
       policies: isPublic ? undefined : this.presentPoliciesPlaceholder(userId, document),
     };
+  }
+
+  private async getSharedTree(documentId: string): Promise<NavigationNode[]> {
+    const document = await this.prisma.doc.findUnique({
+      where: { id: documentId },
+      include: {
+        children: {
+          where: {
+            archivedAt: null,
+          },
+          orderBy: {
+            position: "asc",
+          },
+        },
+      },
+    });
+
+    if (!document) {
+      return [];
+    }
+
+    return document.children.map((child) => this.docToNavigationNode(child));
   }
 
   private presentPoliciesPlaceholder(userId: number, document: any) {
@@ -115,7 +154,6 @@ export class DocumentService {
       subspaceId: doc.subspaceId,
       type: NavigationNodeType.Document,
       parent: null,
-      // isDraft: !doc.publishedAt,
     };
   }
 
@@ -319,7 +357,10 @@ export class DocumentService {
             { authorId: userId },
             {
               docShare: {
-                some: { userId },
+                some: {
+                  userId,
+                  revokedAt: null,
+                },
               },
             },
             {
@@ -348,6 +389,20 @@ export class DocumentService {
               },
             },
           },
+          docShare: {
+            where: {
+              revokedAt: null,
+            },
+            include: {
+              sharedTo: {
+                select: {
+                  id: true,
+                  email: true,
+                  displayName: true,
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.doc.count({ where }),
@@ -367,12 +422,76 @@ export class DocumentService {
       visibility: doc.visibility || "WORKSPACE",
       workspaceId: doc.workspaceId || null,
       subspaceId: doc.subspaceId || null,
+      shares: doc.docShare.map((share) => ({
+        id: share.id,
+        userId: share.userId,
+        includeChildDocuments: share.includeChildDocuments,
+        published: share.published,
+        createdAt: share.createdAt,
+        sharedTo: share.sharedTo,
+      })),
     }));
 
     return {
       pagination: { page, limit, total },
       data,
       policies: {},
+    };
+  }
+
+  async shareDocument(userId: number, docId: string, dto: ShareDocumentDto) {
+    // 检查文档是否存在
+    const doc = await this.prisma.doc.findUnique({
+      where: { id: docId },
+    });
+
+    if (!doc) {
+      throw new Error("Document not found");
+    }
+
+    // 检查用户是否有权限分享文档
+    if (doc.authorId !== userId) {
+      throw new Error("You don't have permission to share this document");
+    }
+
+    // 调用 DocShareService 创建分享
+    return this.docShareService.createShare(userId, {
+      documentId: docId,
+      published: dto.published,
+      urlId: dto.urlId,
+      includeChildDocuments: dto.includeChildDocuments,
+    });
+  }
+
+  async listDocShares(docId: string) {
+    // 获取文档的所有分享信息
+    const shares = await this.prisma.docShare.findMany({
+      where: {
+        documentId: docId,
+        revokedAt: null, // 只获取未撤销的分享
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+        sharedTo: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    return {
+      data: {
+        shares,
+      },
     };
   }
 }

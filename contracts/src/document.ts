@@ -177,6 +177,9 @@ export const shareDocumentSchema = z.object({
   email: z.string().email(),
   permission: z.enum(permission),
   docId: z.string().cuid(),
+  published: z.boolean().optional(),
+  urlId: z.string().optional(),
+  includeChildDocuments: z.boolean().optional(),
 });
 
 export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;

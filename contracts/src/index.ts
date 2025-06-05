@@ -10,5 +10,6 @@ export * from "./ai";
 export * from "./file";
 export * from "./workspace";
 export * from "./subspace";
+export * from "./doc-share";
 export * from "./star";
 

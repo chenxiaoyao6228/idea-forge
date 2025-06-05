@@ -11,6 +11,13 @@ export const DocShareSchema = z.object({
   docId: z.string(),
   authorId: z.number().int(),
   userId: z.number().int(),
+  includeChildDocuments: z.boolean(),
+  published: z.boolean(),
+  revokedAt: z.coerce.date().nullable(),
+  expiresAt: z.coerce.date().nullable(),
+  urlId: z.string().nullable(),
+  viewCount: z.number().int(),
+  lastAccessedAt: z.coerce.date().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 })
@@ -24,6 +31,9 @@ export type DocShare = z.infer<typeof DocShareSchema>
 export const DocShareOptionalDefaultsSchema = DocShareSchema.merge(z.object({
   permission: PermissionSchema.optional(),
   id: z.string().cuid().optional(),
+  includeChildDocuments: z.boolean().optional(),
+  published: z.boolean().optional(),
+  viewCount: z.number().int().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
 }))

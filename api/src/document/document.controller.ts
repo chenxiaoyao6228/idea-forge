@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
-import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto, DocumentPagerDto } from "./document.dto";
+import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto, DocumentPagerDto, ShareDocumentDto } from "./document.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { UpdateCoverDto, User } from "contracts";
 import { SearchDocumentService } from "./search-document.service";
@@ -44,5 +44,17 @@ export class DocumentController {
   @Delete(":id")
   remove(@GetUser("id") userId: number, @Param("id") id: string) {
     return this.documentService.remove(id, userId);
+  }
+
+  // ============== doc share ==========================================
+
+  @Post(":id/share")
+  async shareDocument(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: ShareDocumentDto) {
+    return this.documentService.shareDocument(userId, id, dto);
+  }
+
+  @Get(":id/shares")
+  async listDocShares(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.listDocShares(id);
   }
 }

@@ -437,10 +437,28 @@ model DocShare {
   userId   Int
 
   permission Permission @default(READ)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+
+  // Key field: Support folder tree sharing
+  includeChildDocuments Boolean @default(false) // Whether to include child documents
+
+  // Share status control  
+  published Boolean   @default(false) // Whether publicly published
+  revokedAt DateTime? // Revocation time
+
+  // Access control  
+  expiresAt DateTime? // Expiration time
+  urlId     String? // Custom URL identifier
+
+  // Statistics  
+  viewCount      Int       @default(0) // Number of views
+  lastAccessedAt DateTime? // Last access time
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([docId, userId])
+  @@index([userId, createdAt])
+  @@index([docId, includeChildDocuments])
 }
 
 model File {

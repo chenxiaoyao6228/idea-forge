@@ -33,6 +33,7 @@ import { SocketModule } from "./_shared/socket/socket.module";
 import { QueueModule } from "./_shared/queues/queue.module";
 import { EventsModule } from "./_shared/events/events.module";
 import { StarModule } from "./star/star.module";
+import { DocShareModule } from "./doc-share/doc-share.module";
 
 @Module({
   controllers: [AppController],
@@ -82,6 +83,7 @@ import { StarModule } from "./star/star.module";
     QueueModule,
     EventsModule,
     StarModule,
+    DocShareModule,
   ],
   providers: [
     {
