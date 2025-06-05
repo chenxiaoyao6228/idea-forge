@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { devtools, subscribeWithSelector } from "zustand/middleware";
+import { devtools, subscribeWithSelector, persist } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
 import { workspaceApi } from "@/apis/workspace";
 import { Workspace } from "contracts";
@@ -10,7 +10,7 @@ export interface WorkspaceEntity extends Workspace {}
 interface State {
   isLoading: boolean;
   isLoaded: boolean;
-  currentWorkspaceId?: string;
+  currentWorkspace?: WorkspaceEntity;
 }
 
 interface Action {
@@ -20,13 +20,13 @@ interface Action {
   reorderWorkspaces: (workspaceIds: string[]) => Promise<void>;
 
   // Helper methods
-  setCurrentWorkspace: (id?: string) => void;
+  setCurrentWorkspace: (workspace?: WorkspaceEntity) => void;
 }
 
 const defaultState: State = {
   isLoading: false,
   isLoaded: false,
-  currentWorkspaceId: undefined,
+  currentWorkspace: undefined,
 };
 
 const workspaceEntitySlice = createEntitySlice<WorkspaceEntity>();
@@ -36,67 +36,77 @@ type StoreState = State & Action & EntityState<WorkspaceEntity> & EntityActions<
 
 const useWorkspaceStore = create<StoreState>()(
   subscribeWithSelector(
-    devtools(
-      createComputed((state: StoreState) => ({
-        currentWorkspace: state.currentWorkspaceId ? state.entities[state.currentWorkspaceId] : undefined,
-        allWorkspaces: workspaceSelectors.selectAll(state),
-      }))((set, get) => ({
-        ...defaultState,
-        ...workspaceEntitySlice.initialState,
-        ...workspaceEntitySlice.createActions(set),
+    persist(
+      devtools(
+        createComputed((state: StoreState) => ({
+          allWorkspaces: workspaceSelectors.selectAll(state),
+        }))((set, get) => ({
+          ...defaultState,
+          ...workspaceEntitySlice.initialState,
+          ...workspaceEntitySlice.createActions(set),
 
-        // API actions
-        fetchList: async () => {
-          set({ isLoading: true });
-          try {
-            const response = await workspaceApi.getWorkspaces();
-            if (response && Array.isArray(response)) {
-              get().setAll(response);
-              set({ isLoaded: true });
+          // API actions
+          fetchList: async () => {
+            set({ isLoading: true });
+            try {
+              const response = await workspaceApi.getWorkspaces();
+              if (response && Array.isArray(response)) {
+                get().setAll(response);
+                set({ isLoaded: true });
 
-              // If no current workspace, set the first one as the current workspace
-              if (!get().currentWorkspaceId) {
-                set({ currentWorkspaceId: response[0]?.id });
+                // If no current workspace, set the first one as the current workspace
+                if (!get().currentWorkspace) {
+                  const firstWorkspace = response[0];
+                  if (firstWorkspace) {
+                    get().setCurrentWorkspace(firstWorkspace);
+                  }
+                }
               }
+              return response;
+            } catch (error) {
+              console.error("Failed to fetch workspaces:", error);
+              return [];
+            } finally {
+              set({ isLoading: false });
             }
-            return response;
-          } catch (error) {
-            console.error("Failed to fetch workspaces:", error);
-            return [];
-          } finally {
-            set({ isLoading: false });
-          }
-        },
+          },
 
-        switchWorkspace: async (workspaceId) => {
-          try {
-            const workspace = get().entities[workspaceId];
-            if (workspace) {
-              set({ currentWorkspaceId: workspaceId });
-              window.location.href = "/";
+          switchWorkspace: async (workspaceId) => {
+            try {
+              const workspace = get().entities[workspaceId];
+              if (workspace) {
+                get().setCurrentWorkspace(workspace);
+                window.location.href = "/";
+              }
+            } catch (error) {
+              console.error("Failed to switch workspace:", error);
             }
-          } catch (error) {
-            console.error("Failed to switch workspace:", error);
-          }
-        },
+          },
 
-        reorderWorkspaces: async (workspaceIds) => {
-          try {
-            await workspaceApi.reorderWorkspaces(workspaceIds);
-            // Refresh the list to get the updated order
-            await get().fetchList();
-          } catch (error) {
-            console.error("Failed to reorder workspaces:", error);
-          }
-        },
+          reorderWorkspaces: async (workspaceIds) => {
+            try {
+              await workspaceApi.reorderWorkspaces(workspaceIds);
+              // Refresh the list to get the updated order
+              await get().fetchList();
+            } catch (error) {
+              console.error("Failed to reorder workspaces:", error);
+            }
+          },
 
-        // Helper methods
-        setCurrentWorkspace: (id) => {
-          set({ currentWorkspaceId: id });
+          // Helper methods
+          setCurrentWorkspace: (workspace) => {
+            set({ currentWorkspace: workspace });
+          },
+        })),
+        {
+          name: "workspaceStore",
         },
-      })),
+      ),
       {
-        name: "workspaceStore",
+        name: "workspace-storage",
+        partialize: (state) => ({
+          currentWorkspace: state.currentWorkspace,
+        }),
       },
     ),
   ),
