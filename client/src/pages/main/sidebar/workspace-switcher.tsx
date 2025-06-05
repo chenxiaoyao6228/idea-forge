@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import useUserStore from "@/stores/user-store";
 import useWorkspaceStore, { workspaceSelectors } from "@/stores/workspace";
+import { SortableList } from "@/components/sortable-list";
 
 export default function WorkspaceSwitcher() {
   const { t } = useTranslation();
@@ -20,6 +21,7 @@ export default function WorkspaceSwitcher() {
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const fetchWorkspaces = useWorkspaceStore((state) => state.fetchList);
   const switchWorkspace = useWorkspaceStore((state) => state.switchWorkspace);
+  const reorderWorkspaces = useWorkspaceStore((state) => state.reorderWorkspaces);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -36,9 +38,17 @@ export default function WorkspaceSwitcher() {
   };
 
   const getWorkspaceColor = () => {
-    const colors = ["#F0F4C3", "#B2EBF2", "#FFCCBC", "#D7CCC8", "#C5CAE9", "#FFE0B2", "#B2DFDB", "#F8BBD0", "#DCEDC8", "#E1BEE7"];
-    const index = Math.floor(Math.random() * colors.length);
-    return colors[index];
+    return "#B2EBF2";
+    // const colors = ["#F0F4C3", "#B2EBF2", "#FFCCBC", "#D7CCC8", "#C5CAE9", "#FFE0B2", "#B2DFDB", "#F8BBD0", "#DCEDC8", "#E1BEE7"];
+    // const index = Math.floor(Math.random() * colors.length);
+    // return colors[index];
+  };
+
+  const handleReorder = async (reorderedWorkspaces: typeof workspaces) => {
+    // optimistic update to avoid bounce back effect
+    useWorkspaceStore.getState().setAll(reorderedWorkspaces);
+    // update the server
+    reorderWorkspaces(reorderedWorkspaces.map((w) => w.id));
   };
 
   if (!currentWorkspace) {
@@ -65,40 +75,45 @@ export default function WorkspaceSwitcher() {
             </div>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-64 px-2">
-          <div className="flex-shrink-0  px-1 text-sm text-muted-foreground truncate h-9 leading-9">{userInfo?.displayName || userInfo?.email}</div>
+        <DropdownMenuContent align="start" className="w-72 px-2 py-2 rounded-xl shadow-lg border bg-white">
+          <div className="flex-shrink-0 text-sm text-muted-foreground truncate h-9 leading-9 px-2">{userInfo?.displayName || userInfo?.email}</div>
           <Separator />
-          <ScrollArea className="h-[260px] overflow-y-auto pb-1">
-            {workspaces.map((workspace) => (
-              <DropdownMenuItem
-                key={workspace.id}
-                className={cn("flex items-center h-9 my-2 cursor-pointer", currentWorkspace?.id === workspace.id && "bg-accent")}
-                onClick={() => switchWorkspace(workspace.id)}
-              >
-                <div className="flex items-center space-x-3 w-full">
-                  <div className="relative">
-                    <Avatar className="h-6 w-6">
+          <ScrollArea className="max-h-60 overflow-y-auto pb-1">
+            <SortableList
+              items={workspaces}
+              onReorder={handleReorder}
+              className="space-y-2"
+              containerHeight={240}
+              renderItem={(workspace) => (
+                <DropdownMenuItem
+                  key={workspace.id}
+                  className={cn(
+                    "flex flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors group cursor-pointer",
+                    currentWorkspace?.id === workspace.id ? "bg-primary/10" : "hover:bg-accent",
+                  )}
+                  onClick={() => switchWorkspace(workspace.id)}
+                >
+                  <div className="flex items-center gap-3 w-full">
+                    <Avatar className="h-5 w-5 shadow">
                       {workspace.avatar ? (
                         <AvatarImage src={workspace.avatar} alt={workspace.name} />
                       ) : (
                         <AvatarFallback style={{ backgroundColor: getWorkspaceColor() }}>{getWorkspaceInitial(workspace.name)}</AvatarFallback>
                       )}
                     </Avatar>
+                    <span className="text-sm truncate">{workspace.name}</span>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium truncate">{workspace.name}</span>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-            ))}
+                </DropdownMenuItem>
+              )}
+            />
           </ScrollArea>
           <Separator />
-          <DropdownMenuItem className="flex items-center py-1.5 cursor-pointer" onClick={createWorkspace}>
+          <DropdownMenuItem className="flex items-center py-2 cursor-pointer" onClick={createWorkspace}>
             <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10">
-                <Plus className="h-4 w-4 text-primary" />
+              <div className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10">
+                <Plus className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-sm font-medium">{t("Create New Workspace")}</span>
+              <span className="text-sm truncate">{t("Create New Workspace")}</span>
             </div>
           </DropdownMenuItem>
         </DropdownMenuContent>

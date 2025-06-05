@@ -1,11 +1,14 @@
 import { Subspace } from "@prisma/client";
-import { NavigationNode } from "contracts";
+import { SubspaceSchema } from "contracts";
 
 export function presentSubspace(subspace: Subspace) {
-  return {
+  return SubspaceSchema.parse({
     ...subspace,
-    navigationTree: subspace.navigationTree || ([] as NavigationNode[]),
     createdAt: subspace.createdAt.toISOString(),
     updatedAt: subspace.updatedAt.toISOString(),
-  };
+  });
+}
+
+export function presentSubspaces(subspaces: Subspace[]) {
+  return subspaces.map(presentSubspace);
 }

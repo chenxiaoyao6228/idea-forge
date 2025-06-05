@@ -12,6 +12,7 @@ export const WorkspaceMemberSchema = z.object({
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   preferences: NullableJsonValue.optional(),
+  index: z.string().nullable(),
   workspaceId: z.string(),
   userId: z.number().int(),
 })

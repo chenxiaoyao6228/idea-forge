@@ -23,6 +23,9 @@ export const workspaceApi = {
 
   deleteWorkspace: async (id: string) => request.delete<void, { success: boolean }>(`/api/workspaces/${id}`),
 
+  reorderWorkspaces: async (workspaceIds: string[]) =>
+    request.post<{ workspaceIds: string[] }, { success: boolean }>("/api/workspaces/reorder", { workspaceIds }),
+
   // Workspace member operations
   getWorkspaceMembers: async (workspaceId: string) => request.get<void, WorkspaceMemberListResponse>(`/api/workspaces/${workspaceId}/members`),
 

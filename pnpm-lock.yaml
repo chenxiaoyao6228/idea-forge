@@ -499,6 +499,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.76.1
         version: 5.76.1(react@18.3.1)
+      '@tanstack/react-virtual':
+        specifier: ^3.13.9
+        version: 3.13.9(react-dom@18.3.1)(react@18.3.1)
       '@tiptap-pro/extension-drag-handle-react':
         specifier: ^2.8.0
         version: 2.19.1(@tiptap-pro/extension-drag-handle@2.19.1)(@tiptap/pm@2.12.0)(@tiptap/react@2.12.0)(react-dom@18.3.1)(react@18.3.1)
@@ -820,9 +823,6 @@ importers:
       zustand-computed:
         specifier: ^2.0.2
         version: 2.1.0(react@18.3.1)(zustand@5.0.4)
-      zustand-entity-adapter:
-        specifier: ^0.1.1
-        version: 0.1.1(zustand@5.0.4)
     devDependencies:
       '@eslint/js':
         specifier: ^9.15.0
@@ -877,7 +877,7 @@ importers:
         version: 2.0.1(@types/react@18.3.21)(eslint@9.27.0)(react@18.3.1)(typescript@5.6.3)(webpack@5.99.9)
       tailwindcss:
         specifier: ^3.4.16
-        version: 3.4.17(ts-node@10.9.2)
+        version: 3.4.17
       typescript:
         specifier: ~5.6.2
         version: 5.6.3
@@ -889,7 +889,7 @@ importers:
         version: 6.3.5(@types/node@18.11.18)
       vite-plugin-checker:
         specifier: ^0.9.1
-        version: 0.9.3(@biomejs/biome@1.9.4)(eslint@9.27.0)(typescript@5.6.3)(vite@6.3.5)
+        version: 0.9.3(eslint@9.27.0)(typescript@5.6.3)(vite@6.3.5)
       vite-plugin-icons-spritesheet:
         specifier: ^2.2.1
         version: 2.2.1(vite@6.3.5)
@@ -1678,7 +1678,7 @@ packages:
       '@babel/traverse': 7.27.1
       '@babel/types': 7.27.1
       convert-source-map: 2.0.0
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       gensync: 1.0.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
@@ -1955,7 +1955,7 @@ packages:
       '@babel/parser': 7.27.2
       '@babel/template': 7.27.2
       '@babel/types': 7.27.1
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       globals: 11.12.0
     transitivePeerDependencies:
       - supports-color
@@ -3111,7 +3111,7 @@ packages:
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     dependencies:
       '@eslint/object-schema': 2.1.6
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       minimatch: 3.1.2
     transitivePeerDependencies:
       - supports-color
@@ -3134,7 +3134,7 @@ packages:
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     dependencies:
       ajv: 6.12.6
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       espree: 10.3.0
       globals: 14.0.0
       ignore: 5.3.2
@@ -3347,7 +3347,7 @@ packages:
       '@antfu/install-pkg': 1.1.0
       '@antfu/utils': 8.1.1
       '@iconify/types': 2.0.0
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       globals: 15.15.0
       kolorist: 1.8.0
       local-pkg: 1.1.1
@@ -8435,7 +8435,7 @@ packages:
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.4.17(ts-node@10.9.2)
+      tailwindcss: 3.4.17
     dev: true
 
   /@tanstack/query-core@5.76.0:
@@ -8449,6 +8449,21 @@ packages:
     dependencies:
       '@tanstack/query-core': 5.76.0
       react: 18.3.1
+    dev: false
+
+  /@tanstack/react-virtual@3.13.9(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-SPWC8kwG/dWBf7Py7cfheAPOxuvIv4fFQ54PdmYbg7CpXfsKxkucak43Q0qKsxVthhUJQ1A7CIMAIplq4BjVwA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    dependencies:
+      '@tanstack/virtual-core': 3.13.9
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+    dev: false
+
+  /@tanstack/virtual-core@3.13.9:
+    resolution: {integrity: sha512-3jztt0jpaoJO5TARe2WIHC1UQC3VMLAFUW5mmMo0yrkwtDB2AQP0+sh10BVUpWrnvHjSLvzFizydtEGLCJKFoQ==}
     dev: false
 
   /@tiptap-pro/extension-drag-handle-react@2.19.1(@tiptap-pro/extension-drag-handle@2.19.1)(@tiptap/pm@2.12.0)(@tiptap/react@2.12.0)(react-dom@18.3.1)(react@18.3.1):
@@ -9670,7 +9685,7 @@ packages:
       '@typescript-eslint/types': 8.32.1
       '@typescript-eslint/typescript-estree': 8.32.1(typescript@5.6.3)
       '@typescript-eslint/visitor-keys': 8.32.1
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       eslint: 9.27.0
       typescript: 5.6.3
     transitivePeerDependencies:
@@ -9694,7 +9709,7 @@ packages:
     dependencies:
       '@typescript-eslint/typescript-estree': 8.32.1(typescript@5.6.3)
       '@typescript-eslint/utils': 8.32.1(eslint@9.27.0)(typescript@5.6.3)
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       eslint: 9.27.0
       ts-api-utils: 2.1.0(typescript@5.6.3)
       typescript: 5.6.3
@@ -9715,7 +9730,7 @@ packages:
     dependencies:
       '@typescript-eslint/types': 8.32.1
       '@typescript-eslint/visitor-keys': 8.32.1
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       fast-glob: 3.3.3
       is-glob: 4.0.3
       minimatch: 9.0.5
@@ -10207,7 +10222,7 @@ packages:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
     engines: {node: '>= 6.0.0'}
     dependencies:
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
     transitivePeerDependencies:
       - supports-color
 
@@ -12017,6 +12032,17 @@ packages:
     dependencies:
       ms: 2.1.3
 
+  /debug@4.4.1:
+    resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+    dependencies:
+      ms: 2.1.3
+
   /debug@4.4.1(supports-color@5.5.0):
     resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
     engines: {node: '>=6.0'}
@@ -12657,7 +12683,7 @@ packages:
       ajv: 6.12.6
       chalk: 4.1.2
       cross-spawn: 7.0.6
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       escape-string-regexp: 4.0.0
       eslint-scope: 8.3.0
       eslint-visitor-keys: 4.2.0
@@ -14009,7 +14035,7 @@ packages:
     engines: {node: '>= 6'}
     dependencies:
       agent-base: 6.0.2
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
     transitivePeerDependencies:
       - supports-color
 
@@ -16214,7 +16240,7 @@ packages:
     resolution: {integrity: sha512-zpe98Q6kvavpCr1NPVSCMebCKfD7CA2NqZ+rykeNhONIJBpc1tFKt9hucLGwha3jNTNI8lHpctWJWoimVF4PfA==}
     dependencies:
       '@types/debug': 4.1.12
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       decode-named-character-reference: 1.1.0
       devlop: 1.1.0
       micromark-core-commonmark: 2.0.3
@@ -17263,6 +17289,22 @@ packages:
       camelcase-css: 2.0.1
       postcss: 8.5.3
 
+  /postcss-load-config@4.0.2(postcss@8.5.3):
+    resolution: {integrity: sha512-bSVhyJGL00wMVoPUzAVAnbEoWyqRxkjv64tUl427SKnPrENtq6hJwUojroMz2VB+Q1edmi4IfrAPpami5VVgMQ==}
+    engines: {node: '>= 14'}
+    peerDependencies:
+      postcss: '>=8.0.9'
+      ts-node: '>=9.0.0'
+    peerDependenciesMeta:
+      postcss:
+        optional: true
+      ts-node:
+        optional: true
+    dependencies:
+      lilconfig: 3.1.3
+      postcss: 8.5.3
+      yaml: 2.8.0
+
   /postcss-load-config@4.0.2(postcss@8.5.3)(ts-node@10.9.2):
     resolution: {integrity: sha512-bSVhyJGL00wMVoPUzAVAnbEoWyqRxkjv64tUl427SKnPrENtq6hJwUojroMz2VB+Q1edmi4IfrAPpami5VVgMQ==}
     engines: {node: '>= 14'}
@@ -17279,6 +17321,7 @@ packages:
       postcss: 8.5.3
       ts-node: 10.9.2(@swc/core@1.11.24)(@types/node@18.11.18)(typescript@5.6.3)
       yaml: 2.8.0
+    dev: false
 
   /postcss-nested@6.2.0(postcss@8.5.3):
     resolution: {integrity: sha512-HQbt28KulC5AJzG+cZtj9kvKB93CFCdLvog1WFLf1D+xmMvPGlBstkpTEZfK5+AN9hfJocyBFCNiqyS48bpgzQ==}
@@ -19410,7 +19453,7 @@ packages:
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
     dependencies:
-      tailwindcss: 3.4.17(ts-node@10.9.2)
+      tailwindcss: 3.4.17
     dev: false
 
   /tailwindcss@3.4.15(ts-node@10.9.2):
@@ -19444,7 +19487,7 @@ packages:
       - ts-node
     dev: false
 
-  /tailwindcss@3.4.17(ts-node@10.9.2):
+  /tailwindcss@3.4.17:
     resolution: {integrity: sha512-w33E2aCvSDP0tW9RZuNXadXlkHXqFzSkQew/aIa2i/Sj8fThxwovwlXHSPXTbAHwEIhBFXAedUhP2tueAKP8Og==}
     engines: {node: '>=14.0.0'}
     hasBin: true
@@ -19466,7 +19509,7 @@ packages:
       postcss: 8.5.3
       postcss-import: 15.1.0(postcss@8.5.3)
       postcss-js: 4.0.1(postcss@8.5.3)
-      postcss-load-config: 4.0.2(postcss@8.5.3)(ts-node@10.9.2)
+      postcss-load-config: 4.0.2(postcss@8.5.3)
       postcss-nested: 6.2.0(postcss@8.5.3)
       postcss-selector-parser: 6.1.2
       resolve: 1.22.10
@@ -20516,7 +20559,7 @@ packages:
       teex: 1.0.1
     dev: true
 
-  /vite-plugin-checker@0.9.3(@biomejs/biome@1.9.4)(eslint@9.27.0)(typescript@5.6.3)(vite@6.3.5):
+  /vite-plugin-checker@0.9.3(eslint@9.27.0)(typescript@5.6.3)(vite@6.3.5):
     resolution: {integrity: sha512-Tf7QBjeBtG7q11zG0lvoF38/2AVUzzhMNu+Wk+mcsJ00Rk/FpJ4rmUviVJpzWkagbU13cGXvKpt7CMiqtxVTbQ==}
     engines: {node: '>=14.16'}
     peerDependencies:
@@ -20551,7 +20594,6 @@ packages:
         optional: true
     dependencies:
       '@babel/code-frame': 7.27.1
-      '@biomejs/biome': 1.9.4
       chokidar: 4.0.3
       eslint: 9.27.0
       npm-run-path: 6.0.0
@@ -20599,7 +20641,7 @@ packages:
       vite:
         optional: true
     dependencies:
-      debug: 4.4.1(supports-color@5.5.0)
+      debug: 4.4.1
       globrex: 0.1.2
       tsconfck: 3.1.5(typescript@5.6.3)
       vite: 6.3.5(@types/node@18.11.18)
@@ -21270,14 +21312,6 @@ packages:
       zustand: '>=5.0.0 <6.0.0'
     dependencies:
       react: 18.3.1
-      zustand: 5.0.4(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1)
-    dev: false
-
-  /zustand-entity-adapter@0.1.1(zustand@5.0.4):
-    resolution: {integrity: sha512-rgYVVmTRV1vz7QqHmOl10h6mxS/IhW/e6WCPRvZYJH/E98D95NeONisakFxTgNtxcuUB1NBsXsPYrQA7AVR4jg==}
-    peerDependencies:
-      zustand: ^4.5.4
-    dependencies:
       zustand: 5.0.4(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1)
     dev: false
 

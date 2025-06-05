@@ -46,6 +46,7 @@
     "@sentry/react": "^8.54.0",
     "@sentry/vite-plugin": "^3.1.2",
     "@tanstack/react-query": "^5.76.1",
+    "@tanstack/react-virtual": "^3.13.9",
     "@tiptap-pro/extension-drag-handle-react": "^2.8.0",
     "@tiptap-pro/extension-file-handler": "^2.8.0",
     "@tiptap-pro/extension-table-of-contents": "^2.11.9",
@@ -152,8 +153,7 @@
     "yjs": "^13.6.20",
     "zod": "^3.23.8",
     "zustand": "^5.0.2",
-    "zustand-computed": "^2.0.2",
-    "zustand-entity-adapter": "^0.1.1"
+    "zustand-computed": "^2.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

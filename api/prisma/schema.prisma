@@ -237,6 +237,7 @@ model WorkspaceMember {
   updatedAt DateTime      @updatedAt
 
   preferences Json? // User preferences
+  index       String? // Fractional index for ordering
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId String
@@ -244,6 +245,7 @@ model WorkspaceMember {
   userId      Int
 
   @@unique([workspaceId, userId])
+  @@index([userId, index])
 }
 
 model Subspace {

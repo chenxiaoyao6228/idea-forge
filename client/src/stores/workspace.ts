@@ -17,6 +17,7 @@ interface Action {
   // API actions
   fetchList: () => Promise<WorkspaceEntity[]>;
   switchWorkspace: (workspaceId: string) => Promise<void>;
+  reorderWorkspaces: (workspaceIds: string[]) => Promise<void>;
 
   // Helper methods
   setCurrentWorkspace: (id?: string) => void;
@@ -76,6 +77,16 @@ const useWorkspaceStore = create<StoreState>()(
             }
           } catch (error) {
             console.error("Failed to switch workspace:", error);
+          }
+        },
+
+        reorderWorkspaces: async (workspaceIds) => {
+          try {
+            await workspaceApi.reorderWorkspaces(workspaceIds);
+            // Refresh the list to get the updated order
+            await get().fetchList();
+          } catch (error) {
+            console.error("Failed to reorder workspaces:", error);
           }
         },
 

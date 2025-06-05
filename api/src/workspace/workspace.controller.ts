@@ -16,4 +16,9 @@ export class WorkspaceController {
   async getWorkspaces(@Req() req: any): Promise<WorkspaceListResponse> {
     return this.workspaceService.getUserWorkspaces(req.user.id);
   }
+
+  @Post("reorder")
+  async reorderWorkspaces(@Body() dto: { workspaceIds: string[] }, @Req() req: any) {
+    return this.workspaceService.reorderWorkspaces(dto.workspaceIds, req.user.id);
+  }
 }

@@ -5,6 +5,8 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { presentWorkspace, presentWorkspaces } from "./workspace.presenter";
+import fractionalIndex from "fractional-index";
 
 @Injectable()
 export class WorkspaceService {
@@ -15,7 +17,6 @@ export class WorkspaceService {
 
   async initializeWorkspace(dto: CreateWorkspaceDto, userId: number) {
     const workspace = await this.createWorkspace(dto, userId);
-    await this.setCurrentWorkspace(userId, workspace.id);
     await this.subspaceService.createDefaultGlobalSubspace(userId, workspace.id);
     // TODO: other stuffs
     return { workspace };
@@ -35,11 +36,7 @@ export class WorkspaceService {
       },
     });
 
-    return {
-      ...workspace,
-      createdAt: workspace.createdAt.toISOString(),
-      updatedAt: workspace.updatedAt.toISOString(),
-    };
+    return presentWorkspace(workspace);
   }
 
   async CreateDefaultWorkspace(userId: number) {
@@ -64,92 +61,36 @@ export class WorkspaceService {
       },
     });
 
-    await this.setCurrentWorkspace(userId, workspace.id);
-
-    return workspace;
+    return presentWorkspace(workspace);
   }
 
   async getUserWorkspaces(currentUserId: number): Promise<WorkspaceListResponse> {
     const user = await this.prismaService.user.findUnique({
       where: { id: currentUserId },
+      include: {
+        workspaceMembers: {
+          include: {
+            workspace: true,
+          },
+          orderBy: [{ index: "asc" }, { createdAt: "desc" }],
+        },
+      },
     });
 
     if (!user) {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
     }
 
-    const workspaces = await this.prismaService.workspace.findMany({
-      where: {
-        members: {
-          some: {
-            userId: currentUserId,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (workspaces.length === 0) {
+    if (user.workspaceMembers.length === 0) {
       // Create a default workspace when there is none for backwards compatibility
       const workspace = await this.CreateDefaultWorkspace(currentUserId);
       return [workspace];
     }
 
-    return workspaces;
+    // Map to workspaces, maintaining the order from the query
+    const workspaces = user.workspaceMembers.map((member) => member.workspace);
+    return presentWorkspaces(workspaces);
   }
-
-  // async getCurrentWorkspace(userId: number) {
-  //   const user = await this.prismaService.user.findUnique({
-  //     where: { id: userId },
-  //     include: { currentWorkspace: true },
-  //   });
-
-  //   if (!user || !user.currentWorkspaceId) {
-  //     const firstWorkspace = await this.prismaService.workspace.findFirst({
-  //       where: {
-  //         members: {
-  //           some: {
-  //             userId,
-  //           },
-  //         },
-  //       },
-  //     });
-
-  //     if (firstWorkspace) {
-  //       await this.setCurrentWorkspace(userId, firstWorkspace.id);
-  //       return {
-  //         ...firstWorkspace,
-  //         createdAt: firstWorkspace.createdAt.toISOString(),
-  //         updatedAt: firstWorkspace.updatedAt.toISOString(),
-  //       };
-  //     }
-
-  //     return null;
-  //   }
-
-  //   if (user.currentWorkspace) {
-  //     return {
-  //       ...user.currentWorkspace,
-  //       createdAt: user.currentWorkspace.createdAt.toISOString(),
-  //       updatedAt: user.currentWorkspace.updatedAt.toISOString(),
-  //     };
-  //   }
-
-  //   // Fallback if currentWorkspace is null but currentWorkspaceId exists
-  //   const workspace = await this.prismaService.workspace.findUnique({
-  //     where: { id: user.currentWorkspaceId },
-  //   });
-
-  //   if (!workspace) {
-  //     return null;
-  //   }
-
-  //   return {
-  //     ...workspace,
-  //     createdAt: workspace.createdAt.toISOString(),
-  //     updatedAt: workspace.updatedAt.toISOString(),
-  //   };
-  // }
 
   async updateWorkspace(id: string, dto: UpdateWorkspaceDto) {
     const workspace = await this.prismaService.workspace.update({
@@ -160,11 +101,7 @@ export class WorkspaceService {
       },
     });
 
-    return {
-      ...workspace,
-      createdAt: workspace.createdAt.toISOString(),
-      updatedAt: workspace.updatedAt.toISOString(),
-    };
+    return presentWorkspace(workspace);
   }
 
   async deleteWorkspace(id: string) {
@@ -204,5 +141,49 @@ export class WorkspaceService {
     });
 
     return !!workspaceMember;
+  }
+
+  async reorderWorkspaces(workspaceIds: string[], userId: number) {
+    // Verify user has access to all workspaces
+    for (const workspaceId of workspaceIds) {
+      const hasAccess = await this.hasWorkspaceAccess(userId, workspaceId);
+      if (!hasAccess) {
+        throw new ApiException(ErrorCodeEnum.AuthenticationFailed);
+      }
+    }
+
+    // Get current workspace members with their indices
+    const workspaceMembers = await this.prismaService.workspaceMember.findMany({
+      where: {
+        userId,
+        workspaceId: {
+          in: workspaceIds,
+        },
+      },
+      orderBy: { index: "asc" },
+    });
+
+    // Update indices using fractional indexing
+    const updates = [];
+    let lastIndex: string | null = null;
+
+    for (const workspaceId of workspaceIds) {
+      const member = workspaceMembers.find((m) => m.workspaceId === workspaceId);
+      if (member) {
+        const newIndex = fractionalIndex(lastIndex, null);
+        updates.push(
+          this.prismaService.workspaceMember.update({
+            where: { id: member.id },
+            data: { index: newIndex },
+          }),
+        );
+        lastIndex = newIndex;
+      }
+    }
+
+    // Apply all updates in parallel
+    await Promise.all(updates);
+
+    return { success: true };
   }
 }

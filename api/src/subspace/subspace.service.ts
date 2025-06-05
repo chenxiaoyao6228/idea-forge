@@ -6,7 +6,7 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import fractionalIndex from "fractional-index";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
-import { presentSubspace } from "./subspace.presenter";
+import { presentSubspace, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
@@ -190,13 +190,7 @@ export class SubspaceService {
       },
     });
 
-    return workspaces.flatMap((workspaceMember) =>
-      workspaceMember.workspace.subspaces.map((subspace) => ({
-        ...subspace,
-        createdAt: subspace.createdAt.toISOString(),
-        updatedAt: subspace.updatedAt.toISOString(),
-      })),
-    );
+    return presentSubspaces(workspaces.flatMap((workspaceMember) => workspaceMember.workspace.subspaces));
   }
 
   async getSubspace(id: string, userId: number) {
@@ -230,16 +224,14 @@ export class SubspaceService {
     }
 
     return {
-      subspace: {
+      subspace: presentSubspace({
         ...subspace,
         workspace: undefined,
         members: subspace.members.map((member) => ({
           ...member,
           createdAt: member.createdAt,
         })),
-        createdAt: subspace.createdAt,
-        updatedAt: subspace.updatedAt,
-      },
+      }),
     };
   }
 
