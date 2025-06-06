@@ -13,4 +13,5 @@ export * from "./subspace";
 export * from "./doc-share";
 export * from "./star";
 export * from "./group";
-
+export * from "./group-permission";
+export * from "./user-permission";

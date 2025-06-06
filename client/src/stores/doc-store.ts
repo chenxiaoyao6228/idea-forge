@@ -210,104 +210,28 @@ const store = create<DocumentTreeState>()(
         }
       },
 
-      moveDocuments: async ({ id, targetId, dropPosition }) => {
+      moveDocuments: async ({ id, parentId, subspaceId, index }) => {
         try {
-          const parentId = treeUtils.findParentKey(get().treeData, id);
-
           const result = (await documentApi.moveDocument({
             id,
-            targetId,
-            dropPosition,
+            parentId,
+            subspaceId,
+            index,
           })) as any;
 
-          if ("oldTree" in result && "newTree" in result) {
-            const { oldTree, newTree } = result;
-            set((state) => {
-              let newTreeData = [...state.treeData];
+          const document = result.data;
+          set((state) => ({
+            treeData: treeUtils.updateTreeNodes(state.treeData, id, (node) => ({
+              ...node,
+              parentId: document.parentId,
+              subspaceId: document.subspaceId,
+              index: document.index,
+            })),
+          }));
 
-              // Update tree at original position
-              if (oldTree.length > 0) {
-                const oldParentId = treeUtils.findParentKey(state.treeData, id);
-                if (oldParentId) {
-                  // If has parent node, update parent's children
-                  newTreeData = treeUtils.updateTreeNodes(newTreeData, oldParentId, (node) => ({
-                    ...node,
-                    children: treeUtils.mergeTreeData(node.children || [], oldTree.map(treeUtils.convertToTreeNode)),
-                  }));
-                } else {
-                  // If direct child of root, update root level data
-                  newTreeData = treeUtils.mergeTreeData(
-                    newTreeData.filter((node) => node.key !== id), // Remove moved node
-                    oldTree.map(treeUtils.convertToTreeNode),
-                  );
-                }
-              } else {
-                // parentId's children is empty, empty children array
-                newTreeData = treeUtils.updateTreeNodes(newTreeData, parentId, (node) => ({
-                  ...node,
-                  children: [],
-                }));
-              }
-
-              // Update tree at new position
-              if (newTree.length > 0) {
-                const targetNode = treeUtils.findNode(newTreeData, targetId);
-                if (!targetNode) return { treeData: newTreeData };
-
-                if (dropPosition === 0 && !targetNode.isLeaf) {
-                  // Move into folder
-                  newTreeData = treeUtils.updateTreeNodes(newTreeData, targetId, (node) => ({
-                    ...node,
-                    children: treeUtils.mergeTreeData(node.children || [], newTree.map(treeUtils.convertToTreeNode)),
-                  }));
-                } else {
-                  // Move to same level
-                  const newParentId = treeUtils.findParentKey(newTreeData, targetId);
-                  if (newParentId) {
-                    // Has parent node, update parent's children
-                    newTreeData = treeUtils.updateTreeNodes(newTreeData, newParentId, (node) => ({
-                      ...node,
-                      children: treeUtils.mergeTreeData(node.children || [], newTree.map(treeUtils.convertToTreeNode)),
-                    }));
-                  } else {
-                    // Root level, update root level data
-                    newTreeData = treeUtils.mergeTreeData(newTreeData, newTree.map(treeUtils.convertToTreeNode));
-                  }
-                }
-              }
-
-              return { treeData: newTreeData };
-            });
-          } else {
-            // Move within same level
-            set((state) => {
-              const parentId = treeUtils.findParentKey(state.treeData, id);
-              if (parentId) {
-                // If has parent, update parent's children
-                return {
-                  treeData: treeUtils.updateTreeNodes(state.treeData, parentId, (node) => ({
-                    ...node,
-                    children: treeUtils.mergeTreeData(node.children || [], result.map(treeUtils.convertToTreeNode)),
-                  })),
-                };
-              }
-              // If at root level
-              return {
-                treeData: treeUtils.mergeTreeData(
-                  state.treeData.filter((node) => !result.some((r: any) => r.id === node.key)),
-                  result.map(treeUtils.convertToTreeNode),
-                ),
-              };
-            });
-          }
-
-          // After successful move, if the moved document was current, refresh it
-          const currentDocId = get().currentDocId;
-          if (currentDocId === id) {
-            await get().fetchCurrentDocument(id);
-          }
+          return document;
         } catch (error) {
-          console.error("Failed to move documents:", error);
+          console.error("Error moving document:", error);
           throw error;
         }
       },

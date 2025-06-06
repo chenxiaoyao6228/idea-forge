@@ -11,6 +11,8 @@ import type {
   GroupDeleteResponse,
   GroupAddUserResponse,
   GroupRemoveUserResponse,
+  DocGroupPermissionDto,
+  DocGroupPermissionResponse,
 } from "contracts";
 
 export const groupApi = {
@@ -22,7 +24,8 @@ export const groupApi = {
   /**
    * List groups
    */
-  list: async (data: GroupListRequestDto) => request.get<GroupListRequestDto, GroupListResponse>("/api/groups", { params: data }),
+  list: async (params: { limit?: number; page?: number; sortBy?: string; sortOrder?: string; query?: string }) =>
+    request.get<typeof params, GroupListResponse>("/api/groups", { params }),
 
   /**
    * Create a new group
@@ -48,4 +51,12 @@ export const groupApi = {
    * Remove a user from a group
    */
   removeUser: async (id: string, userId: number) => request.delete<void, GroupRemoveUserResponse>(`/api/groups/${id}/users/${userId}`),
+
+  // Group Permissions APIs
+  addGroupPermission: async (id: string, data: DocGroupPermissionDto) =>
+    request.post<DocGroupPermissionDto, DocGroupPermissionResponse>(`/api/groups/${id}/group-permissions`, data),
+
+  removeGroupPermission: async (id: string, groupId: string) => request.delete<void, { success: boolean }>(`/api/groups/${id}/group-permissions/${groupId}`),
+
+  listGroupPermissions: async (id: string) => request.get<void, DocGroupPermissionResponse[]>(`/api/groups/${id}/group-permissions`),
 };
