@@ -38,6 +38,14 @@ export const shareListRequestSchema = basePagerSchema.extend({
   query: z.string().optional(),
 });
 
+export const listSharedWithMeSchema = basePagerSchema.extend({
+  query: z.string().optional(),
+});
+
+export const listSharedByMeSchema = basePagerSchema.extend({
+  query: z.string().optional(),
+});
+
 export const shareResponseSchema = z.object({
   id: z.string(),
   documentId: z.string(),
@@ -109,6 +117,8 @@ export type CreateShareDto = z.infer<typeof createShareSchema>;
 export type UpdateShareDto = z.infer<typeof updateShareSchema>;
 export type RevokeShareDto = z.infer<typeof revokeShareSchema>;
 export type ShareListRequest = z.infer<typeof shareListRequestSchema>;
+export type ListSharedWithMeDto = z.infer<typeof listSharedWithMeSchema>;
+export type ListSharedByMeDto = z.infer<typeof listSharedByMeSchema>;
 export type ShareResponse = z.infer<typeof shareResponseSchema>;
 export type ShareInfoResponse = z.infer<typeof shareInfoResponseSchema>;
 export type ShareListResponse = z.infer<typeof shareListResponseSchema>;

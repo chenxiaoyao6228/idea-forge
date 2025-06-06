@@ -12,6 +12,7 @@ export { SubspaceMemberPermissionScalarFieldEnumSchema } from './SubspaceMemberP
 export { MemberGroupScalarFieldEnumSchema } from './MemberGroupScalarFieldEnumSchema';
 export { MemberGroupUserScalarFieldEnumSchema } from './MemberGroupUserScalarFieldEnumSchema';
 export { DocGroupPermissionScalarFieldEnumSchema } from './DocGroupPermissionScalarFieldEnumSchema';
+export { DocUserPermissionScalarFieldEnumSchema } from './DocUserPermissionScalarFieldEnumSchema';
 export { GuestCollaboratorScalarFieldEnumSchema } from './GuestCollaboratorScalarFieldEnumSchema';
 export { GuestDocPermissionScalarFieldEnumSchema } from './GuestDocPermissionScalarFieldEnumSchema';
 export { PasswordScalarFieldEnumSchema } from './PasswordScalarFieldEnumSchema';

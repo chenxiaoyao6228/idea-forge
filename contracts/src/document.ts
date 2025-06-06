@@ -206,6 +206,20 @@ export const updateCoverSchema = z.object({
 
 export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
 
+// Permission schemas
+export const docUserPermissionSchema = z.object({
+  userId: z.number(),
+  permission: z.enum(permission),
+});
+
+export const docGroupPermissionSchema = z.object({
+  groupId: z.string(),
+  permission: z.enum(permission),
+});
+
+export type DocUserPermissionDto = z.infer<typeof docUserPermissionSchema>;
+export type DocGroupPermissionDto = z.infer<typeof docGroupPermissionSchema>;
+
 //  ============== response ==============
 
 export interface UpdateDocumentResponse extends CommonDocumentResponse {}
@@ -246,3 +260,31 @@ export interface TrashDocumentResponse {
 }
 
 export interface DuplicateDocumentResponse extends CommonDocumentResponse {}
+
+export interface DocUserPermissionResponse {
+  id: string;
+  userId: number;
+  documentId: string;
+  permission: Permission;
+  createdAt: Date;
+  updatedAt: Date;
+  user: {
+    id: number;
+    email: string;
+    displayName: string;
+  };
+}
+
+export interface DocGroupPermissionResponse {
+  id: string;
+  groupId: string;
+  documentId: string;
+  permission: Permission;
+  createdAt: Date;
+  updatedAt: Date;
+  group: {
+    id: string;
+    name: string;
+    description: string | null;
+  };
+}

@@ -1,5 +1,14 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
-import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto, DocumentPagerDto, ShareDocumentDto } from "./document.dto";
+import {
+  CreateDocumentDto,
+  SearchDocumentDto,
+  UpdateDocumentDto,
+  MoveDocumentsDto,
+  DocumentPagerDto,
+  ShareDocumentDto,
+  DocUserPermissionDto,
+  DocGroupPermissionDto,
+} from "./document.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { UpdateCoverDto, User } from "contracts";
 import { SearchDocumentService } from "./search-document.service";
@@ -56,5 +65,37 @@ export class DocumentController {
   @Get(":id/shares")
   async listDocShares(@GetUser("id") userId: number, @Param("id") id: string) {
     return this.documentService.listDocShares(id);
+  }
+
+  // ============== doc permission ==========================================
+
+  @Post(":id/user-permissions")
+  async addUserPermission(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: DocUserPermissionDto) {
+    return this.documentService.addUserPermission(userId, id, dto.userId, dto.permission);
+  }
+
+  @Delete(":id/user-permissions/:targetUserId")
+  async removeUserPermission(@GetUser("id") userId: number, @Param("id") id: string, @Param("targetUserId") targetUserId: number) {
+    return this.documentService.removeUserPermission(userId, id, targetUserId);
+  }
+
+  @Get(":id/user-permissions")
+  async listUserPermissions(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.listUserPermissions(id);
+  }
+
+  @Post(":id/group-permissions")
+  async addGroupPermission(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: DocGroupPermissionDto) {
+    return this.documentService.addGroupPermission(userId, id, dto.groupId, dto.permission);
+  }
+
+  @Delete(":id/group-permissions/:groupId")
+  async removeGroupPermission(@GetUser("id") userId: number, @Param("id") id: string, @Param("groupId") groupId: string) {
+    return this.documentService.removeGroupPermission(userId, id, groupId);
+  }
+
+  @Get(":id/group-permissions")
+  async listGroupPermissions(@GetUser("id") userId: number, @Param("id") id: string) {
+    return this.documentService.listGroupPermissions(id);
   }
 }

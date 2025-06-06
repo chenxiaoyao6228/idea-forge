@@ -1,13 +1,12 @@
 import { Injectable, Inject } from "@nestjs/common";
 import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto, ShareDocumentDto } from "./document.dto";
-import { CreateDocumentResponse, NavigationNode, NavigationNodeType } from "contracts";
+import { NavigationNode, NavigationNodeType, Permission } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { presentDocument } from "./document.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
-import { DocShare } from "@prisma/client";
 import { DocShareService } from "../doc-share/doc-share.service";
 
 @Injectable()
@@ -467,7 +466,7 @@ export class DocumentService {
     // 获取文档的所有分享信息
     const shares = await this.prisma.docShare.findMany({
       where: {
-        documentId: docId,
+        docId: docId,
         revokedAt: null, // 只获取未撤销的分享
       },
       include: {
@@ -492,6 +491,206 @@ export class DocumentService {
       data: {
         shares,
       },
+    };
+  }
+
+  async addUserPermission(userId: number, docId: string, targetUserId: number, permission: Permission) {
+    const doc = await this.prisma.doc.findUnique({
+      where: { id: docId },
+    });
+
+    if (!doc) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Check if the user has permission to manage document permissions
+    if (doc.authorId !== userId) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    // Check if target user exists
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+    });
+
+    if (!targetUser) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    // Create or update user permission
+    const userPermission = await this.prisma.docUserPermission.upsert({
+      where: {
+        docId_userId: {
+          docId: docId,
+          userId: targetUserId,
+        },
+      },
+      update: {
+        permission,
+      },
+      create: {
+        docId: docId,
+        userId: targetUserId,
+        permission,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    return userPermission;
+  }
+
+  async removeUserPermission(userId: number, docId: string, targetUserId: number) {
+    const doc = await this.prisma.doc.findUnique({
+      where: { id: docId },
+    });
+
+    if (!doc) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Check if the user has permission to manage document permissions
+    if (doc.authorId !== userId) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    await this.prisma.docUserPermission.delete({
+      where: {
+        docId_userId: {
+          docId: docId,
+          userId: targetUserId,
+        },
+      },
+    });
+
+    return { success: true };
+  }
+
+  async addGroupPermission(userId: number, docId: string, groupId: string, permission: Permission) {
+    const doc = await this.prisma.doc.findUnique({
+      where: { id: docId },
+    });
+
+    if (!doc) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Check if the user has permission to manage document permissions
+    if (doc.authorId !== userId) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    // Check if group exists
+    const group = await this.prisma.memberGroup.findUnique({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new ApiException(ErrorCodeEnum.GroupNotFound);
+    }
+
+    // Create or update group permission
+    const groupPermission = await this.prisma.docGroupPermission.upsert({
+      where: {
+        docId_groupId: {
+          docId: docId,
+          groupId,
+        },
+      },
+      update: {
+        permission,
+      },
+      create: {
+        docId: docId,
+        groupId,
+        permission,
+      },
+      include: {
+        group: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
+    });
+
+    return groupPermission;
+  }
+
+  async removeGroupPermission(userId: number, docId: string, groupId: string) {
+    const doc = await this.prisma.doc.findUnique({
+      where: { id: docId },
+    });
+
+    if (!doc) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Check if the user has permission to manage document permissions
+    if (doc.authorId !== userId) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    await this.prisma.docGroupPermission.delete({
+      where: {
+        docId_groupId: {
+          docId: docId,
+          groupId,
+        },
+      },
+    });
+
+    return { success: true };
+  }
+
+  async listUserPermissions(docId: string) {
+    const permissions = await this.prisma.docUserPermission.findMany({
+      where: {
+        docId: docId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    return {
+      data: permissions,
+    };
+  }
+
+  async listGroupPermissions(docId: string) {
+    const permissions = await this.prisma.docGroupPermission.findMany({
+      where: {
+        docId: docId,
+      },
+      include: {
+        group: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
+    });
+
+    return {
+      data: permissions,
     };
   }
 }

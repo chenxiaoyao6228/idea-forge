@@ -11,6 +11,7 @@ export * from './SubspaceMemberPermissionSchema';
 export * from './MemberGroupSchema';
 export * from './MemberGroupUserSchema';
 export * from './DocGroupPermissionSchema';
+export * from './DocUserPermissionSchema';
 export * from './GuestCollaboratorSchema';
 export * from './GuestDocPermissionSchema';
 export * from './PasswordSchema';

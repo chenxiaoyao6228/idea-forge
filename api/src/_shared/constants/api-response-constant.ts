@@ -56,6 +56,9 @@ export enum ErrorCodeEnum {
   UserNotInWorkspace = "user_not_in_workspace",
   UserAlreadyInSubspace = "user_already_in_subspace",
 
+  // Group related errors
+  GroupNotFound = "group_not_found",
+
   // Star related errors
   StarNotFound = "STAR_NOT_FOUND",
   StarAlreadyExists = "STAR_ALREADY_EXISTS",

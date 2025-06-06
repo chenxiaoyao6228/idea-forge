@@ -2,34 +2,36 @@ import { z } from 'zod';
 import { PermissionSchema } from '../inputTypeSchemas/PermissionSchema'
 
 /////////////////////////////////////////
-// DOC GROUP PERMISSION SCHEMA
+// DOC USER PERMISSION SCHEMA
 /////////////////////////////////////////
 
-export const DocGroupPermissionSchema = z.object({
+export const DocUserPermissionSchema = z.object({
   permission: PermissionSchema,
   id: z.string().cuid(),
+  index: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   docId: z.string(),
-  groupId: z.string(),
   userId: z.number().int(),
   createdById: z.number().int(),
   sourceId: z.string().nullable(),
+  workspaceMemberId: z.string().nullable(),
+  subspaceMemberId: z.string().nullable(),
 })
 
-export type DocGroupPermission = z.infer<typeof DocGroupPermissionSchema>
+export type DocUserPermission = z.infer<typeof DocUserPermissionSchema>
 
 /////////////////////////////////////////
-// DOC GROUP PERMISSION OPTIONAL DEFAULTS SCHEMA
+// DOC USER PERMISSION OPTIONAL DEFAULTS SCHEMA
 /////////////////////////////////////////
 
-export const DocGroupPermissionOptionalDefaultsSchema = DocGroupPermissionSchema.merge(z.object({
+export const DocUserPermissionOptionalDefaultsSchema = DocUserPermissionSchema.merge(z.object({
   permission: PermissionSchema.optional(),
   id: z.string().cuid().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
 }))
 
-export type DocGroupPermissionOptionalDefaults = z.infer<typeof DocGroupPermissionOptionalDefaultsSchema>
+export type DocUserPermissionOptionalDefaults = z.infer<typeof DocUserPermissionOptionalDefaultsSchema>
 
-export default DocGroupPermissionSchema;
+export default DocUserPermissionSchema;

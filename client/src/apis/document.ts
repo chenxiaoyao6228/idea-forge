@@ -17,6 +17,10 @@ import type {
   DuplicateDocumentResponse,
   ListDocumentResponse,
   ListDocumentDto,
+  DocUserPermissionDto,
+  DocGroupPermissionDto,
+  DocUserPermissionResponse,
+  DocGroupPermissionResponse,
 } from "contracts";
 
 export const documentApi = {
@@ -100,4 +104,21 @@ export const documentApi = {
   },
 
   duplicate: (id: string) => request.post<null, DuplicateDocumentResponse>(`/api/documents/${id}/duplicate`),
+
+  // User Permissions
+  addUserPermission: async (id: string, data: DocUserPermissionDto) =>
+    request.post<DocUserPermissionDto, DocUserPermissionResponse>(`/api/documents/${id}/user-permissions`, data),
+
+  removeUserPermission: async (id: string, targetUserId: number) =>
+    request.delete<void, { success: boolean }>(`/api/documents/${id}/user-permissions/${targetUserId}`),
+
+  listUserPermissions: async (id: string) => request.get<void, DocUserPermissionResponse[]>(`/api/documents/${id}/user-permissions`),
+
+  // Group Permissions
+  addGroupPermission: async (id: string, data: DocGroupPermissionDto) =>
+    request.post<DocGroupPermissionDto, DocGroupPermissionResponse>(`/api/documents/${id}/group-permissions`, data),
+
+  removeGroupPermission: async (id: string, groupId: string) => request.delete<void, { success: boolean }>(`/api/documents/${id}/group-permissions/${groupId}`),
+
+  listGroupPermissions: async (id: string) => request.get<void, DocGroupPermissionResponse[]>(`/api/documents/${id}/group-permissions`),
 };
