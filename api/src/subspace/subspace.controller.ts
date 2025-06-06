@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, Query } fr
 import { SubspaceService } from "./subspace.service";
 import { SubspaceDetailResponse, SubspaceMemberListResponse } from "contracts";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, MoveSubspaceDto } from "./subspace.dto";
+import { SubspaceUserPermission, SubspaceGroupPermission } from "contracts";
 
 @Controller("api/subspaces")
 export class SubspaceController {
@@ -64,5 +65,37 @@ export class SubspaceController {
   @Get(":id/members")
   async getSubspaceMembers(@Param("id") id: string, @Req() req: any): Promise<SubspaceMemberListResponse> {
     return this.subspaceService.getSubspaceMembers(id, req.user.id);
+  }
+
+  // ==== permissions ====
+
+  @Post(":id/user-permissions")
+  async addUserPermission(@Param("id") id: string, @Body() dto: SubspaceUserPermission, @Req() req: any) {
+    return this.subspaceService.addUserPermission(id, dto.userId, dto.permission, req.user.id);
+  }
+
+  @Delete(":id/user-permissions/:targetUserId")
+  async removeUserPermission(@Param("id") id: string, @Param("targetUserId") targetUserId: number, @Req() req: any) {
+    return this.subspaceService.removeUserPermission(id, targetUserId, req.user.id);
+  }
+
+  @Get(":id/user-permissions")
+  async listUserPermissions(@Param("id") id: string, @Req() req: any) {
+    return this.subspaceService.listUserPermissions(id, req.user.id);
+  }
+
+  @Post(":id/group-permissions")
+  async addGroupPermission(@Param("id") id: string, @Body() dto: SubspaceGroupPermission, @Req() req: any) {
+    return this.subspaceService.addGroupPermission(id, dto.groupId, dto.permission, req.user.id);
+  }
+
+  @Delete(":id/group-permissions/:groupId")
+  async removeGroupPermission(@Param("id") id: string, @Param("groupId") groupId: string, @Req() req: any) {
+    return this.subspaceService.removeGroupPermission(id, groupId, req.user.id);
+  }
+
+  @Get(":id/group-permissions")
+  async listGroupPermissions(@Param("id") id: string, @Req() req: any) {
+    return this.subspaceService.listGroupPermissions(id, req.user.id);
   }
 }

@@ -18,35 +18,35 @@ export const shareApi = {
   /**
    * Get share information
    */
-  getInfo: async (data: DocShareInfoDto) => request.post<DocShareInfoDto, ShareInfoResponse>("/api/shares/info", data),
+  getInfo: async (id: string) => request.get<void, ShareInfoResponse>(`/api/shares/${id}`),
 
   /**
    * List shares
    */
-  list: async (data: ShareListRequest) => request.post<ShareListRequest, ShareListResponse>("/api/shares/list", data),
+  list: async (data: ShareListRequest) => request.get<ShareListRequest, ShareListResponse>("/api/shares", { params: data }),
 
   /**
    * Create a new share
    */
-  create: async (data: CreateShareDto) => request.post<CreateShareDto, ShareCreateResponse>("/api/shares/create", data),
+  create: async (data: CreateShareDto) => request.post<CreateShareDto, ShareCreateResponse>("/api/shares", data),
 
   /**
    * Update an existing share
    */
-  update: async (data: UpdateShareDto) => request.post<UpdateShareDto, ShareUpdateResponse>("/api/shares/update", data),
+  update: async (id: string, data: UpdateShareDto) => request.patch<UpdateShareDto, ShareUpdateResponse>(`/api/shares/${id}`, data),
 
   /**
    * Revoke a share
    */
-  revoke: async (data: RevokeShareDto) => request.post<RevokeShareDto, ShareRevokeResponse>("/api/shares/revoke", data),
+  revoke: async (id: string) => request.delete<void, ShareRevokeResponse>(`/api/shares/${id}`),
 
   /**
    * List documents shared with me
    */
-  listSharedWithMe: async (data: ListSharedWithMeDto) => request.post<ListSharedWithMeDto, ShareListResponse>("/api/shares/sharedWithMe", data),
+  listSharedWithMe: async (data: ListSharedWithMeDto) => request.get<ListSharedWithMeDto, ShareListResponse>("/api/shares/shared-with-me", { params: data }),
 
   /**
    * List documents shared by me
    */
-  listSharedByMe: async (data: ListSharedByMeDto) => request.post<ListSharedByMeDto, ShareListResponse>("/api/shares/sharedByMe", data),
+  listSharedByMe: async (data: ListSharedByMeDto) => request.get<ListSharedByMeDto, ShareListResponse>("/api/shares/shared-by-me", { params: data }),
 };

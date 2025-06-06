@@ -1,5 +1,6 @@
 import { SubspaceMemberSchema, SubspaceRoleSchema, SubspaceSchema, SubspaceTypeSchema } from "./schema";
 import { z } from "zod";
+import { Permission } from "@prisma/client";
 
 // Create subspace
 export const CreateSubspaceRequestSchema = z.object({
@@ -56,3 +57,41 @@ export const SubspaceMemberListResponseSchema = z.object({
   total: z.number(),
 });
 export type SubspaceMemberListResponse = z.infer<typeof SubspaceMemberListResponseSchema>;
+
+// Subspace permission schemas
+export const SubspaceUserPermissionSchema = z.object({
+  userId: z.number(),
+  permission: z.nativeEnum(Permission),
+});
+
+export const SubspaceGroupPermissionSchema = z.object({
+  groupId: z.string(),
+  permission: z.nativeEnum(Permission),
+});
+
+export type SubspaceUserPermission = z.infer<typeof SubspaceUserPermissionSchema>;
+export type SubspaceGroupPermission = z.infer<typeof SubspaceGroupPermissionSchema>;
+
+// Subspace permission response schemas
+export const SubspaceUserPermissionResponseSchema = z.object({
+  data: z.array(SubspaceUserPermissionSchema.extend({
+    user: z.object({
+      id: z.number(),
+      email: z.string(),
+      displayName: z.string().nullable(),
+    }),
+  })),
+});
+
+export const SubspaceGroupPermissionResponseSchema = z.object({
+  data: z.array(SubspaceGroupPermissionSchema.extend({
+    group: z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string().nullable(),
+    }),
+  })),
+});
+
+export type SubspaceUserPermissionResponse = z.infer<typeof SubspaceUserPermissionResponseSchema>;
+export type SubspaceGroupPermissionResponse = z.infer<typeof SubspaceGroupPermissionResponseSchema>;

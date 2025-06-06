@@ -12,4 +12,5 @@ export * from "./workspace";
 export * from "./subspace";
 export * from "./doc-share";
 export * from "./star";
+export * from "./group";
 

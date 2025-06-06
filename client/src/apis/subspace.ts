@@ -8,6 +8,10 @@ import {
   NavigationNode,
   MoveSubspaceRequest,
   CreateSubspaceRequest,
+  SubspaceUserPermission,
+  SubspaceGroupPermission,
+  SubspaceUserPermissionResponse,
+  SubspaceGroupPermissionResponse,
 } from "contracts";
 
 import { Subspace } from "contracts";
@@ -39,4 +43,21 @@ export const subspaceApi = {
     request.delete<void, { success: boolean }>(`/api/subspaces/${subspaceId}/members/${memberId}`),
 
   fetchNavigationTree: async (subspaceId: string) => request.get<void, NavigationNode>(`/api/subspaces/${subspaceId}/navigationTree`),
+
+  // User Permissions
+  addUserPermission: async (id: string, data: SubspaceUserPermission) =>
+    request.post<SubspaceUserPermission, SubspaceUserPermissionResponse>(`/api/subspaces/${id}/user-permissions`, data),
+
+  removeUserPermission: async (id: string, targetUserId: number) =>
+    request.delete<void, { success: boolean }>(`/api/subspaces/${id}/user-permissions/${targetUserId}`),
+
+  listUserPermissions: async (id: string) => request.get<void, SubspaceUserPermissionResponse>(`/api/subspaces/${id}/user-permissions`),
+
+  // Group Permissions
+  addGroupPermission: async (id: string, data: SubspaceGroupPermission) =>
+    request.post<SubspaceGroupPermission, SubspaceGroupPermissionResponse>(`/api/subspaces/${id}/group-permissions`, data),
+
+  removeGroupPermission: async (id: string, groupId: string) => request.delete<void, { success: boolean }>(`/api/subspaces/${id}/group-permissions/${groupId}`),
+
+  listGroupPermissions: async (id: string) => request.get<void, SubspaceGroupPermissionResponse>(`/api/subspaces/${id}/group-permissions`),
 };

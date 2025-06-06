@@ -110,8 +110,14 @@ const useShareStore = create<StoreState>()(
           }
 
           try {
-            const { data } = await shareApi.getInfo({ documentId: docId });
-            const shares = data.shares;
+            const response = await shareApi.list({
+              limit: 100,
+              page: 1,
+              sortBy: "createdAt",
+              sortOrder: "desc",
+              query: docId,
+            });
+            const shares = response.data;
             get().setAll(shares);
             return shares;
           } finally {
@@ -138,7 +144,7 @@ const useShareStore = create<StoreState>()(
         revoke: async (id: string) => {
           set({ isSaving: true });
           try {
-            await shareApi.revoke({ id });
+            await shareApi.revoke(id);
             get().removeOne(id);
           } finally {
             set({ isSaving: false });
@@ -174,9 +180,10 @@ const useShareStore = create<StoreState>()(
           }
 
           try {
-            const { data } = await shareApi.getInfo({ id: shareId });
-            if (data.shares.length > 0) {
-              get().upsertOne(data.shares[0]);
+            const response = await shareApi.getInfo(shareId);
+            const share = response.data.shares[0];
+            if (share) {
+              get().upsertOne(share);
             }
           } catch (error: any) {
             console.error(`Failed to update share ${shareId}:`, error);

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
-import { NavigationNode, NavigationNodeType, SubspaceTypeSchema } from "contracts";
+import { NavigationNode, NavigationNodeType, SubspaceTypeSchema, Permission } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
@@ -223,15 +223,16 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
     }
 
+    const { workspace, ...subspaceData } = subspace;
+
     return {
-      subspace: presentSubspace({
-        ...subspace,
-        workspace: undefined,
+      subspace: {
+        ...presentSubspace(subspaceData),
         members: subspace.members.map((member) => ({
           ...member,
           createdAt: member.createdAt,
         })),
-      }),
+      },
     };
   }
 
@@ -655,5 +656,281 @@ export class SubspaceService {
     const isPublicSubspace = subspace.type === "PUBLIC";
 
     return isSubspaceMember || isPublicSubspace;
+  }
+
+  // ==== permissions ====
+
+  async addUserPermission(subspaceId: string, targetUserId: number, permission: Permission, currentUserId: number) {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      include: {
+        members: {
+          where: {
+            userId: currentUserId,
+            role: "ADMIN",
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    if (subspace.members.length === 0) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
+    }
+
+    // Check if target user exists
+    const targetUser = await this.prismaService.user.findUnique({
+      where: { id: targetUserId },
+    });
+
+    if (!targetUser) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    // Create or update user permission
+    const userPermission = await this.prismaService.subspaceMemberPermission.upsert({
+      where: {
+        subspaceId_userId: {
+          subspaceId,
+          userId: targetUserId,
+        },
+      },
+      update: {
+        permission,
+      },
+      create: {
+        subspaceId,
+        userId: targetUserId,
+        permission,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    return userPermission;
+  }
+
+  async removeUserPermission(subspaceId: string, targetUserId: number, currentUserId: number) {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      include: {
+        members: {
+          where: {
+            userId: currentUserId,
+            role: "ADMIN",
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    if (subspace.members.length === 0) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
+    }
+
+    await this.prismaService.subspaceMemberPermission.delete({
+      where: {
+        subspaceId_userId: {
+          subspaceId,
+          userId: targetUserId,
+        },
+      },
+    });
+
+    return { success: true };
+  }
+
+  async listUserPermissions(subspaceId: string, currentUserId: number) {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      include: {
+        members: {
+          where: {
+            userId: currentUserId,
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    const isSubspaceMember = subspace.members.length > 0;
+    const isPublicSubspace = subspace.type === "PUBLIC";
+
+    if (!isSubspaceMember && !isPublicSubspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
+    }
+
+    const permissions = await this.prismaService.subspaceMemberPermission.findMany({
+      where: {
+        subspaceId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    return {
+      data: permissions,
+    };
+  }
+
+  async addGroupPermission(subspaceId: string, groupId: string, permission: Permission, currentUserId: number) {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      include: {
+        members: {
+          where: {
+            userId: currentUserId,
+            role: "ADMIN",
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    if (subspace.members.length === 0) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
+    }
+
+    // Check if group exists
+    const group = await this.prismaService.memberGroup.findUnique({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new ApiException(ErrorCodeEnum.GroupNotFound);
+    }
+
+    // Create or update group permission
+    const groupPermission = await this.prismaService.docGroupPermission.upsert({
+      where: {
+        docId_groupId: {
+          docId: subspaceId,
+          groupId,
+        },
+      },
+      update: {
+        permission,
+      },
+      create: {
+        docId: subspaceId,
+        groupId,
+        permission,
+        userId: currentUserId,
+        createdById: currentUserId,
+      },
+      include: {
+        group: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
+    });
+
+    return groupPermission;
+  }
+
+  async removeGroupPermission(subspaceId: string, groupId: string, currentUserId: number) {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      include: {
+        members: {
+          where: {
+            userId: currentUserId,
+            role: "ADMIN",
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    if (subspace.members.length === 0) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
+    }
+
+    await this.prismaService.docGroupPermission.delete({
+      where: {
+        docId_groupId: {
+          docId: subspaceId,
+          groupId,
+        },
+      },
+    });
+
+    return { success: true };
+  }
+
+  async listGroupPermissions(subspaceId: string, currentUserId: number) {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      include: {
+        members: {
+          where: {
+            userId: currentUserId,
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    const isSubspaceMember = subspace.members.length > 0;
+    const isPublicSubspace = subspace.type === "PUBLIC";
+
+    if (!isSubspaceMember && !isPublicSubspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
+    }
+
+    const permissions = await this.prismaService.docGroupPermission.findMany({
+      where: {
+        docId: subspaceId,
+      },
+      include: {
+        group: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
+    });
+
+    return {
+      data: permissions,
+    };
   }
 }
