@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { basePagerSchema } from "./_base";
-import { MemberGroupSchema } from "./schema/modelSchema/MemberGroupSchema";
+import { MemberGroupSchema } from "./schema";
 
 // Base schemas
 export const groupInfoSchema = z.object({ 

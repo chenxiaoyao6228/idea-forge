@@ -283,10 +283,9 @@ export class DocShareService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.DocShareWhereInput = {
-      sharedTo: {
-        id: userId,
-      },
+      userId: userId,
       revokedAt: null,
+      published: true,
       ...(query && {
         doc: {
           title: {
@@ -347,13 +346,17 @@ export class DocShareService {
       }),
     ]);
 
+    if (!shares.length) {
+      return { status: 204 };
+    }
+
     return {
       pagination: {
         page,
         limit,
         total,
       },
-      data: shares,
+      data: shares.map((share) => presentDocShare(share as DocShareWithRelations)),
     };
   }
 

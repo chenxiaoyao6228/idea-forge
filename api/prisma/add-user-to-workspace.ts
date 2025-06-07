@@ -64,6 +64,19 @@ async function addUserToWorkspace(userEmail: string, workspaceId: string) {
       },
     });
 
+    // Create a welcome document for the new user
+    // const welcomeDoc = await prisma.doc.create({
+    //   data: {
+    //     title: `Welcome ${user.displayName || user.email}`,
+    //     content: 'Welcome to the workspace!',
+    //     authorId: user.id,
+    //     createdById: user.id,
+    //     lastModifiedById: user.id,
+    //     workspaceId,
+    //     visibility: 'PRIVATE'
+    //   }
+    // });
+
     for (const subspace of subspaces) {
       const existingSubspaceMember = await prisma.subspaceMember.findUnique({
         where: {

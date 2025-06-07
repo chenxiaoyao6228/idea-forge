@@ -1,3 +1,4 @@
+import { UserStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const VERIFICATION_CODE_TYPES = ["register", "reset-password", "change-email", "2fa"] as const;
@@ -5,13 +6,6 @@ export const VERIFICATION_CODE_TYPES = ["register", "reset-password", "change-em
 export const VerificationTypeSchema = z.enum(VERIFICATION_CODE_TYPES);
 export type VerificationCodeType = z.infer<typeof VerificationTypeSchema>;
 
-export const UserStatus = {
-  ACTIVE: "ACTIVE",
-  SUSPENDED: "SUSPENDED",
-  DELETED: "DELETED",
-} as const;
-
-export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 
 export const Provider = {
   google: "google",
@@ -134,11 +128,3 @@ export const CreateOAuthUserRequestSchema = CreateUserRequestSchema.extend({
 });
 export type CreateOAuthUserRequest = z.infer<typeof CreateOAuthUserRequestSchema>;
 
-// ==============================================================
-// update user
-export const UpdateUserRequestSchema = z.object({
-  email: EmailSchema.optional(),
-  displayName: z.string().optional(),
-  imageUrl: z.string().url().optional(),
-});
-export type UpdateUserRequest = z.infer<typeof UpdateUserRequestSchema>;

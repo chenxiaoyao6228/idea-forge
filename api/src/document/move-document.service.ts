@@ -5,6 +5,8 @@ import { presentDocument } from "./document.presenter";
 import { NavigationNode, NavigationNodeType } from "contracts";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { ApiException } from "@/_shared/exceptions/api.exception";
 
 @Injectable()
 export class MoveDocumentService {
@@ -17,21 +19,21 @@ export class MoveDocumentService {
     const { id, subspaceId, parentId, index } = dto;
     const affectedDocuments: any[] = [];
 
-    // 1. Fetch the document to be moved with its current subspace
+    // Existing document fetching and validation...
     const document = await this.prisma.doc.findUnique({
       where: { id },
       include: { subspace: true },
     });
 
     if (!document) {
-      throw new Error("Document not found");
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
     }
 
-    // 2. Determine target subspace - use provided subspaceId or keep current one
     const targetSubspaceId = subspaceId || document.subspaceId;
     const subspaceChanged = targetSubspaceId !== document.subspaceId;
+    const parentChanged = parentId !== document.parentId;
 
-    // 3. Update the main document's basic properties
+    // Update document properties
     const updatedDoc = await this.prisma.doc.update({
       where: { id },
       data: {
@@ -39,22 +41,35 @@ export class MoveDocumentService {
         parentId: parentId || null,
         updatedAt: new Date(),
       },
-      include: { subspace: true }, // Include full relationship data for response
+      include: { subspace: true },
     });
 
-    // Add the main moved document to affected documents list
     affectedDocuments.push(updatedDoc);
 
-    // 4. If moving across subspaces, update all child documents recursively
+    // Handle permission inheritance when parent changes
+    if (parentChanged && parentId) {
+      // Remove existing inherited permissions
+      await this.prisma.docUserPermission.deleteMany({
+        where: {
+          docId: id,
+          sourceId: { not: null }, // Only remove inherited permissions
+        },
+      });
+
+      // Copy new permissions from new parent
+      await this.copyPermissionsFromParent(id, parentId);
+    }
+
+    // Handle subspace changes and child documents
     if (subspaceChanged && targetSubspaceId) {
       const childDocuments = await this.updateChildDocumentsSubspace(id, targetSubspaceId);
       affectedDocuments.push(...childDocuments);
     }
 
-    // 5. Update the navigationTree structure in the affected subspaces
+    // Update navigation tree structure
     await this.updateNavigationTreeStructure(document, updatedDoc, index, subspaceChanged);
 
-    // 6. Publish websocket event
+    // Emit events and return response...
     await this.eventPublisher.publishWebsocketEvent({
       name: BusinessEvents.DOCUMENT_MOVE,
       workspaceId: document.workspaceId,
@@ -62,16 +77,10 @@ export class MoveDocumentService {
       timestamp: new Date().toISOString(),
       data: {
         affectedDocuments,
-        subspaceIds: subspaceChanged
-          ? [
-              { id: document.subspaceId }, // Original subspace
-              { id: targetSubspaceId }, // Target subspace
-            ]
-          : [{ id: targetSubspaceId }],
+        subspaceIds: subspaceChanged ? [{ id: document.subspaceId }, { id: targetSubspaceId }] : [{ id: targetSubspaceId }],
       },
     });
 
-    // 7. Return response structure
     return {
       data: {
         documents: affectedDocuments.map((doc) => presentDocument(doc, { isPublic: true })),
@@ -271,6 +280,28 @@ export class MoveDocumentService {
       }
     }
     return null; // Node not found
+  }
+
+  /**
+   * Helper method to copy permissions from parent and handle inheritance
+   */
+  private async copyPermissionsFromParent(documentId: string, parentDocumentId: string) {
+    const parentMemberships = await this.prisma.docUserPermission.findMany({
+      where: { docId: parentDocumentId },
+    });
+
+    for (const membership of parentMemberships) {
+      await this.prisma.docUserPermission.create({
+        data: {
+          docId: documentId,
+          userId: membership.userId,
+          permission: membership.permission,
+          sourceId: membership.sourceId ?? membership.id, // Maintain inheritance chain
+          createdById: membership.createdById,
+          index: membership.index,
+        },
+      });
+    }
   }
 
   /**

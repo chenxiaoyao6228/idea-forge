@@ -12,9 +12,10 @@ import { MoveDocumentService } from "./move-document.service";
 import { SubspaceModule } from "@/subspace/subspace.module";
 import { EventsModule } from "@/_shared/events/events.module";
 import { DocShareModule } from "@/doc-share/doc-share.module";
+import { GroupModule } from "@/group/group.module";
 
 @Module({
-  imports: [FileStoreModule, ScheduleModule.forRoot(), SubspaceModule, EventsModule, DocShareModule],
+  imports: [FileStoreModule, ScheduleModule.forRoot(), SubspaceModule, EventsModule, DocShareModule, GroupModule],
   controllers: [DocumentController, ShareDocumentController],
   providers: [DocumentService, ShareDocumentService, SystemDocumentService, MoveDocumentService, SearchDocumentService, DocumentAbility],
   exports: [DocumentService, SystemDocumentService, SearchDocumentService, MoveDocumentService],

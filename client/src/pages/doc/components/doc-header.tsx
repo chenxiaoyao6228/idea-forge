@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import DocumentBreadcrumb from "../../main/sidebar/doc-breadcrumb";
-import { ShareDocButton } from "../../main/sidebar/share-doc-button";
+// import { ShareDocButton } from "../../main/sidebar/share-doc-button";
 import { CollabUsers } from "@/pages/doc/components/collab-users";
 import { useTranslation } from "react-i18next";
 import ExportMarkdownButton from "./export-markdown-button";
@@ -50,7 +50,7 @@ export default function DocumentHeader() {
       {/* right */}
       <div className="flex items-center mr-2 sm:mr-4 ">
         <CollabUsers className="mr-2" />
-        <ShareDocButton />
+        {/* <ShareDocButton /> */}
         <TopBarHandlers />
       </div>
     </header>

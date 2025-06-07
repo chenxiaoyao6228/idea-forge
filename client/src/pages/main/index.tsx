@@ -13,13 +13,13 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils";
 import { useParams } from "react-router-dom";
 import { useEffect } from "react";
-import { TrashDialog } from "@/pages/main/sidebar/trash-dialog";
+// import { TrashDialog } from "@/pages/main/sidebar/trash-dialog";
 import { SearchDocDialog } from "@/pages/main/sidebar/search-doc-dialog";
 // import { usePrepareDoc } from "@/hooks/use-prepare-doc";
 import Loading from "@/components/ui/loading";
 import { useDocumentStore } from "../../stores/doc-store";
 import WorkspaceSwitcher from "./sidebar/workspace-switcher";
-import { OthersDocs } from "./sidebar/others-docs";
+// import { OthersDocs } from "./sidebar/others-docs";
 import UserSettings from "./sidebar/setting";
 import Doc from "../doc";
 import SubspacesArea from "./sidebar/subspaces";
@@ -29,16 +29,21 @@ import useSubSpaceStore from "@/stores/subspace";
 import { DndContext } from "@dnd-kit/core";
 import { websocketService } from "@/lib/websocket";
 import StarsArea from "./sidebar/stars";
+import SharedWithMe from "./sidebar/shared-with-me";
+import useUIStore from "@/stores/ui";
 
 export default function Main() {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
 
   const { docId } = useParams();
   const setCurrentDocId = useDocumentStore.use.setCurrentDocId();
+  const setActiveDocumentId = useUIStore((state) => state.setActiveDocumentId);
 
   useEffect(() => {
+    // FIXME: remove setCurrentDocId
     setCurrentDocId(docId || null);
-  }, [docId, setCurrentDocId]);
+    setActiveDocumentId(docId || "");
+  }, [docId, setCurrentDocId, setActiveDocumentId]);
 
   // if (isLoading) {
   //   return <Loading />;
@@ -76,7 +81,7 @@ export default function Main() {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     {/* trash */}
-                    <TrashDialog />
+                    {/* <TrashDialog /> */}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -85,6 +90,7 @@ export default function Main() {
           {/* docs */}
           <SidebarContent className="custom-scrollbar">
             <StarsArea />
+            <SharedWithMe />
             <SubspacesArea />
             {/* <OthersDocs /> */}
             {/* <PrivateDocs /> */}

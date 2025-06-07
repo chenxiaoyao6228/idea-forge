@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
-import { DocTypeSchema, DocVisibilitySchema } from "contracts";
+import { DocTypeSchema, DocVisibilitySchema, NavigationNode, NavigationNodeType } from "contracts";
 import { documentApi } from "@/apis/document";
 
 import useSubSpaceStore from "./subspace";
@@ -46,6 +46,7 @@ interface State {
 interface Action {
   // API actions
   fetchDetail: (id: string, options?: FetchOptions) => Promise<FetchDetailResult>;
+  fetchChildren: (parentId: string | null, options?: { force?: boolean }) => Promise<void>;
   createDocument: (options: {
     title: string;
     parentId: string | null;
@@ -92,6 +93,60 @@ const useDocumentStore = create<StoreState>()(
         deletedDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDeleted(doc)),
         draftDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDraft(doc)),
         activeDocument: state.activeDocumentId ? state.entities[state.activeDocumentId] : undefined,
+        getDocumentAsNavigationNode: (documentId: string): NavigationNode | undefined => {
+          const doc = state.entities[documentId];
+          if (!doc) return undefined;
+
+          const children = Object.values(state.entities)
+            .filter((child) => child.parentId === documentId)
+            .map((child) => ({
+              id: child.id,
+              title: child.title,
+              type: NavigationNodeType.Document,
+              url: `/${child.id}`,
+              children: [],
+              parent: null,
+              isDraft: !child.publishedAt,
+              isArchived: !!child.archivedAt,
+              isDeleted: !!child.deletedAt,
+            }));
+
+          return {
+            id: doc.id,
+            title: doc.title,
+            type: NavigationNodeType.Document,
+            url: `/${doc.id}`,
+            children,
+            parent: doc.parentId
+              ? {
+                  id: doc.parentId,
+                  title: "",
+                  type: NavigationNodeType.Document,
+                  url: `/${doc.parentId}`,
+                  children: [],
+                  parent: null,
+                }
+              : null,
+            // isDraft: !doc.publishedAt,
+            // isArchived: !!doc.archivedAt,
+            // isDeleted: !!doc.deletedAt,
+          };
+        },
+        getChildDocuments: (parentId: string): NavigationNode[] => {
+          return Object.values(state.entities)
+            .filter((doc) => doc.parentId === parentId)
+            .map((doc) => ({
+              id: doc.id,
+              title: doc.title,
+              type: NavigationNodeType.Document,
+              url: `/${doc.id}`,
+              children: [],
+              parent: null,
+              isDraft: !doc.publishedAt,
+              isArchived: !!doc.archivedAt,
+              isDeleted: !!doc.deletedAt,
+            }));
+        },
       }))((set, get) => ({
         ...defaultState,
         ...documentEntitySlice.initialState,
@@ -100,6 +155,52 @@ const useDocumentStore = create<StoreState>()(
         isArchived: (doc: DocumentEntity) => !!doc.archivedAt,
         isDeleted: (doc: DocumentEntity) => !!doc.deletedAt,
         isDraft: (doc: DocumentEntity) => !doc.publishedAt,
+
+        fetchChildren: async (parentId: string | null, options = {}) => {
+          if (!options.force) {
+            const existingDocs = documentSelectors.selectAll(get());
+            const hasChildren = existingDocs.some((doc) => doc.parentId === parentId);
+            if (hasChildren) return;
+          }
+
+          set({ isFetching: true });
+          try {
+            const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
+            if (!workspaceId) throw new Error("No active workspace");
+
+            const response = await documentApi.list({
+              parentId,
+              page: 1,
+              limit: 100,
+              sortBy: "position",
+              sortOrder: "asc",
+              archivedAt: null,
+              workspaceId,
+              subspaceId: null,
+            });
+
+            if (response.data) {
+              // Transform the response data to match DocumentEntity type
+              const documents = response.data.map((doc) => ({
+                ...doc,
+                content: "",
+                type: "NOTE",
+                visibility: "WORKSPACE",
+                workspaceId,
+                archivedAt: doc.archivedAt?.toISOString() || null,
+                deletedAt: doc.deletedAt?.toISOString() || null,
+                createdAt: doc.createdAt.toISOString(),
+                updatedAt: doc.updatedAt.toISOString(),
+              }));
+              get().upsertMany(documents);
+            }
+          } catch (error) {
+            console.error("Failed to fetch children:", error);
+            throw error;
+          } finally {
+            set({ isFetching: false });
+          }
+        },
 
         fetchDetail: async (id, options = {}) => {
           if (!options.prefetch) {
@@ -240,6 +341,19 @@ const useDocumentStore = create<StoreState>()(
             console.error("Failed to unStar document:", error);
             throw error;
           }
+        },
+
+        // permission
+        fetchDocumentMemberships: async (documentId: string) => {
+          return documentApi.listUserPermissions(documentId);
+        },
+
+        addUserToDocument: async (documentId: string, userId: number, permission: "EDIT" | "READ" | "NONE") => {
+          return documentApi.addUserPermission(documentId, { userId, permission });
+        },
+
+        removeUserFromDocument: async (documentId: string, targetUserId: number) => {
+          return documentApi.removeUserPermission(documentId, targetUserId);
         },
       })),
       {

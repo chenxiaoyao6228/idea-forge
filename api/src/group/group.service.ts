@@ -166,4 +166,57 @@ export class GroupService {
 
     return this.groupPresenter.presentGroupInfo(group);
   }
+
+  async searchGroupsForSharing(userId: number, docId: string, query?: string) {
+    // Get all groups that already have access to the document
+    const existingGroupIds = await this.prisma.docGroupPermission
+      .findMany({
+        where: { docId },
+        select: { groupId: true },
+      })
+      .then((permissions) => permissions.map((p) => p.groupId));
+
+    // Get all groups the user has access to
+    const userGroups = await this.prisma.memberGroupUser
+      .findMany({
+        where: { userId },
+        select: { groupId: true },
+      })
+      .then((memberships) => memberships.map((m) => m.groupId));
+
+    // Search groups
+    const groups = await this.prisma.memberGroup.findMany({
+      where: {
+        AND: [
+          {
+            OR: [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }],
+          },
+          {
+            id: {
+              in: userGroups, // Only show groups user has access to
+              notIn: existingGroupIds, // Exclude groups that already have access
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        _count: {
+          select: {
+            members: true, // Get member count
+          },
+        },
+      },
+      take: 10, // Limit results
+    });
+
+    return {
+      data: groups.map((group) => ({
+        ...group,
+        memberCount: group._count.members,
+      })),
+    };
+  }
 }

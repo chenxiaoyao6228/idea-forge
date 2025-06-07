@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LogOut } from "lucide-react";
 import { confirmModal } from "@/components/ui/confirm-modal";
-import useUserStore from "@/stores/user-store";
+import useUserStore from "@/stores/user";
 
 export function SignOutButton() {
   const { t } = useTranslation();

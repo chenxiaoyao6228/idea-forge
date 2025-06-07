@@ -5,7 +5,7 @@ import { useDocumentStore } from "../../stores/doc-store";
 import { Toolbar } from "./toolbar";
 import Cover from "./cover";
 import TiptapEditor from "../../editor";
-import useUserStore from "@/stores/user-store";
+import useUserStore from "@/stores/user";
 import { getEnvVariable } from "@/lib/env";
 import { TableOfContent } from "./components/table-of-content";
 import { useTranslation } from "react-i18next";

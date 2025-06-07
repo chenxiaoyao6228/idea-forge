@@ -47,9 +47,11 @@ model User {
   connections        Connection[] // OAuth connections
 
   // Document relationships
-  authoredDocs Doc[]      @relation("DocAuthor") // Documents created by user
-  sharedDocs   DocShare[] @relation("SharedToUser") // Documents shared with user
-  docShare     DocShare[] // Documents shared by user
+  authoredDocs     Doc[]      @relation("DocAuthor") // Documents created by user
+  createdDocs      Doc[]      @relation("DocCreator") // Documents created by user
+  lastModifiedDocs Doc[]      @relation("DocLastModifier") // Documents last modified by user
+  sharedDocs       DocShare[] @relation("SharedToUser") // Documents shared with user
+  docShare         DocShare[] // Documents shared by user
 
   // Public sharing
   createdPublicShares PublicShare[] // Public shares created by user
@@ -148,6 +150,12 @@ model Doc {
   // relations
   author   User @relation("DocAuthor", fields: [authorId], references: [id])
   authorId Int
+
+  createdBy   User @relation("DocCreator", fields: [createdById], references: [id])
+  createdById Int
+
+  lastModifiedBy   User @relation("DocLastModifier", fields: [lastModifiedById], references: [id])
+  lastModifiedById Int
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId String
@@ -375,7 +383,6 @@ model DocGroupPermission {
 
   // Ensure one permission per group per document  
   @@unique([docId, groupId])
-  @@unique([userId, groupId]) // Ensure one permission per user per group
   @@index([groupId, createdAt]) // For efficient group permission queries  
 }
 

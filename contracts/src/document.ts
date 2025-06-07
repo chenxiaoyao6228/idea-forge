@@ -22,6 +22,12 @@ import { BasePageResult, basePagerSchema } from "./_base";
   authorId: z.number().int(),
   workspaceId: z.string(),
   subspaceId: z.string().nullable(),
+  createdById: z.number().int(),
+  createdBy: z.object({
+    id: z.number().int(),
+    email: z.string(),
+    displayName: z.string(),
+  }),
 })
 
 const commonDocumentSchema = DocSchema.pick({
@@ -34,6 +40,8 @@ const commonDocumentSchema = DocSchema.pick({
   parentId: true,
   icon: true,
   position: true,
+  createdById: true,
+  createdBy: true,
 })
 export type CommonDocument = z.infer<typeof commonDocumentSchema>;
 
@@ -286,5 +294,24 @@ export interface DocGroupPermissionResponse {
     id: string;
     name: string;
     description: string | null;
+    memberCount: number;
   };
+}
+
+export interface SearchUserResponse {
+  data: Array<{
+    id: number;
+    email: string;
+    displayName: string;
+    avatar?: string;
+  }>;
+}
+
+export interface SearchGroupResponse {
+  data: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    memberCount: number;
+  }>;
 }

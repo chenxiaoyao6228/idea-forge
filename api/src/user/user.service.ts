@@ -2,9 +2,10 @@ import { ConflictException, Inject, Injectable } from "@nestjs/common";
 import { hash } from "argon2";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { CreateUserDto, UpdateUserDto } from "@/auth/auth.dto";
-import { UserStatus } from "contracts";
+import { UserListRequestDto } from "contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { UserStatus } from "@prisma/client";
 
 @Injectable()
 export class UserService {
@@ -110,5 +111,37 @@ export class UserService {
         userId: user.id,
       },
     });
+  }
+
+  async searchUser(dto: UserListRequestDto) {
+    const { page = 1, limit = 10, query, sortBy = "createdAt", sortOrder = "desc" } = dto;
+    const skip = (page - 1) * limit;
+
+    const where = query
+      ? {
+          OR: [{ email: { contains: query } }, { displayName: { contains: query } }],
+        }
+      : {};
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      pagination: {
+        page,
+        limit,
+        total,
+      },
+      data: users,
+    };
   }
 }

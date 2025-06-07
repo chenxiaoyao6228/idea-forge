@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import useUserStore, { UserInfo } from "@/stores/user-store";
+import useUserStore, { UserInfo } from "@/stores/user";
 import Loading from "@/components/ui/loading";
 
 /**

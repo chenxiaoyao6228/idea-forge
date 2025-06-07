@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig } from "axios";
-import useUserStore from "@/stores/user-store";
+import useUserStore from "@/stores/user";
 import { RESPONSE_SUCCESS_CODE } from "@api/_shared/constants/api-response-constant";
 
 type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;

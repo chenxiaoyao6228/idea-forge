@@ -2,10 +2,12 @@ import { Module } from "@nestjs/common";
 import { GroupService } from "./group.service";
 import { GroupController } from "./group.controller";
 import { GroupPresenter } from "./group.presenter";
-import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 
 @Module({
-  providers: [GroupService, GroupPresenter, { provide: PRISMA_CLIENT, useExisting: PRISMA_CLIENT }],
+  imports: [PrismaModule],
+  providers: [GroupService, GroupPresenter],
   controllers: [GroupController],
+  exports: [GroupService],
 })
 export class GroupModule {}

@@ -4,7 +4,7 @@ import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { useCollaborationProvider } from "./hooks/useCollaborationProvider";
 import { getRandomElement } from "@/lib/utils";
-import useUserStore from "@/stores/user-store";
+import useUserStore from "@/stores/user";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";

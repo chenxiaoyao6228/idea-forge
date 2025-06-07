@@ -11,7 +11,6 @@ import {
   RegisterRequestSchema,
   ResetPasswordRequestSchema,
   UpdateUserRequestSchema,
-  UserOptionalDefaultsSchema,
 } from "contracts";
 
 // ===== Request DTOs =====

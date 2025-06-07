@@ -64,4 +64,6 @@ export enum ErrorCodeEnum {
   StarAlreadyExists = "STAR_ALREADY_EXISTS",
   DocNotFoundOrNoAccess = "DOC_NOT_FOUND_OR_NO_ACCESS",
   SubspaceNotFoundOrNoAccess = "SUBSPACE_NOT_FOUND_OR_NO_ACCESS",
+
+  PermissionNotFound = "permission_not_found",
 }

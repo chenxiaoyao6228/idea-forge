@@ -32,7 +32,7 @@
     "prisma:dev": "npx prisma migrate dev",
     "prisma:studio": " npx prisma studio --port 5656",
     "prisma:init:local": "npx prisma migrate deploy &&  npx prisma db seed",
-    "prisma:reset:local": "npx prisma migrate reset &&  npx prisma db seed",
+    "prisma:reset:local": "npx prisma migrate reset && npx prisma db push",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "npx prisma generate"
   },

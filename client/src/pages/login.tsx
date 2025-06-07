@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-import useUserStore from "@/stores/user-store";
+import useUserStore from "@/stores/user";
 import { LoginRequestSchema, type LoginRequest } from "contracts";
 import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";

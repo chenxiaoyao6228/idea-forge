@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Inject, Param, Post, Put } from "@nestjs/common";
+import { Body, Controller, Get, Param, Put, Query } from "@nestjs/common";
 import { UserService } from "./user.service";
-import { UpdateUserDto } from "@/auth/auth.dto";
+import { UpdateUserDto } from "./user.dto";
+import { UserListRequestDto } from "contracts";
 
 @Controller("/api/user")
 export class UserController {
@@ -16,5 +17,11 @@ export class UserController {
   async updateUser(@Param("id") id: string, @Body() body: UpdateUserDto) {
     const user = await this.userService.updateUser(Number.parseInt(id), body);
     return user;
+  }
+
+  @Get("search")
+  async searchUser(@Query() dto: UserListRequestDto) {
+    const users = await this.userService.searchUser(dto);
+    return users;
   }
 }

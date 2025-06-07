@@ -7,6 +7,18 @@ import { CreateShareDto, UpdateShareDto, ShareListRequestDto, ListSharedWithMeDt
 export class DocShareController {
   constructor(private readonly docShareService: DocShareService) {}
 
+  @Get("shared-with-me")
+  async listSharedWithMe(@GetUser("id") userId: number, @Query() dto: ListSharedWithMeDto) {
+    return this.docShareService.listSharedWithMe(userId, dto);
+  }
+
+  @Get("shared-by-me")
+  async listSharedByMe(@GetUser("id") userId: number, @Query() dto: ListSharedByMeDto) {
+    return this.docShareService.listSharedByMe(userId, dto);
+  }
+
+  // ================id below =======
+
   @Get(":id")
   async getShareInfo(@Param("id") id: string, @GetUser("id") userId: number) {
     return this.docShareService.getShareInfo(userId, { id });
@@ -30,15 +42,5 @@ export class DocShareController {
   @Delete(":id")
   async revokeShare(@Param("id") id: string, @GetUser("id") userId: number) {
     return this.docShareService.revokeShare(userId, { id });
-  }
-
-  @Get("shared-with-me")
-  async listSharedWithMe(@GetUser("id") userId: number, @Query() dto: ListSharedWithMeDto) {
-    return this.docShareService.listSharedWithMe(userId, dto);
-  }
-
-  @Get("shared-by-me")
-  async listSharedByMe(@GetUser("id") userId: number, @Query() dto: ListSharedByMeDto) {
-    return this.docShareService.listSharedByMe(userId, dto);
   }
 }

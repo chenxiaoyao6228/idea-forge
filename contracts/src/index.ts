@@ -15,3 +15,4 @@ export * from "./star";
 export * from "./group";
 export * from "./group-permission";
 export * from "./user-permission";
+export * from "./user";

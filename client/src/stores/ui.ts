@@ -7,6 +7,7 @@ interface State {
 
 type Action = {
   setIsSidebarCollapsed: (isCollapsed: boolean) => void;
+  setActiveDocumentId: (id: string) => void;
   reset: () => void;
 };
 
@@ -22,11 +23,12 @@ const useUIStore = createStore<State & Action, ComputedState>(
     ...defaultState,
     reset: () => set(defaultState),
     setIsSidebarCollapsed: (isCollapsed: boolean) => set({ isSidebarCollapsed: isCollapsed }),
+    setActiveDocumentId: (id: string) => set({ activeDocumentId: id }),
   }),
   (state) => ({}),
   {
     devtoolOptions: {
-      name: "UI Store",
+      name: "uiStore",
     },
   },
 );

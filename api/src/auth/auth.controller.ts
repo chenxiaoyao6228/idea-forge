@@ -8,13 +8,13 @@ import type { Response } from "express";
 import { Public } from "./decorators/public.decorator";
 import { EmailVerifyDto, ForgotPasswordDto, CodeValidateDto, ResetPasswordDto, RegisterDto } from "./auth.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
-import { UserService } from "@/user/user.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { VerificationService } from "./verification.service";
 import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
 import { UserResponseData } from "contracts";
 import * as requestIp from "request-ip";
+import { UserService } from "@/user/user.service";
 
 @Controller("/api/auth")
 export class AuthController {
