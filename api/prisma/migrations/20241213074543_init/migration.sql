@@ -6,8 +6,8 @@ CREATE TABLE "User" (
     "imageUrl" TEXT,
     "emailVerified" TIMESTAMP(3),
     "status" TEXT NOT NULL,
-    "created_time" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_time" TIMESTAMP NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     "hashedRefreshToken" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")

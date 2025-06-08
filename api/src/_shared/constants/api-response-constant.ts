@@ -66,4 +66,6 @@ export enum ErrorCodeEnum {
   SubspaceNotFoundOrNoAccess = "SUBSPACE_NOT_FOUND_OR_NO_ACCESS",
 
   PermissionNotFound = "permission_not_found",
+
+  InternalServerError = "internal_server_error",
 }

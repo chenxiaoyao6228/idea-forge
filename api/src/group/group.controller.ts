@@ -7,11 +7,6 @@ import { CreateGroupDto, UpdateGroupDto, GroupInfoDto, GroupListRequestDto, AddG
 export class GroupController {
   constructor(private readonly groupService: GroupService) {}
 
-  @Get(":id")
-  async getGroupInfo(@Param("id") id: string, @GetUser("id") userId: number) {
-    return this.groupService.getGroupInfo(userId, { id });
-  }
-
   @Get()
   async listGroups(@GetUser("id") userId: number, @Body() dto: GroupListRequestDto) {
     return this.groupService.listGroups(userId, dto);
@@ -20,6 +15,11 @@ export class GroupController {
   @Post()
   async createGroup(@GetUser("id") userId: number, @Body() dto: CreateGroupDto) {
     return this.groupService.createGroup(userId, dto);
+  }
+
+  @Get(":id")
+  async getGroupInfo(@Param("id") id: string, @GetUser("id") userId: number) {
+    return this.groupService.getGroupInfo(userId, { id });
   }
 
   @Patch(":id")

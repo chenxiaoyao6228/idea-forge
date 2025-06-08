@@ -11,10 +11,7 @@ export const userApi = {
    * @param id - User ID
    * @returns User information
    */
-  getById: async (id: string) => {
-    const { data } = await request.get<void, UserResponse>(`/api/user/${id}`);
-    return data;
-  },
+  getById: async (id: string) => request.get<void, UserResponse>(`/api/users/${id}`),
 
   /**
    * Update user information
@@ -22,18 +19,12 @@ export const userApi = {
    * @param body - Updated user data
    * @returns Updated user information
    */
-  update: async (id: string, body: UpdateUserRequest) => {
-    const { data } = await request.put<UpdateUserRequest, UserResponse>(`/api/user/${id}`, body);
-    return data;
-  },
+  update: async (id: string, body: UpdateUserRequest) => request.put<UpdateUserRequest, UserResponse>(`/api/users/${id}`, body),
 
   /**
    * Search users with pagination and filtering
    * @param params - Search parameters including query, pagination, and sorting
    * @returns Paginated list of users
    */
-  search: async (params: UserListRequestDto) => {
-    const { data } = await request.get<UserListRequestDto, UserListResponse>("/api/user/search", { params });
-    return data;
-  },
+  search: async (params: UserListRequestDto) => request.get<UserListRequestDto, UserListResponse>("/api/users", { params }),
 };

@@ -1,19 +1,15 @@
 import { Button } from "@/components/ui/button";
-import useTestStore from "@/stores/demo-store";
 
 export default function TestSentry() {
-  const isEven = useTestStore.use.isEven();
-  const count = useTestStore.use.count();
-  const increment = useTestStore.use.increment();
   return (
     <div>
       <Button
         type="button"
         onClick={() => {
-          increment();
+          throw new Error("Test error");
         }}
       >
-        Increment - {count} - {isEven ? "Even" : "Odd"}
+        Test Error
       </Button>
     </div>
   );

@@ -60,7 +60,7 @@ ADD COLUMN     "permission" "Permission" NOT NULL DEFAULT 'READ';
 -- AlterTable
 ALTER TABLE "User" DROP COLUMN "status",
 ADD COLUMN     "status" "UserStatus" NOT NULL DEFAULT 'PENDING',
-ALTER COLUMN "updated_time" SET DATA TYPE TIMESTAMP(3);
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
 
 -- CreateTable
 CREATE TABLE "Workspace" (

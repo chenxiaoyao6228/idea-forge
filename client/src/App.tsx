@@ -1,6 +1,17 @@
 import { Outlet, useRoutes } from "react-router-dom";
 import { useIsMobile } from "./hooks/use-mobile";
 import { useEffect } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function useRemoveInitialLoader() {
   useEffect(() => {
@@ -33,7 +44,11 @@ function App() {
     );
   }
 
-  return <Outlet />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Outlet />
+    </QueryClientProvider>
+  );
 }
 
 export default App;

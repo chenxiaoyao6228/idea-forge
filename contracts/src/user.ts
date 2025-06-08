@@ -18,6 +18,7 @@ export const userResponseSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE", "PENDING"]),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
+  imageUrl: z.string().url().nullable(),
 });
 
 export const userInfoResponseSchema = z.object({

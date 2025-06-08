@@ -22,6 +22,7 @@ interface StarLinkProps {
   isDragging?: boolean;
 }
 
+// TODO: support dnd with draggable-star-link-container
 export function StarLink({ star, isDragging = false }: StarLinkProps) {
   const { t } = useTranslation();
   const { docId: activeDocumentId } = useParams();
@@ -128,10 +129,10 @@ export function StarLink({ star, isDragging = false }: StarLinkProps) {
       {hasDocuments && isExpanded && (
         <div className="ml-4">
           {document?.children?.map((node, index) => (
-            <DraggableDocumentContainer key={node.id} node={node} depth={1} index={index} subspaceId={document.subspaceId || ""} />
+            <DocumentLink key={node.id} node={node} depth={1} index={index} subspaceId={document.subspaceId || ""} />
           ))}
           {subspace?.navigationTree?.map((node, index) => (
-            <DraggableDocumentContainer key={node.id} node={node} depth={1} index={index} subspaceId={subspace.id} />
+            <DocumentLink key={node.id} node={node} depth={1} index={index} subspaceId={subspace.id} />
           ))}
         </div>
       )}

@@ -38,8 +38,8 @@ model User {
   status        UserStatus @default(PENDING) // Account status
 
   // Timestamps
-  created_time DateTime @default(now()) @db.Timestamp() // Account creation time
-  updated_time DateTime @updatedAt // Last update time
+  createdAt DateTime @default(now()) @db.Timestamp() // Account creation time
+  updatedAt DateTime @updatedAt // Last update time
 
   // Security
   hashedRefreshToken String? // Refresh token for authentication
@@ -78,12 +78,11 @@ model User {
   SubspaceMemberPermission SubspaceMemberPermission[]
 
   // Star relationships
-  stars              Star[] // User's starred items
-  docGroupPermissions DocGroupPermission[] @relation("UserGroupPermissions")
-  docUserPermissions  DocUserPermission[]  @relation("UserDocPermissions")
+  stars                   Star[] // User's starred items
+  docGroupPermissions     DocGroupPermission[] @relation("UserGroupPermissions")
+  docUserPermissions      DocUserPermission[]  @relation("UserDocPermissions")
   createdGroupPermissions DocGroupPermission[] @relation("CreatedGroupPermissions")
   createdUserPermissions  DocUserPermission[]  @relation("CreatedUserPermissions")
-
 }
 
 enum UserStatus {
@@ -371,8 +370,8 @@ model DocGroupPermission {
   groupId String
 
   // User relationships
-  user        User   @relation("UserGroupPermissions", fields: [userId], references: [id])
-  userId      Int
+  user   User @relation("UserGroupPermissions", fields: [userId], references: [id])
+  userId Int
 
   // Permission inheritance support for folder tree sharing  
   createdBy   User                 @relation("CreatedGroupPermissions", fields: [createdById], references: [id])

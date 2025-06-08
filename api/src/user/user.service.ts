@@ -5,7 +5,7 @@ import { CreateUserDto, UpdateUserDto } from "@/auth/auth.dto";
 import { UserListRequestDto } from "contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
-import { UserStatus } from "@prisma/client";
+import { UserStatus, Prisma } from "@prisma/client";
 
 @Injectable()
 export class UserService {
@@ -115,33 +115,56 @@ export class UserService {
 
   async searchUser(dto: UserListRequestDto) {
     const { page = 1, limit = 10, query, sortBy = "createdAt", sortOrder = "desc" } = dto;
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * Number(limit);
+    const take = Number(limit);
 
-    const where = query
-      ? {
-          OR: [{ email: { contains: query } }, { displayName: { contains: query } }],
-        }
-      : {};
-
-    const [users, total] = await Promise.all([
-      this.prisma.user.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: {
-          [sortBy]: sortOrder,
-        },
-      }),
-      this.prisma.user.count({ where }),
-    ]);
-
-    return {
-      pagination: {
-        page,
-        limit,
-        total,
-      },
-      data: users,
+    const where: Prisma.UserWhereInput = {
+      status: UserStatus.ACTIVE,
+      ...(query
+        ? {
+            OR: [{ email: { contains: query, mode: Prisma.QueryMode.insensitive } }, { displayName: { contains: query, mode: Prisma.QueryMode.insensitive } }],
+          }
+        : {}),
     };
+
+    try {
+      const [users, total] = await Promise.all([
+        this.prisma.user.findMany({
+          where,
+          skip,
+          take,
+          orderBy: {
+            [sortBy]: sortOrder,
+          },
+          select: {
+            id: true,
+            email: true,
+            imageUrl: true,
+            displayName: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        this.prisma.user.count({ where }),
+      ]);
+
+      return {
+        pagination: {
+          page,
+          limit: take,
+          total,
+        },
+        data: users.map((user) => ({
+          ...user,
+          id: user.id.toString(),
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        })),
+      };
+    } catch (error) {
+      console.error("Error searching users:", error);
+      throw new ApiException(ErrorCodeEnum.AccountError);
+    }
   }
 }

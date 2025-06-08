@@ -12,8 +12,8 @@ export const UserSchema = z.object({
   displayName: z.string().nullable(),
   imageUrl: z.string().nullable(),
   emailVerified: z.coerce.date().nullable(),
-  created_time: z.coerce.date(),
-  updated_time: z.coerce.date(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
   hashedRefreshToken: z.string().nullable(),
 })
 
@@ -26,8 +26,8 @@ export type User = z.infer<typeof UserSchema>
 export const UserOptionalDefaultsSchema = UserSchema.merge(z.object({
   status: UserStatusSchema.optional(),
   id: z.number().int().optional(),
-  created_time: z.coerce.date().optional(),
-  updated_time: z.coerce.date().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
 }))
 
 export type UserOptionalDefaults = z.infer<typeof UserOptionalDefaultsSchema>

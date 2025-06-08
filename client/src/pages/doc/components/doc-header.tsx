@@ -4,17 +4,18 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import DocumentBreadcrumb from "../../main/sidebar/doc-breadcrumb";
-// import { ShareDocButton } from "../../main/sidebar/share-doc-button";
 import { CollabUsers } from "@/pages/doc/components/collab-users";
 import { useTranslation } from "react-i18next";
 import ExportMarkdownButton from "./export-markdown-button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Ellipsis } from "lucide-react";
+import { Ellipsis, Share } from "lucide-react";
 import { useScrollTop } from "@/hooks/use-scroll-top";
 import ImportMarkdownButton from "./import-markdown";
 import { Separator } from "@/components/ui/separator";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import useUIStore from "@/stores/ui";
+import { ShareButton } from "@/pages/main/sharing";
 
 export default function DocumentHeader() {
   const { t } = useTranslation();
@@ -26,6 +27,8 @@ export default function DocumentHeader() {
   }, []);
 
   const scrolled = useScrollTop(10, scrollContainer || undefined);
+
+  const { activeDocumentId } = useUIStore();
 
   return (
     <header
@@ -50,7 +53,7 @@ export default function DocumentHeader() {
       {/* right */}
       <div className="flex items-center mr-2 sm:mr-4 ">
         <CollabUsers className="mr-2" />
-        {/* <ShareDocButton /> */}
+        {activeDocumentId && <ShareButton documentId={activeDocumentId}></ShareButton>}
         <TopBarHandlers />
       </div>
     </header>

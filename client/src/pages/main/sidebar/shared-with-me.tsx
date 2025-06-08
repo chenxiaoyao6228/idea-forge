@@ -76,8 +76,9 @@ export default function SharedWithMe() {
               ) : (
                 currentUserPermissions.map((permission) => {
                   const document = permission.documentId ? documents[permission.documentId] : undefined;
-                  const groupPermissions = getGroupPermissionsByDocumentId(permission.documentId || "");
-                  return <ShareWithMeLink key={permission.id} permission={permission} document={document} groupPermissions={groupPermissions} />;
+                  // FIXME:
+                  // const groupPermissions = getGroupPermissionsByDocumentId(permission.documentId || "");
+                  return <ShareWithMeLink key={permission.id} permission={permission} document={document} />;
                 })
               )}
             </div>
