@@ -103,6 +103,7 @@ export class DocumentController {
     return this.documentService.removeGroupPermission(userId, id, groupId);
   }
 
+  // TODO: pagination, combined with client side PaginationList
   @Get(":id/group-permissions")
   async listGroupPermissions(@GetUser("id") userId: number, @Param("id") id: string) {
     return this.documentService.listGroupPermissions(id);

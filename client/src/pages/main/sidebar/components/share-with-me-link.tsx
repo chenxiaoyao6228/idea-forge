@@ -1,22 +1,24 @@
 import * as React from "react";
-import { FileText } from "lucide-react";
+import { FileText, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useUIStore from "@/stores/ui";
 import useDocumentStore from "@/stores/document";
-import { UserPermissionResponse, NavigationNode, NavigationNodeType } from "contracts";
+import { UserPermissionResponse, DocGroupPermissionResponse } from "contracts";
 import { DocumentLink } from "./document-link";
 import type { DocumentEntity } from "@/stores/document";
+import { Badge } from "@/components/ui/badge";
 
 interface ShareWithMeLinkProps {
   permission: UserPermissionResponse;
+  groupPermissions?: DocGroupPermissionResponse[];
   document?: DocumentEntity;
   depth?: number;
 }
 
-export function ShareWithMeLink({ permission, document: initialDocument, depth = 0 }: ShareWithMeLinkProps) {
+export function ShareWithMeLink({ permission, document: initialDocument, groupPermissions = [], depth = 0 }: ShareWithMeLinkProps) {
   const { t } = useTranslation();
   const activeDocumentId = useUIStore((state) => state.activeDocumentId);
   const { fetchDetail, fetchChildren, getDocumentAsNavigationNode } = useDocumentStore();
@@ -80,17 +82,38 @@ export function ShareWithMeLink({ permission, document: initialDocument, depth =
   const icon = <FileText className="h-4 w-4" />;
   const docTitle = document?.title || permission.document?.title || "Untitled";
 
+  const renderPermissionBadges = () => {
+    const badges: React.ReactNode[] = [];
+
+    // Add user permission badge
+    badges.push(
+      <Badge key="user" variant="secondary" className="text-xs">
+        {permission.user.displayName || permission.user.email} · {permission.permission}
+      </Badge>,
+    );
+
+    // Add group permission badges
+    groupPermissions.forEach((groupPermission) => {
+      badges.push(
+        <Badge key={groupPermission.id} variant="outline" className="text-xs">
+          <Users className="h-3 w-3 mr-1" />
+          {groupPermission.group.name} · {groupPermission.permission}
+        </Badge>,
+      );
+    });
+
+    return badges;
+  };
+
   return (
     <>
       <SidebarLink
         to={`/${permission.documentId}`}
         icon={icon}
         label={
-          <div className="flex flex-col items-start">
+          <div className="flex flex-col items-start gap-1">
             <span className="text-sm font-medium">{docTitle}</span>
-            {/* <span className="text-xs text-muted-foreground">
-              {permission.user.displayName || permission.user.email} · {t("Permission")}: {permission.permission}
-            </span> */}
+            {/* <div className="flex flex-wrap gap-1">{renderPermissionBadges()}</div> */}
           </div>
         }
         expanded={hasChildDocuments ? isExpanded : undefined}

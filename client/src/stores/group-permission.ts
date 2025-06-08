@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
-import { groupApi } from "@/apis/group";
+import { groupPermissionApi } from "@/apis/group-permission";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
-import { DocGroupPermissionResponse, DocGroupPermissionDto } from "contracts";
+import type { GroupPermissionResponse, DocGroupPermissionDto, GroupPermissionListRequest, GroupPermissionListResponse } from "contracts";
+import useDocumentStore from "./document";
+import { DocTypeSchema, DocVisibilitySchema } from "contracts";
 
 interface FetchOptions {
   force?: boolean;
@@ -18,13 +20,13 @@ interface State {
 
 interface Action {
   // API actions
-  fetch: (groupId: string, options?: FetchOptions) => Promise<DocGroupPermissionResponse[]>;
-  addPermission: (groupId: string, data: DocGroupPermissionDto) => Promise<DocGroupPermissionResponse>;
-  removePermission: (groupId: string, documentId: string) => Promise<void>;
+  list: (query: GroupPermissionListRequest, options?: FetchOptions) => Promise<GroupPermissionResponse[]>;
+  addPermission: (data: DocGroupPermissionDto) => Promise<GroupPermissionResponse>;
+  removePermission: (id: string) => Promise<void>;
 
   // Helper methods
-  getByGroupId: (groupId: string) => DocGroupPermissionResponse[];
-  getByDocumentId: (documentId: string) => DocGroupPermissionResponse[];
+  getByGroupId: (groupId: string) => GroupPermissionResponse[];
+  getByDocumentId: (documentId: string) => GroupPermissionResponse[];
 }
 
 const defaultState: State = {
@@ -33,10 +35,10 @@ const defaultState: State = {
   isLoaded: false,
 };
 
-const docGroupPermissionEntitySlice = createEntitySlice<DocGroupPermissionResponse>();
+const docGroupPermissionEntitySlice = createEntitySlice<GroupPermissionResponse>();
 export const docGroupPermissionSelectors = docGroupPermissionEntitySlice.selectors;
 
-type StoreState = State & Action & EntityState<DocGroupPermissionResponse> & EntityActions<DocGroupPermissionResponse>;
+type StoreState = State & Action & EntityState<GroupPermissionResponse> & EntityActions<GroupPermissionResponse>;
 const useDocGroupPermissionStore = create<StoreState>()(
   subscribeWithSelector(
     devtools(
@@ -46,25 +48,42 @@ const useDocGroupPermissionStore = create<StoreState>()(
         ...defaultState,
         ...docGroupPermissionEntitySlice.initialState,
         ...docGroupPermissionEntitySlice.createActions(set),
-
-        fetch: async (groupId: string, options = {}) => {
+        // FIXME: if there are many of these, we need to use a better way to fetch them
+        list: async (query: GroupPermissionListRequest, options = {}) => {
           if (!options.prefetch) {
             set({ isFetching: true });
           }
 
           try {
-            const response = await groupApi.listGroupPermissions(groupId);
-            get().setAll(response);
-            return response;
+            const response = await groupPermissionApi.listGroupPermissions(query);
+            get().setAll(response.data.groupPermissions);
+
+            // Add documents to document store
+            const { upsertMany } = useDocumentStore.getState();
+            const documents = response.data.documents.map((doc) => ({
+              id: doc.id,
+              title: doc.title,
+              content: "",
+              workspaceId: "",
+              type: DocTypeSchema.Enum.NOTE,
+              visibility: DocVisibilitySchema.Enum.PRIVATE,
+              parentId: doc.parentId,
+              icon: doc.icon,
+              createdAt: doc.createdAt,
+              updatedAt: doc.updatedAt,
+            }));
+            upsertMany(documents);
+
+            return response.data.groupPermissions;
           } finally {
             set({ isFetching: false });
           }
         },
 
-        addPermission: async (groupId: string, data: DocGroupPermissionDto) => {
+        addPermission: async (data: DocGroupPermissionDto) => {
           set({ isSaving: true });
           try {
-            const response = await groupApi.addGroupPermission(groupId, data);
+            const response = await groupPermissionApi.addGroupPermission(data);
             get().addOne(response);
             return response;
           } finally {
@@ -72,13 +91,11 @@ const useDocGroupPermissionStore = create<StoreState>()(
           }
         },
 
-        removePermission: async (groupId: string, documentId: string) => {
+        removePermission: async (id: string) => {
           set({ isSaving: true });
           try {
-            await groupApi.removeGroupPermission(groupId, documentId);
-            const permissions = docGroupPermissionSelectors.selectAll(get());
-            const toRemove = permissions.filter((p) => p.documentId === documentId && p.groupId === groupId);
-            get().removeMany(toRemove.map((p) => p.id));
+            await groupPermissionApi.removeGroupPermission(id);
+            get().removeOne(id);
           } finally {
             set({ isSaving: false });
           }

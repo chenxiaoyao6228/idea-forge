@@ -67,7 +67,7 @@ export class SubspaceController {
     return this.subspaceService.getSubspaceMembers(id, req.user.id);
   }
 
-  // ==== permissions ====
+  // ==== user permissions ====
 
   @Post(":id/user-permissions")
   async addUserPermission(@Param("id") id: string, @Body() dto: SubspaceUserPermission, @Req() req: any) {
@@ -83,6 +83,8 @@ export class SubspaceController {
   async listUserPermissions(@Param("id") id: string, @Req() req: any) {
     return this.subspaceService.listUserPermissions(id, req.user.id);
   }
+
+  // ==== group permissions, 后续支持 ====
 
   @Post(":id/group-permissions")
   async addGroupPermission(@Param("id") id: string, @Body() dto: SubspaceGroupPermission, @Req() req: any) {

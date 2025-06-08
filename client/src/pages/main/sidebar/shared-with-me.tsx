@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShareWithMeLink } from "./components/share-with-me-link";
 import useDocUserPermissionStore from "@/stores/user-permission";
+import useDocGroupPermissionStore from "@/stores/group-permission";
 import useDocumentStore from "@/stores/document";
 import useUserStore from "@/stores/user";
 import { UserPermissionResponse } from "contracts";
@@ -18,17 +19,29 @@ export default function SharedWithMe() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const { userInfo } = useUserStore();
-  const { list, currentUserPermissions, isFetching } = useDocUserPermissionStore();
+  const { list: listUserPermissions, currentUserPermissions, isFetching: isUserPermissionsFetching } = useDocUserPermissionStore();
+  const { list: listGroupPermissions, getByDocumentId: getGroupPermissionsByDocumentId, isFetching: isGroupPermissionsFetching } = useDocGroupPermissionStore();
   const { entities: documents } = useDocumentStore();
 
   useEffect(() => {
     if (userInfo?.id) {
-      void list(userInfo?.id, { force: true }).catch((error) => {
+      Promise.all([
+        // TODO: decide whether we should pass the whole query
+        listUserPermissions(userInfo?.id, { force: true }),
+        listGroupPermissions(
+          {
+            limit: 100,
+            page: 1,
+            sortBy: "createdAt",
+          },
+          { force: true },
+        ),
+      ]).catch((error) => {
         console.error("Failed to load shared documents:", error);
         toast.error(t("Failed to load shared documents"));
       });
     }
-  }, [userInfo?.id, list, t]);
+  }, [userInfo?.id, listUserPermissions, listGroupPermissions, t]);
 
   // Auto-expand if there are permissions
   useEffect(() => {
@@ -37,7 +50,10 @@ export default function SharedWithMe() {
     }
   }, [currentUserPermissions.length]);
 
-  if (!currentUserPermissions.length && !isFetching) {
+  const isFetching = isUserPermissionsFetching || isGroupPermissionsFetching;
+  const hasPermissions = currentUserPermissions.length > 0;
+
+  if (!hasPermissions && !isFetching) {
     return null;
   }
 
@@ -60,7 +76,8 @@ export default function SharedWithMe() {
               ) : (
                 currentUserPermissions.map((permission) => {
                   const document = permission.documentId ? documents[permission.documentId] : undefined;
-                  return <ShareWithMeLink key={permission.id} permission={permission} document={document} />;
+                  const groupPermissions = getGroupPermissionsByDocumentId(permission.documentId || "");
+                  return <ShareWithMeLink key={permission.id} permission={permission} document={document} groupPermissions={groupPermissions} />;
                 })
               )}
             </div>

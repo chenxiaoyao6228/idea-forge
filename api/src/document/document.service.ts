@@ -520,7 +520,7 @@ export class DocumentService {
 
     const index = fractionalIndex(null, existingMemberships.length ? existingMemberships[0].index : null);
 
-    const [membership, isNew] = await this.prisma.docUserPermission.upsert({
+    const [userPermission, _] = await this.prisma.docUserPermission.upsert({
       where: {
         docId_userId: { docId, userId },
       },
@@ -546,7 +546,7 @@ export class DocumentService {
       },
     });
 
-    return membership;
+    return userPermission;
   }
 
   async removeUserPermission(userId: number, docId: string, targetUserId: number) {

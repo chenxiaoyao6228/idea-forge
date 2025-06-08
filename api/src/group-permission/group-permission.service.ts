@@ -1,79 +1,159 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { GroupPermissionListResponse } from "contracts";
-import { CreateGroupPermissionDto, GroupPermissionListDto } from "./group-permission.dto";
-import { presentGroupPermission } from "./group-permission.presenter";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
-import { Permission, Prisma } from "@prisma/client";
+import { Injectable, NotFoundException, Inject } from "@nestjs/common";
+import type { GroupPermissionDto, GroupPermissionListRequestDto } from "./group-permission.dto";
+import type { DocGroupPermission, Prisma } from "@prisma/client";
+import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import type { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
 
 @Injectable()
 export class GroupPermissionService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient) {}
+  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
-  async list(dto: GroupPermissionListDto): Promise<GroupPermissionListResponse> {
-    const { query, groupId, documentId, page = 1, limit = 10 } = dto;
+  async list(query: GroupPermissionListRequestDto) {
+    const { page = 1, limit = 10, query: searchQuery, groupId, documentId } = query;
 
     const where: Prisma.DocGroupPermissionWhereInput = {
+      ...(searchQuery && {
+        OR: [{ group: { name: { contains: searchQuery, mode: "insensitive" } } }, { doc: { title: { contains: searchQuery, mode: "insensitive" } } }],
+      }),
       ...(groupId && { groupId }),
       ...(documentId && { docId: documentId }),
-      ...(query && {
-        OR: [{ group: { name: { contains: query, mode: "insensitive" } } }, { group: { description: { contains: query, mode: "insensitive" } } }],
-      }),
     };
 
-    const [permissions, total] = await Promise.all([
-      this.prismaService.docGroupPermission.findMany({
+    const [total, permissions] = await Promise.all([
+      this.prisma.docGroupPermission.count({ where }),
+      this.prisma.docGroupPermission.findMany({
         where,
         include: {
           group: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
+            include: {
+              _count: {
+                select: {
+                  members: true,
+                },
+              },
             },
           },
+          doc: true,
         },
-        skip: (Number(page) - 1) * Number(limit),
+        skip: (page - 1) * limit,
         take: Number(limit),
+        orderBy: { createdAt: "desc" },
       }),
-      this.prismaService.docGroupPermission.count({ where }),
     ]);
 
+    const documentIds = permissions.map((p) => p.docId).filter(Boolean);
+    const documents = documentIds.length
+      ? await this.prisma.doc.findMany({
+          where: { id: { in: documentIds } },
+          select: {
+            id: true,
+            title: true,
+            icon: true,
+            parentId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        })
+      : [];
+
     return {
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-      },
-      data: permissions.map(presentGroupPermission),
+      permissions,
+      documents,
+      total,
+      page,
+      limit,
     };
   }
 
-  async create(dto: CreateGroupPermissionDto) {
-    const permission = await this.prismaService.docGroupPermission.create({
+  async create(data: GroupPermissionDto, userId: number) {
+    const { groupId, docId, permission } = data;
+
+    if (!docId) {
+      throw new Error("Document ID is required");
+    }
+
+    return this.prisma.docGroupPermission.create({
       data: {
-        groupId: dto.groupId,
-        docId: dto.documentId!,
-        permission: dto.type as Permission,
-        userId: Number(dto.userId),
-        createdById: Number(dto.userId), // Using the same user as creator
+        groupId,
+        docId,
+        permission,
+        userId,
+        createdById: userId,
       },
       include: {
         group: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
+          include: {
+            _count: {
+              select: {
+                members: true,
+              },
+            },
           },
         },
+        doc: true,
       },
     });
-
-    return presentGroupPermission(permission);
   }
 
-  async delete(id: string): Promise<void> {
-    await this.prismaService.docGroupPermission.delete({
+  async delete(id: string) {
+    const permission = await this.prisma.docGroupPermission.findUnique({
+      where: { id },
+    });
+
+    if (!permission) {
+      throw new NotFoundException(`Group permission with ID ${id} not found`);
+    }
+
+    await this.prisma.docGroupPermission.delete({
       where: { id },
     });
   }
+
+  // TODO: 权限继承机制
+  // // 权限创建时的传播
+  // async createInheritedPermissions(permission: DocGroupPermission) {
+  //   if (permission.sourceId) return; // 如果已经是继承权限，跳过
+
+  //   const childDocs = await this.findChildDocuments(permission.docId);
+
+  //   for (const childDoc of childDocs) {
+  //     await this.prisma.docGroupPermission.create({
+  //       data: {
+  //         docId: childDoc.id,
+  //         groupId: permission.groupId,
+  //         permission: permission.permission,
+  //         sourceId: permission.id, // 指向父权限
+  //         userId: permission.userId,
+  //         createdById: permission.createdById,
+  //       },
+  //     });
+  //   }
+  // }
+
+  // // 权限更新时的传播
+  // async updateInheritedPermissions(permission: DocGroupPermission) {
+  //   if (permission.sourceId) return; // 继承权限不能直接更新
+
+  //   await this.prisma.docGroupPermission.updateMany({
+  //     where: {
+  //       sourceId: permission.id,
+  //     },
+  //     data: {
+  //       permission: permission.permission,
+  //     },
+  //   });
+  // }
+
+  // // 查找根权限
+  // async findRootPermission(permissionId: string): Promise<DocGroupPermission> {
+  //   const permission = await this.prisma.docGroupPermission.findUnique({
+  //     where: { id: permissionId },
+  //   });
+
+  //   if (!permission?.sourceId) {
+  //     return permission;
+  //   }
+
+  //   return this.findRootPermission(permission.sourceId);
+  // }
 }

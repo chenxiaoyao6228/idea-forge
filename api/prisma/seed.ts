@@ -377,6 +377,47 @@ async function seed() {
     ],
   });
 
+  // Create DocGroupPermission for specific documents
+  await prisma.docGroupPermission.createMany({
+    data: [
+      {
+        docId: folderA1.id,
+        groupId: group1.id,
+        permission: Permission.EDIT,
+        userId: user2.id,
+        createdById: user2.id,
+      },
+      {
+        docId: folderA2.id,
+        groupId: group1.id,
+        permission: Permission.READ,
+        userId: user2.id,
+        createdById: user2.id,
+      },
+      {
+        docId: folderA11.id,
+        groupId: group2.id,
+        permission: Permission.EDIT,
+        userId: user2.id,
+        createdById: user2.id,
+      },
+      {
+        docId: docA111.id,
+        groupId: group1.id,
+        permission: Permission.MANAGE,
+        userId: user2.id,
+        createdById: user2.id,
+      },
+      {
+        docId: docA112.id,
+        groupId: group2.id,
+        permission: Permission.SHARE,
+        userId: user2.id,
+        createdById: user2.id,
+      },
+    ],
+  });
+
   // Update subspace navigation tree
   const navigationTree = [
     {

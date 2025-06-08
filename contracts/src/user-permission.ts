@@ -7,7 +7,7 @@ export const userPermissionSchema = z.object({
   id: z.string(),
   userId: z.number(),
   documentId: z.string().optional(),
-  collectionId: z.string().optional(),
+  subspaceId: z.string().optional(),
   permission: z.enum(permission),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -36,7 +36,7 @@ export const userPermissionResponseSchema = z.object({
     id: z.string(),
     title: z.string(),
   }).optional(),
-  collectionId: z.string().optional(),
+  subspaceId: z.string().optional(),
   collection: z.object({
     id: z.string(),
     name: z.string(),

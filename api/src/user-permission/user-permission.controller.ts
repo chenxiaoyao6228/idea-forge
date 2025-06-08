@@ -22,7 +22,7 @@ export class UserPermissionController {
 
   @Get()
   async list(@GetUser("id") userId: number, @Query() dto: UserPermissionListDto) {
-    return this.userPermissionService.list(userId, dto);
+    return this.userPermissionService.list(dto);
   }
 
   @Post()
