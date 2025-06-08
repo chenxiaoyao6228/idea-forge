@@ -32,7 +32,7 @@ export type AuthResponseType =
   | "ERROR"; // Other errors
 
 export interface UserResponseData {
-  id: number;
+  id: string;
   email?: string;
   displayName?: string;
   imageUrl?: string;

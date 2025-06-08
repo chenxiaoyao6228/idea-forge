@@ -22,9 +22,9 @@ export const DocSchema = z.object({
   createdAt: z.coerce.date(),
   icon: z.string().nullable(),
   coverImageId: z.string().nullable(),
-  authorId: z.number().int(),
-  createdById: z.number().int(),
-  lastModifiedById: z.number().int(),
+  authorId: z.string(),
+  createdById: z.string(),
+  lastModifiedById: z.string(),
   workspaceId: z.string(),
   subspaceId: z.string().nullable(),
 })

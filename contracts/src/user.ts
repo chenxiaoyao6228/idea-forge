@@ -12,7 +12,7 @@ export const userListRequestSchema = basePagerSchema.extend({
 
 // Response schemas
 export const userResponseSchema = z.object({
-  id: z.number().int(),
+  id: z.string(),
   email: z.string(),
   displayName: z.string().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "PENDING"]),

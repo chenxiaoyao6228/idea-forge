@@ -28,7 +28,7 @@ datasource db {
 }
 
 model User {
-  id          Int     @id @default(autoincrement())
+  id          String  @id @default(uuid())
   email       String  @unique
   displayName String? // Display name (used as primary identifier)
   imageUrl    String? // Profile image URL
@@ -54,7 +54,7 @@ model User {
   docShare         DocShare[] // Documents shared by user
 
   // Public sharing
-  createdPublicShares PublicShare[] // Public shares created by user
+  // createdPublicShares PublicShare[] // Public shares created by user
 
   // Version history
   docRevisions DocRevision[] // Document revision history
@@ -147,14 +147,14 @@ model Doc {
   visibility DocVisibility @default(WORKSPACE)
 
   // relations
-  author   User @relation("DocAuthor", fields: [authorId], references: [id])
-  authorId Int
+  author   User   @relation("DocAuthor", fields: [authorId], references: [id])
+  authorId String
 
-  createdBy   User @relation("DocCreator", fields: [createdById], references: [id])
-  createdById Int
+  createdBy   User   @relation("DocCreator", fields: [createdById], references: [id])
+  createdById String
 
-  lastModifiedBy   User @relation("DocLastModifier", fields: [lastModifiedById], references: [id])
-  lastModifiedById Int
+  lastModifiedBy   User   @relation("DocLastModifier", fields: [lastModifiedById], references: [id])
+  lastModifiedById String
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId String
@@ -168,7 +168,7 @@ model Doc {
   // sharing and permissions
   docShare           DocShare[]
   guestDocPermission GuestDocPermission[]
-  publicShare        PublicShare?
+  // publicShare        PublicShare?
 
   // versions
   revisions          DocRevision[]
@@ -189,59 +189,59 @@ model DocRevision {
   doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
   docId    String
   author   User   @relation(fields: [authorId], references: [id])
-  authorId Int
+  authorId String
 
   @@index([docId, createdAt])
 }
 
-model PublicShare {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// model PublicShare {
+//   id        String   @id @default(cuid())
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
 
-  // Associated document
-  doc   Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
-  docId String @unique
+//   // Associated document
+//   doc   Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
+//   docId String @unique
 
-  // Sharing configuration
-  expiresAt    DateTime? // Expiration time, null means never expires
-  allowEdit    Boolean   @default(false) // Allow editing
-  allowComment Boolean   @default(false) // Allow commenting
-  allowCopy    Boolean   @default(false) // Allow copying
-  showTemplate Boolean   @default(false) // Show template button
-  showSidebar  Boolean   @default(false) // Show left sidebar
+//   // Sharing configuration
+//   expiresAt    DateTime? // Expiration time, null means never expires
+//   allowEdit    Boolean   @default(false) // Allow editing
+//   allowComment Boolean   @default(false) // Allow commenting
+//   allowCopy    Boolean   @default(false) // Allow copying
+//   showTemplate Boolean   @default(false) // Show template button
+//   showSidebar  Boolean   @default(false) // Show left sidebar
 
-  // Access statistics
-  viewCount Int @default(0)
+//   // Access statistics
+//   viewCount Int @default(0)
 
-  // Creator
-  creator   User @relation(fields: [creatorId], references: [id])
-  creatorId Int
+//   // Creator
+//   creator   User   @relation(fields: [creatorId], references: [id])
+//   creatorId String
 
-  // Security settings
-  accessCode String? // Access password, null means no password
+//   // Security settings
+//   accessCode String? // Access password, null means no password
 
-  // Edit history
-  editHistory PublicEditHistory[]
-}
+//   // Edit history
+//   editHistory PublicEditHistory[]
+// }
 
-// Public edit history
-model PublicEditHistory {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+// // Public edit history
+// model PublicEditHistory {
+//   id        String   @id @default(cuid())
+//   createdAt DateTime @default(now())
 
-  // Associated share
-  share   PublicShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
-  shareId String
+//   // Associated share
+//   share   PublicShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+//   shareId String
 
-  // Editor information
-  editorId   String? // Logged-in user ID
-  editorName String // Editor name (anonymous users use temporary name)
-  editorIp   String // Editor IP address
+//   // Editor information
+//   editorId   String? // Logged-in user ID
+//   editorName String // Editor name (anonymous users use temporary name)
+//   editorIp   String // Editor IP address
 
-  // Edit content
-  operation Json // Record specific edit operations
-}
+//   // Edit content
+//   operation Json // Record specific edit operations
+// }
 
 model WorkspaceMember {
   id        String        @id @default(cuid())
@@ -255,7 +255,7 @@ model WorkspaceMember {
   workspace         Workspace           @relation(fields: [workspaceId], references: [id])
   workspaceId       String
   user              User                @relation(fields: [userId], references: [id])
-  userId            Int
+  userId            String
   DocUserPermission DocUserPermission[]
 
   @@unique([workspaceId, userId])
@@ -298,7 +298,7 @@ model SubspaceMember {
   subspaceId String
 
   user              User                @relation(fields: [userId], references: [id])
-  userId            Int
+  userId            String
   DocUserPermission DocUserPermission[]
 
   @@unique([subspaceId, userId])
@@ -322,7 +322,7 @@ model SubspaceMemberPermission {
   subspace   Subspace @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
   subspaceId String
   user       User     @relation(fields: [userId], references: [id])
-  userId     Int
+  userId     String
 
   // some roles' permission can not be modified
   isEditable Boolean @default(true)
@@ -352,7 +352,7 @@ model MemberGroupUser {
   group   MemberGroup @relation(fields: [groupId], references: [id])
   groupId String
   user    User        @relation(fields: [userId], references: [id])
-  userId  Int
+  userId  String
 
   @@unique([groupId, userId])
 }
@@ -370,12 +370,12 @@ model DocGroupPermission {
   groupId String
 
   // User relationships
-  user   User @relation("UserGroupPermissions", fields: [userId], references: [id])
-  userId Int
+  user   User   @relation("UserGroupPermissions", fields: [userId], references: [id])
+  userId String
 
   // Permission inheritance support for folder tree sharing  
   createdBy   User                 @relation("CreatedGroupPermissions", fields: [createdById], references: [id])
-  createdById Int
+  createdById String
   source      DocGroupPermission?  @relation("GroupPermissionSource", fields: [sourceId], references: [id])
   sourceId    String?
   children    DocGroupPermission[] @relation("GroupPermissionSource")
@@ -396,9 +396,9 @@ model DocUserPermission {
   doc         Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
   docId       String
   user        User   @relation("UserDocPermissions", fields: [userId], references: [id], onDelete: Cascade)
-  userId      Int
+  userId      String
   createdBy   User   @relation("CreatedUserPermissions", fields: [createdById], references: [id])
-  createdById Int
+  createdById String
 
   // Permission inheritance support for folder tree sharing  
   source   DocUserPermission?  @relation("UserPermissionSource", fields: [sourceId], references: [id])
@@ -429,7 +429,7 @@ model GuestCollaborator {
   updatedAt DateTime    @updatedAt
 
   invitedBy      User                 @relation("InvitedBy", fields: [invitedById], references: [id])
-  invitedById    Int
+  invitedById    String
   workspace      Workspace            @relation(fields: [workspaceId], references: [id])
   workspaceId    String
   docPermissions GuestDocPermission[]
@@ -461,8 +461,8 @@ enum GuestStatus {
 model Password {
   hash String
 
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId Int  @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique
 }
 
 model Connection {
@@ -473,8 +473,8 @@ model Connection {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId Int // Changed to Int type to match User.id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
   @@unique([providerName, providerId])
 }
@@ -493,9 +493,9 @@ model DocShare {
   doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
   docId    String
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId Int
+  authorId String
   sharedTo User   @relation("SharedToUser", fields: [userId], references: [id], onDelete: Cascade)
-  userId   Int
+  userId   String
 
   permission Permission @default(READ)
 
@@ -528,7 +528,7 @@ model File {
   url         String   @default("")
   status      String   @default("pending") // pending/active/deleted
   size        Int      @default(0)
-  userId      Int
+  userId      String
   user        User     @relation(fields: [userId], references: [id])
   contentType String
   createdAt   DateTime @default(now())
@@ -536,9 +536,9 @@ model File {
 }
 
 model AITokenUsage {
-  id            Int      @id @default(autoincrement())
+  id            String   @id @default(cuid())
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        Int      @unique
+  userId        String   @unique
   tokensUsed    Int      @default(0)
   lastResetDate DateTime @default(now())
   monthlyLimit  Int      @default(10000)
@@ -551,7 +551,7 @@ model AITokenUsage {
 
 model UserLoginHistory {
   id        String   @id @default(cuid())
-  userId    Int
+  userId    String
   ip        String?
   location  String?
   loginTime DateTime @default(now())
@@ -568,7 +568,7 @@ model Star {
 
   // Relations 
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     Int
+  userId     String
   doc        Doc?      @relation(fields: [docId], references: [id], onDelete: Cascade)
   docId      String?
   subspace   Subspace? @relation(fields: [subspaceId], references: [id], onDelete: Cascade)

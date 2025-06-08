@@ -10,7 +10,7 @@ export const ConnectionSchema = z.object({
   providerId: z.string(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
-  userId: z.number().int(),
+  userId: z.string(),
 })
 
 export type Connection = z.infer<typeof ConnectionSchema>

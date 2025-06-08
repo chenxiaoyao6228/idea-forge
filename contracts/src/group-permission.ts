@@ -10,7 +10,7 @@ export const groupPermissionSchema = z.object({
   permission: z.enum(permission),
   createdAt: z.string(),
   updatedAt: z.string(),
-  userId: z.number(),
+  userId: z.string(),
   createdById: z.number(),
 });
 

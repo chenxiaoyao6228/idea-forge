@@ -11,7 +11,7 @@ export const SubspaceMemberPermissionSchema = z.object({
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   subspaceId: z.string(),
-  userId: z.number().int(),
+  userId: z.string(),
   isEditable: z.boolean(),
 })
 

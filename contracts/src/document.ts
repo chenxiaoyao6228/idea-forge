@@ -194,14 +194,14 @@ export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
 
 // update doc
 export const updateSharePermissionSchema = z.object({
-  userId: z.number(),
+  userId: z.string(),
   permission: z.enum(permission),
 });
 
 export type UpdateSharePermissionDto = z.infer<typeof updateSharePermissionSchema>;
 
 export const removeShareSchema = z.object({
-  targetUserId: z.number(),
+  targetuserId: z.string(),
 });
 
 export type RemoveShareDto = z.infer<typeof removeShareSchema>;
@@ -216,7 +216,7 @@ export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
 
 // Permission schemas
 export const docUserPermissionSchema = z.object({
-  userId: z.number(),
+  userId: z.string(),
   permission: z.enum(permission),
 });
 

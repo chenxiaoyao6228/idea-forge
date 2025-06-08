@@ -5,8 +5,8 @@ import { z } from 'zod';
 /////////////////////////////////////////
 
 export const AITokenUsageSchema = z.object({
-  id: z.number().int(),
-  userId: z.number().int(),
+  id: z.string().cuid(),
+  userId: z.string(),
   tokensUsed: z.number().int(),
   lastResetDate: z.coerce.date(),
   monthlyLimit: z.number().int(),
@@ -21,7 +21,7 @@ export type AITokenUsage = z.infer<typeof AITokenUsageSchema>
 /////////////////////////////////////////
 
 export const AITokenUsageOptionalDefaultsSchema = AITokenUsageSchema.merge(z.object({
-  id: z.number().int().optional(),
+  id: z.string().cuid().optional(),
   tokensUsed: z.number().int().optional(),
   lastResetDate: z.coerce.date().optional(),
   monthlyLimit: z.number().int().optional(),

@@ -102,10 +102,47 @@ export class UserPermissionService {
     };
   }
 
-  async create(userId: number, dto: CreateUserPermissionDto) {
+  async create(userId: string, dto: CreateUserPermissionDto) {
     const { documentId, permission } = dto;
 
     if (!documentId) throw new Error("documentId is required");
+
+    // Check if permission already exists
+    const existingPermission = await this.prisma.docUserPermission.findUnique({
+      where: {
+        docId_userId: {
+          docId: documentId,
+          userId: dto.userId,
+        },
+      },
+    });
+
+    if (existingPermission) {
+      // Update existing permission
+      return this.prisma.docUserPermission.update({
+        where: {
+          id: existingPermission.id,
+        },
+        data: {
+          permission,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              displayName: true,
+            },
+          },
+          doc: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      });
+    }
 
     // Get existing permissions to calculate fractional index
     const existingMemberships = await this.prisma.docUserPermission.findMany({
@@ -118,9 +155,10 @@ export class UserPermissionService {
     // Use fractional index instead of integer
     const index = fractionalIndex(null, existingMemberships.length ? existingMemberships[0].index : null);
 
+    // Create new permission
     return this.prisma.docUserPermission.create({
       data: {
-        userId,
+        userId: dto.userId,
         docId: documentId,
         permission,
         index,

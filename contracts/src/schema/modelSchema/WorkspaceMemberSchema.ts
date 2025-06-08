@@ -14,7 +14,7 @@ export const WorkspaceMemberSchema = z.object({
   preferences: NullableJsonValue.optional(),
   index: z.string().nullable(),
   workspaceId: z.string(),
-  userId: z.number().int(),
+  userId: z.string(),
 })
 
 export type WorkspaceMember = z.infer<typeof WorkspaceMemberSchema>

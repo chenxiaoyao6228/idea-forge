@@ -14,12 +14,12 @@ export const groupListRequestSchema = basePagerSchema.extend({
 
 export const addGroupUserSchema = z.object({ 
   id: z.string().cuid(), 
-  userId: z.number() 
+  userId: z.string() 
 });
 
 export const removeGroupUserSchema = z.object({ 
   id: z.string().cuid(), 
-  userId: z.number() 
+  userId: z.string() 
 });
 
 // Create and Update schemas

@@ -3,8 +3,6 @@ export { UserScalarFieldEnumSchema } from './UserScalarFieldEnumSchema';
 export { WorkspaceScalarFieldEnumSchema } from './WorkspaceScalarFieldEnumSchema';
 export { DocScalarFieldEnumSchema } from './DocScalarFieldEnumSchema';
 export { DocRevisionScalarFieldEnumSchema } from './DocRevisionScalarFieldEnumSchema';
-export { PublicShareScalarFieldEnumSchema } from './PublicShareScalarFieldEnumSchema';
-export { PublicEditHistoryScalarFieldEnumSchema } from './PublicEditHistoryScalarFieldEnumSchema';
 export { WorkspaceMemberScalarFieldEnumSchema } from './WorkspaceMemberScalarFieldEnumSchema';
 export { SubspaceScalarFieldEnumSchema } from './SubspaceScalarFieldEnumSchema';
 export { SubspaceMemberScalarFieldEnumSchema } from './SubspaceMemberScalarFieldEnumSchema';
@@ -25,7 +23,6 @@ export { UserLoginHistoryScalarFieldEnumSchema } from './UserLoginHistoryScalarF
 export { StarScalarFieldEnumSchema } from './StarScalarFieldEnumSchema';
 export { SortOrderSchema } from './SortOrderSchema';
 export { NullableJsonNullValueInputSchema } from './NullableJsonNullValueInputSchema';
-export { JsonNullValueInputSchema } from './JsonNullValueInputSchema';
 export { QueryModeSchema } from './QueryModeSchema';
 export { NullsOrderSchema } from './NullsOrderSchema';
 export { JsonNullValueFilterSchema } from './JsonNullValueFilterSchema';

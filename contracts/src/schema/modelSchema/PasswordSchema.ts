@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 export const PasswordSchema = z.object({
   hash: z.string(),
-  userId: z.number().int(),
+  userId: z.string(),
 })
 
 export type Password = z.infer<typeof PasswordSchema>

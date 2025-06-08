@@ -7,7 +7,7 @@ import { UserStatusSchema } from '../inputTypeSchemas/UserStatusSchema'
 
 export const UserSchema = z.object({
   status: UserStatusSchema,
-  id: z.number().int(),
+  id: z.string().uuid(),
   email: z.string(),
   displayName: z.string().nullable(),
   imageUrl: z.string().nullable(),
@@ -25,7 +25,7 @@ export type User = z.infer<typeof UserSchema>
 
 export const UserOptionalDefaultsSchema = UserSchema.merge(z.object({
   status: UserStatusSchema.optional(),
-  id: z.number().int().optional(),
+  id: z.string().uuid().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
 }))

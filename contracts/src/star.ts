@@ -9,7 +9,7 @@ export const StarSchema = z.object({
   index: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
-  userId: z.number().int(),
+  userId: z.string(),
 });
 
 export type Star = z.infer<typeof StarSchema>;

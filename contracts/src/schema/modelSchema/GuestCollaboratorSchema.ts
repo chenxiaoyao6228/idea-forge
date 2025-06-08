@@ -13,7 +13,7 @@ export const GuestCollaboratorSchema = z.object({
   expireAt: z.coerce.date(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
-  invitedById: z.number().int(),
+  invitedById: z.string(),
   workspaceId: z.string(),
 })
 

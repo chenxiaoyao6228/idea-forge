@@ -5,7 +5,7 @@ export const permission = ["MANAGE", "SHARE", "EDIT", "COMMENT", "READ", "NONE"]
 
 export const userPermissionSchema = z.object({
   id: z.string(),
-  userId: z.number(),
+  userId: z.string(),
   documentId: z.string().optional(),
   subspaceId: z.string().optional(),
   permission: z.enum(permission),
@@ -25,7 +25,7 @@ export const userPermissionListRequestSchema = basePagerSchema.extend({
 
 export const userPermissionResponseSchema = z.object({
   id: z.string(),
-  userId: z.number(),
+  userId: z.string(),
   user: z.object({
     id: z.string(),
     email: z.string(),

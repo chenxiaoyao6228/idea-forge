@@ -12,8 +12,8 @@ export const DocGroupPermissionSchema = z.object({
   updatedAt: z.coerce.date(),
   docId: z.string(),
   groupId: z.string(),
-  userId: z.number().int(),
-  createdById: z.number().int(),
+  userId: z.string(),
+  createdById: z.string(),
   sourceId: z.string().nullable(),
 })
 

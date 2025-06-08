@@ -2,8 +2,6 @@ export * from './UserSchema';
 export * from './WorkspaceSchema';
 export * from './DocSchema';
 export * from './DocRevisionSchema';
-export * from './PublicShareSchema';
-export * from './PublicEditHistorySchema';
 export * from './WorkspaceMemberSchema';
 export * from './SubspaceSchema';
 export * from './SubspaceMemberSchema';

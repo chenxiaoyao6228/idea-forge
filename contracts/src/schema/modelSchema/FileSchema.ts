@@ -10,7 +10,7 @@ export const FileSchema = z.object({
   url: z.string(),
   status: z.string(),
   size: z.number().int(),
-  userId: z.number().int(),
+  userId: z.string(),
   contentType: z.string(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),

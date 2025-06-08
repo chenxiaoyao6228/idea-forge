@@ -348,7 +348,7 @@ const useDocumentStore = create<StoreState>()(
           return documentApi.listUserPermissions(documentId);
         },
 
-        addUserToDocument: async (documentId: string, userId: number, permission: "EDIT" | "READ" | "NONE") => {
+        addUserToDocument: async (documentId: string, userId: string, permission: "EDIT" | "READ" | "NONE") => {
           return documentApi.addUserPermission(documentId, { userId, permission });
         },
 

@@ -8,7 +8,7 @@ export const MemberGroupUserSchema = z.object({
   id: z.string().cuid(),
   createdAt: z.coerce.date(),
   groupId: z.string(),
-  userId: z.number().int(),
+  userId: z.string(),
 })
 
 export type MemberGroupUser = z.infer<typeof MemberGroupUserSchema>

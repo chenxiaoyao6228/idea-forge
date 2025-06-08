@@ -11,7 +11,7 @@ export const DocRevisionSchema = z.object({
   contentBinary: z.instanceof(Buffer).nullable(),
   createdAt: z.coerce.date(),
   docId: z.string(),
-  authorId: z.number().int(),
+  authorId: z.string(),
 })
 
 export type DocRevision = z.infer<typeof DocRevisionSchema>

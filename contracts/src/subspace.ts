@@ -26,7 +26,7 @@ export type UpdateSubspaceRequest = z.infer<typeof UpdateSubspaceRequestSchema>;
 
 // Add subspace member
 export const AddSubspaceMemberRequestSchema = z.object({
-  userId: z.number(),
+  userId: z.string(),
   role: SubspaceRoleSchema.default(SubspaceRoleSchema.enum.MEMBER),
 });
 export type AddSubspaceMemberRequest = z.infer<typeof AddSubspaceMemberRequestSchema>;
@@ -60,7 +60,7 @@ export type SubspaceMemberListResponse = z.infer<typeof SubspaceMemberListRespon
 
 // Subspace permission schemas
 export const SubspaceUserPermissionSchema = z.object({
-  userId: z.number(),
+  userId: z.string(),
   permission: z.nativeEnum(Permission),
 });
 

@@ -19,7 +19,7 @@ export type UpdateWorkspaceMemberResponse = z.infer<typeof UpdateWorkspaceMember
 
 // Add workspace member
 export const AddWorkspaceMemberRequestSchema = z.object({
-  userId: z.number(),
+  userId: z.string(),
   role: WorkspaceRoleSchema,
 });
 export type AddWorkspaceMemberRequest = z.infer<typeof AddWorkspaceMemberRequestSchema>;

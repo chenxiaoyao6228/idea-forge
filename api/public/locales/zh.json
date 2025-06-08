@@ -9,6 +9,7 @@
   "Add cover": "添加封面",
   "Add icon": "添加图标",
   "Add members": "添加成员",
+  "Added {{name}} to the document": "已将 {{name}} 添加到文档",
   "Already have an account?": "已经有账户了吗？",
   "An account with this email already exists. Please login first.": "已存在使用此电子邮件的账户。请先登录。",
   "Apply": "应用",
@@ -93,6 +94,7 @@
   "Failed to load shared documents": "加载共享文档失败",
   "Failed to load trash documents": "加载回收站文档失败",
   "Failed to restore document": "恢复文档失败",
+  "Failed to share document": "共享文档失败",
   "Fix syntax": "修复语法",
   "Forgot Password": "忘记密码",
   "Forgot password?": "忘记密码？",
@@ -195,7 +197,9 @@
   "Search document by title or content...": "按标题或内容搜索文档...",
   "Search document by title...": "按标题搜索文档...",
   "Search documents in trash": "在回收站中搜索文档",
+  "Search users or groups...": "搜索用户或群组...",
   "Select display": "选择显示方式",
+  "Selected": "已选择",
   "Share": "分享",
   "Share document": "分享文档",
   "Shared users": "共享用户",
@@ -261,5 +265,8 @@
   "enter workspace name": "输入工作区名称",
   "insert Below": "在下方插入",
   "workspace description": "工作区描述",
-  "workspace name": "工作区名称"
+  "workspace name": "工作区名称",
+  "{{count}} members_many": "{{count}} 位成员",
+  "{{count}} members_one": "{{count}} 位成员",
+  "{{count}} members_other": "{{count}} 位成员"
 }

@@ -7,7 +7,7 @@ import { UserPermission, UserPermissionResponse } from "contracts";
 import useDocumentStore from "@/stores/document";
 
 export interface UserPermissionEntity extends UserPermissionResponse {
-  userId: number;
+  userId: string;
 }
 
 interface FetchOptions {
@@ -19,14 +19,14 @@ interface State {
   isFetching: boolean;
   isSaving: boolean;
   isLoaded: boolean;
-  currentUserId?: number;
+  currentUserId?: string;
   currentUserPermissions: UserPermissionResponse[];
 }
 
 interface Action {
-  list: (userId: number, options?: FetchOptions) => Promise<void>;
-  addPermission: (userId: number, documentId: string, permission: "READ" | "EDIT") => Promise<UserPermissionEntity>;
-  removePermission: (userId: number, documentId: string) => Promise<void>;
+  list: (userId: string, options?: FetchOptions) => Promise<void>;
+  addPermission: (userId: string, documentId: string, permission: "READ" | "EDIT") => Promise<UserPermissionEntity>;
+  removePermission: (userId: string, documentId: string) => Promise<void>;
   getByDocumentId: (documentId: string) => UserPermissionEntity[];
 }
 
@@ -52,7 +52,7 @@ const useDocUserPermissionStore = create<StoreState>()(
         ...docUserPermissionEntitySlice.initialState,
         ...docUserPermissionEntitySlice.createActions(set),
 
-        list: async (userId: number, options = {}) => {
+        list: async (userId: string, options = {}) => {
           if (!options.prefetch) set({ isFetching: true });
           try {
             const response = (await userPermissionApi.list({
@@ -81,7 +81,7 @@ const useDocUserPermissionStore = create<StoreState>()(
           }
         },
 
-        addPermission: async (userId: number, documentId: string, permission: "READ" | "EDIT") => {
+        addPermission: async (userId: string, documentId: string, permission: "READ" | "EDIT") => {
           set({ isSaving: true });
 
           const dto: UserPermission = {
@@ -107,7 +107,7 @@ const useDocUserPermissionStore = create<StoreState>()(
           }
         },
 
-        removePermission: async (userId: number, documentId: string) => {
+        removePermission: async (userId: string, documentId: string) => {
           set({ isSaving: true });
           try {
             await userPermissionApi.delete(documentId);

@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 export const UserLoginHistorySchema = z.object({
   id: z.string().cuid(),
-  userId: z.number().int(),
+  userId: z.string(),
   ip: z.string().nullable(),
   location: z.string().nullable(),
   loginTime: z.coerce.date(),
