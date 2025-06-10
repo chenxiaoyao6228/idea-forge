@@ -3,12 +3,15 @@ import type { GroupPermissionDto, GroupPermissionListRequestDto } from "./group-
 import type { DocGroupPermission, Prisma } from "@prisma/client";
 import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import type { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
+import { presentGroupPermission } from "./group-permission.presenter";
+import type { GroupPermissionListResponse, GroupPermissionResponse } from "contracts";
+import { presentDocument } from "@/document/document.presenter";
 
 @Injectable()
 export class GroupPermissionService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
-  async list(query: GroupPermissionListRequestDto) {
+  async list(query: GroupPermissionListRequestDto): Promise<GroupPermissionListResponse> {
     const { page = 1, limit = 10, query: searchQuery, groupId, documentId } = query;
 
     const where: Prisma.DocGroupPermissionWhereInput = {
@@ -45,34 +48,68 @@ export class GroupPermissionService {
     const documents = documentIds.length
       ? await this.prisma.doc.findMany({
           where: { id: { in: documentIds } },
-          select: {
-            id: true,
-            title: true,
-            icon: true,
-            parentId: true,
-            createdAt: true,
-            updatedAt: true,
-          },
         })
       : [];
 
     return {
-      permissions,
-      documents,
-      total,
-      page,
-      limit,
+      pagination: {
+        page,
+        limit,
+        total,
+      },
+      data: {
+        groupPermissions: permissions.map(presentGroupPermission),
+        documents: documents.map((d) => presentDocument(d, { isPublic: true })),
+      },
+      policies: {}, // TODO: Implement policies
     };
   }
 
-  async create(data: GroupPermissionDto, userId: number) {
+  async create(data: GroupPermissionDto, userId: string): Promise<GroupPermissionResponse> {
     const { groupId, docId, permission } = data;
 
     if (!docId) {
       throw new Error("Document ID is required");
     }
 
-    return this.prisma.docGroupPermission.create({
+    // Check if permission already exists
+    const existingPermission = await this.prisma.docGroupPermission.findUnique({
+      where: {
+        docId_groupId: {
+          docId,
+          groupId,
+        },
+      },
+    });
+
+    if (existingPermission) {
+      // Update existing permission
+      const result = await this.prisma.docGroupPermission.update({
+        where: {
+          id: existingPermission.id,
+        },
+        data: {
+          permission,
+        },
+        include: {
+          group: {
+            include: {
+              _count: {
+                select: {
+                  members: true,
+                },
+              },
+            },
+          },
+          doc: true,
+        },
+      });
+
+      return presentGroupPermission(result);
+    }
+
+    // Create new permission
+    const result = await this.prisma.docGroupPermission.create({
       data: {
         groupId,
         docId,
@@ -93,9 +130,11 @@ export class GroupPermissionService {
         doc: true,
       },
     });
+
+    return presentGroupPermission(result);
   }
 
-  async delete(id: string) {
+  async delete(id: string): Promise<void> {
     const permission = await this.prisma.docGroupPermission.findUnique({
       where: { id },
     });

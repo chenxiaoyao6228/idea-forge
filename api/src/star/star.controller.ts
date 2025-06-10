@@ -8,12 +8,12 @@ export class StarController {
   constructor(private readonly starService: StarService) {}
 
   @Post()
-  create(@Body() createStarDto: CreateStarDto, @GetUser("id") userId: number) {
+  create(@Body() createStarDto: CreateStarDto, @GetUser("id") userId: string) {
     return this.starService.create(createStarDto, userId);
   }
 
   @Get()
-  findAll(@GetUser("id") userId: number) {
+  findAll(@GetUser("id") userId: string) {
     return this.starService.findAll(userId);
   }
 
@@ -23,12 +23,12 @@ export class StarController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() updateStarDto: UpdateStarDto, @GetUser("id") userId: number) {
+  update(@Param("id") id: string, @Body() updateStarDto: UpdateStarDto, @GetUser("id") userId: string) {
     return this.starService.update(id, updateStarDto, userId);
   }
 
   @Delete(":id")
-  remove(@Param("id") id: string, @GetUser("id") userId: number) {
+  remove(@Param("id") id: string, @GetUser("id") userId: string) {
     return this.starService.remove(id, userId);
   }
 }

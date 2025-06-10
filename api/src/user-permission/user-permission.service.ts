@@ -3,6 +3,7 @@ import { UserPermissionListResponse } from "contracts";
 import { CreateUserPermissionDto, UserPermissionListDto } from "./user-permission.dto";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import fractionalIndex from "fractional-index";
+import { presentDocument } from "@/document/document.presenter";
 
 @Injectable()
 export class UserPermissionService {
@@ -54,14 +55,6 @@ export class UserPermissionService {
     const docIds = [...new Set(items.map((item) => item.docId))];
     const documents = await this.prisma.doc.findMany({
       where: { id: { in: docIds } },
-      select: {
-        id: true,
-        title: true,
-        icon: true,
-        parentId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
     });
 
     return {
@@ -84,14 +77,7 @@ export class UserPermissionService {
             displayName: item.user.displayName || "",
           },
         })),
-        documents: documents.map((doc) => ({
-          id: doc.id,
-          title: doc.title,
-          icon: doc.icon,
-          parentId: doc.parentId,
-          createdAt: doc.createdAt.toISOString(),
-          updatedAt: doc.updatedAt.toISOString(),
-        })),
+        documents: documents.map((d) => presentDocument(d, { isPublic: true })),
       },
       policies: {
         // Placeholder for policies
@@ -135,9 +121,8 @@ export class UserPermissionService {
             },
           },
           doc: {
-            select: {
-              id: true,
-              title: true,
+            include: {
+              coverImage: true,
             },
           },
         },
@@ -173,9 +158,8 @@ export class UserPermissionService {
           },
         },
         doc: {
-          select: {
-            id: true,
-            title: true,
+          include: {
+            coverImage: true,
           },
         },
       },
@@ -202,9 +186,8 @@ export class UserPermissionService {
           },
         },
         doc: {
-          select: {
-            id: true,
-            title: true,
+          include: {
+            coverImage: true,
           },
         },
       },
@@ -227,9 +210,8 @@ export class UserPermissionService {
           },
         },
         doc: {
-          select: {
-            id: true,
-            title: true,
+          include: {
+            coverImage: true,
           },
         },
       },

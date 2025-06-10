@@ -56,27 +56,19 @@ const useGroupPermissionStore = create<StoreState>()(
           try {
             // FIXME: ts error
             const response = (await groupPermissionApi.listGroupPermissions(query)) as any;
-            const permissions = response.data.groupPermissions;
-            get().setAll(permissions);
-            set({ isLoaded: true });
+
+            const {
+              data: { groupPermissions, documents },
+            } = response;
+
+            get().setAll(groupPermissions);
 
             // Add documents to document store
             const { upsertMany } = useDocumentStore.getState();
-            const documents = response.data.documents.map((doc) => ({
-              id: doc.id,
-              title: doc.title,
-              content: "",
-              type: "NOTE",
-              visibility: "WORKSPACE",
-              workspaceId: "",
-              archivedAt: null,
-              deletedAt: null,
-              createdAt: doc.createdAt,
-              updatedAt: doc.updatedAt,
-            }));
             upsertMany(documents);
 
-            return permissions;
+            set({ isLoaded: true });
+            return groupPermissions;
           } finally {
             set({ isFetching: false });
           }

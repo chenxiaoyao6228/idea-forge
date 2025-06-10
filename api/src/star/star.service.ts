@@ -20,7 +20,7 @@ export class StarService {
     @InjectQueue("websocket-events") private readonly websocketQueue: Queue,
   ) {}
 
-  private async emitStarEvent(name: BusinessEvents, data: any, userId: number) {
+  private async emitStarEvent(name: BusinessEvents, data: any, userId: string) {
     const event: WebsocketEvent = {
       name,
       workspaceId: data.workspaceId,
@@ -32,7 +32,7 @@ export class StarService {
     await this.websocketQueue.add("websocket-event", event);
   }
 
-  async create(createStarDto: CreateStarDto, userId: number) {
+  async create(createStarDto: CreateStarDto, userId: string) {
     const { docId, subspaceId } = createStarDto;
 
     // Check if user has access to the document or subspace
@@ -103,7 +103,7 @@ export class StarService {
     };
   }
 
-  private async reorderStarredItems(userId: number): Promise<Record<string, string | null>> {
+  private async reorderStarredItems(userId: string): Promise<Record<string, string | null>> {
     // Fetch user's starred items with their current order
     const starredItems = await this.prismaService.star.findMany({
       where: { userId },
@@ -165,7 +165,7 @@ export class StarService {
     return Object.fromEntries(sortedItems.map((item) => [item.id, item.index]));
   }
 
-  async findAll(userId: number) {
+  async findAll(userId: string) {
     // Fetch starred items with current ordering
     const starredItems = await this.prismaService.star.findMany({
       where: { userId },
@@ -193,7 +193,7 @@ export class StarService {
     };
   }
 
-  async update(id: string, updateStarDto: UpdateStarDto, userId: number) {
+  async update(id: string, updateStarDto: UpdateStarDto, userId: string) {
     const star = await this.prismaService.star.findUnique({
       where: { id },
     });
@@ -227,7 +227,7 @@ export class StarService {
     return presentStar(star);
   }
 
-  async remove(id: string, userId: number) {
+  async remove(id: string, userId: string) {
     const star = await this.prismaService.star.findUnique({
       where: { id },
     });

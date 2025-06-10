@@ -8,39 +8,39 @@ export class DocShareController {
   constructor(private readonly docShareService: DocShareService) {}
 
   @Get("shared-with-me")
-  async listSharedWithMe(@GetUser("id") userId: number, @Query() dto: ListSharedWithMeDto) {
+  async listSharedWithMe(@GetUser("id") userId: string, @Query() dto: ListSharedWithMeDto) {
     return this.docShareService.listSharedWithMe(userId, dto);
   }
 
   @Get("shared-by-me")
-  async listSharedByMe(@GetUser("id") userId: number, @Query() dto: ListSharedByMeDto) {
+  async listSharedByMe(@GetUser("id") userId: string, @Query() dto: ListSharedByMeDto) {
     return this.docShareService.listSharedByMe(userId, dto);
   }
 
   // ================id below =======
 
   @Get(":id")
-  async getShareInfo(@Param("id") id: string, @GetUser("id") userId: number) {
+  async getShareInfo(@Param("id") id: string, @GetUser("id") userId: string) {
     return this.docShareService.getShareInfo(userId, { id });
   }
 
   @Get()
-  async listShares(@GetUser("id") userId: number, @Query() dto: ShareListRequestDto) {
+  async listShares(@GetUser("id") userId: string, @Query() dto: ShareListRequestDto) {
     return this.docShareService.listShares(userId, dto);
   }
 
   @Post()
-  async createShare(@GetUser("id") userId: number, @Body() dto: CreateShareDto) {
+  async createShare(@GetUser("id") userId: string, @Body() dto: CreateShareDto) {
     return this.docShareService.createShare(userId, dto);
   }
 
   @Patch(":id")
-  async updateShare(@Param("id") id: string, @GetUser("id") userId: number, @Body() dto: UpdateShareDto) {
+  async updateShare(@Param("id") id: string, @GetUser("id") userId: string, @Body() dto: UpdateShareDto) {
     return this.docShareService.updateShare(userId, { ...dto, id });
   }
 
   @Delete(":id")
-  async revokeShare(@Param("id") id: string, @GetUser("id") userId: number) {
+  async revokeShare(@Param("id") id: string, @GetUser("id") userId: string) {
     return this.docShareService.revokeShare(userId, { id });
   }
 }

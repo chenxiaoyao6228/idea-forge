@@ -11,7 +11,7 @@ const MONTHLY_TOKEN_LIMIT = 10000;
 export class TokenUsageService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
-  async updateTokenUsage(userId: number, usedTokens: number) {
+  async updateTokenUsage(userId: string, usedTokens: number) {
     const usage = await this.getOrCreateTokenUsage(userId);
 
     // Check if we need to reset the monthly counter
@@ -29,7 +29,7 @@ export class TokenUsageService {
     });
   }
 
-  private async getOrCreateTokenUsage(userId: number) {
+  private async getOrCreateTokenUsage(userId: string) {
     const usage = await this.prisma.aITokenUsage.findUnique({
       where: { userId },
     });
@@ -54,7 +54,7 @@ export class TokenUsageService {
     return now.getFullYear() !== lastReset.getFullYear() || now.getMonth() !== lastReset.getMonth();
   }
 
-  private async resetMonthlyUsage(userId: number) {
+  private async resetMonthlyUsage(userId: string) {
     await this.prisma.aITokenUsage.update({
       where: { userId },
       data: {
@@ -64,7 +64,7 @@ export class TokenUsageService {
     });
   }
 
-  async getRemainingTokens(userId: number): Promise<number> {
+  async getRemainingTokens(userId: string): Promise<number> {
     const usage = await this.getOrCreateTokenUsage(userId);
 
     if (this.shouldResetUsage(usage.lastResetDate)) {
@@ -74,7 +74,7 @@ export class TokenUsageService {
     return Math.max(0, usage.monthlyLimit - usage.tokensUsed);
   }
 
-  async isTokenUsageExceeded(userId: number): Promise<boolean> {
+  async isTokenUsageExceeded(userId: string): Promise<boolean> {
     const usage = await this.getOrCreateTokenUsage(userId);
     return usage.tokensUsed >= usage.monthlyLimit;
   }

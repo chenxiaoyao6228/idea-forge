@@ -15,14 +15,14 @@ export class WorkspaceService {
     private readonly subspaceService: SubspaceService,
   ) {}
 
-  async initializeWorkspace(dto: CreateWorkspaceDto, userId: number) {
+  async initializeWorkspace(dto: CreateWorkspaceDto, userId: string) {
     const workspace = await this.createWorkspace(dto, userId);
     await this.subspaceService.createDefaultGlobalSubspace(userId, workspace.id);
     // TODO: other stuffs
     return { workspace };
   }
 
-  async createWorkspace(dto: CreateWorkspaceDto, userId: number) {
+  async createWorkspace(dto: CreateWorkspaceDto, userId: string) {
     const workspace = await this.prismaService.workspace.create({
       data: {
         name: dto.name,
@@ -39,7 +39,7 @@ export class WorkspaceService {
     return presentWorkspace(workspace);
   }
 
-  async CreateDefaultWorkspace(userId: number) {
+  async CreateDefaultWorkspace(userId: string) {
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
@@ -64,7 +64,7 @@ export class WorkspaceService {
     return presentWorkspace(workspace);
   }
 
-  async getUserWorkspaces(currentUserId: number): Promise<WorkspaceListResponse> {
+  async getUserWorkspaces(currentuserId: string): Promise<WorkspaceListResponse> {
     const user = await this.prismaService.user.findUnique({
       where: { id: currentUserId },
       include: {
@@ -109,7 +109,7 @@ export class WorkspaceService {
     return { success: true };
   }
 
-  async addWorkspaceMember(workspaceId: string, userId: number) {
+  async addWorkspaceMember(workspaceId: string, userId: string) {
     await this.prismaService.workspaceMember.create({
       data: {
         workspaceId,
@@ -119,7 +119,7 @@ export class WorkspaceService {
     return { success: true };
   }
 
-  async removeWorkspaceMember(workspaceId: string, userId: number) {
+  async removeWorkspaceMember(workspaceId: string, userId: string) {
     await this.prismaService.workspaceMember.delete({
       where: {
         workspaceId_userId: {
@@ -130,7 +130,7 @@ export class WorkspaceService {
     });
   }
 
-  async hasWorkspaceAccess(userId: number, workspaceId: string): Promise<boolean> {
+  async hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
     const workspaceMember = await this.prismaService.workspaceMember.findUnique({
       where: {
         workspaceId_userId: {
@@ -143,7 +143,7 @@ export class WorkspaceService {
     return !!workspaceMember;
   }
 
-  async reorderWorkspaces(workspaceIds: string[], userId: number) {
+  async reorderWorkspaces(workspaceIds: string[], userId: string) {
     // Verify user has access to all workspaces
     for (const workspaceId of workspaceIds) {
       const hasAccess = await this.hasWorkspaceAccess(userId, workspaceId);

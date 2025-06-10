@@ -26,91 +26,91 @@ export class DocumentController {
   ) {}
 
   @Post("")
-  create(@GetUser("id") userId: number, @Body() dto: CreateDocumentDto) {
+  create(@GetUser("id") userId: string, @Body() dto: CreateDocumentDto) {
     return this.documentService.create(userId, dto);
   }
 
   @Post("list")
-  async list(@GetUser("id") userId: number, @Body() dto: DocumentPagerDto) {
+  async list(@GetUser("id") userId: string, @Body() dto: DocumentPagerDto) {
     return this.documentService.list(userId, dto);
   }
 
   @Post("move")
-  async moveDocuments(@GetUser("id") userId: number, @Body() dto: MoveDocumentsDto) {
+  async moveDocuments(@GetUser("id") userId: string, @Body() dto: MoveDocumentsDto) {
     return this.moveDocumentService.moveDocs(userId, dto);
   }
 
   // ==============keep router without id above ==========================================
 
   @Get(":id")
-  findOne(@GetUser("id") userId: number, @Param("id") id: string) {
+  findOne(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.findOne(id, userId);
   }
 
   @Patch(":id")
-  update(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: UpdateDocumentDto) {
+  update(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: UpdateDocumentDto) {
     return this.documentService.update(id, userId, dto);
   }
 
   @Delete(":id")
-  remove(@GetUser("id") userId: number, @Param("id") id: string) {
+  remove(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.remove(id, userId);
   }
 
   // ============== doc share ==========================================
 
   @Post(":id/share")
-  async shareDocument(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: ShareDocumentDto) {
+  async shareDocument(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: ShareDocumentDto) {
     return this.documentService.shareDocument(userId, id, dto);
   }
 
   @Get(":id/shares")
-  async listDocShares(@GetUser("id") userId: number, @Param("id") id: string) {
+  async listDocShares(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.listDocShares(id);
   }
 
   // ============== doc permission ==========================================
 
   @Post(":id/user-permissions")
-  async addUserPermission(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: DocUserPermissionDto) {
+  async addUserPermission(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: DocUserPermissionDto) {
     return this.documentService.addUserPermission(id, dto.userId, dto.permission, userId);
   }
 
   @Delete(":id/user-permissions/:targetUserId")
-  async removeUserPermission(@GetUser("id") userId: number, @Param("id") id: string, @Param("targetUserId") targetUserId: number) {
+  async removeUserPermission(@GetUser("id") userId: string, @Param("id") id: string, @Param("targetUserId") targetuserId: string) {
     return this.documentService.removeUserPermission(userId, id, targetUserId);
   }
 
   @Get(":id/user-permissions")
-  async listUserPermissions(@GetUser("id") userId: number, @Param("id") id: string) {
+  async listUserPermissions(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.listUserPermissions(id);
   }
 
   @Post(":id/search-users")
-  async searchUsersForSharing(@GetUser("id") userId: number, @Param("id") id: string, @Body("query") query?: string) {
+  async searchUsersForSharing(@GetUser("id") userId: string, @Param("id") id: string, @Body("query") query?: string) {
     return this.documentService.searchUsersForSharing(userId, id, query);
   }
 
   // ============== group permission ==========================================
 
   @Post(":id/group-permissions")
-  async addGroupPermission(@GetUser("id") userId: number, @Param("id") id: string, @Body() dto: DocGroupPermissionDto) {
+  async addGroupPermission(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: DocGroupPermissionDto) {
     return this.documentService.addGroupPermission(id, dto.groupId, dto.permission, userId, userId);
   }
 
   @Delete(":id/group-permissions/:groupId")
-  async removeGroupPermission(@GetUser("id") userId: number, @Param("id") id: string, @Param("groupId") groupId: string) {
+  async removeGroupPermission(@GetUser("id") userId: string, @Param("id") id: string, @Param("groupId") groupId: string) {
     return this.documentService.removeGroupPermission(userId, id, groupId);
   }
 
   // TODO: pagination, combined with client side PaginationList
   @Get(":id/group-permissions")
-  async listGroupPermissions(@GetUser("id") userId: number, @Param("id") id: string) {
+  async listGroupPermissions(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.listGroupPermissions(id);
   }
 
   @Post(":id/search-groups")
-  async searchGroupsForSharing(@GetUser("id") userId: number, @Param("id") id: string, @Body("query") query?: string) {
+  async searchGroupsForSharing(@GetUser("id") userId: string, @Param("id") id: string, @Body("query") query?: string) {
     return this.groupService.searchGroupsForSharing(userId, id, query);
   }
 }

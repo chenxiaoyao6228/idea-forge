@@ -38,7 +38,7 @@ type DocShareWithRelations = DocShare & {
 export class DocShareService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
-  async getShareInfo(userId: number, dto: DocShareInfoDto) {
+  async getShareInfo(userId: string, dto: DocShareInfoDto) {
     const { id, documentId } = dto;
     const shares: DocShareWithRelations[] = [];
 
@@ -119,7 +119,7 @@ export class DocShareService {
     };
   }
 
-  async listShares(userId: number, dto: ShareListRequestDto) {
+  async listShares(userId: string, dto: ShareListRequestDto) {
     const { limit = 20, page = 1, sortBy = "createdAt", sortOrder = "desc", query } = dto;
 
     const where = {
@@ -162,7 +162,7 @@ export class DocShareService {
     };
   }
 
-  async createShare(userId: number, dto: CreateShareDto) {
+  async createShare(userId: string, dto: CreateShareDto) {
     const { documentId, published = false, urlId, includeChildDocuments = false } = dto;
 
     const document = await this.prisma.doc.findUnique({
@@ -202,7 +202,7 @@ export class DocShareService {
     };
   }
 
-  async updateShare(userId: number, dto: UpdateShareDto) {
+  async updateShare(userId: string, dto: UpdateShareDto) {
     const { id, includeChildDocuments, published, urlId, allowIndexing } = dto;
 
     const share = await this.prisma.docShare.findUnique({
@@ -251,7 +251,7 @@ export class DocShareService {
     };
   }
 
-  async revokeShare(userId: number, dto: RevokeShareDto) {
+  async revokeShare(userId: string, dto: RevokeShareDto) {
     const { id } = dto;
 
     const share = await this.prisma.docShare.findUnique({
@@ -278,7 +278,7 @@ export class DocShareService {
     };
   }
 
-  async listSharedWithMe(userId: number, dto: ListSharedWithMeDto) {
+  async listSharedWithMe(userId: string, dto: ListSharedWithMeDto) {
     const { page = 1, limit = 10, query } = dto;
     const skip = (page - 1) * limit;
 
@@ -360,7 +360,7 @@ export class DocShareService {
     };
   }
 
-  async listSharedByMe(userId: number, dto: ListSharedByMeDto) {
+  async listSharedByMe(userId: string, dto: ListSharedByMeDto) {
     const { page = 1, limit = 10, query } = dto;
     const skip = (page - 1) * limit;
 

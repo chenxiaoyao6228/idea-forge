@@ -31,7 +31,7 @@ export function useDragAndDropContext() {
     useSensor(PointerSensor, {
       // Need to move 5px to trigger dragging
       activationConstraint: {
-        delay: 100,
+        delay: 300,
         tolerance: 5,
       },
     }),

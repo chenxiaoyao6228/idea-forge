@@ -18,7 +18,7 @@ function delay(ms: number) {
 const COLLAB_TOKEN_EXPIRATION_TIME = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 interface CollabTokenPayload {
-  userId: number;
+  userId: string;
   exp: number;
 }
 
@@ -40,7 +40,7 @@ export class CollaborationService implements OnModuleInit {
   // Check document access and permissions
   private async validateDocumentAccess(
     documentId: string,
-    userId: number,
+    userId: string,
   ): Promise<{
     permission: Permission;
   }> {
@@ -73,7 +73,7 @@ export class CollaborationService implements OnModuleInit {
     return { permission: share.permission as Permission };
   }
 
-  async generateCollabToken(userId: number): Promise<string> {
+  async generateCollabToken(userId: string): Promise<string> {
     const payload: CollabTokenPayload = {
       userId,
       exp: Date.now() + COLLAB_TOKEN_EXPIRATION_TIME,
@@ -121,11 +121,11 @@ export class CollaborationService implements OnModuleInit {
       return await this.verifyCollabToken(token);
     };
 
-    const validateAccess = async (documentId: string, userId: number) => {
+    const validateAccess = async (documentId: string, userId: string) => {
       return await this.validateDocumentAccess(documentId, userId);
     };
 
-    const getUserById = async (userId: number) => {
+    const getUserById = async (userId: string) => {
       return await this.userService.getUserById(userId);
     };
 

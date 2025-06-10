@@ -227,7 +227,7 @@ export class AuthService {
     };
   }
 
-  async generateJWTToken(userId: number) {
+  async generateJWTToken(userId: string) {
     const payload: AuthJwtPayload = {
       sub: userId,
     };
@@ -240,7 +240,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async validateJWTToken(userId: number) {
+  async validateJWTToken(userId: string) {
     const user = await this.userService.getUserById(userId);
     if (!user) {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
@@ -253,7 +253,7 @@ export class AuthService {
     return currentUser;
   }
 
-  async validateRefreshToken(userId: number, refreshToken: string) {
+  async validateRefreshToken(userId: string, refreshToken: string) {
     const user = await this.userService.getUserById(userId);
 
     if (!user) {
@@ -316,7 +316,7 @@ export class AuthService {
     };
   }
 
-  async logoutUser(userId: number) {
+  async logoutUser(userId: string) {
     await this.userService.updateHashedRefreshToken(userId, "");
     return {
       id: userId,

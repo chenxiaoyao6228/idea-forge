@@ -352,7 +352,7 @@ const useDocumentStore = create<StoreState>()(
           return documentApi.addUserPermission(documentId, { userId, permission });
         },
 
-        removeUserFromDocument: async (documentId: string, targetUserId: number) => {
+        removeUserFromDocument: async (documentId: string, targetUserId: string) => {
           return documentApi.removeUserPermission(documentId, targetUserId);
         },
       })),

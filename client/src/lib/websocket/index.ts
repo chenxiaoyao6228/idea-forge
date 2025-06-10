@@ -231,6 +231,12 @@ class WebsocketService {
         this.socket.authenticated = true;
         this.setStatus(WebsocketStatus.CONNECTED);
         this.connectionPromise.resolve();
+
+        // Join user's room after successful authentication
+        const userId = message.data?.userId;
+        if (userId) {
+          this.joinRoom(`user:${userId}`);
+        }
       }
     });
 
@@ -371,6 +377,12 @@ class WebsocketService {
       });
     });
 
+    /*
+     * Why WebSocket events for stars:
+     * - Multi-device sync: Real-time updates across user's browser tabs/devices
+     * - UI consistency: Keeps star state in sync across all components via store updates
+     */
+
     // Handle star related events
     this.socket.on(SocketEvents.STAR_CREATE, (event: PartialExcept<Star, "id">) => {
       if (!event.createdAt || !event.updatedAt || !event.userId) return;
@@ -385,26 +397,30 @@ class WebsocketService {
         userId: event.userId,
       };
       useStarStore.getState().addOne(star);
+      console.log("[websocket]: Star created:", star);
     });
 
     this.socket.on(SocketEvents.STAR_UPDATE, (event: PartialExcept<Star, "id">) => {
       if (!event.createdAt || !event.updatedAt || !event.userId) return;
 
+      const changes = {
+        docId: event.docId ?? null,
+        subspaceId: event.subspaceId ?? null,
+        index: event.index ?? null,
+        createdAt: new Date(event.createdAt),
+        updatedAt: new Date(event.updatedAt),
+        userId: event.userId,
+      };
       useStarStore.getState().updateOne({
         id: event.id,
-        changes: {
-          docId: event.docId ?? null,
-          subspaceId: event.subspaceId ?? null,
-          index: event.index ?? null,
-          createdAt: new Date(event.createdAt),
-          updatedAt: new Date(event.updatedAt),
-          userId: event.userId,
-        },
+        changes,
       });
+      console.log("[websocket]: Star updated:", { id: event.id, ...changes });
     });
 
-    this.socket.on(SocketEvents.STAR_DELETE, (event: { modelId: string }) => {
-      useStarStore.getState().removeOne(event.modelId);
+    this.socket.on(SocketEvents.STAR_DELETE, (event: { id: string; userId: string }) => {
+      useStarStore.getState().removeOne(event.id);
+      console.log("[websocket]: Star deleted:", event);
     });
 
     // Handle document creation

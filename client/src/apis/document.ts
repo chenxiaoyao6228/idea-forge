@@ -105,7 +105,7 @@ export const documentApi = {
   addUserPermission: async (id: string, data: DocUserPermissionDto) =>
     request.post<DocUserPermissionDto, DocUserPermissionResponse>(`/api/documents/${id}/user-permissions`, data),
 
-  removeUserPermission: async (id: string, targetUserId: number) =>
+  removeUserPermission: async (id: string, targetUserId: string) =>
     request.delete<void, { success: boolean }>(`/api/documents/${id}/user-permissions/${targetUserId}`),
 
   listUserPermissions: async (id: string) => request.get<void, DocUserPermissionResponse[]>(`/api/documents/${id}/user-permissions`),

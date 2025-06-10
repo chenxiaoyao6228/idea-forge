@@ -50,7 +50,7 @@ export const groupApi = {
   /**
    * Remove a user from a group
    */
-  removeUser: async (id: string, userId: number) => request.delete<void, GroupRemoveUserResponse>(`/api/groups/${id}/users/${userId}`),
+  removeUser: async (id: string, userId: string) => request.delete<void, GroupRemoveUserResponse>(`/api/groups/${id}/users/${userId}`),
 
   // Group Permissions APIs
   addGroupPermission: async (id: string, data: DocGroupPermissionDto) =>

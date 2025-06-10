@@ -75,7 +75,7 @@ export class SubspaceController {
   }
 
   @Delete(":id/user-permissions/:targetUserId")
-  async removeUserPermission(@Param("id") id: string, @Param("targetUserId") targetUserId: number, @Req() req: any) {
+  async removeUserPermission(@Param("id") id: string, @Param("targetUserId") targetuserId: string, @Req() req: any) {
     return this.subspaceService.removeUserPermission(id, targetUserId, req.user.id);
   }
 

@@ -15,7 +15,7 @@ export class FileService {
   ) {}
 
   async generateUploadCredentials(
-    userId: number,
+    userId: string,
     params: {
       fileName: string;
       ext: string;
@@ -56,7 +56,7 @@ export class FileService {
   }
 
   async confirmUpload(
-    userId: number,
+    userId: string,
     params: {
       fileId: string;
       fileKey: string;
@@ -93,7 +93,7 @@ export class FileService {
   }
 
   async uploadFile(params: {
-    userId: number;
+    userId: string;
     file: Express.Multer.File;
   }) {
     const { file, userId } = params;
@@ -129,7 +129,7 @@ export class FileService {
   }
 
   async deleteFile(params: {
-    userId: number;
+    userId: string;
     fileId: string;
   }) {
     // Verify file ownership
@@ -154,7 +154,7 @@ export class FileService {
   }
 
   async getFile(params: {
-    userId: number;
+    userId: string;
     fileId: string;
   }) {
     const file = await this.prisma.file.findFirst({
@@ -171,7 +171,7 @@ export class FileService {
     return file;
   }
 
-  async proxyImage(userId: number, imageUrl: string) {
+  async proxyImage(userId: string, imageUrl: string) {
     try {
       // 1. Download original image
       const response = await fetch(imageUrl);

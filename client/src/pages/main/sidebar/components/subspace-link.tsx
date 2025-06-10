@@ -161,9 +161,10 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
 
   const menu = (
     <div className="flex items-center gap-1">
-      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleStar} title={isStarred ? "Remove star" : "Add star"}>
+      {/* TODO: add this back if needed  */}
+      {/* <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleStar} title={isStarred ? "Remove star" : "Add star"}>
         <StarIcon className={`h-3 w-3 ${isStarred ? "text-yellow-500" : ""}`} />
-      </Button>
+      </Button> */}
       <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateDocument} disabled={isCreating} title={t("Create new document")}>
         <PlusIcon className="h-3 w-3" />
       </Button>

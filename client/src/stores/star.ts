@@ -67,7 +67,6 @@ const useStarStore = create<StoreState>()(
               const response = await starApi.findAll();
               const stars = response.data.stars.map((star) => ({
                 ...star,
-                userId: star.userId.toString(),
                 createdAt: new Date(star.createdAt),
                 updatedAt: new Date(star.updatedAt),
               }));
@@ -103,7 +102,7 @@ const useStarStore = create<StoreState>()(
                 docId: response.data.docId,
                 subspaceId: response.data.subspaceId,
                 index: response.data.index,
-                userId: response.data.userId.toString(),
+                userId: response.data.userId,
                 createdAt: new Date(response.data.createdAt),
                 updatedAt: new Date(response.data.updatedAt),
               };

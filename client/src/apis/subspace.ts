@@ -48,7 +48,7 @@ export const subspaceApi = {
   addUserPermission: async (id: string, data: SubspaceUserPermission) =>
     request.post<SubspaceUserPermission, SubspaceUserPermissionResponse>(`/api/subspaces/${id}/user-permissions`, data),
 
-  removeUserPermission: async (id: string, targetUserId: number) =>
+  removeUserPermission: async (id: string, targetUserId: string) =>
     request.delete<void, { success: boolean }>(`/api/subspaces/${id}/user-permissions/${targetUserId}`),
 
   listUserPermissions: async (id: string) => request.get<void, SubspaceUserPermissionResponse>(`/api/subspaces/${id}/user-permissions`),

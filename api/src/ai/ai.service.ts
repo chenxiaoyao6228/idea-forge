@@ -55,7 +55,7 @@ export class AIProviderService implements OnModuleInit {
     this.activeProviders.sort((a, b) => a.priority - b.priority);
   }
 
-  async streamCompletion(request: AIStreamRequest, userId: number): Promise<Observable<AIStreamResponse>> {
+  async streamCompletion(request: AIStreamRequest, userId: string): Promise<Observable<AIStreamResponse>> {
     const subject = new Subject<AIStreamResponse>();
 
     try {

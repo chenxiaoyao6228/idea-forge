@@ -223,6 +223,7 @@ export const docUserPermissionSchema = z.object({
 export const docGroupPermissionSchema = z.object({
   groupId: z.string(),
   permission: z.enum(permission),
+  docId: z.string(),
 });
 
 export type DocUserPermissionDto = z.infer<typeof docUserPermissionSchema>;
@@ -271,7 +272,7 @@ export interface DuplicateDocumentResponse extends CommonDocumentResponse {}
 
 export interface DocUserPermissionResponse {
   id: string;
-  userId: number;
+  userId: string;
   documentId: string;
   permission: Permission;
   createdAt: Date;

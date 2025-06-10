@@ -10,7 +10,7 @@ export class GroupPresenter {
         id: string;
         createdAt: Date;
         groupId: string;
-        userId: number;
+        userId: string;
         user: {
           id: number;
           email: string;
@@ -41,7 +41,7 @@ export class GroupPresenter {
         id: string;
         createdAt: Date;
         groupId: string;
-        userId: number;
+        userId: string;
         user: {
           id: number;
           email: string;

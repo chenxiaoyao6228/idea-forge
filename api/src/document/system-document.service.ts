@@ -13,7 +13,7 @@ export class SystemDocumentService {
   // FIXME: temporary solution for user to collaborate with other user
   private readonly WELCOME_DOC_TITLE = "Have fun with idea forge";
 
-  async shareWelcomeDocument(userId: number) {
+  async shareWelcomeDocument(userId: string) {
     // Get system user
     const systemUser = await this.prisma.user.findUnique({
       where: { email: this.SYSTEM_EMAIL },

@@ -13,7 +13,7 @@ export class GroupService {
     private readonly groupPresenter: GroupPresenter,
   ) {}
 
-  async getGroupInfo(userId: number, dto: GroupInfoDto) {
+  async getGroupInfo(userId: string, dto: GroupInfoDto) {
     const group = await this.prisma.memberGroup.findUnique({
       where: { id: dto.id },
       include: {
@@ -32,7 +32,7 @@ export class GroupService {
     return this.groupPresenter.presentGroupInfo(group);
   }
 
-  async listGroups(userId: number, dto: GroupListRequestDto) {
+  async listGroups(userId: string, dto: GroupListRequestDto) {
     const where: Prisma.MemberGroupWhereInput = {
       ...(dto.workspaceId ? { workspaceId: dto.workspaceId } : {}),
       ...(dto.query
@@ -68,7 +68,7 @@ export class GroupService {
     return this.groupPresenter.presentGroupList(groups, total, page, limit);
   }
 
-  async createGroup(userId: number, dto: CreateGroupDto) {
+  async createGroup(userId: string, dto: CreateGroupDto) {
     const group = await this.prisma.memberGroup.create({
       data: {
         ...dto,
@@ -90,7 +90,7 @@ export class GroupService {
     return this.groupPresenter.presentGroupInfo(group);
   }
 
-  async updateGroup(userId: number, dto: UpdateGroupDto) {
+  async updateGroup(userId: string, dto: UpdateGroupDto) {
     const group = await this.prisma.memberGroup.update({
       where: { id: dto.id },
       data: {
@@ -110,7 +110,7 @@ export class GroupService {
     return this.groupPresenter.presentGroupInfo(group);
   }
 
-  async deleteGroup(userId: number, dto: GroupInfoDto) {
+  async deleteGroup(userId: string, dto: GroupInfoDto) {
     await this.prisma.memberGroup.delete({
       where: { id: dto.id },
     });
@@ -118,7 +118,7 @@ export class GroupService {
     return { success: true };
   }
 
-  async addUserToGroup(userId: number, dto: AddGroupUserDto) {
+  async addUserToGroup(userId: string, dto: AddGroupUserDto) {
     const group = await this.prisma.memberGroup.update({
       where: { id: dto.id },
       data: {
@@ -140,7 +140,7 @@ export class GroupService {
     return this.groupPresenter.presentGroupInfo(group);
   }
 
-  async removeUserFromGroup(userId: number, dto: RemoveGroupUserDto) {
+  async removeUserFromGroup(userId: string, dto: RemoveGroupUserDto) {
     // First delete the member
     await this.prisma.memberGroupUser.deleteMany({
       where: {
@@ -167,7 +167,7 @@ export class GroupService {
     return this.groupPresenter.presentGroupInfo(group);
   }
 
-  async searchGroupsForSharing(userId: number, docId: string, query?: string) {
+  async searchGroupsForSharing(userId: string, docId: string, query?: string) {
     // Get all groups that already have access to the document
     const existingGroupIds = await this.prisma.docGroupPermission
       .findMany({

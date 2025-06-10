@@ -98,6 +98,7 @@ export function ShareButton({ documentId }: ShareButtonProps) {
             const group = groups?.data.find((g) => g.id === id);
             if (group) {
               await groupPermissionStore.addPermission({
+                docId: documentId,
                 groupId: id as string,
                 permission,
               });

@@ -8,7 +8,7 @@ import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/pri
 export class ShareDocumentService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
-  async getSharedDocuments(userId: number): Promise<CommonSharedDocumentResponse[]> {
+  async getSharedDocuments(userId: string): Promise<CommonSharedDocumentResponse[]> {
     // const docs = await this.prisma.doc.findMany({
     //   where: {
     //     sharedWith: { some: { userId } },
@@ -38,7 +38,7 @@ export class ShareDocumentService {
     return [];
   }
 
-  async shareDocument(userId: number, dto: ShareDocumentDto) {
+  async shareDocument(userId: string, dto: ShareDocumentDto) {
     const doc = await this.prisma.doc.findFirst({
       where: { id: dto.docId, authorId: userId },
     });
@@ -75,11 +75,11 @@ export class ShareDocumentService {
     return this.getDocShares(dto.docId, userId);
   }
 
-  async getDocShares(id: string, userId: number) {
+  async getDocShares(id: string, userId: string) {
     return [];
   }
 
-  async removeShare(id: string, userId: number, dto: RemoveShareDto) {
+  async removeShare(id: string, userId: string, dto: RemoveShareDto) {
     const doc = await this.prisma.doc.findFirst({
       where: { id, authorId: userId },
     });
@@ -93,7 +93,7 @@ export class ShareDocumentService {
     return this.getDocShares(id, userId);
   }
 
-  async updateSharePermission(id: string, userId: number, dto: UpdateSharePermissionDto) {
+  async updateSharePermission(id: string, userId: string, dto: UpdateSharePermissionDto) {
     const doc = await this.prisma.doc.findFirst({
       where: { id, authorId: userId },
     });
