@@ -7,7 +7,7 @@ import { SubspaceService } from "@/subspace/subspace.service";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { presentWorkspace, presentWorkspaces } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
-import { ResourceType, WorkspaceRole } from "@prisma/client";
+import { ResourceType, WorkspaceRole, PermissionLevel, SourceType, GuestStatus, WorkspaceMember } from "@prisma/client";
 import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 import { PermissionService } from "@/permission/permission.service";
 
@@ -20,12 +20,20 @@ export class WorkspaceService {
     private readonly inheritanceService: PermissionInheritanceService,
   ) {}
 
+  /**
+   * Initialize a new workspace with default global subspace
+   * Creates workspace and sets up initial structure
+   */
   async initializeWorkspace(dto: CreateWorkspaceDto, userId: string) {
     const workspace = await this.createWorkspace(dto, userId);
     await this.subspaceService.createDefaultGlobalSubspace(userId, workspace.id);
     return { workspace };
   }
 
+  /**
+   * Create a new workspace with the user as owner
+   * Automatically assigns workspace permissions and propagates to child resources
+   */
   async createWorkspace(dto: CreateWorkspaceDto, userId: string) {
     const workspace = await this.prismaService.workspace.create({
       data: {
@@ -40,12 +48,19 @@ export class WorkspaceService {
       },
     });
 
-    // assign workspace permissions to creator
-    await this.permissionService.assignWorkspacePermissions(userId, workspace.id, WorkspaceRole.OWNER, userId);
+    // Assign workspace permissions to creator with full ownership
+    const permission = await this.permissionService.assignWorkspacePermissions(userId, workspace.id, WorkspaceRole.OWNER, userId);
+
+    // Propagate permissions to all child resources (subspaces and documents)
+    await this.inheritanceService.propagatePermissions(ResourceType.WORKSPACE, workspace.id, permission);
 
     return presentWorkspace(workspace);
   }
 
+  /**
+   * Create default workspace for new users
+   * Uses user's email as workspace name
+   */
   async CreateDefaultWorkspace(userId: string) {
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
@@ -66,6 +81,10 @@ export class WorkspaceService {
     );
   }
 
+  /**
+   * Get all workspaces accessible to the current user
+   * Creates default workspace if user has none
+   */
   async getUserWorkspaces(currentUserId: string): Promise<WorkspaceListResponse> {
     const user = await this.prismaService.user.findUnique({
       where: { id: currentUserId },
@@ -92,6 +111,10 @@ export class WorkspaceService {
     return presentWorkspaces(workspaces);
   }
 
+  /**
+   * Get detailed workspace information including members and subspaces
+   * Validates user access through workspace ability system
+   */
   async getWorkspace(workspaceId: string, userId: string) {
     const workspace = await this.prismaService.workspace.findUnique({
       where: { id: workspaceId },
@@ -116,7 +139,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
     }
 
-    // 验证用户是否有访问权限
+    // Validate user access through unified permission system
     const hasAccess = await this.hasWorkspaceAccess(userId, workspaceId);
     if (!hasAccess) {
       throw new ApiException(ErrorCodeEnum.PermissionDenied);
@@ -125,8 +148,12 @@ export class WorkspaceService {
     return presentWorkspace(workspace);
   }
 
+  /**
+   * Get all members of a workspace
+   * Requires workspace access permission
+   */
   async getWorkspaceMembers(workspaceId: string, userId: string) {
-    // 验证用户是否有访问权限
+    // Validate user access through workspace ability system
     const hasAccess = await this.hasWorkspaceAccess(userId, workspaceId);
     if (!hasAccess) {
       throw new ApiException(ErrorCodeEnum.PermissionDenied);
@@ -145,6 +172,10 @@ export class WorkspaceService {
     return members;
   }
 
+  /**
+   * Get all subspace IDs within a workspace
+   * Used for permission cleanup operations
+   */
   private async getWorkspaceSubspaceIds(workspaceId: string): Promise<string[]> {
     const subspaces = await this.prismaService.subspace.findMany({
       where: { workspaceId },
@@ -153,6 +184,10 @@ export class WorkspaceService {
     return subspaces.map((s) => s.id);
   }
 
+  /**
+   * Get all document IDs within a workspace
+   * Used for permission cleanup operations
+   */
   private async getWorkspaceDocumentIds(workspaceId: string): Promise<string[]> {
     const docs = await this.prismaService.doc.findMany({
       where: { workspaceId },
@@ -161,8 +196,12 @@ export class WorkspaceService {
     return docs.map((d) => d.id);
   }
 
+  /**
+   * Update workspace information
+   * Validates update permissions through workspace ability system
+   */
   async updateWorkspace(id: string, dto: UpdateWorkspaceDto, userId: string) {
-    // 验证用户是否有更新权限
+    // Validate user has update permissions through workspace ability
     const hasAccess = await this.hasWorkspaceAccess(userId, id);
     if (!hasAccess) {
       throw new ApiException(ErrorCodeEnum.PermissionDenied);
@@ -181,8 +220,12 @@ export class WorkspaceService {
     return presentWorkspace(workspace);
   }
 
+  /**
+   * Delete workspace and all associated data
+   * Only workspace owners can delete, and only if they're the last member
+   */
   async deleteWorkspace(id: string, userId: string) {
-    // 验证用户是否是 OWNER
+    // Verify user is workspace owner
     const member = await this.prismaService.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId: id, userId } },
     });
@@ -191,7 +234,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.PermissionDenied);
     }
 
-    // 检查是否还有其他成员
+    // Ensure no other members exist before deletion
     const memberCount = await this.prismaService.workspaceMember.count({
       where: { workspaceId: id },
     });
@@ -200,7 +243,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.WorkspaceHasMembers);
     }
 
-    // 删除所有相关权限
+    // Clean up all related permissions across workspace hierarchy
     await this.prismaService.unifiedPermission.deleteMany({
       where: {
         OR: [
@@ -215,8 +258,12 @@ export class WorkspaceService {
     return { success: true };
   }
 
+  /**
+   * Add a new member to workspace with specified role
+   * Automatically propagates permissions to all child resources
+   */
   async addWorkspaceMember(workspaceId: string, userId: string, role: WorkspaceRole, adminId: string) {
-    // 验证用户是否已经是成员
+    // Verify user is not already a member
     const existingMember = await this.prismaService.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
     });
@@ -225,7 +272,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.UserAlreadyInWorkspace);
     }
 
-    // 验证被添加的用户是否存在
+    // Verify target user exists
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
@@ -234,7 +281,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
     }
 
-    // 1. 创建工作空间成员
+    // 1. Create workspace membership
     const member = await this.prismaService.workspaceMember.create({
       data: { workspaceId, userId, role },
       include: {
@@ -244,17 +291,21 @@ export class WorkspaceService {
       },
     });
 
-    // 2. 分配工作空间权限
+    // 2. Assign workspace permissions based on role
     const permission = await this.permissionService.assignWorkspacePermissions(userId, workspaceId, role, adminId);
 
-    // 3. 传播权限到所有子空间和文档
+    // 3. Propagate permissions to all child subspaces and documents
     await this.inheritanceService.propagatePermissions(ResourceType.WORKSPACE, workspaceId, permission);
 
     return member;
   }
 
+  /**
+   * Remove a member from workspace
+   * Cleans up all associated permissions across the workspace hierarchy
+   */
   async removeWorkspaceMember(workspaceId: string, userId: string, adminId: string) {
-    // 验证成员是否存在
+    // Verify member exists
     const member = await this.prismaService.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
     });
@@ -263,7 +314,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
     }
 
-    // 不能移除最后一个 OWNER
+    // Prevent removal of last owner
     if (member.role === WorkspaceRole.OWNER) {
       const ownerCount = await this.prismaService.workspaceMember.count({
         where: { workspaceId, role: WorkspaceRole.OWNER },
@@ -274,12 +325,12 @@ export class WorkspaceService {
       }
     }
 
-    // 1. 删除成员关系
+    // 1. Remove membership
     await this.prismaService.workspaceMember.delete({
       where: { workspaceId_userId: { workspaceId, userId } },
     });
 
-    // 2. 清理所有相关权限
+    // 2. Clean up all related permissions across workspace hierarchy
     await this.prismaService.unifiedPermission.deleteMany({
       where: {
         userId,
@@ -294,6 +345,10 @@ export class WorkspaceService {
     return { success: true };
   }
 
+  /**
+   * Check if user has access to workspace
+   * Used for basic access validation
+   */
   async hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
     const workspaceMember = await this.prismaService.workspaceMember.findUnique({
       where: {
@@ -307,6 +362,10 @@ export class WorkspaceService {
     return !!workspaceMember;
   }
 
+  /**
+   * Reorder user's workspaces using fractional indexing
+   * Maintains stable ordering without conflicts
+   */
   async reorderWorkspaces(workspaceIds: string[], userId: string) {
     // Verify user has access to all workspaces
     for (const workspaceId of workspaceIds) {
@@ -327,8 +386,8 @@ export class WorkspaceService {
       orderBy: { index: "asc" },
     });
 
-    // Update indices using fractional indexing
-    const updates = [];
+    // Update indices using fractional indexing to prevent conflicts
+    const updates: Promise<WorkspaceMember>[] = [];
     let lastIndex: string | null = null;
 
     for (const workspaceId of workspaceIds) {
@@ -345,14 +404,18 @@ export class WorkspaceService {
       }
     }
 
-    // Apply all updates in parallel
+    // Apply all updates in parallel for performance
     await Promise.all(updates);
 
     return { success: true };
   }
 
+  /**
+   * Update workspace member role
+   * Automatically updates unified permissions based on new role
+   */
   async updateWorkspaceMemberRole(workspaceId: string, userId: string, newRole: WorkspaceRole, adminId: string) {
-    // 验证成员是否存在
+    // Verify member exists
     const member = await this.prismaService.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
     });
@@ -361,7 +424,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
     }
 
-    // 如果是降级最后一个 OWNER，需要检查
+    // Prevent downgrading last owner
     if (member.role === WorkspaceRole.OWNER && newRole !== WorkspaceRole.OWNER) {
       const ownerCount = await this.prismaService.workspaceMember.count({
         where: { workspaceId, role: WorkspaceRole.OWNER },
@@ -372,7 +435,7 @@ export class WorkspaceService {
       }
     }
 
-    // 1. 更新成员角色
+    // 1. Update member role
     const updatedMember = await this.prismaService.workspaceMember.update({
       where: { workspaceId_userId: { workspaceId, userId } },
       data: { role: newRole },
@@ -383,9 +446,185 @@ export class WorkspaceService {
       },
     });
 
-    // 2. 更新统一权限
-    await this.permissionService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
+    // 2. Update unified permissions based on new role
+    const permission = await this.permissionService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
+
+    // 3. Propagate permission changes to all child resources
+    await this.inheritanceService.propagatePermissions(ResourceType.WORKSPACE, workspaceId, permission);
 
     return updatedMember;
   }
+
+  // /**
+  //  * Invite guest collaborator to specific document
+  //  * Creates guest record and assigns document-level permissions
+  //  */
+  // async inviteGuestCollaborator(workspaceId: string, guestEmail: string, documentId: string, permission: string, inviterId: string) {
+  //   // Verify workspace exists and inviter has permission
+  //   const hasAccess = await this.hasWorkspaceAccess(inviterId, workspaceId);
+  //   if (!hasAccess) {
+  //     throw new ApiException(ErrorCodeEnum.PermissionDenied);
+  //   }
+
+  //   // Create or update guest collaborator
+  //   const guest = await this.prismaService.guestCollaborator.upsert({
+  //     where: {
+  //       email_workspaceId: {
+  //         email: guestEmail,
+  //         workspaceId,
+  //       },
+  //     },
+  //     update: {
+  //       status: GuestStatus.PENDING,
+  //       expireAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+  //     },
+  //     create: {
+  //       email: guestEmail,
+  //       workspaceId,
+  //       invitedById: inviterId,
+  //       status: GuestStatus.PENDING,
+  //       expireAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+  //     },
+  //   });
+
+  //   // Assign document permission to guest
+  //   await this.prismaService.unifiedPermission.create({
+  //     data: {
+  //       guestId: guest.id,
+  //       resourceType: ResourceType.DOCUMENT,
+  //       resourceId: documentId,
+  //       permission: permission as PermissionLevel,
+  //       sourceType: SourceType.GUEST,
+  //       priority: 7,
+  //       createdById: inviterId,
+  //     },
+  //   });
+
+  //   return guest;
+  // }
+
+  // /**
+  //  * Get all guest collaborators in workspace
+  //  * Returns guests with their accessible document count
+  //  */
+  // async getGuestCollaborators(workspaceId: string, userId: string) {
+  //   // Verify user has access to workspace
+  //   const hasAccess = await this.hasWorkspaceAccess(userId, workspaceId);
+  //   if (!hasAccess) {
+  //     throw new ApiException(ErrorCodeEnum.PermissionDenied);
+  //   }
+
+  //   const guests = await this.prismaService.guestCollaborator.findMany({
+  //     where: { workspaceId },
+  //     include: {
+  //       invitedBy: {
+  //         select: { id: true, email: true, displayName: true },
+  //       },
+  //       unifiedPermissions: {
+  //         select: { resourceId: true, permission: true },
+  //       },
+  //       _count: {
+  //         select: { unifiedPermissions: true },
+  //       },
+  //     },
+  //     orderBy: { createdAt: "desc" },
+  //   });
+
+  //   return guests;
+  // }
+
+  // /**
+  //  * Remove guest collaborator from workspace
+  //  * Cleans up all associated permissions
+  //  */
+  // async removeGuestCollaborator(workspaceId: string, guestId: string, adminId: string) {
+  //   // Verify admin has access to workspace
+  //   const hasAccess = await this.hasWorkspaceAccess(adminId, workspaceId);
+  //   if (!hasAccess) {
+  //     throw new ApiException(ErrorCodeEnum.PermissionDenied);
+  //   }
+
+  //   // Verify guest exists in this workspace
+  //   const guest = await this.prismaService.guestCollaborator.findUnique({
+  //     where: { id: guestId },
+  //   });
+
+  //   if (!guest || guest.workspaceId !== workspaceId) {
+  //     throw new ApiException(ErrorCodeEnum.GuestNotFound);
+  //   }
+
+  //   // Remove all guest permissions
+  //   await this.prismaService.unifiedPermission.deleteMany({
+  //     where: { guestId },
+  //   });
+
+  //   // Remove guest collaborator record
+  //   await this.prismaService.guestCollaborator.delete({
+  //     where: { id: guestId },
+  //   });
+
+  //   return { success: true };
+  // }
+
+  // /**
+  //  * Promote guest collaborator to workspace member
+  //  * Migrates guest permissions to user permissions
+  //  */
+  // async promoteGuestToMember(workspaceId: string, guestId: string, role: WorkspaceRole, adminId: string) {
+  //   // Verify admin has access to workspace
+  //   const hasAccess = await this.hasWorkspaceAccess(adminId, workspaceId);
+  //   if (!hasAccess) {
+  //     throw new ApiException(ErrorCodeEnum.PermissionDenied);
+  //   }
+
+  //   // Get guest information
+  //   const guest = await this.prismaService.guestCollaborator.findUnique({
+  //     where: { id: guestId },
+  //     include: {
+  //       unifiedPermissions: true,
+  //     },
+  //   });
+
+  //   if (!guest || guest.workspaceId !== workspaceId) {
+  //     throw new ApiException(ErrorCodeEnum.GuestNotFound);
+  //   }
+
+  //   // Find or create user account for guest email
+  //   let user = await this.prismaService.user.findUnique({
+  //     where: { email: guest.email },
+  //   });
+
+  //   if (!user) {
+  //     // Create user account if doesn't exist
+  //     user = await this.prismaService.user.create({
+  //       data: {
+  //         email: guest.email,
+  //         displayName: guest.name || guest.email,
+  //       },
+  //     });
+  //   }
+
+  //   // Add user as workspace member
+  //   const member = await this.addWorkspaceMember(workspaceId, user.id, role, adminId);
+
+  //   // Migrate guest permissions to user permissions
+  //   for (const guestPermission of guest.unifiedPermissions) {
+  //     await this.prismaService.unifiedPermission.create({
+  //       data: {
+  //         userId: user.id,
+  //         resourceType: guestPermission.resourceType,
+  //         resourceId: guestPermission.resourceId,
+  //         permission: guestPermission.permission,
+  //         sourceType: SourceType.DIRECT,
+  //         priority: 1,
+  //         createdById: adminId,
+  //       },
+  //     });
+  //   }
+
+  //   // Remove guest collaborator and their permissions
+  //   await this.removeGuestCollaborator(workspaceId, guestId, adminId);
+
+  //   return member;
+  // }
 }

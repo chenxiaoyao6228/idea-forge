@@ -219,14 +219,6 @@ export const docUserPermissionSchema = z.object({
   permission:PermissionLevelSchema,
 });
 
-export const docGroupPermissionSchema = z.object({
-  groupId: z.string(),
-  permission:PermissionLevelSchema,
-  docId: z.string(),
-});
-
-export type DocUserPermissionDto = z.infer<typeof docUserPermissionSchema>;
-export type DocGroupPermissionDto = z.infer<typeof docGroupPermissionSchema>;
 
 //  ============== response ==============
 

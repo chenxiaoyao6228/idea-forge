@@ -1,5 +1,4 @@
 import { ExecutionContext, Injectable } from "@nestjs/common";
-import { PermissionLevel } from "@prisma/client";
 import { CanActivate } from "@nestjs/common";
 import { Action } from "./ability.class";
 import { Reflector } from "@nestjs/core";
@@ -25,20 +24,27 @@ export class PolicyGuard implements CanActivate {
 
     if (!user) throw new ApiException(ErrorCodeEnum.PermissionDenied);
 
-    const policy = this.reflector.getAllAndOverride<[action: Action, model: ModelName]>(CHECK_POLICY_KEY, [context.getHandler(), context.getClass()]);
+    const policy = this.reflector.getAllAndOverride<{ action: Action; model: ModelName }>(CHECK_POLICY_KEY, [context.getHandler(), context.getClass()]);
 
-    if (!policy) throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    if (!policy) return true;
 
-    const [action, model] = policy;
+    const { action, model } = policy;
     const id = getRequestItemId(request);
 
-    const ability = await this.abilityService.abilityMap[model].createForUser(user);
+    try {
+      const ability = await this.abilityService.abilityMap[model].createForUser(user);
 
-    if (id) {
-      const item = await this.prisma[model].findUniqueOrThrow({ where: { id } });
-      return ability.can(action, subject(model, item));
+      if (id) {
+        const item = await this.prisma[model].findUniqueOrThrow({ where: { id } });
+
+        return ability.can(action, subject(model, item));
+      }
+
+      return ability.can(action, model);
+    } catch (error) {
+      if (error instanceof ApiException) throw error;
+      console.log("policy guard error", error);
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
     }
-
-    return ability.can(action, model);
   }
 }

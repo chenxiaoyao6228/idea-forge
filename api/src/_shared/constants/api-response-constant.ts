@@ -52,6 +52,7 @@ export enum ErrorCodeEnum {
   UserAlreadyInWorkspace = "user_already_in_workspace",
   UserNotInWorkspace = "user_not_in_workspace",
   CannotRemoveLastOwner = "cannot_remove_last_owner",
+  GuestNotFound = "guest_not_found",
 
   // Subspace related errors (using subspace prefix for subspaces)
   SubspaceNotFound = "subspace_not_found",
@@ -69,6 +70,6 @@ export enum ErrorCodeEnum {
   SubspaceNotFoundOrNoAccess = "SUBSPACE_NOT_FOUND_OR_NO_ACCESS",
 
   PermissionNotFound = "permission_not_found",
-
+  ResourceNotFound = "resource_not_found",
   InternalServerError = "internal_server_error",
 }

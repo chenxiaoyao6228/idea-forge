@@ -1,19 +1,21 @@
 import { Action, AppAbility, BaseAbility } from "@/_shared/casl/ability.class";
 import { DefineAbility } from "@/_shared/casl/ability.decorator";
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { User } from "contracts";
 import { ResourceType, PermissionLevel } from "@prisma/client";
 import { PermissionService } from "@/permission/permission.service";
+import { ModelName } from "@/_shared/database/prisma/prisma.extension";
 
 @Injectable()
-@DefineAbility("Workspace")
+@DefineAbility("Workspace" as ModelName)
 export class WorkspaceAbility extends BaseAbility {
   constructor(private readonly permissionService: PermissionService) {
     super();
   }
   // Will be called on each request that triggers a policy check
   async createForUser(user: User): Promise<AppAbility> {
-    return this.createAbilityAsync(async ({ can }) => {
+    return this.createAbilityAsync(async (builder) => {
+      const { can } = builder; // Destructure here instead
       const userPermissions = await this.permissionService.getUserAllPermissions(user.id);
 
       for (const perm of userPermissions) {

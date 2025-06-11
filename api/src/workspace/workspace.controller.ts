@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { WorkspaceService } from "./workspace.service";
 import { User, WorkspaceDetailResponse, WorkspaceListResponse } from "contracts";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
@@ -40,6 +40,17 @@ export class WorkspaceController {
     return this.workspaceService.removeWorkspaceMember(workspaceId, userId, adminId);
   }
 
+  @Patch(":id/members/:userId/role")
+  @CheckPolicy(Action.ManageMembers, "Workspace")
+  async updateWorkspaceMemberRole(
+    @Param("id") workspaceId: string,
+    @Param("userId") userId: string,
+    @Body() dto: { role: WorkspaceRole },
+    @GetUser("id") adminId: string,
+  ) {
+    return this.workspaceService.updateWorkspaceMemberRole(workspaceId, userId, dto.role, adminId);
+  }
+
   @Patch(":id")
   @CheckPolicy(Action.Update, "Workspace")
   async updateWorkspace(@Param("id") id: string, @Body() dto: UpdateWorkspaceDto, @GetUser("id") userId: string) {
@@ -62,5 +73,40 @@ export class WorkspaceController {
   @CheckPolicy(Action.ViewMembers, "Workspace")
   async getWorkspaceMembers(@Param("id") workspaceId: string, @GetUser("id") userId: string) {
     return this.workspaceService.getWorkspaceMembers(workspaceId, userId);
+  }
+
+  // === Guest Collaborators ===
+  // FIXME: add all the guest features and test
+  @Post(":id/guests")
+  @CheckPolicy(Action.ManageMembers, "Workspace")
+  async inviteGuestCollaborator(
+    @Param("id") workspaceId: string,
+    @Body() dto: { email: string; documentId: string; permission: string },
+    @GetUser("id") inviterId: string,
+  ) {
+    // return this.workspaceService.inviteGuestCollaborator(workspaceId, dto.email, dto.documentId, dto.permission, inviterId);
+  }
+
+  @Get(":id/guests")
+  @CheckPolicy(Action.ViewMembers, "Workspace")
+  async getGuestCollaborators(@Param("id") workspaceId: string, @GetUser("id") userId: string) {
+    // return this.workspaceService.getGuestCollaborators(workspaceId, userId);
+  }
+
+  @Delete(":id/guests/:guestId")
+  @CheckPolicy(Action.ManageMembers, "Workspace")
+  async removeGuestCollaborator(@Param("id") workspaceId: string, @Param("guestId") guestId: string, @GetUser("id") adminId: string) {
+    // return this.workspaceService.removeGuestCollaborator(workspaceId, guestId, adminId);
+  }
+
+  @Post(":id/guests/:guestId/promote")
+  @CheckPolicy(Action.ManageMembers, "Workspace")
+  async promoteGuestToMember(
+    @Param("id") workspaceId: string,
+    @Param("guestId") guestId: string,
+    @Body() dto: { role: WorkspaceRole },
+    @GetUser("id") adminId: string,
+  ) {
+    // return this.workspaceService.promoteGuestToMember(workspaceId, guestId, dto.role, adminId);
   }
 }

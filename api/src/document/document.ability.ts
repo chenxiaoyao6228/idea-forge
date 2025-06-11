@@ -1,24 +1,22 @@
-import { ResourceType, UnifiedPermission } from "@prisma/client";
+import { UnifiedPermission } from "@prisma/client";
 
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { User } from "@prisma/client";
 import { DefineAbility } from "@/_shared/casl/ability.decorator";
-import { ExtendedPrismaClient, ModelName, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { ModelName } from "@/_shared/database/prisma/prisma.extension";
 import { Action, AppAbility, BaseAbility } from "@/_shared/casl/ability.class";
 import { PermissionService } from "@/permission/permission.service";
 
 @Injectable()
 @DefineAbility("Doc" as ModelName)
 export class DocumentAbility extends BaseAbility {
-  constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
-    private readonly permissionService: PermissionService,
-  ) {
+  constructor(private readonly permissionService: PermissionService) {
     super();
   }
   // Will be called on each request that triggers a policy check
   async createForUser(user: User): Promise<AppAbility> {
-    return this.createAbilityAsync(async ({ can }) => {
+    return this.createAbilityAsync(async (builder) => {
+      const { can } = builder; // Destructure here instead
       const userPermissions = await this.permissionService.getUserAllPermissions(user.id);
 
       for (const perm of userPermissions) {

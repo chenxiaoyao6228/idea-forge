@@ -15,15 +15,17 @@ export class PermissionService {
       orderBy: { priority: "asc" },
     });
 
-    const resourcePermissions = new Map<string, UnifiedPermission>();
+    return userPermissions;
 
-    // 由于权限已按优先级排序，后面的权限会覆盖前面的权限
-    for (const perm of userPermissions) {
-      if (perm.resourceType === ResourceType.DOCUMENT) {
-        resourcePermissions.set(perm.resourceId, perm);
-      }
-    }
-    return [...resourcePermissions.values()];
+    // const resourcePermissions = new Map<string, UnifiedPermission>();
+
+    // // 由于权限已按优先级排序，后面的权限会覆盖前面的权限
+    // for (const perm of userPermissions) {
+    //   if (perm.resourceType === ResourceType.DOCUMENT) {
+    //     resourcePermissions.set(perm.resourceId, perm);
+    //   }
+    // }
+    // return [...resourcePermissions.values()];
   }
 
   // 增强：支持 Guest 权限和优先级解析
@@ -237,7 +239,7 @@ export class PermissionService {
     const workspaceMembers = await this.prisma.workspaceMember.findMany({
       where: { workspaceId },
     });
-
+    // TODO: 每次都要便利, 待优化
     for (const member of workspaceMembers) {
       const role = member.userId === creatorId ? SubspaceRole.ADMIN : SubspaceRole.MEMBER;
       await this.assignSubspacePermissions(member.userId, subspaceId, role, creatorId);

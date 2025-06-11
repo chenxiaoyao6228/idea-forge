@@ -15,7 +15,7 @@ Content-Type: application/json
 }
 
 ### get access token from cookie response of login
-@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImlhdCI6MTc0NzYzNDY3NSwiZXhwIjoxNzQ3NzIxMDc1fQ.YEihvdG0zlOuVDrQtbjx2xuP1ppX9N9jZcMpPZXbMQg
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMWNiZTQ5MC0yOTc3LTRlOTAtYTc5NS1mMzJkNmEwNTVjZWUiLCJpYXQiOjE3NDk2NTE5ODIsImV4cCI6MTc0OTczODM4Mn0.1e3Q73CHSxIZqMdG-JYjHfbnQxKKpBK0l_MVDw_LisE
 
 
 ### test pagination
@@ -24,8 +24,8 @@ Content-Type: application/json
 Cookie: accessToken={{accessToken}}
 
 // ========== other test ============
-@workspaceId = cmaupg3yy0000blcncjf435pg
-@subspaceId = cmauteb7c0000ibtz3x5pzz3l
+@workspaceId = cmbs1mlv50002mrqz1e2mzfc4
+@subspaceId = cmbs1msja0007mrqzoi70ggcr
 
 ### create workspace
 POST {{baseUrl}}/api/workspaces
@@ -33,7 +33,8 @@ Content-Type: application/json
 
 {
   "name": "workspace-test",
-  "description": "test"
+  "description": "test",
+  "avatar": ""
 }
 
 ### create subspace
@@ -49,10 +50,17 @@ Cookie: accessToken={{accessToken}}
    "avatar": ""
 }
 
+
+### get subspace detail
+GET {{baseUrl}}/api/subspaces/{{subspaceId}}
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
 ### get subspaces list
 GET {{baseUrl}}/api/subspaces/list
 Content-Type: application/json
 Cookie: accessToken={{accessToken}}
+
 
 ### create doc
 POST {{baseUrl}}/api/documents/create

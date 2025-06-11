@@ -9,7 +9,7 @@
       "webRoot": "${workspaceFolder}/client",
       "skipFiles": [
         "${workspaceFolder}/client/node_modules/**/*.js",
-        "<node_internals>/**/*.js"
+        "<node_internals>/**"
       ]
     },
    
@@ -23,7 +23,8 @@
       "outFiles": ["${workspaceFolder}/api/dist/**/*.js"],
       "skipFiles": [
         "${workspaceFolder}/api/node_modules/**/*.js",
-        "<node_internals>/**/*.js"
+        "<node_internals>/**",
+        "**/async_hooks.js"
       ]
     }
   ],

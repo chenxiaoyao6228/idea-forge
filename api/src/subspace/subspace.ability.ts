@@ -1,19 +1,22 @@
 import { Action, AppAbility, BaseAbility } from "@/_shared/casl/ability.class";
 import { DefineAbility } from "@/_shared/casl/ability.decorator";
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { User } from "contracts";
 import { ResourceType, PermissionLevel } from "@prisma/client";
 import { PermissionService } from "@/permission/permission.service";
+import { ModelName } from "@/_shared/database/prisma/prisma.extension";
 
 @Injectable()
-@DefineAbility("Subspace")
+@DefineAbility("Subspace" as ModelName)
 export class SubspaceAbility extends BaseAbility {
   constructor(private readonly permissionService: PermissionService) {
     super();
   }
   // Will be called on each request that triggers a policy check
   async createForUser(user: User): Promise<AppAbility> {
-    return this.createAbilityAsync(async ({ can }) => {
+    return this.createAbilityAsync(async (builder) => {
+      const { can } = builder; // Destructure here instead
+
       // Get user's all permissions from unified permission system
       const userPermissions = await this.permissionService.getUserAllPermissions(user.id);
 
