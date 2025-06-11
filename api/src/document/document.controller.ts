@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from "@nestjs/common";
 import {
   CreateDocumentDto,
   SearchDocumentDto,
@@ -16,9 +16,13 @@ import { DocumentService } from "./document.service";
 import { MoveDocumentService } from "./move-document.service";
 import { GroupService } from "../group/group.service";
 import { Action } from "@/_shared/casl/ability.class";
-import { CheckDynamicPolicy } from "@/_shared/casl/dynamic-policy.decorator";
-import { PermissionInheritanceService } from "./permission-inheritance.service";
+import { PermissionService } from "@/permission/permission.service";
+import { CheckPolicy } from "@/_shared/casl/policy.decorator";
+import { PolicyGuard } from "@/_shared/casl/policy.guard";
+import { ResourceType } from "@prisma/client";
+import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 
+@UseGuards(PolicyGuard)
 @Controller("/api/documents")
 export class DocumentController {
   constructor(
@@ -40,7 +44,7 @@ export class DocumentController {
   }
 
   @Post("move")
-  @CheckDynamicPolicy(Action.Move, "Doc")
+  @CheckPolicy(Action.Move, "Doc")
   async moveDocuments(@GetUser("id") userId: string, @Body() dto: MoveDocumentsDto) {
     const result = await this.moveDocumentService.moveDocs(userId, dto);
 
@@ -50,19 +54,6 @@ export class DocumentController {
 
     return result;
   }
-
-  // @Post("bulk-move")
-  // @CheckDynamicPolicy(Action.BulkMove, "Doc")
-  // async bulkMoveDocuments(@GetUser("id") userId: string, @Body() dto: BulkMoveDocumentsDto) {
-  //   for (const docId of dto.documentIds) {
-  //     const hasPermission = await this.documentAbility.checkDocumentPermission({ id: userId } as User, docId, Action.Move);
-  //     if (!hasPermission) {
-  //       throw new ApiException(ErrorCodeEnum.PermissionDenied);
-  //     }
-  //   }
-
-  //   return this.moveDocumentService.bulkMoveDocs(userId, dto);
-  // }
 
   // ==============keep router without id above ==========================================
 
@@ -77,7 +68,7 @@ export class DocumentController {
   }
 
   @Delete(":id")
-  @CheckDynamicPolicy(Action.Delete, "Doc")
+  @CheckPolicy(Action.Delete, "Doc")
   remove(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.remove(id, userId);
   }
@@ -102,18 +93,18 @@ export class DocumentController {
   // ============== doc permission ==========================================
 
   @Post(":id/user-permissions")
-  @CheckDynamicPolicy(Action.ManagePermissions, "Doc")
+  @CheckPolicy(Action.ManagePermissions, "Doc")
   async addUserPermission(@Param("id") docId: string, @Body() dto: DocUserPermissionDto, @GetUser("id") userId: string) {
     const permission = await this.documentService.addUserPermission(docId, dto.userId, dto.permission, userId);
 
     // Propagate permission to children
-    await this.permissionInheritanceService.propagatePermissionToChildren(docId, permission, "user");
+    await this.permissionInheritanceService.propagatePermissions(ResourceType.DOCUMENT, docId, permission);
 
     return permission;
   }
 
   @Patch(":id/user-permissions/:permissionId")
-  @CheckDynamicPolicy(Action.ViewPermissions, "Doc")
+  @CheckPolicy(Action.ViewPermissions, "Doc")
   async updateUserPermission(@Param("permissionId") permissionId: string, @Body() dto: DocUserPermissionDto) {
     const updatedPermission = await this.documentService.updateUserPermission(permissionId, dto.permission, dto.userId);
     await this.permissionInheritanceService.updateInheritedPermissions(permissionId, dto.permission, "user");

@@ -27,6 +27,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model UnifiedPermission {
+  id           String          @id @default(cuid())
+  userId       String? // Make nullable for guest scenarios  
+  resourceType ResourceType
+  resourceId   String
+  permission   PermissionLevel
+  sourceType   SourceType
+  sourceId     String?
+  priority     Int
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  createdById  String
+
+  // Optional for guest permissions    
+  guestId String?
+
+  source   UnifiedPermission?  @relation("PermissionInheritance", fields: [sourceId], references: [id])
+  children UnifiedPermission[] @relation("PermissionInheritance")
+
+  unifiedUser      User?              @relation("UserPermissions", fields: [userId], references: [id])
+  unifiedCreatedBy User               @relation("CreatedPermissions", fields: [createdById], references: [id])
+  guest            GuestCollaborator? @relation(fields: [guestId], references: [id])
+
+  // Updated unique constraint to handle both scenarios  
+  @@unique([userId, guestId, resourceType, resourceId, sourceType])
+  @@index([userId, resourceType])
+  @@index([guestId, resourceType])
+  @@index([resourceType, resourceId])
+  @@index([priority])
+}
+
+enum ResourceType {
+  WORKSPACE
+  SUBSPACE
+  DOCUMENT
+}
+
+enum SourceType {
+  DIRECT // directly assigned permission (priority: 1)    
+  GROUP // group permission (priority: 2)      
+  SUBSPACE_ADMIN // subspace admin (priority: 3)    
+  SUBSPACE_MEMBER // subspace member (priority: 4)    
+  WORKSPACE_ADMIN // workspace admin (priority: 5)    
+  WORKSPACE_MEMBER // workspace member (priority: 6)    
+  GUEST // guest permission (priority: 7)  
+}
+
+enum PermissionLevel {
+  NONE
+  READ
+  COMMENT
+  EDIT
+  MANAGE
+  OWNER
+}
+
 model User {
   id          String  @id @default(uuid())
   email       String  @unique
@@ -53,8 +109,9 @@ model User {
   sharedDocs       DocShare[] @relation("SharedToUser") // Documents shared with user
   docShare         DocShare[] // Documents shared by user
 
-  // Public sharing
-  // createdPublicShares PublicShare[] // Public shares created by user
+  // permissions
+  unifiedPermissions        UnifiedPermission[] @relation("UserPermissions")
+  createdUnifiedPermissions UnifiedPermission[] @relation("CreatedPermissions")
 
   // Version history
   docRevisions DocRevision[] // Document revision history
@@ -74,15 +131,10 @@ model User {
   memberGroups MemberGroupUser[] // Group memberships
 
   // Guest invitations
-  guestInvitations         GuestCollaborator[]        @relation("InvitedBy") // Guest invitations sent
-  SubspaceMemberPermission SubspaceMemberPermission[]
+  guestInvitations GuestCollaborator[] @relation("InvitedBy") // Guest invitations sent
 
   // Star relationships
-  stars                   Star[] // User's starred items
-  docGroupPermissions     DocGroupPermission[] @relation("UserGroupPermissions")
-  docUserPermissions      DocUserPermission[]  @relation("UserDocPermissions")
-  createdGroupPermissions DocGroupPermission[] @relation("CreatedGroupPermissions")
-  createdUserPermissions  DocUserPermission[]  @relation("CreatedUserPermissions")
+  stars Star[] // User's starred items
 }
 
 enum UserStatus {
@@ -114,6 +166,7 @@ model Workspace {
 
 enum DocVisibility {
   PUBLIC // visible to everyone, (eg: product user guide, etc.)
+  SHARED // visible to specific members, need further permission control check
   PRIVATE // visible to author
   WORKSPACE // visible to workspace, need further permission control check
 }
@@ -166,32 +219,15 @@ model Doc {
   children Doc[] @relation("DocToDoc")
 
   // sharing and permissions
-  docShare           DocShare[]
-  guestDocPermission GuestDocPermission[]
+  docShare DocShare[]
+
   // publicShare        PublicShare?
 
   // versions
-  revisions          DocRevision[]
-  DocGroupPermission DocGroupPermission[]
+  revisions DocRevision[]
 
   // star relationships
-  stars             Star[] // Stars for this document
-  DocUserPermission DocUserPermission[]
-}
-
-model DocRevision {
-  id            String   @id @default(cuid())
-  title         String
-  content       String
-  contentBinary Bytes?
-  createdAt     DateTime @default(now())
-
-  doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
-  docId    String
-  author   User   @relation(fields: [authorId], references: [id])
-  authorId String
-
-  @@index([docId, createdAt])
+  stars Star[] // Stars for this document
 }
 
 model WorkspaceMember {
@@ -203,11 +239,10 @@ model WorkspaceMember {
   preferences Json? // User preferences
   index       String? // Fractional index for ordering
 
-  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
-  workspaceId       String
-  user              User                @relation(fields: [userId], references: [id])
-  userId            String
-  DocUserPermission DocUserPermission[]
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
 
   @@unique([workspaceId, userId])
   @@index([userId, index])
@@ -229,11 +264,10 @@ model Subspace {
   index          String?
 
   // relations
-  workspace                Workspace                  @relation(fields: [workspaceId], references: [id])
-  workspaceId              String
-  docs                     Doc[]
-  members                  SubspaceMember[]
-  SubspaceMemberPermission SubspaceMemberPermission[]
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  docs        Doc[]
+  members     SubspaceMember[]
 
   // star relationships
   stars Star[] // Stars for this subspace
@@ -243,14 +277,13 @@ model SubspaceMember {
   id        String       @id @default(cuid())
   role      SubspaceRole @default(MEMBER)
   createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  updatedAt DateTime     @default(now())
 
   subspace   Subspace @relation(fields: [subspaceId], references: [id])
   subspaceId String
 
-  user              User                @relation(fields: [userId], references: [id])
-  userId            String
-  DocUserPermission DocUserPermission[]
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
   @@unique([subspaceId, userId])
 }
@@ -263,24 +296,6 @@ enum SubspaceType {
   PERSONAL // Only visible to the creator, completely hidden from others.
 }
 
-model SubspaceMemberPermission {
-  id         String     @id @default(cuid())
-  permission Permission @default(READ)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-
-  // relations
-  subspace   Subspace @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
-  subspaceId String
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
-
-  // some roles' permission can not be modified
-  isEditable Boolean @default(true)
-
-  @@unique([subspaceId, userId])
-}
-
 // Group of users in workspace
 model MemberGroup {
   id          String    @id @default(cuid())
@@ -290,10 +305,9 @@ model MemberGroup {
   updatedAt   DateTime  @updatedAt
   validUntil  DateTime?
 
-  workspace          Workspace            @relation(fields: [workspaceId], references: [id])
-  workspaceId        String
-  members            MemberGroupUser[]
-  DocGroupPermission DocGroupPermission[]
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  members     MemberGroupUser[]
 }
 
 model MemberGroupUser {
@@ -308,66 +322,6 @@ model MemberGroupUser {
   @@unique([groupId, userId])
 }
 
-model DocGroupPermission {
-  id         String     @id @default(cuid())
-  permission Permission @default(READ) // Permission level: READ, COMMENT, EDIT, SHARE, MANAGE  
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-
-  // Core relationships  
-  doc     Doc         @relation(fields: [docId], references: [id], onDelete: Cascade)
-  docId   String
-  group   MemberGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  groupId String
-
-  // User relationships
-  user   User   @relation("UserGroupPermissions", fields: [userId], references: [id])
-  userId String
-
-  // Permission inheritance support for folder tree sharing  
-  createdBy   User                 @relation("CreatedGroupPermissions", fields: [createdById], references: [id])
-  createdById String
-  source      DocGroupPermission?  @relation("GroupPermissionSource", fields: [sourceId], references: [id])
-  sourceId    String?
-  children    DocGroupPermission[] @relation("GroupPermissionSource")
-
-  // Ensure one permission per group per document  
-  @@unique([docId, groupId])
-  @@index([groupId, createdAt]) // For efficient group permission queries  
-}
-
-model DocUserPermission {
-  id         String     @id @default(cuid())
-  permission Permission @default(READ) // Permission level: READ, COMMENT, EDIT, SHARE, MANAGE  
-  index      String?    @db.VarChar(256) // Fractional index for "Shared with me" ordering  
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-
-  // Core relationships  
-  doc         Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
-  docId       String
-  user        User   @relation("UserDocPermissions", fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  createdBy   User   @relation("CreatedUserPermissions", fields: [createdById], references: [id])
-  createdById String
-
-  // Permission inheritance support for folder tree sharing  
-  source   DocUserPermission?  @relation("UserPermissionSource", fields: [sourceId], references: [id])
-  sourceId String?
-  children DocUserPermission[] @relation("UserPermissionSource")
-
-  // Optional links to workspace/subspace memberships that generated this permission  
-  workspaceMember   WorkspaceMember? @relation(fields: [workspaceMemberId], references: [id])
-  workspaceMemberId String?
-  subspaceMember    SubspaceMember?  @relation(fields: [subspaceMemberId], references: [id])
-  subspaceMemberId  String?
-
-  // Ensure one permission per user per document  
-  @@unique([docId, userId])
-  @@index([userId, index]) // For "Shared with me" ordering  
-  @@index([userId, createdAt]) // For chronological queries  
-}
-
 // User belongs to other workspace, but come to current workspace as a guest
 // can be upgraded to workspace member
 model GuestCollaborator {
@@ -379,27 +333,13 @@ model GuestCollaborator {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  invitedBy      User                 @relation("InvitedBy", fields: [invitedById], references: [id])
-  invitedById    String
-  workspace      Workspace            @relation(fields: [workspaceId], references: [id])
-  workspaceId    String
-  docPermissions GuestDocPermission[]
+  invitedBy          User                @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedById        String
+  workspace          Workspace           @relation(fields: [workspaceId], references: [id])
+  workspaceId        String
+  unifiedPermissions UnifiedPermission[]
 
   @@unique([email, workspaceId])
-}
-
-model GuestDocPermission {
-  id         String     @id @default(cuid())
-  permission Permission @default(READ)
-  expireAt   DateTime
-  createdAt  DateTime   @default(now())
-
-  guest   GuestCollaborator @relation(fields: [guestId], references: [id])
-  guestId String
-  doc     Doc               @relation(fields: [docId], references: [id])
-  docId   String
-
-  @@unique([guestId, docId])
 }
 
 enum GuestStatus {
@@ -407,6 +347,40 @@ enum GuestStatus {
   ACTIVE
   EXPIRED
   REVOKED
+}
+
+model DocShare {
+  id       String @id @default(cuid())
+  doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
+  docId    String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+  sharedTo User   @relation("SharedToUser", fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+
+  permission PermissionLevel @default(READ)
+
+  // Key field: Support folder tree sharing
+  includeChildDocuments Boolean @default(false) // Whether to include child documents
+
+  // Share status control  
+  published Boolean   @default(false) // Whether publicly published
+  revokedAt DateTime? // Revocation time
+
+  // Access control  
+  expiresAt DateTime? // Expiration time
+  urlId     String? // Custom URL identifier
+
+  // Statistics  
+  viewCount      Int       @default(0) // Number of views
+  lastAccessedAt DateTime? // Last access time
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([docId, userId])
+  @@index([userId, createdAt])
+  @@index([docId, includeChildDocuments])
 }
 
 model Password {
@@ -439,38 +413,19 @@ model CoverImage {
   isPreset Boolean @default(false)
 }
 
-model DocShare {
-  id       String @id @default(cuid())
+model DocRevision {
+  id            String   @id @default(cuid())
+  title         String
+  content       String
+  contentBinary Bytes?
+  createdAt     DateTime @default(now())
+
   doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
   docId    String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author   User   @relation(fields: [authorId], references: [id])
   authorId String
-  sharedTo User   @relation("SharedToUser", fields: [userId], references: [id], onDelete: Cascade)
-  userId   String
 
-  permission Permission @default(READ)
-
-  // Key field: Support folder tree sharing
-  includeChildDocuments Boolean @default(false) // Whether to include child documents
-
-  // Share status control  
-  published Boolean   @default(false) // Whether publicly published
-  revokedAt DateTime? // Revocation time
-
-  // Access control  
-  expiresAt DateTime? // Expiration time
-  urlId     String? // Custom URL identifier
-
-  // Statistics  
-  viewCount      Int       @default(0) // Number of views
-  lastAccessedAt DateTime? // Last access time
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([docId, userId])
-  @@index([userId, createdAt])
-  @@index([docId, includeChildDocuments])
+  @@index([docId, createdAt])
 }
 
 model File {
@@ -541,13 +496,6 @@ enum WorkspaceRole {
 enum SubspaceRole {
   ADMIN // Can manage subspace settings, add/remove members, manage  all documents in the subspace, etc
   MEMBER
-}
-
-enum Permission {
-  MANAGE
-  WRITE
-  READ
-  NONE
 }
 
 enum DocType {

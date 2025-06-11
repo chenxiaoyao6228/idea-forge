@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { PermissionSchema } from '../inputTypeSchemas/PermissionSchema'
+import { PermissionLevelSchema } from '../inputTypeSchemas/PermissionLevelSchema'
 
 /////////////////////////////////////////
 // DOC SHARE SCHEMA
 /////////////////////////////////////////
 
 export const DocShareSchema = z.object({
-  permission: PermissionSchema,
+  permission: PermissionLevelSchema,
   id: z.string().cuid(),
   docId: z.string(),
   authorId: z.string(),
@@ -29,7 +29,7 @@ export type DocShare = z.infer<typeof DocShareSchema>
 /////////////////////////////////////////
 
 export const DocShareOptionalDefaultsSchema = DocShareSchema.merge(z.object({
-  permission: PermissionSchema.optional(),
+  permission: PermissionLevelSchema.optional(),
   id: z.string().cuid().optional(),
   includeChildDocuments: z.boolean().optional(),
   published: z.boolean().optional(),

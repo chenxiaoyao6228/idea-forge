@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
-import { NavigationNode, NavigationNodeType, SubspaceTypeSchema, Permission } from "contracts";
+import { NavigationNode, NavigationNodeType, SubspaceTypeSchema } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
@@ -8,12 +8,15 @@ import fractionalIndex from "fractional-index";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { presentSubspace, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
+import { PermissionService } from "@/permission/permission.service";
+import { SourceType, ResourceType, SubspaceType, PermissionLevel } from "@prisma/client";
 
 @Injectable()
 export class SubspaceService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient,
     private readonly eventPublisher: EventPublisherService,
+    private readonly permissionService: PermissionService,
   ) {}
 
   async createDefaultGlobalSubspace(userId: string, workspaceId: string) {
@@ -29,13 +32,13 @@ export class SubspaceService {
     );
   }
 
-  async createSubspace(dto: CreateSubspaceDto, userId: string) {
+  async createSubspace(dto: CreateSubspaceDto, creatorId: string) {
     // Check if user is a member of the workspace
     const workspaceMember = await this.prismaService.workspaceMember.findUnique({
       where: {
         workspaceId_userId: {
           workspaceId: dto.workspaceId,
-          userId,
+          userId: creatorId,
         },
       },
     });
@@ -75,18 +78,22 @@ export class SubspaceService {
         },
         members: {
           create: {
-            userId,
+            userId: creatorId,
             role: "ADMIN",
           },
         },
       },
     });
 
+    // Assign subspace type permissions
+    // FIXME: ts type optimization
+    await this.permissionService.assignSubspaceTypePermissions(subspace.id, dto.type as SubspaceType, dto.workspaceId, creatorId);
+
     // Emit create event
     await this.eventPublisher.publishWebsocketEvent({
       name: BusinessEvents.SUBSPACE_CREATE,
       workspaceId: dto.workspaceId,
-      actorId: userId.toString(),
+      actorId: creatorId.toString(),
       data: {
         subspace: presentSubspace(subspace),
       },
@@ -471,7 +478,7 @@ export class SubspaceService {
 
   // ==== Member Management ====
 
-  async addSubspaceMember(subspaceId: string, dto: AddSubspaceMemberDto, currentUserId: string) {
+  async addSubspaceMember(subspaceId: string, dto: AddSubspaceMemberDto, adminId: string) {
     // Check if the user to be added is a member of the workspace
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
@@ -647,7 +654,7 @@ export class SubspaceService {
 
   // ==== permissions ====
 
-  async addUserPermission(subspaceId: string, targetUserId: string, permission: Permission, currentUserId: string) {
+  async addUserPermission(subspaceId: string, targetUserId: string, permission: PermissionLevel, currentUserId: string) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
       include: {
@@ -678,20 +685,28 @@ export class SubspaceService {
     }
 
     // Create or update user permission
-    const userPermission = await this.prismaService.subspaceMemberPermission.upsert({
+    const userPermission = await this.prismaService.unifiedPermission.upsert({
       where: {
-        subspaceId_userId: {
-          subspaceId,
+        userId_guestId_resourceType_resourceId_sourceType: {
           userId: targetUserId,
+          guestId: "",
+          resourceType: ResourceType.SUBSPACE,
+          resourceId: subspaceId,
+          sourceType: SourceType.DIRECT,
         },
       },
       update: {
         permission,
       },
       create: {
-        subspaceId,
         userId: targetUserId,
+        guestId: "",
+        resourceType: ResourceType.SUBSPACE,
+        resourceId: subspaceId,
+        sourceType: SourceType.DIRECT,
         permission,
+        priority: 2,
+        createdById: currentUserId,
       },
       include: {
         user: {
@@ -783,7 +798,7 @@ export class SubspaceService {
     };
   }
 
-  async addGroupPermission(subspaceId: string, groupId: string, permission: Permission, currentUserId: string) {
+  async addGroupPermission(subspaceId: string, groupId: string, permission: PermissionLevel, currentUserId: string) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
       include: {

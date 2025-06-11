@@ -48,12 +48,15 @@ export enum ErrorCodeEnum {
 
   // Workspace
   WorkspaceNotFoundOrNotInWorkspace = "workspace_not_found_or_user_not_in_workspace",
+  WorkspaceHasMembers = "workspace_has_members",
+  UserAlreadyInWorkspace = "user_already_in_workspace",
+  UserNotInWorkspace = "user_not_in_workspace",
+  CannotRemoveLastOwner = "cannot_remove_last_owner",
 
   // Subspace related errors (using subspace prefix for subspaces)
   SubspaceNotFound = "subspace_not_found",
   SubspaceAdminRoleRequired = "subspace_admin_role_required",
   SubspaceAccessDenied = "subspace_access_denied",
-  UserNotInWorkspace = "user_not_in_workspace",
   UserAlreadyInSubspace = "user_already_in_subspace",
 
   // Group related errors

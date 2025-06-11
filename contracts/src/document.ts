@@ -1,7 +1,8 @@
 import { z } from "zod";
-import {  DocOptionalDefaultsSchema,  DocTypeSchema, DocVisibilitySchema, PermissionSchema } from "./schema";
+import {  DocOptionalDefaultsSchema,  DocTypeSchema, DocVisibilitySchema, PermissionLevelSchema } from "./schema";
 import { BasePageResult, basePagerSchema } from "./_base";
-import { Permission } from "@prisma/client";
+import { PermissionLevel } from "@prisma/client";
+
 
 // FIXME: the contentBinary cause Buffer error in client
  const DocSchema = z.object({
@@ -59,7 +60,7 @@ const commonSharedDocumentSchema = commonDocumentSchema
       displayName: z.string().nullable(),
       email: z.string(),
     }),
-    permission:PermissionSchema.optional(),
+    permission:PermissionLevelSchema.optional(),
     coverImage: z
       .object({
         scrollY: z.number(),
@@ -174,14 +175,14 @@ export const docShareUserSchema = z.object({
   id: z.number(),
   email: z.string(),
   displayName: z.string().nullable(),
-  permission:PermissionSchema,
+  permission:PermissionLevelSchema,
 });
 
 export type DocShareUser = z.infer<typeof docShareUserSchema>;
 
 export const shareDocumentSchema = z.object({
   email: z.string().email(),
-  permission:PermissionSchema,
+  permission:PermissionLevelSchema,
   docId: z.string().cuid(),
   published: z.boolean().optional(),
   urlId: z.string().optional(),
@@ -193,7 +194,7 @@ export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
 // update doc
 export const updateSharePermissionSchema = z.object({
   userId: z.string(),
-  permission:PermissionSchema,
+  permission:PermissionLevelSchema,
 });
 
 export type UpdateSharePermissionDto = z.infer<typeof updateSharePermissionSchema>;
@@ -215,12 +216,12 @@ export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
 // Permission schemas
 export const docUserPermissionSchema = z.object({
   userId: z.string(),
-  permission:PermissionSchema,
+  permission:PermissionLevelSchema,
 });
 
 export const docGroupPermissionSchema = z.object({
   groupId: z.string(),
-  permission:PermissionSchema,
+  permission:PermissionLevelSchema,
   docId: z.string(),
 });
 
@@ -240,7 +241,7 @@ export const detailDocumentSchema = commonDocumentSchema
         url: z.string(),
       })
       .nullable(),
-    permission:PermissionSchema,
+    permission:PermissionLevelSchema,
   });
 
 export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;
@@ -272,7 +273,7 @@ export interface DocUserPermissionResponse {
   id: string;
   userId: string;
   documentId: string;
-  permission: Permission;
+  permission: PermissionLevel;
   createdAt: Date;
   updatedAt: Date;
   user: {
@@ -286,7 +287,7 @@ export interface DocGroupPermissionResponse {
   id: string;
   groupId: string;
   documentId: string;
-  permission: Permission;
+  permission: PermissionLevel;
   createdAt: Date;
   updatedAt: Date;
   group: {

@@ -7,30 +7,18 @@ import { ShareDocumentController } from "./share-document.controller";
 import { FileStoreModule } from "@/file-store/file-store.module";
 import { SystemDocumentService } from "./system-document.service";
 import { SearchDocumentService } from "./search-document.service";
-import { DocumentAbility } from "./document.ability";
 import { MoveDocumentService } from "./move-document.service";
 import { SubspaceModule } from "@/subspace/subspace.module";
 import { EventsModule } from "@/_shared/events/events.module";
 import { DocShareModule } from "@/doc-share/doc-share.module";
 import { GroupModule } from "@/group/group.module";
-import { PermissionInheritanceService } from "./permission-inheritance.service";
-import { PermissionResolverService } from "./permission-resolver.service";
-import { PermissionHierarchyService } from "@/_shared/casl/permission-hierarchy.service";
+import { DocumentAbility } from "./document.ability";
+import { PermissionModule } from "@/permission/permission.module";
 
 @Module({
-  imports: [FileStoreModule, ScheduleModule.forRoot(), SubspaceModule, EventsModule, DocShareModule, GroupModule],
+  imports: [FileStoreModule, ScheduleModule.forRoot(), SubspaceModule, EventsModule, DocShareModule, GroupModule, PermissionModule],
   controllers: [DocumentController, ShareDocumentController],
-  providers: [
-    DocumentService,
-    ShareDocumentService,
-    SystemDocumentService,
-    MoveDocumentService,
-    SearchDocumentService,
-    PermissionInheritanceService,
-    PermissionResolverService,
-    PermissionHierarchyService,
-    DocumentAbility,
-  ],
+  providers: [DocumentService, ShareDocumentService, SystemDocumentService, MoveDocumentService, SearchDocumentService, DocumentAbility],
   exports: [DocumentService, SystemDocumentService, SearchDocumentService, MoveDocumentService],
 })
 export class DocumentModule {}

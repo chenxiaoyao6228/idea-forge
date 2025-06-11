@@ -42,13 +42,26 @@ async function addUserToWorkspace(userEmail: string, workspaceId: string) {
       return;
     }
 
-    // 4. Add user to workspace
+    // 4. Add user to workspace with unified permission
     const workspaceMember = await prisma.workspaceMember.create({
       data: {
         workspaceId,
         userId: user.id,
         role: 'MEMBER', // Default role
       },
+    });
+    
+    // Add workspace-level unified permission
+    await prisma.unifiedPermission.create({
+      data: {
+        resourceType: 'WORKSPACE',
+        resourceId: workspaceId,
+        userId: user.id,
+        permission: 'READ',
+        sourceType: 'WORKSPACE_MEMBER',
+        priority: 6,
+        createdById: user.id
+      }
     });
 
     console.log(`Successfully added user ${userEmail} to workspace ${workspaceId}`);
@@ -77,6 +90,7 @@ async function addUserToWorkspace(userEmail: string, workspaceId: string) {
     //   }
     // });
 
+    // When adding user to subspace
     for (const subspace of subspaces) {
       const existingSubspaceMember = await prisma.subspaceMember.findUnique({
         where: {
@@ -86,7 +100,7 @@ async function addUserToWorkspace(userEmail: string, workspaceId: string) {
           },
         },
       });
-
+    
       if (!existingSubspaceMember) {
         const subspaceMember = await prisma.subspaceMember.create({
           data: {
@@ -95,6 +109,20 @@ async function addUserToWorkspace(userEmail: string, workspaceId: string) {
             role: 'MEMBER',
           },
         });
+    
+        // Add subspace-level unified permission
+        await prisma.unifiedPermission.create({
+          data: {
+            resourceType: 'SUBSPACE',
+            resourceId: subspace.id,
+            userId: user.id,
+            permission: 'READ',
+            sourceType: 'SUBSPACE_MEMBER',
+            priority: 4,
+            createdById: user.id
+          }
+        });
+    
         console.log(`Added user to ${subspace.type} subspace:`, subspaceMember);
       } else {
         console.log(`User already exists in ${subspace.type} subspace`);
@@ -124,4 +152,4 @@ addUserToWorkspace(userEmail, workspaceId)
   .catch((error) => {
     console.error('Script failed:', error);
     process.exit(1);
-  }); 
+  });

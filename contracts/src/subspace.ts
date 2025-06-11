@@ -1,6 +1,6 @@
 import { SubspaceMemberSchema, SubspaceRoleSchema, SubspaceSchema, SubspaceTypeSchema } from "./schema";
 import { z } from "zod";
-import { Permission } from "@prisma/client";
+import { PermissionLevel } from "@prisma/client";
 
 // Create subspace
 export const CreateSubspaceRequestSchema = z.object({
@@ -61,12 +61,12 @@ export type SubspaceMemberListResponse = z.infer<typeof SubspaceMemberListRespon
 // Subspace permission schemas
 export const SubspaceUserPermissionSchema = z.object({
   userId: z.string(),
-  permission: z.nativeEnum(Permission),
+  permission: z.nativeEnum(PermissionLevel),
 });
 
 export const SubspaceGroupPermissionSchema = z.object({
   groupId: z.string(),
-  permission: z.nativeEnum(Permission),
+  permission: z.nativeEnum(PermissionLevel),
 });
 
 export type SubspaceUserPermission = z.infer<typeof SubspaceUserPermissionSchema>;

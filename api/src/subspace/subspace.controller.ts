@@ -1,107 +1,84 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { SubspaceService } from "./subspace.service";
-import { SubspaceDetailResponse, SubspaceMemberListResponse } from "contracts";
+import { SubspaceMemberListResponse } from "contracts";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, MoveSubspaceDto } from "./subspace.dto";
-import { SubspaceUserPermission, SubspaceGroupPermission } from "contracts";
 import { Action } from "@/_shared/casl/ability.class";
-import { CheckDynamicPolicy } from "@/_shared/casl/dynamic-policy.decorator";
+import { GetUser } from "@/auth/decorators/get-user.decorator";
+import { CheckPolicy } from "@/_shared/casl/policy.decorator";
+import { PolicyGuard } from "@/_shared/casl/policy.guard";
 
+@UseGuards(PolicyGuard)
 @Controller("api/subspaces")
 export class SubspaceController {
   constructor(private readonly subspaceService: SubspaceService) {}
 
   @Post()
-  async createSubspace(@Body() dto: CreateSubspaceDto, @Req() req: any) {
-    return this.subspaceService.createSubspace(dto, req.user.id);
+  async createSubspace(@Body() dto: CreateSubspaceDto, @GetUser("id") userId: string) {
+    return this.subspaceService.createSubspace(dto, userId);
   }
 
   @Get("")
-  async getSubspaces(@Req() req: any, @Query("workspaceId") workspaceId?: string) {
-    return this.subspaceService.getUserSubWorkspaces(req.user.id, workspaceId);
+  async getSubspaces(@GetUser("id") userId: string, @Query("workspaceId") workspaceId?: string) {
+    return this.subspaceService.getUserSubWorkspaces(userId, workspaceId);
   }
 
   @Get(":id")
-  async getSubspace(@Param("id") id: string, @Req() req: any): Promise<SubspaceDetailResponse> {
-    return this.subspaceService.getSubspace(id, req.user.id);
+  @CheckPolicy(Action.Read, "Subspace")
+  async getSubspace(@Param("id") id: string, @GetUser("id") userId: string) {
+    return this.subspaceService.getSubspace(id, userId);
   }
 
   @Put(":id")
-  async updateSubspace(@Param("id") id: string, @Body() dto: UpdateSubspaceDto, @Req() req: any) {
-    return this.subspaceService.updateSubspace(id, dto, req.user.id);
+  @CheckPolicy(Action.Update, "Subspace")
+  async updateSubspace(@Param("id") id: string, @Body() dto: UpdateSubspaceDto, @GetUser("id") userId: string) {
+    return this.subspaceService.updateSubspace(id, dto, userId);
   }
 
   @Delete(":id")
-  async deleteSubspace(@Param("id") id: string, @Req() req: any) {
-    return this.subspaceService.deleteSubspace(id, req.user.id);
+  @CheckPolicy(Action.Delete, "Subspace")
+  async deleteSubspace(@Param("id") id: string, @GetUser("id") userId: string) {
+    return this.subspaceService.deleteSubspace(id, userId);
   }
 
   @Post(":id/move")
-  async moveSubspace(@Param("id") id: string, @Body() dto: MoveSubspaceDto, @Req() req: any) {
-    return this.subspaceService.moveSubspace(id, dto.index, req.user.id);
+  @CheckPolicy(Action.Update, "Subspace")
+  async moveSubspace(@Param("id") id: string, @Body() dto: MoveSubspaceDto, @GetUser("id") userId: string) {
+    return this.subspaceService.moveSubspace(id, dto.index, userId);
   }
-
-  // ==== navigationTree ====
 
   @Get(":id/navigationTree")
-  async getSubspaceNavigationTree(@Param("id") id: string, @Req() req: any) {
-    return this.subspaceService.getSubspaceNavigationTree(id, req.user.id);
+  @CheckPolicy(Action.Read, "Subspace")
+  async getSubspaceNavigationTree(@Param("id") id: string, @GetUser("id") userId: string) {
+    return this.subspaceService.getSubspaceNavigationTree(id, userId);
   }
 
-  // ==== members
-
+  // ==== members ====
   @Post(":id/members")
-  @CheckDynamicPolicy(Action.ManageMembers, "Subspace")
-  async addSubspaceMember(@Param("id") id: string, @Body() dto: AddSubspaceMemberDto, @Req() req: any) {
-    return this.subspaceService.addSubspaceMember(id, dto, req.user.id);
+  @CheckPolicy(Action.ManageMembers, "Subspace")
+  async addSubspaceMember(@Param("id") id: string, @Body() dto: AddSubspaceMemberDto, @GetUser("id") adminId: string) {
+    return this.subspaceService.addSubspaceMember(id, dto, adminId);
   }
 
   @Patch(":id/members/:memberId")
-  async updateSubspaceMember(@Param("id") id: string, @Param("memberId") memberId: string, @Body() dto: UpdateSubspaceMemberDto, @Req() req: any) {
-    return this.subspaceService.updateSubspaceMember(id, memberId, dto, req.user.id);
+  @CheckPolicy(Action.ManageMembers, "Subspace")
+  async updateSubspaceMember(
+    @Param("id") id: string,
+    @Param("memberId") memberId: string,
+    @Body() dto: UpdateSubspaceMemberDto,
+    @GetUser("id") userId: string,
+  ) {
+    return this.subspaceService.updateSubspaceMember(id, memberId, dto, userId);
   }
 
   @Delete(":id/members/:memberId")
-  async removeSubspaceMember(@Param("id") id: string, @Param("memberId") memberId: string, @Req() req: any) {
-    return this.subspaceService.removeSubspaceMember(id, memberId, req.user.id);
+  @CheckPolicy(Action.ManageMembers, "Subspace")
+  async removeSubspaceMember(@Param("id") id: string, @Param("memberId") memberId: string, @GetUser("id") userId: string) {
+    return this.subspaceService.removeSubspaceMember(id, memberId, userId);
   }
 
   @Get(":id/members")
-  async getSubspaceMembers(@Param("id") id: string, @Req() req: any): Promise<SubspaceMemberListResponse> {
-    return this.subspaceService.getSubspaceMembers(id, req.user.id);
-  }
-
-  // ==== user permissions ====
-
-  @Post(":id/user-permissions")
-  @CheckDynamicPolicy(Action.ManagePermissions, "Subspace")
-  async addUserPermission(@Param("id") subspaceId: string, @Body() dto: SubspaceUserPermission) {
-    return this.subspaceService.addUserPermission(subspaceId, dto.userId, dto.permission, userId);
-  }
-
-  @Delete(":id/user-permissions/:targetUserId")
-  async removeUserPermission(@Param("id") id: string, @Param("targetUserId") targetUserId: string, @Req() req: any) {
-    return this.subspaceService.removeUserPermission(id, targetUserId, req.user.id);
-  }
-
-  @Get(":id/user-permissions")
-  async listUserPermissions(@Param("id") id: string, @Req() req: any) {
-    return this.subspaceService.listUserPermissions(id, req.user.id);
-  }
-
-  // ==== group permissions, 后续支持 ====
-
-  @Post(":id/group-permissions")
-  async addGroupPermission(@Param("id") id: string, @Body() dto: SubspaceGroupPermission, @Req() req: any) {
-    return this.subspaceService.addGroupPermission(id, dto.groupId, dto.permission, req.user.id);
-  }
-
-  @Delete(":id/group-permissions/:groupId")
-  async removeGroupPermission(@Param("id") id: string, @Param("groupId") groupId: string, @Req() req: any) {
-    return this.subspaceService.removeGroupPermission(id, groupId, req.user.id);
-  }
-
-  @Get(":id/group-permissions")
-  async listGroupPermissions(@Param("id") id: string, @Req() req: any) {
-    return this.subspaceService.listGroupPermissions(id, req.user.id);
+  @CheckPolicy(Action.ViewMembers, "Subspace")
+  async getSubspaceMembers(@Param("id") id: string, @GetUser("id") userId: string): Promise<SubspaceMemberListResponse> {
+    return this.subspaceService.getSubspaceMembers(id, userId);
   }
 }
