@@ -38,7 +38,7 @@ export class GroupController {
   }
 
   @Delete(":id/users/:userId")
-  async removeUserFromGroup(@Param("id") id: string, @Param("userId") targetuserId: string, @GetUser("id") userId: string) {
+  async removeUserFromGroup(@Param("id") id: string, @Param("userId") targetUserId: string, @GetUser("id") userId: string) {
     return this.groupService.removeUserFromGroup(userId, { id, userId: targetUserId });
   }
 }

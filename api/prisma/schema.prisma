@@ -194,55 +194,6 @@ model DocRevision {
   @@index([docId, createdAt])
 }
 
-// model PublicShare {
-//   id        String   @id @default(cuid())
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-
-//   // Associated document
-//   doc   Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
-//   docId String @unique
-
-//   // Sharing configuration
-//   expiresAt    DateTime? // Expiration time, null means never expires
-//   allowEdit    Boolean   @default(false) // Allow editing
-//   allowComment Boolean   @default(false) // Allow commenting
-//   allowCopy    Boolean   @default(false) // Allow copying
-//   showTemplate Boolean   @default(false) // Show template button
-//   showSidebar  Boolean   @default(false) // Show left sidebar
-
-//   // Access statistics
-//   viewCount Int @default(0)
-
-//   // Creator
-//   creator   User   @relation(fields: [creatorId], references: [id])
-//   creatorId String
-
-//   // Security settings
-//   accessCode String? // Access password, null means no password
-
-//   // Edit history
-//   editHistory PublicEditHistory[]
-// }
-
-// // Public edit history
-// model PublicEditHistory {
-//   id        String   @id @default(cuid())
-//   createdAt DateTime @default(now())
-
-//   // Associated share
-//   share   PublicShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
-//   shareId String
-
-//   // Editor information
-//   editorId   String? // Logged-in user ID
-//   editorName String // Editor name (anonymous users use temporary name)
-//   editorIp   String // Editor IP address
-
-//   // Edit content
-//   operation Json // Record specific edit operations
-// }
-
 model WorkspaceMember {
   id        String        @id @default(cuid())
   role      WorkspaceRole @default(MEMBER)
@@ -592,12 +543,9 @@ enum SubspaceRole {
   MEMBER
 }
 
-// Doc permission
 enum Permission {
   MANAGE
-  SHARE
-  EDIT
-  COMMENT
+  WRITE
   READ
   NONE
 }

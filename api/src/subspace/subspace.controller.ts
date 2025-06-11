@@ -3,6 +3,8 @@ import { SubspaceService } from "./subspace.service";
 import { SubspaceDetailResponse, SubspaceMemberListResponse } from "contracts";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, MoveSubspaceDto } from "./subspace.dto";
 import { SubspaceUserPermission, SubspaceGroupPermission } from "contracts";
+import { Action } from "@/_shared/casl/ability.class";
+import { CheckDynamicPolicy } from "@/_shared/casl/dynamic-policy.decorator";
 
 @Controller("api/subspaces")
 export class SubspaceController {
@@ -48,6 +50,7 @@ export class SubspaceController {
   // ==== members
 
   @Post(":id/members")
+  @CheckDynamicPolicy(Action.ManageMembers, "Subspace")
   async addSubspaceMember(@Param("id") id: string, @Body() dto: AddSubspaceMemberDto, @Req() req: any) {
     return this.subspaceService.addSubspaceMember(id, dto, req.user.id);
   }
@@ -70,12 +73,13 @@ export class SubspaceController {
   // ==== user permissions ====
 
   @Post(":id/user-permissions")
-  async addUserPermission(@Param("id") id: string, @Body() dto: SubspaceUserPermission, @Req() req: any) {
-    return this.subspaceService.addUserPermission(id, dto.userId, dto.permission, req.user.id);
+  @CheckDynamicPolicy(Action.ManagePermissions, "Subspace")
+  async addUserPermission(@Param("id") subspaceId: string, @Body() dto: SubspaceUserPermission) {
+    return this.subspaceService.addUserPermission(subspaceId, dto.userId, dto.permission, userId);
   }
 
   @Delete(":id/user-permissions/:targetUserId")
-  async removeUserPermission(@Param("id") id: string, @Param("targetUserId") targetuserId: string, @Req() req: any) {
+  async removeUserPermission(@Param("id") id: string, @Param("targetUserId") targetUserId: string, @Req() req: any) {
     return this.subspaceService.removeUserPermission(id, targetUserId, req.user.id);
   }
 

@@ -3,22 +3,45 @@ import { ModelName } from "@/_shared/database/prisma/prisma.extension";
 import { User } from "@prisma/client";
 
 export enum Action {
-  Manage = "manage",
+  // Basic CRUD operations
   Create = "create",
   Read = "read",
   Update = "update",
   Delete = "delete",
+  Manage = "manage", // highest permission
 
-  // Doc specific
-  View = "view",
+  // Permission management operations, for document and subspace, workspace, group, and etc
+  ManagePermissions = "managePermissions",
+  ViewPermissions = "viewPermissions",
+
+  // Workspace/Subspace operations
+  InviteMember = "inviteMember",
+  RemoveMember = "removeMember",
+  ManageMembers = "manageMembers",
+  ViewMembers = "viewMembers",
+
+  // Workspace operations
+  ManageWorkspaceSettings = "manageWorkspaceSettings",
+  TransferOwnership = "transferOwnership",
+  ManageSubspaces = "manageSubspaces",
+
+  // Subspace operations
+  ManageSubspaceSettings = "manageSubspaceSettings",
+  ManageNavigationTree = "manageNavigationTree",
+
+  // Document specific operations
   Comment = "comment",
   Edit = "edit",
   Share = "share",
   Move = "move",
+  BulkMove = "bulkMove", // need MANAGE permission
+  BulkDelete = "bulkDelete", // need MANAGE permission
+  BulkShare = "bulkShare", // need SHARE permission
+  BulkExport = "bulkExport", // need READ permission
 
-  // Workspace specific
-  Invite = "invite",
-  RemoveMember = "removeMember",
+  // Import and export operations
+  Export = "export",
+  Import = "import",
 }
 
 export type Subjects = ModelName | "all";

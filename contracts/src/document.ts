@@ -1,6 +1,7 @@
 import { z } from "zod";
-import {  DocOptionalDefaultsSchema,  DocTypeSchema, DocVisibilitySchema } from "./schema";
+import {  DocOptionalDefaultsSchema,  DocTypeSchema, DocVisibilitySchema, PermissionSchema } from "./schema";
 import { BasePageResult, basePagerSchema } from "./_base";
+import { Permission } from "@prisma/client";
 
 // FIXME: the contentBinary cause Buffer error in client
  const DocSchema = z.object({
@@ -51,9 +52,6 @@ const commonDocumentResponseSchema = commonDocumentSchema.merge(z.object({
 
 export type CommonDocumentResponse = z.infer<typeof commonDocumentResponseSchema>;
 
-const permission = ["EDIT", "READ", "NONE"] as const;
-
-export type Permission = (typeof permission)[number];
 
 const commonSharedDocumentSchema = commonDocumentSchema
   .extend({
@@ -61,7 +59,7 @@ const commonSharedDocumentSchema = commonDocumentSchema
       displayName: z.string().nullable(),
       email: z.string(),
     }),
-    permission: z.enum(permission).optional(),
+    permission:PermissionSchema.optional(),
     coverImage: z
       .object({
         scrollY: z.number(),
@@ -176,14 +174,14 @@ export const docShareUserSchema = z.object({
   id: z.number(),
   email: z.string(),
   displayName: z.string().nullable(),
-  permission: z.enum(permission),
+  permission:PermissionSchema,
 });
 
 export type DocShareUser = z.infer<typeof docShareUserSchema>;
 
 export const shareDocumentSchema = z.object({
   email: z.string().email(),
-  permission: z.enum(permission),
+  permission:PermissionSchema,
   docId: z.string().cuid(),
   published: z.boolean().optional(),
   urlId: z.string().optional(),
@@ -195,13 +193,13 @@ export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
 // update doc
 export const updateSharePermissionSchema = z.object({
   userId: z.string(),
-  permission: z.enum(permission),
+  permission:PermissionSchema,
 });
 
 export type UpdateSharePermissionDto = z.infer<typeof updateSharePermissionSchema>;
 
 export const removeShareSchema = z.object({
-  targetuserId: z.string(),
+  targetUserId: z.string(),
 });
 
 export type RemoveShareDto = z.infer<typeof removeShareSchema>;
@@ -217,12 +215,12 @@ export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
 // Permission schemas
 export const docUserPermissionSchema = z.object({
   userId: z.string(),
-  permission: z.enum(permission),
+  permission:PermissionSchema,
 });
 
 export const docGroupPermissionSchema = z.object({
   groupId: z.string(),
-  permission: z.enum(permission),
+  permission:PermissionSchema,
   docId: z.string(),
 });
 
@@ -242,7 +240,7 @@ export const detailDocumentSchema = commonDocumentSchema
         url: z.string(),
       })
       .nullable(),
-    permission: z.enum(permission),
+    permission:PermissionSchema,
   });
 
 export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;

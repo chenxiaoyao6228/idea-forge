@@ -7,7 +7,7 @@ import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/pri
 export class SearchDocumentService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
 
-  async searchDocuments(authorId: number, { keyword, sort, order, limit }: SearchDocumentDto): Promise<SearchDocumentResponse> {
+  async searchDocuments(authorId: string, { keyword, sort, order, limit }: SearchDocumentDto): Promise<SearchDocumentResponse> {
     try {
       if (!keyword) {
         return {

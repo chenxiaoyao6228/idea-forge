@@ -15,7 +15,7 @@ export class MoveDocumentService {
     private readonly eventPublisher: EventPublisherService,
   ) {}
 
-  async moveDocs(authorId: number, dto: MoveDocumentsDto) {
+  async moveDocs(authorId: string, dto: MoveDocumentsDto) {
     const { id, subspaceId, parentId, index } = dto;
     const affectedDocuments: any[] = [];
 

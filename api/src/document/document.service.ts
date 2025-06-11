@@ -157,7 +157,7 @@ export class DocumentService {
     };
   }
 
-  async create(authorId: number, dto: CreateDocumentDto) {
+  async create(authorId: string, dto: CreateDocumentDto) {
     const doc = await this.prisma.doc.create({
       data: {
         ...dto,
@@ -452,7 +452,7 @@ export class DocumentService {
   // ================ public share ========================
 
   async shareDocument(userId: string, docId: string, dto: ShareDocumentDto) {
-    // 检查文档是否存在
+    // Check if document exists
     const doc = await this.prisma.doc.findUnique({
       where: { id: docId },
     });
@@ -461,12 +461,12 @@ export class DocumentService {
       throw new Error("Document not found");
     }
 
-    // 检查用户是否有权限分享文档
+    // Check if user has permission to share the document
     if (doc.authorId !== userId) {
       throw new Error("You don't have permission to share this document");
     }
 
-    // 调用 DocShareService 创建分享
+    // Call DocShareService to create share
     return this.docShareService.createShare(userId, {
       documentId: docId,
       published: dto.published,
@@ -476,11 +476,11 @@ export class DocumentService {
   }
 
   async listDocShares(docId: string) {
-    // 获取文档的所有分享信息
+    // Get all share information for the document
     const shares = await this.prisma.docShare.findMany({
       where: {
         docId: docId,
-        revokedAt: null, // 只获取未撤销的分享
+        revokedAt: null, // Only get non-revoked shares
       },
       include: {
         author: {
@@ -509,7 +509,7 @@ export class DocumentService {
 
   // ================ user permission ========================
 
-  async addUserPermission(docId: string, userId: string, permission: PermissionEnum, createdById: number) {
+  async addUserPermission(docId: string, userId: string, permission: PermissionEnum, createdById: string) {
     // 获取现有权限以计算分数索引
     const existingMemberships = await this.prisma.docUserPermission.findMany({
       where: { userId },
@@ -549,7 +549,14 @@ export class DocumentService {
     return userPermission;
   }
 
-  async removeUserPermission(userId: string, docId: string, targetuserId: string) {
+  async updateUserPermission(permissionId: string, permission: PermissionEnum, userId: string) {
+    return this.prisma.docUserPermission.update({
+      where: { id: permissionId },
+      data: { permission, userId },
+    });
+  }
+
+  async removeUserPermission(userId: string, docId: string, targetUserId: string) {
     // First check if the acting user has permission to manage users
     const doc = await this.prisma.doc.findUnique({
       where: { id: docId },
@@ -638,7 +645,7 @@ export class DocumentService {
 
   // ================ group permission ========================
 
-  async addGroupPermission(docId: string, groupId: string, permission: PermissionEnum, userId: string, createdById: number) {
+  async addGroupPermission(docId: string, groupId: string, permission: PermissionEnum, userId: string, createdById: string) {
     return this.prisma.docGroupPermission.create({
       data: {
         docId,

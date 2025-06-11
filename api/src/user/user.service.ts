@@ -37,7 +37,7 @@ export class UserService {
     return await this.prisma.user.findUnique({ where: { email } });
   }
 
-  async getUserById(id: number) {
+  async getUserById(id: string) {
     return await this.prisma.user.findUnique({ where: { id } });
   }
 
@@ -48,7 +48,7 @@ export class UserService {
     });
   }
 
-  async updateUser(id: number, data: UpdateUserDto) {
+  async updateUser(id: string, data: UpdateUserDto) {
     try {
       return await this.prisma.user.update({
         where: { id },
@@ -62,7 +62,7 @@ export class UserService {
     }
   }
 
-  async updateHashedRefreshToken(id: number, hashedRefreshToken: string) {
+  async updateHashedRefreshToken(id: string, hashedRefreshToken: string) {
     return await this.prisma.user.update({
       where: { id },
       data: { hashedRefreshToken },

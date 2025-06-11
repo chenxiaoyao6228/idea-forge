@@ -1,7 +1,6 @@
 import { subject } from "@casl/ability";
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-
 import { AbilityService } from "./casl.service";
 import { CHECK_POLICY_KEY, PolicyObject } from "./policy.decorator";
 import { ApiException } from "@/_shared/exceptions/api.exception";

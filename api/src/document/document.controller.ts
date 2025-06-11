@@ -15,6 +15,9 @@ import { SearchDocumentService } from "./search-document.service";
 import { DocumentService } from "./document.service";
 import { MoveDocumentService } from "./move-document.service";
 import { GroupService } from "../group/group.service";
+import { Action } from "@/_shared/casl/ability.class";
+import { CheckDynamicPolicy } from "@/_shared/casl/dynamic-policy.decorator";
+import { PermissionInheritanceService } from "./permission-inheritance.service";
 
 @Controller("/api/documents")
 export class DocumentController {
@@ -22,6 +25,7 @@ export class DocumentController {
     private readonly documentService: DocumentService,
     private readonly searchDocumentService: SearchDocumentService,
     private readonly moveDocumentService: MoveDocumentService,
+    private readonly permissionInheritanceService: PermissionInheritanceService,
     private readonly groupService: GroupService,
   ) {}
 
@@ -36,9 +40,29 @@ export class DocumentController {
   }
 
   @Post("move")
+  @CheckDynamicPolicy(Action.Move, "Doc")
   async moveDocuments(@GetUser("id") userId: string, @Body() dto: MoveDocumentsDto) {
-    return this.moveDocumentService.moveDocs(userId, dto);
+    const result = await this.moveDocumentService.moveDocs(userId, dto);
+
+    if (dto.parentId) {
+      await this.permissionInheritanceService.updatePermissionsOnMove(dto.id, dto.parentId, dto.subspaceId ?? null);
+    }
+
+    return result;
   }
+
+  // @Post("bulk-move")
+  // @CheckDynamicPolicy(Action.BulkMove, "Doc")
+  // async bulkMoveDocuments(@GetUser("id") userId: string, @Body() dto: BulkMoveDocumentsDto) {
+  //   for (const docId of dto.documentIds) {
+  //     const hasPermission = await this.documentAbility.checkDocumentPermission({ id: userId } as User, docId, Action.Move);
+  //     if (!hasPermission) {
+  //       throw new ApiException(ErrorCodeEnum.PermissionDenied);
+  //     }
+  //   }
+
+  //   return this.moveDocumentService.bulkMoveDocs(userId, dto);
+  // }
 
   // ==============keep router without id above ==========================================
 
@@ -53,6 +77,7 @@ export class DocumentController {
   }
 
   @Delete(":id")
+  @CheckDynamicPolicy(Action.Delete, "Doc")
   remove(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.remove(id, userId);
   }
@@ -69,26 +94,40 @@ export class DocumentController {
     return this.documentService.listDocShares(id);
   }
 
+  @Post(":id/search-users")
+  async searchUsersForSharing(@GetUser("id") userId: string, @Param("id") id: string, @Body("query") query?: string) {
+    return this.documentService.searchUsersForSharing(userId, id, query);
+  }
+
   // ============== doc permission ==========================================
 
   @Post(":id/user-permissions")
-  async addUserPermission(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: DocUserPermissionDto) {
-    return this.documentService.addUserPermission(id, dto.userId, dto.permission, userId);
+  @CheckDynamicPolicy(Action.ManagePermissions, "Doc")
+  async addUserPermission(@Param("id") docId: string, @Body() dto: DocUserPermissionDto, @GetUser("id") userId: string) {
+    const permission = await this.documentService.addUserPermission(docId, dto.userId, dto.permission, userId);
+
+    // Propagate permission to children
+    await this.permissionInheritanceService.propagatePermissionToChildren(docId, permission, "user");
+
+    return permission;
+  }
+
+  @Patch(":id/user-permissions/:permissionId")
+  @CheckDynamicPolicy(Action.ViewPermissions, "Doc")
+  async updateUserPermission(@Param("permissionId") permissionId: string, @Body() dto: DocUserPermissionDto) {
+    const updatedPermission = await this.documentService.updateUserPermission(permissionId, dto.permission, dto.userId);
+    await this.permissionInheritanceService.updateInheritedPermissions(permissionId, dto.permission, "user");
+    return updatedPermission;
   }
 
   @Delete(":id/user-permissions/:targetUserId")
-  async removeUserPermission(@GetUser("id") userId: string, @Param("id") id: string, @Param("targetUserId") targetuserId: string) {
+  async removeUserPermission(@GetUser("id") userId: string, @Param("id") id: string, @Param("targetUserId") targetUserId: string) {
     return this.documentService.removeUserPermission(userId, id, targetUserId);
   }
 
   @Get(":id/user-permissions")
   async listUserPermissions(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.listUserPermissions(id);
-  }
-
-  @Post(":id/search-users")
-  async searchUsersForSharing(@GetUser("id") userId: string, @Param("id") id: string, @Body("query") query?: string) {
-    return this.documentService.searchUsersForSharing(userId, id, query);
   }
 
   // ============== group permission ==========================================
