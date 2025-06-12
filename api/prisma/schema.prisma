@@ -30,12 +30,12 @@ datasource db {
 model UnifiedPermission {
   id           String          @id @default(cuid())
   userId       String? // Make nullable for guest scenarios  
-  resourceType ResourceType
-  resourceId   String
-  permission   PermissionLevel
-  sourceType   SourceType
+  resourceType ResourceType // DOCUMENT, SUBSPACE, WORKSPACE
+  resourceId   String // DOCUMENT_ID, SUBSPACE_ID, WORKSPACE_ID, etc
+  permission   PermissionLevel // NONE, READ, COMMENT, EDIT, MANAGE, OWNER
+  sourceType   SourceType // DIRECT, GROUP, SUBSPACE_ADMIN, SUBSPACE_MEMBER, WORKSPACE_ADMIN, WORKSPACE_MEMBER, GUEST
   sourceId     String?
-  priority     Int
+  priority     Int // 1-7, 1 is the highest priority
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   createdById  String

@@ -51,6 +51,8 @@ export const AppAbility = PureAbility as AbilityClass<AppAbility>;
 export type AbilityFactory = (user: User) => AppAbility;
 
 export abstract class BaseAbility {
+  abstract createForUser(user: User): Promise<AppAbility>;
+
   protected async createAbilityAsync(defineRules: (builder: AbilityBuilder<AppAbility>) => Promise<void>): Promise<AppAbility> {
     const builder = new AbilityBuilder<AppAbility>(createPrismaAbility);
 

@@ -5,7 +5,7 @@ import { PermissionLevel } from "@prisma/client";
 
 
 // FIXME: the contentBinary cause Buffer error in client
- const DocSchema = z.object({
+const DocSchema = z.object({
   type: DocTypeSchema,
   visibility: DocVisibilitySchema,
   id: z.string().cuid(),
@@ -115,7 +115,7 @@ export type UpdateDocumentDto = z.infer<typeof updateDocumentSchema>;
 // search doc
 export const searchDocumentSchema = z.object({
   keyword: z.string().optional(),
-  sort: z.string().default("createdAt"),
+  sort: z.string().default("createdAt").optional(),
   order: z.enum(["asc", "desc"]).default("asc"),
   page: z
     .string()
@@ -213,11 +213,6 @@ export const updateCoverSchema = z.object({
 
 export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
 
-// Permission schemas
-export const docUserPermissionSchema = z.object({
-  userId: z.string(),
-  permission:PermissionLevelSchema,
-});
 
 
 //  ============== response ==============

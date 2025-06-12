@@ -1,13 +1,14 @@
 import { z } from "zod";
 import { basePagerSchema } from "./_base";
+import { permissionLevelSchema } from "./permission";
+import { PermissionLevel } from "@prisma/client";
 
-export const permission = ["MANAGE", "SHARE", "EDIT", "COMMENT", "READ", "NONE"] as const;
 
 export const docShareUserSchema = z.object({
   id: z.number(),
   email: z.string(),
   displayName: z.string().nullable(),
-  permission: z.enum(permission),
+  permission: z.nativeEnum(PermissionLevel),
 });
 
 export const docShareInfoSchema = z.object({
@@ -75,7 +76,7 @@ export const shareResponseSchema = z.object({
     email: z.string(),
     displayName: z.string().nullable(),
   }),
-  permission: z.enum(permission),
+  permission: z.nativeEnum(PermissionLevel),
   includeChildDocuments: z.boolean(),
   published: z.boolean(),
   urlId: z.string().nullable(),

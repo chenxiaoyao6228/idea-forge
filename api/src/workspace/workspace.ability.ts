@@ -16,35 +16,34 @@ export class WorkspaceAbility extends BaseAbility {
   async createForUser(user: User): Promise<AppAbility> {
     return this.createAbilityAsync(async (builder) => {
       const { can } = builder; // Destructure here instead
-      const userPermissions = await this.permissionService.getUserAllPermissions(user.id);
-
-      for (const perm of userPermissions) {
-        if (perm.resourceType === ResourceType.WORKSPACE) {
-          this.defineWorkspacePermissions(can, perm);
-        }
+      const workspacePerms = await this.permissionService.getUserWorkspacePermissions(user.id);
+      const uniqueWorkspaceIds = Array.from(new Set(workspacePerms.map((p) => p.resourceId)));
+      for (const workspaceId of uniqueWorkspaceIds) {
+        const level = await this.permissionService.resolveUserPermission(user.id, ResourceType.WORKSPACE, workspaceId);
+        this.defineWorkspacePermissions(can, workspaceId, level);
       }
     });
   }
 
-  private defineWorkspacePermissions(can: any, perm: any) {
-    switch (perm.permission) {
+  private defineWorkspacePermissions(can: any, workspaceId: string, level: PermissionLevel) {
+    switch (level) {
       case PermissionLevel.OWNER:
-        can([Action.Read, Action.Update, Action.Delete, Action.Manage], "Workspace", { id: perm.resourceId });
-        can([Action.Manage, Action.InviteMember, Action.RemoveMember], "WorkspaceMember", { workspaceId: perm.resourceId });
+        can([Action.Read, Action.Update, Action.Delete, Action.Manage], "Workspace", { id: workspaceId });
+        can([Action.Manage, Action.InviteMember, Action.RemoveMember], "WorkspaceMember", { workspaceId });
         break;
       case PermissionLevel.MANAGE:
-        can([Action.Read, Action.Update, Action.Manage], "Workspace", { id: perm.resourceId });
-        can([Action.InviteMember], "WorkspaceMember", { workspaceId: perm.resourceId });
+        can([Action.Read, Action.Update, Action.Manage], "Workspace", { id: workspaceId });
+        can([Action.InviteMember], "WorkspaceMember", { workspaceId });
         break;
       case PermissionLevel.EDIT:
-        can([Action.Read, Action.Update], "Workspace", { id: perm.resourceId });
-        can(Action.ViewMembers, "WorkspaceMember", { workspaceId: perm.resourceId });
+        can([Action.Read, Action.Update], "Workspace", { id: workspaceId });
+        can(Action.ViewMembers, "WorkspaceMember", { workspaceId });
         break;
       case PermissionLevel.COMMENT:
-        can([Action.Read, Action.Comment], "Workspace", { id: perm.resourceId });
+        can([Action.Read, Action.Comment], "Workspace", { id: workspaceId });
         break;
       case PermissionLevel.READ:
-        can(Action.Read, "Workspace", { id: perm.resourceId });
+        can(Action.Read, "Workspace", { id: workspaceId });
         break;
     }
   }

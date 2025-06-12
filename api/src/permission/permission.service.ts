@@ -1,11 +1,17 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
 import { ResourceType, PermissionLevel, UnifiedPermission, WorkspaceRole, SubspaceRole, SourceType, SubspaceType, GuestStatus } from "@prisma/client";
+import { PermissionInheritanceService } from "./permission-inheritance.service";
+import { PermissionListRequest, SharedWithMeResponse } from "contracts/dist/types/permission";
 
 @Injectable()
 export class PermissionService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
+    // FIXME: webpack complaining about circular dependency
+    // @Inject(forwardRef(() => PermissionInheritanceService)) private readonly inheritanceService: PermissionInheritanceService,
+  ) {}
 
   // 获取用户所有权限
   async getUserAllPermissions(userId: string): Promise<UnifiedPermission[]> {
@@ -16,26 +22,36 @@ export class PermissionService {
     });
 
     return userPermissions;
-
-    // const resourcePermissions = new Map<string, UnifiedPermission>();
-
-    // // 由于权限已按优先级排序，后面的权限会覆盖前面的权限
-    // for (const perm of userPermissions) {
-    //   if (perm.resourceType === ResourceType.DOCUMENT) {
-    //     resourcePermissions.set(perm.resourceId, perm);
-    //   }
-    // }
-    // return [...resourcePermissions.values()];
   }
 
-  // 增强：支持 Guest 权限和优先级解析
-  async resolveUserPermission(userId: string, resourceType: ResourceType, resourceId: string, guestId?: string): Promise<PermissionLevel> {
+  async getUserWorkspacePermissions(userId: string) {
+    return this.prisma.unifiedPermission.findMany({
+      where: { userId, resourceType: ResourceType.WORKSPACE },
+      orderBy: { priority: "asc" },
+    });
+  }
+
+  async getUserSubspacePermissions(userId: string) {
+    return this.prisma.unifiedPermission.findMany({
+      where: { userId, resourceType: ResourceType.SUBSPACE },
+      orderBy: { priority: "asc" },
+    });
+  }
+
+  async getUserDocumentPermissions(userId: string) {
+    return this.prisma.unifiedPermission.findMany({
+      where: { userId, resourceType: ResourceType.DOCUMENT },
+      orderBy: { priority: "asc" },
+    });
+  }
+
+  // TODO: 支持 Guest 权限
+  async resolveUserPermission(userId: string, resourceType: ResourceType, resourceId: string): Promise<PermissionLevel> {
     const permissions = await this.prisma.unifiedPermission.findMany({
       where: {
-        OR: [
-          { userId, resourceType, resourceId },
-          { guestId, resourceType, resourceId },
-        ],
+        userId,
+        resourceType,
+        resourceId,
       },
       orderBy: { priority: "asc" },
     });
@@ -239,7 +255,7 @@ export class PermissionService {
     const workspaceMembers = await this.prisma.workspaceMember.findMany({
       where: { workspaceId },
     });
-    // TODO: 每次都要便利, 待优化
+    // TODO: 每次都要遍历, 待优化
     for (const member of workspaceMembers) {
       const role = member.userId === creatorId ? SubspaceRole.ADMIN : SubspaceRole.MEMBER;
       await this.assignSubspacePermissions(member.userId, subspaceId, role, creatorId);
@@ -301,6 +317,72 @@ export class PermissionService {
     });
   }
 
+  /**
+   * Propagate permissions to existing workspace and subspace members when a new document is created
+   * This ensures that users who joined the workspace/subspace before document creation get appropriate permissions
+   */
+  async propagateDocumentPermissionsToExistingMembers(documentId: string, subspaceId: string, workspaceId: string): Promise<void> {
+    // Get all workspace members with their roles
+    const workspaceMembers = await this.prisma.workspaceMember.findMany({
+      where: { workspaceId },
+      include: { user: true },
+    });
+
+    // Get all subspace members with their roles
+    const subspaceMembers = await this.prisma.subspaceMember.findMany({
+      where: { subspaceId },
+      include: { user: true },
+    });
+
+    // Create workspace-level inherited permissions for document
+    for (const member of workspaceMembers) {
+      const permission = this.mapWorkspaceRoleToPermission(member.role);
+
+      await this.prisma.unifiedPermission.create({
+        data: {
+          userId: member.userId,
+          resourceType: ResourceType.DOCUMENT,
+          resourceId: documentId,
+          permission,
+          sourceType: member.role === "OWNER" ? "WORKSPACE_ADMIN" : "WORKSPACE_MEMBER",
+          priority: member.role === "OWNER" ? 5 : 6,
+          createdById: member.userId, // System-created permission
+        },
+      });
+    }
+
+    // Create subspace-level inherited permissions for document (higher priority than workspace)
+    for (const member of subspaceMembers) {
+      const permission = this.mapSubspaceRoleToPermission(member.role);
+
+      // Use upsert to handle cases where workspace member is also subspace member
+      await this.prisma.unifiedPermission.upsert({
+        where: {
+          userId_guestId_resourceType_resourceId_sourceType: {
+            userId: member.userId,
+            guestId: "",
+            resourceType: ResourceType.DOCUMENT,
+            resourceId: documentId,
+            sourceType: member.role === "ADMIN" ? "SUBSPACE_ADMIN" : "SUBSPACE_MEMBER",
+          },
+        },
+        update: {
+          permission,
+          priority: member.role === "ADMIN" ? 3 : 4,
+        },
+        create: {
+          userId: member.userId,
+          resourceType: ResourceType.DOCUMENT,
+          resourceId: documentId,
+          permission,
+          sourceType: member.role === "ADMIN" ? "SUBSPACE_ADMIN" : "SUBSPACE_MEMBER",
+          priority: member.role === "ADMIN" ? 3 : 4,
+          createdById: member.userId,
+        },
+      });
+    }
+  }
+
   // 辅助方法：角色到权限映射
   private mapWorkspaceRoleToPermission(role: WorkspaceRole): PermissionLevel {
     switch (role) {
@@ -334,6 +416,53 @@ export class PermissionService {
     return role === SubspaceRole.MEMBER ? SourceType.SUBSPACE_MEMBER : SourceType.SUBSPACE_ADMIN;
   }
 
+  mapDocPermissionLevelToActions(permissionLevel: PermissionLevel) {
+    // 基于现有的权限映射逻辑
+    switch (permissionLevel) {
+      case PermissionLevel.OWNER:
+      case PermissionLevel.MANAGE:
+        return {
+          read: true,
+          update: true,
+          delete: true,
+          share: true,
+          comment: true,
+        };
+      case PermissionLevel.EDIT:
+        return {
+          read: true,
+          update: true,
+          delete: false,
+          share: false,
+          comment: true,
+        };
+      case PermissionLevel.COMMENT:
+        return {
+          read: true,
+          update: false,
+          delete: false,
+          share: false,
+          comment: true,
+        };
+      case PermissionLevel.READ:
+        return {
+          read: true,
+          update: false,
+          delete: false,
+          share: false,
+          comment: false,
+        };
+      default:
+        return {
+          read: false,
+          update: false,
+          delete: false,
+          share: false,
+          comment: false,
+        };
+    }
+  }
+
   // 获取源类型对应的优先级
   getPriorityBySourceType(sourceType: SourceType): number {
     switch (sourceType) {
@@ -354,5 +483,53 @@ export class PermissionService {
       default:
         return 999;
     }
+  }
+
+  async getSharedWithMe(userId: string, query: PermissionListRequest): Promise<SharedWithMeResponse> {
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+
+    // 复用现有的getUserAllPermissions方法
+    const userPermissions = await this.getUserAllPermissions(userId);
+
+    // 过滤出文档权限，排除用户自己创建的文档
+    const sharedDocPermissions = userPermissions.filter(
+      (p) => p.resourceType === ResourceType.DOCUMENT && p.sourceType !== SourceType.WORKSPACE_MEMBER, // 排除通过workspace成员身份获得的权限
+    );
+
+    // Group by resourceId and resolve the highest priority permission
+    const resolvedSharedPermissions = new Map<string, UnifiedPermission>();
+    for (const perm of sharedDocPermissions) {
+      const existing = resolvedSharedPermissions.get(perm.resourceId);
+      if (!existing || perm.priority < existing.priority) {
+        resolvedSharedPermissions.set(perm.resourceId, perm);
+      }
+    }
+
+    // 分页处理
+    // TODO: 这个分页处理有问题，需要优化
+    const total = sharedDocPermissions.length;
+    const paginatedPermissions = sharedDocPermissions.slice(skip, skip + limit);
+
+    // 获取文档详情
+    const documentIds = paginatedPermissions.map((p) => p.resourceId);
+    const documents = await this.prisma.doc.findMany({
+      where: { id: { in: documentIds } },
+    });
+
+    // 构建permissions对象，基于现有的权限级别映射
+    const policies: Record<string, any> = {};
+
+    for (const perm of paginatedPermissions) {
+      policies[perm.resourceId] = this.mapDocPermissionLevelToActions(perm.permission);
+    }
+
+    return {
+      pagination: { page, limit, total },
+      data: {
+        documents,
+      },
+      policies,
+    };
   }
 }

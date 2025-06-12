@@ -1,4 +1,4 @@
-import { UnifiedPermission } from "@prisma/client";
+import { UnifiedPermission, ResourceType, PermissionLevel } from "@prisma/client";
 
 import { Injectable } from "@nestjs/common";
 import { User } from "@prisma/client";
@@ -16,33 +16,34 @@ export class DocumentAbility extends BaseAbility {
   // Will be called on each request that triggers a policy check
   async createForUser(user: User): Promise<AppAbility> {
     return this.createAbilityAsync(async (builder) => {
-      const { can } = builder; // Destructure here instead
-      const userPermissions = await this.permissionService.getUserAllPermissions(user.id);
+      const { can } = builder;
 
-      for (const perm of userPermissions) {
-        this.definePermissionsByLevel(can, perm);
+      const documentPermissions = await this.permissionService.getUserDocumentPermissions(user.id);
+      const docIds = documentPermissions.map((p) => p.resourceId);
+      const uniqueDocIds = Array.from(new Set(docIds));
+      for (const docId of uniqueDocIds) {
+        const level = await this.permissionService.resolveUserPermission(user.id, ResourceType.DOCUMENT, docId);
+        this.definePermissionsByLevel(can, docId, level);
       }
-
+      // Author always has full permissions on their own docs
       can([Action.Read, Action.Update, Action.Delete, Action.Share], "Doc", { authorId: user.id });
     });
   }
 
-  private definePermissionsByLevel(can: any, perm: UnifiedPermission) {
-    if (perm.resourceType !== "DOCUMENT") return;
-
-    switch (perm.permission) {
-      case "OWNER":
-      case "MANAGE":
-        can([Action.Read, Action.Update, Action.Delete, Action.Share, Action.Move], "Doc", { id: perm.resourceId });
+  private definePermissionsByLevel(can: any, docId: string, level: PermissionLevel) {
+    switch (level) {
+      case PermissionLevel.OWNER:
+      case PermissionLevel.MANAGE:
+        can([Action.Read, Action.Update, Action.Delete, Action.Share, Action.Move], "Doc", { id: docId });
         break;
-      case "EDIT":
-        can([Action.Read, Action.Update], "Doc", { id: perm.resourceId });
+      case PermissionLevel.EDIT:
+        can([Action.Read, Action.Update], "Doc", { id: docId });
         break;
-      case "COMMENT":
-        can([Action.Read, Action.Comment], "Doc", { id: perm.resourceId });
+      case PermissionLevel.COMMENT:
+        can([Action.Read, Action.Comment], "Doc", { id: docId });
         break;
-      case "READ":
-        can(Action.Read, "Doc", { id: perm.resourceId });
+      case PermissionLevel.READ:
+        can(Action.Read, "Doc", { id: docId });
         break;
     }
   }
