@@ -90,9 +90,9 @@ export default function Main() {
           </SidebarHeader>
           {/* docs */}
           <SidebarContent className="custom-scrollbar">
-            {/* <StarsArea /> */}
+            <StarsArea />
             <SharedWithMe />
-            {/* <SubspacesArea /> */}
+            <SubspacesArea />
             {/* <OthersDocs /> */}
             {/* <PrivateDocs /> */}
           </SidebarContent>

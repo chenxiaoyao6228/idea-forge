@@ -133,6 +133,8 @@
   "Leave subspace": "离开子空间",
   "Light": "浅色",
   "Link": "链接",
+  "Loading children...": "正在加载子项...",
+  "Loading parent...": "正在加载父项...",
   "Loading...": "加载中...",
   "Log in": "登录",
   "Logging in with {{provider}}": "正在使用{{provider}}登录",

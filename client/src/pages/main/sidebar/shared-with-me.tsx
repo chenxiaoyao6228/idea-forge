@@ -18,28 +18,102 @@ export default function SharedWithMe() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const { userInfo } = useUserStore();
-  const { upsertMany } = useDocumentStore();
+  const { upsertMany, fetchDetail, fetchChildren } = useDocumentStore();
   const { setPermissions } = usePermissionStore();
   const [isLoading, setIsLoading] = useState(true);
   const [sharedDocuments, setSharedDocuments] = useState<DocumentEntity[]>([]);
+  const [loadingParents, setLoadingParents] = useState<Set<string>>(new Set());
 
+  // Load shared documents with parent hierarchy resolution
   useEffect(() => {
     if (userInfo?.id) {
-      permissionApi
-        .getSharedWithMe({ page: 1, limit: 100 })
-        .then((res) => {
-          setSharedDocuments(res.data.documents);
-          upsertMany(res.data.documents);
-          setPermissions(res.data.permissions);
-        })
-        .catch(() => {
-          toast.error(t("Failed to load shared documents"));
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+      loadSharedDocumentsWithParents();
     }
-  }, [userInfo?.id, t, upsertMany, setPermissions]); // Remove setSharedDocuments and sharedDocuments from dependencies
+  }, [userInfo?.id]);
+
+  /**
+   * Load shared documents and resolve their parent hierarchy
+   * This ensures we have complete document trees for navigation
+   */
+  const loadSharedDocumentsWithParents = async () => {
+    try {
+      setIsLoading(true);
+
+      // Get initial shared documents
+      const res = (await permissionApi.getSharedWithMe({ page: 1, limit: 100 })) as any;
+      const documents = res.data.documents;
+
+      // Store documents and permissions
+      upsertMany(documents);
+      setPermissions(res.permissions);
+
+      // Resolve parent hierarchy for each document
+      const documentsWithParents = await resolveParentHierarchy(documents);
+
+      // Filter to show only root-level shared documents
+      const rootDocuments = documentsWithParents.filter((doc) => !doc.parentId || !documentsWithParents.some((parent) => parent.id === doc.parentId));
+
+      setSharedDocuments(rootDocuments);
+    } catch (error) {
+      toast.error(t("Failed to load shared documents"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Resolve parent hierarchy for shared documents
+   * Loads parent documents up to the root to build complete navigation trees
+   */
+  const resolveParentHierarchy = async (documents: DocumentEntity[]): Promise<DocumentEntity[]> => {
+    const allDocuments = new Map<string, DocumentEntity>();
+    const toLoad = new Set<string>();
+
+    // Add initial documents
+    documents.forEach((doc) => {
+      allDocuments.set(doc.id, doc);
+      if (doc.parentId) {
+        toLoad.add(doc.parentId);
+      }
+    });
+
+    // Load parent documents recursively
+    while (toLoad.size > 0) {
+      const parentIds = Array.from(toLoad);
+      toLoad.clear();
+
+      setLoadingParents(new Set(parentIds));
+
+      try {
+        const parentPromises = parentIds.map(async (parentId) => {
+          if (!allDocuments.has(parentId)) {
+            const result = await fetchDetail(parentId);
+            if (result?.data?.document) {
+              const parent = result.data.document;
+              allDocuments.set(parent.id, parent);
+
+              // Check if this parent has a parent too
+              if (parent.parentId && !allDocuments.has(parent.parentId)) {
+                toLoad.add(parent.parentId);
+              }
+
+              return parent;
+            }
+          }
+          return null;
+        });
+
+        await Promise.all(parentPromises);
+      } catch (error) {
+        console.warn("Failed to load some parent documents:", error);
+        break; // Stop loading parents on error
+      } finally {
+        setLoadingParents(new Set());
+      }
+    }
+
+    return Array.from(allDocuments.values());
+  };
 
   // Auto-expand if there are documents
   useEffect(() => {
@@ -50,7 +124,7 @@ export default function SharedWithMe() {
 
   const hasDocuments = sharedDocuments.length > 0;
 
-  if (!hasDocuments || isLoading) {
+  if (!hasDocuments && !isLoading) {
     return null;
   }
 
@@ -71,7 +145,7 @@ export default function SharedWithMe() {
               ) : !hasDocuments ? (
                 <div className="text-sm text-muted-foreground p-2 text-center">{t("No shared documents yet")}</div>
               ) : (
-                sharedDocuments.map((document) => <ShareWithMeLink key={document.id} document={document} />)
+                sharedDocuments.map((document) => <ShareWithMeLink key={document.id} document={document} loadingParents={loadingParents} />)
               )}
             </div>
           </ScrollArea>

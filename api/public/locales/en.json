@@ -125,6 +125,8 @@
   "Leave subspace": "Leave subspace",
   "Light": "Light",
   "Link": "Link",
+  "Loading children...": "Loading children...",
+  "Loading parent...": "Loading parent...",
   "Loading...": "Loading...",
   "Log in": "Log in",
   "Logging in with {{provider}}": "Logging in with {{provider}}",

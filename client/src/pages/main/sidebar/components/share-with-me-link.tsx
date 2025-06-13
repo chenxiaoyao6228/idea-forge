@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FileText, Folder } from "lucide-react";
+import { FileText, Folder, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -12,9 +12,10 @@ import type { DocumentEntity } from "@/stores/document";
 interface ShareWithMeLinkProps {
   document: DocumentEntity;
   depth?: number;
+  loadingParents?: Set<string>;
 }
 
-export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareWithMeLinkProps) {
+export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingParents = new Set() }: ShareWithMeLinkProps) {
   const { t } = useTranslation();
   const activeDocumentId = useUIStore((state) => state.activeDocumentId);
   const { fetchDetail, fetchChildren, getDocumentAsNavigationNode } = useDocumentStore();
@@ -22,12 +23,37 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
   const [isExpanded, setIsExpanded] = useState(false);
   const [document, setDocument] = useState<DocumentEntity>(initialDocument);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
+  const [childrenLoaded, setChildrenLoaded] = useState(false);
 
-  // Auto-expand if contains active document
+  // Check if this document is currently being loaded as a parent
+  const isLoadingAsParent = loadingParents.has(document.id);
+
+  // Auto-expand if contains active document or is in path to active document
   const shouldExpand = useMemo(() => {
     if (!activeDocumentId) return false;
-    return document?.id === activeDocumentId;
+    return document?.id === activeDocumentId || isInPathToActiveDocument();
   }, [activeDocumentId, document?.id]);
+
+  /**
+   * Check if this document is in the path to the currently active document
+   * This enables auto-expansion of parent folders containing the active document
+   */
+  const isInPathToActiveDocument = useCallback(() => {
+    if (!activeDocumentId || !document?.id) return false;
+
+    const node = getDocumentAsNavigationNode(document.id);
+    if (!node) return false;
+
+    // Recursively check if active document is in this document's subtree
+    const checkSubtree = (children: any[]): boolean => {
+      return children.some((child) => {
+        if (child.id === activeDocumentId) return true;
+        return child.children && checkSubtree(child.children);
+      });
+    };
+
+    return node.children && checkSubtree(node.children);
+  }, [activeDocumentId, document?.id, getDocumentAsNavigationNode]);
 
   // Get navigation node and child documents
   const node = useMemo(() => {
@@ -39,34 +65,51 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
   const hasChildDocuments = childDocuments.length > 0;
   const isFolder = document?.type === "folder";
 
-  // Fetch document if not provided initially
+  // Load document details if not fully loaded
   useEffect(() => {
     if (document?.id && !document?.title) {
-      // Only fetch if we have an ID but no details
       fetchDetail(document.id).then((result) => {
         if (result?.data?.document) {
           setDocument(result.data.document);
         }
       });
     }
-  }, [document?.id, fetchDetail]); // Add proper dependencies
+  }, [document?.id, fetchDetail]);
 
-  // Auto-expand when active
+  // Auto-expand when active or in path to active
   useEffect(() => {
-    if (shouldExpand) {
+    if (shouldExpand && !isExpanded) {
       setIsExpanded(true);
     }
-  }, [shouldExpand]);
+  }, [shouldExpand, isExpanded]);
 
-  // Fetch child documents when expanded
+  /**
+   * Dynamically load child documents when expanded
+   * This implements lazy loading for better performance with large document trees
+   */
   useEffect(() => {
-    if (isExpanded && document?.id) {
-      setIsLoadingChildren(true);
-      fetchChildren(document.id).finally(() => {
-        setIsLoadingChildren(false);
-      });
+    if (isExpanded && document?.id && !childrenLoaded && !isLoadingChildren) {
+      loadChildDocuments();
     }
-  }, [isExpanded, document?.id, fetchChildren]);
+  }, [isExpanded, document?.id, childrenLoaded, isLoadingChildren]);
+
+  /**
+   * Load child documents with permission filtering
+   * Only loads children that the user has permission to access
+   */
+  const loadChildDocuments = async () => {
+    if (!document?.id) return;
+
+    setIsLoadingChildren(true);
+    try {
+      await fetchChildren(document.id);
+      setChildrenLoaded(true);
+    } catch (error) {
+      console.warn(`Failed to load children for document ${document.id}:`, error);
+    } finally {
+      setIsLoadingChildren(false);
+    }
+  };
 
   const handleDisclosureClick = useCallback(
     (ev?: React.MouseEvent<HTMLButtonElement>) => {
@@ -77,32 +120,48 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
     [isExpanded],
   );
 
+  // Check read permission
   const canRead = hasPermission(document?.id, "read");
   if (!canRead) return null;
 
   const icon = isFolder ? <Folder className="h-4 w-4" /> : <FileText className="h-4 w-4" />;
   const docTitle = document?.title || "Untitled";
 
+  // Show loading indicator for parent loading
+  const loadingIcon = isLoadingAsParent ? <Loader2 className="h-4 w-4 animate-spin" /> : icon;
+
   return (
     <>
       <SidebarLink
         to={`/doc/${document?.id}`}
-        icon={icon}
-        label={<span className="text-sm font-medium">{docTitle}</span>}
+        icon={loadingIcon}
+        label={
+          <span className="text-sm font-medium">
+            {docTitle}
+            {isLoadingAsParent && <span className="text-xs text-muted-foreground ml-1">({t("Loading parent...")})</span>}
+          </span>
+        }
         expanded={hasChildDocuments ? isExpanded : undefined}
-        onDisclosureClick={handleDisclosureClick}
+        onDisclosureClick={hasChildDocuments ? handleDisclosureClick : undefined}
         depth={depth}
         active={document?.id === activeDocumentId}
       />
-      {/* {isExpanded && document && (
+
+      {/* Render child documents with dynamic loading */}
+      {isExpanded && (
         <div className="pl-4">
           {isLoadingChildren ? (
-            <div className="h-8 w-full animate-pulse bg-muted rounded" />
+            <div className="flex items-center gap-2 h-8 px-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-xs text-muted-foreground">{t("Loading children...")}</span>
+            </div>
           ) : (
-            childDocuments.map((childDoc) => <ShareWithMeLink key={childDoc.id} document={childDoc.document} depth={depth + 1} />)
+            childDocuments.map((childDoc) => (
+              <ShareWithMeLink key={childDoc.id} document={childDoc.document} depth={depth + 1} loadingParents={loadingParents} />
+            ))
           )}
         </div>
-      )} */}
+      )}
     </>
   );
 }
