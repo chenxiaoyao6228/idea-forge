@@ -30,9 +30,9 @@ export interface DocumentEntity {
   parentId?: string | null;
   type: string;
   visibility: string;
-  publishedAt?: string | null;
-  archivedAt?: string | null;
-  deletedAt?: string | null;
+  // publishedAt?: string | null;
+  // archivedAt?: string | null;
+  // deletedAt?: string | null;
   [key: string]: any;
 }
 
@@ -72,6 +72,13 @@ interface Action {
   needsUpdate: (id: string, updatedAt: Date) => boolean;
   handleDocumentUpdate: (documentId: string, updatedAt?: string) => Promise<void>;
   handleDocumentRemove: (documentId: string) => void;
+
+  // my-docs
+  getMyDocsRootDocuments: () => NavigationNode[];
+  getPathToDocumentInMyDocs: (documentId: string) => NavigationNode[];
+  fetchMyDocsChildren: (parentId: string | null) => Promise<void>;
+  createMyDocsDocument: (options: { title: string; parentId?: string | null }) => Promise<string>;
+  moveToMyDocs: (documentId: string, parentId?: string | null, index?: number) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -94,6 +101,7 @@ const useDocumentStore = create<StoreState>()(
         deletedDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDeleted(doc)),
         draftDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDraft(doc)),
         activeDocument: state.activeDocumentId ? state.entities[state.activeDocumentId] : undefined,
+        // TODO: 这里靠谱吗? document detail node和navigation  node 的结构不一样, 有可能detail没有加载, 不会生成对应的navigation node
         getDocumentAsNavigationNode: (documentId: string): NavigationNode | undefined => {
           const doc = state.entities[documentId];
           if (!doc) return undefined;
@@ -188,10 +196,6 @@ const useDocumentStore = create<StoreState>()(
                 type: "NOTE",
                 visibility: "WORKSPACE",
                 workspaceId,
-                archivedAt: doc.archivedAt?.toISOString() || null,
-                deletedAt: doc.deletedAt?.toISOString() || null,
-                createdAt: doc.createdAt.toISOString(),
-                updatedAt: doc.updatedAt.toISOString(),
               }));
               get().upsertMany(documents);
             }
@@ -348,9 +352,83 @@ const useDocumentStore = create<StoreState>()(
           }
         },
 
-        // permission
-        fetchDocumentMemberships: async (documentId: string) => {
-          return documentApi.listUserPermissions(documentId);
+        // my-docs
+        getMyDocsRootDocuments: (): NavigationNode[] => {
+          const allDocs = documentSelectors.selectAll(get());
+          return allDocs
+            .filter((doc) => !doc.subspaceId && !doc.parentId) // mydocs 根文档
+            .map((doc) => get().getDocumentAsNavigationNode(doc.id))
+            .filter((node): node is NavigationNode => node !== undefined);
+        },
+
+        getPathToDocumentInMyDocs: (documentId: string): NavigationNode[] => {
+          const allDocs = documentSelectors.selectAll(get());
+          const myDocs = allDocs.filter((doc) => !doc.subspaceId);
+
+          let path: NavigationNode[] = [];
+
+          const findPath = (targetId: string, currentPath: NavigationNode[] = []): boolean => {
+            const doc = myDocs.find((d) => d.id === targetId);
+            if (!doc) return false;
+
+            const node = get().getDocumentAsNavigationNode(doc.id);
+            if (!node) return false;
+
+            const newPath = [...currentPath, node];
+
+            if (doc.id === documentId) {
+              path = newPath;
+              return true;
+            }
+
+            // 查找子文档
+            const children = myDocs.filter((d) => d.parentId === doc.id);
+            for (const child of children) {
+              if (findPath(child.id, newPath)) {
+                return true;
+              }
+            }
+
+            return false;
+          };
+
+          // 从根文档开始查找
+          const rootDocs = myDocs.filter((doc) => !doc.parentId);
+          for (const root of rootDocs) {
+            if (findPath(root.id)) {
+              break;
+            }
+          }
+
+          return path;
+        },
+
+        fetchMyDocsChildren: async (parentId: string | null) => {
+          return get().fetchChildren(parentId, { force: false });
+        },
+
+        createMyDocsDocument: async (options: {
+          title: string;
+          parentId?: string | null;
+        }) => {
+          const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
+          if (!workspaceId) throw new Error("No active workspace");
+
+          return get().createDocument({
+            title: options.title,
+            parentId: options.parentId || null,
+            subspaceId: undefined,
+            workspaceId,
+          });
+        },
+
+        moveToMyDocs: async (documentId: string, parentId?: string | null, index?: number) => {
+          return get().move({
+            id: documentId,
+            subspaceId: null,
+            parentId: parentId || null,
+            index,
+          });
         },
       })),
       {

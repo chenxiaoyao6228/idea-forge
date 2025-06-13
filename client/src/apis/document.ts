@@ -98,15 +98,4 @@ export const documentApi = {
   },
 
   duplicate: (id: string) => request.post<null, DuplicateDocumentResponse>(`/api/documents/${id}/duplicate`),
-
-  // User Permissions
-
-  removeUserPermission: async (id: string, targetUserId: string) =>
-    request.delete<void, { success: boolean }>(`/api/documents/${id}/user-permissions/${targetUserId}`),
-
-  listUserPermissions: async (id: string) => request.get<void, DocUserPermissionResponse[]>(`/api/documents/${id}/user-permissions`),
-
-  removeGroupPermission: async (id: string, groupId: string) => request.delete<void, { success: boolean }>(`/api/documents/${id}/group-permissions/${groupId}`),
-
-  listGroupPermissions: async (id: string) => request.get<void, DocGroupPermissionResponse[]>(`/api/documents/${id}/group-permissions`),
 };

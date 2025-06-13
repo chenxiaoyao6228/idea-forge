@@ -31,7 +31,7 @@ export class DocumentController {
   }
 
   @Post("move")
-  @CheckPolicy(Action.Move, "Doc")
+  // @CheckPolicy(Action.Move, "Doc")
   async moveDocuments(@GetUser("id") userId: string, @Body() dto: MoveDocumentsDto) {
     const result = await this.moveDocumentService.moveDocs(userId, dto);
 

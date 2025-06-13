@@ -29,9 +29,9 @@ import useSubSpaceStore from "@/stores/subspace";
 import { DndContext } from "@dnd-kit/core";
 import { websocketService } from "@/lib/websocket";
 import StarsArea from "./sidebar/stars";
-// import SharedWithMe from "./sidebar/shared-with-me";
 import useUIStore from "@/stores/ui";
 import SharedWithMe from "./sidebar/shared-with-me";
+import MyDocsArea from "./sidebar/ my-docs";
 
 export default function Main() {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
@@ -93,8 +93,8 @@ export default function Main() {
             <StarsArea />
             <SharedWithMe />
             <SubspacesArea />
+            <MyDocsArea />
             {/* <OthersDocs /> */}
-            {/* <PrivateDocs /> */}
           </SidebarContent>
           <SidebarFooter>
             <UserSettings />

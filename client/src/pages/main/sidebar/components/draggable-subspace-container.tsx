@@ -40,6 +40,19 @@ export function DraggableSubspaceContainer({ subspace, depth = 0, belowSubspace 
     disabled: false,
   });
 
+  // Add document drop zone for cross-section DnD
+  const { isOver: isDocumentDropOver, setNodeRef: setDocumentDropRef } = useDroppable({
+    id: `subspace-document-drop-${subspace.id}`,
+    data: {
+      subspaceId: subspace.id,
+      accept: ["document"],
+      dropType: "reorder", // treat as root-level document drop
+      parentId: null,
+      index: 0,
+    },
+    disabled: false,
+  });
+
   // move
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
@@ -56,6 +69,10 @@ export function DraggableSubspaceContainer({ subspace, depth = 0, belowSubspace 
     <>
       <div ref={setDragNodeRef} className="draggable-subspace relative" onMouseMove={handleMouseMove} {...attributes} {...listeners}>
         <div ref={setReorderDropRef} className="droppable-subspace relative">
+          {/* Document drop zone at subspace root */}
+          <div ref={setDocumentDropRef} className="h-[8px]">
+            <DropCursor isActiveDrop={isDocumentDropOver} innerRef={null} position="top" />
+          </div>
           <SubspaceLink subspace={subspace} depth={depth} isDragging={isDragging} isActiveDrop={isReorderOver} />
           <DropCursor isActiveDrop={isReorderOver} innerRef={null} position={dropPosition} />
         </div>

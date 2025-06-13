@@ -7,12 +7,16 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
+import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
+import { PermissionService } from "@/permission/permission.service";
 
 @Injectable()
 export class MoveDocumentService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
     private readonly eventPublisher: EventPublisherService,
+    private readonly permissionInheritanceService: PermissionInheritanceService,
+    private readonly permissionService: PermissionService,
   ) {}
 
   async moveDocs(authorId: string, dto: MoveDocumentsDto) {
@@ -46,19 +50,8 @@ export class MoveDocumentService {
 
     affectedDocuments.push(updatedDoc);
 
-    // Handle permission inheritance when parent changes
-    if (parentChanged && parentId) {
-      // Remove existing inherited permissions
-      await this.prisma.docUserPermission.deleteMany({
-        where: {
-          docId: id,
-          sourceId: { not: null }, // Only remove inherited permissions
-        },
-      });
-
-      // Copy new permissions from new parent
-      await this.copyPermissionsFromParent(id, parentId);
-    }
+    // Handle permission inheritance using new permission module
+    await this.permissionInheritanceService.updatePermissionsOnMove(id, parentId || null, targetSubspaceId);
 
     // Handle subspace changes and child documents
     if (subspaceChanged && targetSubspaceId) {
@@ -81,11 +74,17 @@ export class MoveDocumentService {
       },
     });
 
+    const permissions: Record<string, Record<string, boolean>> = {};
+    for (const doc of affectedDocuments) {
+      const abilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", doc.id, authorId);
+      permissions[doc.id] = abilities as Record<string, boolean>;
+    }
+
     return {
       data: {
         documents: affectedDocuments.map((doc) => presentDocument(doc, { isPublic: true })),
       },
-      permissions: subspaceChanged ? this.generatePolicies(affectedDocuments) : [],
+      permissions,
     };
   }
 
@@ -283,42 +282,18 @@ export class MoveDocumentService {
   }
 
   /**
-   * Helper method to copy permissions from parent and handle inheritance
-   */
-  private async copyPermissionsFromParent(documentId: string, parentDocumentId: string) {
-    const parentMemberships = await this.prisma.docUserPermission.findMany({
-      where: { docId: parentDocumentId },
-    });
-
-    for (const membership of parentMemberships) {
-      await this.prisma.docUserPermission.create({
-        data: {
-          docId: documentId,
-          userId: membership.userId,
-          permission: membership.permission,
-          sourceId: membership.sourceId ?? membership.id, // Maintain inheritance chain
-          createdById: membership.createdById,
-          index: membership.index,
-        },
-      });
-    }
-  }
-
-  /**
    * Generate permission permissions for affected documents
    * Returns permissions array when subspace changes affect permissions
    */
   private generatePolicies(documents: any[]) {
-    // TODO:
-    // return documents.map((doc) => ({
-    //   id: doc.id,
-    //   abilities: {
-    //     read: true,
-    //     update: true,
-    //     delete: true,
-    //     move: true,
-    //     // Add other permissions based on your authorization system
-    //   },
-    // }));
+    return documents.map((doc) => ({
+      id: doc.id,
+      abilities: {
+        read: true,
+        update: true,
+        delete: true,
+        move: true,
+      },
+    }));
   }
 }

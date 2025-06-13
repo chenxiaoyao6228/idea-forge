@@ -91,6 +91,7 @@ export class DocumentService {
       // TODO: 这个查的时候是不是要加permission的限制条件?
       AND: [
         archivedAt ? { archivedAt: { not: null } } : { archivedAt: null },
+        subspaceId === null ? { subspaceId: null, authorId: userId } : {},
         subspaceId ? { subspaceId } : {},
         parentId === "null" ? { parentId: null } : parentId ? { parentId } : {},
         {

@@ -292,6 +292,7 @@ class WebsocketService {
             // If title has changed, update the collection as well
             if (updatedDocument && previousTitle !== updatedDocument.title) {
               if (updatedDocument.subspaceId) {
+                // TODO: update navigation tree by document update
                 await subspaceStore.fetchNavigationTree(updatedDocument.subspaceId, { force: true });
               }
             }

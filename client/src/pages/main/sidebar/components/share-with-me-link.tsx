@@ -29,15 +29,11 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
   const isLoadingAsParent = loadingParents.has(document.id);
 
   // Auto-expand if contains active document or is in path to active document
-  const shouldExpand = useMemo(() => {
-    if (!activeDocumentId) return false;
-    return document?.id === activeDocumentId || isInPathToActiveDocument();
-  }, [activeDocumentId, document?.id]);
-
   /**
    * Check if this document is in the path to the currently active document
    * This enables auto-expansion of parent folders containing the active document
    */
+
   const isInPathToActiveDocument = useCallback(() => {
     if (!activeDocumentId || !document?.id) return false;
 
@@ -54,6 +50,11 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
 
     return node.children && checkSubtree(node.children);
   }, [activeDocumentId, document?.id, getDocumentAsNavigationNode]);
+
+  const shouldExpand = useMemo(() => {
+    if (!activeDocumentId) return false;
+    return document?.id === activeDocumentId || isInPathToActiveDocument();
+  }, [activeDocumentId, document?.id, isInPathToActiveDocument]);
 
   // Get navigation node and child documents
   const node = useMemo(() => {
@@ -156,9 +157,7 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
               <span className="text-xs text-muted-foreground">{t("Loading children...")}</span>
             </div>
           ) : (
-            childDocuments.map((childDoc) => (
-              <ShareWithMeLink key={childDoc.id} document={childDoc.document} depth={depth + 1} loadingParents={loadingParents} />
-            ))
+            childDocuments.map((childDoc, index) => <DocumentLink key={childDoc.id} node={childDoc} depth={depth + 1} index={index} />)
           )}
         </div>
       )}

@@ -138,7 +138,7 @@ export default function SharedWithMe() {
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent>
-          <ScrollArea className="max-h-[300px] min-h-[100px]">
+          <ScrollArea className="max-h-[300px]">
             <div className="space-y-1 p-2">
               {isLoading ? (
                 SKELETON_KEYS.map((key) => <Skeleton key={key} className="h-8 w-full" />)

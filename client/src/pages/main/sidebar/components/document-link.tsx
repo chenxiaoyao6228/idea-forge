@@ -15,15 +15,18 @@ import { documentApi } from "@/apis/document";
 
 export interface DocumentLinkProps {
   node: NavigationNode;
-  subspaceId: string;
   depth: number;
   index: number;
+  activeDocumentId?: string;
+  subspaceId?: string;
   parentId?: string;
   isDragging?: boolean; // item being dragged
   isActiveDrop?: boolean; // item is the active drop target
+  getPathToDocument?: (documentId: string, subspaceId?: string) => NavigationNode[];
 }
 
-export function DocumentLink({ node, subspaceId, depth, index, parentId }: DocumentLinkProps) {
+export function DocumentLink(props: DocumentLinkProps) {
+  const { node, subspaceId, depth, index, parentId } = props;
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
 
@@ -36,15 +39,24 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
 
   // auto expand state sync
   const getPathToDocument = useSubSpaceStore((state) => state.getPathToDocument);
+  const pathFinder = props.getPathToDocument || getPathToDocument;
+
   const showChildren = useMemo(() => {
     if (!hasChildren || !activeDocumentId) return false;
 
-    const path = getPathToDocument(subspaceId, activeDocumentId);
-    const pathIds = path.map((entry) => entry.id);
-
-    // check if current node is in the path of the active document, or current node is the active document
-    return pathIds.includes(node.id) || isActiveDocument;
-  }, [hasChildren, activeDocumentId, node.id, isActiveDocument, getPathToDocument, subspaceId]);
+    // 如果是 mydocs（没有 subspaceId），使用传入的路径查找函数
+    if (!subspaceId && props.getPathToDocument) {
+      const path = props.getPathToDocument(activeDocumentId);
+      const pathIds = path.map((entry) => entry.id);
+      return pathIds.includes(node.id) || isActiveDocument;
+    }
+    if (subspaceId && props.getPathToDocument) {
+      // 否则使用原有的 subspace 路径查找逻辑
+      const path = pathFinder(subspaceId, activeDocumentId);
+      const pathIds = path.map((entry) => entry.id);
+      return pathIds.includes(node.id) || isActiveDocument;
+    }
+  }, [hasChildren, activeDocumentId, node.id, isActiveDocument, pathFinder, subspaceId, props.getPathToDocument]);
 
   // auto expand state sync
   useEffect(() => {
@@ -169,7 +181,7 @@ export function DocumentLink({ node, subspaceId, depth, index, parentId }: Docum
       {hasChildren && isExpanded && (
         <div>
           {node.children?.map((child, childIndex) => (
-            <DraggableDocumentContainer key={child.id} node={child} subspaceId={subspaceId} depth={depth + 1} index={childIndex} parentId={node.id} />
+            <DraggableDocumentContainer key={child.id} node={child} subspaceId={subspaceId || ""} depth={depth + 1} index={childIndex} parentId={node.id} />
           ))}
         </div>
       )}
