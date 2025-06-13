@@ -99,7 +99,7 @@ export class StarService {
 
     return {
       data: presentStar(star),
-      policies: [], // placeholder for policies
+      permissions: {}, // placeholder for permissions
     };
   }
 
@@ -189,7 +189,7 @@ export class StarService {
       data: {
         stars: starredItems.map(presentStar),
       },
-      policies: [], // placeholder for policies
+      permissions: {}, // placeholder for permissions
     };
   }
 
@@ -213,7 +213,7 @@ export class StarService {
 
     return {
       data: presentStar(updatedStar),
-      policies: [], // placeholder for policies
+      permissions: {}, // placeholder for permissions
     };
   }
 

@@ -18,9 +18,21 @@ interface AssignPermissionDto {
 export class PermissionController {
   constructor(private readonly permissionService: PermissionService) {}
 
+  @Post("users")
+  @CheckPolicy(Action.ManagePermissions, "UnifiedPermission")
+  async addUserPermission(@Body() dto: AddUserPermissionDto, @GetUser("id") adminId: string) {
+    return await this.permissionService.assignDocumentPermission(dto.userId, dto.resourceId, dto.permission, adminId);
+  }
+
+  @Post("groups")
+  @CheckPolicy(Action.ManagePermissions, "UnifiedPermission")
+  async addGroupPermission(@Body() dto: AddGroupPermissionDto, @GetUser("id") adminId: string) {
+    return await this.permissionService.assignGroupPermissions(dto.groupId, dto.resourceType, dto.resourceId, dto.permission, adminId);
+  }
+
   @Get("shared-with-me")
   async getSharedWithMe(@GetUser("id") userId: string, @Query() query: PermissionListRequestDto) {
-    // return this.permissionService.getSharedWithMe(userId, query);
+    return this.permissionService.getSharedWithMe(userId, query);
   }
 
   /*
@@ -53,10 +65,10 @@ export class PermissionController {
     }
   }
 
-  // 获取资源权限列表
+  // Get resource permissions
   @Get("resources/:resourceType/:resourceId")
-  async getResourcePermissions(@Param("resourceType") resourceType: ResourceType, @Param("resourceId") resourceId: string, @GetUser("id") requesterId: string) {
-    // return await this.permissionService.getResourcePermissions(resourceType, resourceId, requesterId);
+  async getResourcePermissions(@Param("resourceType") resourceType: ResourceType, @Param("resourceId") resourceId: string, @GetUser("id") userId: string) {
+    return await this.permissionService.getResourcePermissionAbilities(resourceType, resourceId, userId);
   }
 
   // 解析用户对资源的最终权限

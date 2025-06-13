@@ -40,7 +40,7 @@ export interface StarResponse {
   data: {
     stars: Star[];
   };
-  policies: any[];
+  permissions: Record<string, Record<string, boolean>>;
 }
 
 export type ListStarResponse = BasePageResult<StarResponse>;

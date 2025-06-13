@@ -28,4 +28,5 @@ export type BasePageResult<T> = {
     total: number;
   },
   data: T[]
+  permissions?: Record<string, Record<string, boolean>>
 }

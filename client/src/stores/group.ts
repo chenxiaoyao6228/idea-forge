@@ -4,7 +4,6 @@ import { createComputed } from "zustand-computed";
 import { groupApi } from "@/apis/group";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import { Group } from "@/types/group";
-import useDocGroupPermissionStore from "./group-permission";
 
 interface FetchOptions {
   force?: boolean;
@@ -25,10 +24,6 @@ interface Action {
   delete: (id: string) => Promise<void>;
 
   // Helper methods
-  inCollection: (collectionId: string, query?: string) => Group[];
-  notInCollection: (collectionId: string, query?: string) => Group[];
-  inDocument: (documentId: string, query?: string) => Group[];
-  notInDocument: (documentId: string, query?: string) => Group[];
 }
 
 const defaultState: State = {
@@ -131,34 +126,6 @@ const useGroupStore = create<StoreState>()(
           } finally {
             set({ isSaving: false });
           }
-        },
-
-        inCollection: (collectionId: string, query = "") => {
-          const permissions = useDocGroupPermissionStore.getState().getByGroupId(collectionId);
-          const groupIds = permissions.map((permission) => permission.groupId);
-          const groups = groupSelectors.selectAll(get()).filter((group) => groupIds.includes(group.id));
-          return query ? groups.filter((group) => group.name.toLowerCase().includes(query.toLowerCase())) : groups;
-        },
-
-        notInCollection: (collectionId: string, query = "") => {
-          const permissions = useDocGroupPermissionStore.getState().getByGroupId(collectionId);
-          const groupIds = permissions.map((permission) => permission.groupId);
-          const groups = groupSelectors.selectAll(get()).filter((group) => !groupIds.includes(group.id));
-          return query ? groups.filter((group) => group.name.toLowerCase().includes(query.toLowerCase())) : groups;
-        },
-
-        inDocument: (documentId: string, query = "") => {
-          const permissions = useDocGroupPermissionStore.getState().getByDocumentId(documentId);
-          const groupIds = permissions.map((permission) => permission.groupId);
-          const groups = groupSelectors.selectAll(get()).filter((group) => groupIds.includes(group.id));
-          return query ? groups.filter((group) => group.name.toLowerCase().includes(query.toLowerCase())) : groups;
-        },
-
-        notInDocument: (documentId: string, query = "") => {
-          const permissions = useDocGroupPermissionStore.getState().getByDocumentId(documentId);
-          const groupIds = permissions.map((permission) => permission.groupId);
-          const groups = groupSelectors.selectAll(get()).filter((group) => !groupIds.includes(group.id));
-          return query ? groups.filter((group) => group.name.toLowerCase().includes(query.toLowerCase())) : groups;
         },
       })),
       {

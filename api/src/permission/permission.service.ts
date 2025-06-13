@@ -24,6 +24,29 @@ export class PermissionService {
     return userPermissions;
   }
 
+  async getResourcePermissionAbilities(resourceType: ResourceType, resourceId: string, userId: string) {
+    const permissions = await this.prisma.unifiedPermission.findMany({
+      where: { resourceType, resourceId, userId },
+      orderBy: { priority: "asc" },
+    });
+    if (permissions.length === 0) return {};
+
+    if (resourceType === ResourceType.DOCUMENT) {
+      const permissionLevel = this.applyPermissionPriority(permissions);
+      return this.mapDocPermissionLevelToAbilities(permissionLevel);
+    }
+
+    return {};
+  }
+
+  // TODO: remove the below three and merge into one
+  async getUserPermissions(userId: string, resourceType: ResourceType, resourceId: string) {
+    return this.prisma.unifiedPermission.findMany({
+      where: { userId, resourceType, resourceId },
+      orderBy: { priority: "asc" },
+    });
+  }
+
   async getUserWorkspacePermissions(userId: string) {
     return this.prisma.unifiedPermission.findMany({
       where: { userId, resourceType: ResourceType.WORKSPACE },
@@ -416,7 +439,7 @@ export class PermissionService {
     return role === SubspaceRole.MEMBER ? SourceType.SUBSPACE_MEMBER : SourceType.SUBSPACE_ADMIN;
   }
 
-  mapDocPermissionLevelToActions(permissionLevel: PermissionLevel) {
+  mapDocPermissionLevelToAbilities(permissionLevel: PermissionLevel) {
     // 基于现有的权限映射逻辑
     switch (permissionLevel) {
       case PermissionLevel.OWNER:
@@ -489,47 +512,48 @@ export class PermissionService {
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
-    // 复用现有的getUserAllPermissions方法
-    const userPermissions = await this.getUserAllPermissions(userId);
+    // Get all document permissions for the user with proper priority resolution
+    const documentPermissions = await this.prisma.unifiedPermission.findMany({
+      where: {
+        userId,
+        resourceType: ResourceType.DOCUMENT,
+        sourceType: { in: [SourceType.DIRECT, SourceType.GROUP] }, // Only shared permissions
+      },
+      orderBy: [{ resourceId: "asc" }, { priority: "asc" }],
+    });
 
-    // 过滤出文档权限，排除用户自己创建的文档
-    const sharedDocPermissions = userPermissions.filter(
-      (p) => p.resourceType === ResourceType.DOCUMENT && p.sourceType !== SourceType.WORKSPACE_MEMBER, // 排除通过workspace成员身份获得的权限
-    );
-
-    // Group by resourceId and resolve the highest priority permission
-    const resolvedSharedPermissions = new Map<string, UnifiedPermission>();
-    for (const perm of sharedDocPermissions) {
-      const existing = resolvedSharedPermissions.get(perm.resourceId);
+    // Group by resourceId and resolve highest priority permission
+    const resolvedPermissions = new Map<string, UnifiedPermission>();
+    for (const perm of documentPermissions) {
+      const existing = resolvedPermissions.get(perm.resourceId);
       if (!existing || perm.priority < existing.priority) {
-        resolvedSharedPermissions.set(perm.resourceId, perm);
+        resolvedPermissions.set(perm.resourceId, perm);
       }
     }
 
-    // 分页处理
-    // TODO: 这个分页处理有问题，需要优化
-    const total = sharedDocPermissions.length;
-    const paginatedPermissions = sharedDocPermissions.slice(skip, skip + limit);
+    // Apply database-level pagination
+    const documentIds = Array.from(resolvedPermissions.keys());
+    const total = documentIds.length;
+    const paginatedDocIds = documentIds.slice(skip, skip + limit);
 
-    // 获取文档详情
-    const documentIds = paginatedPermissions.map((p) => p.resourceId);
+    // Get document details
     const documents = await this.prisma.doc.findMany({
-      where: { id: { in: documentIds } },
+      where: { id: { in: paginatedDocIds } },
     });
 
-    // 构建permissions对象，基于现有的权限级别映射
-    const policies: Record<string, any> = {};
-
-    for (const perm of paginatedPermissions) {
-      policies[perm.resourceId] = this.mapDocPermissionLevelToActions(perm.permission);
+    // Build permissions object
+    const permissions: Record<string, any> = {};
+    for (const docId of paginatedDocIds) {
+      const perm = resolvedPermissions.get(docId);
+      if (perm) {
+        permissions[docId] = this.mapDocPermissionLevelToAbilities(perm.permission);
+      }
     }
 
     return {
       pagination: { page, limit, total },
-      data: {
-        documents,
-      },
-      policies,
+      data: { documents },
+      permissions,
     };
   }
 }

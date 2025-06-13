@@ -13,13 +13,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { groupApi } from "@/apis/group";
-import useDocUserPermissionStore from "@/stores/user-permission";
-import useDocGroupPermissionStore from "@/stores/group-permission";
-import useGroupStore from "@/stores/group";
-import { UserPermissionResponse } from "contracts";
 // import { AccessControlList } from "./access-control-list";
 import React from "react";
 import { userApi } from "@/apis/user";
+import { permissionApi } from "@/apis/permission";
 
 type PendingId = {
   id: number | string;
@@ -41,9 +38,6 @@ export function ShareButton({ documentId }: ShareButtonProps) {
   const [open, setOpen] = useBoolean(false);
   const [pendingIds, setPendingIds] = React.useState<PendingId[]>([]);
   const [permission, setPermission] = React.useState<"READ" | "EDIT">("READ");
-  const userPermissionStore = useDocUserPermissionStore();
-  const groupPermissionStore = useDocGroupPermissionStore();
-  const groupStore = useGroupStore();
 
   const form = useForm<ShareFormValues>({
     resolver: zodResolver(shareSchema),
@@ -91,15 +85,23 @@ export function ShareButton({ documentId }: ShareButtonProps) {
           if (type === "user") {
             const user = usersRes?.data.find((u) => u.id === id);
             if (user) {
-              await userPermissionStore.addPermission(user.id, documentId, permission);
+              // Use unified permission API
+              await permissionApi.addUserPermission({
+                userId: user.id,
+                resourceType: "DOCUMENT",
+                resourceId: documentId,
+                permission,
+              });
               toast.success(t("Added {{name}} to the document", { name: user.displayName }));
             }
           } else {
             const group = groups?.data.find((g) => g.id === id);
             if (group) {
-              await groupPermissionStore.addPermission({
-                docId: documentId,
+              // Use unified permission API
+              await permissionApi.addGroupPermission({
                 groupId: id as string,
+                resourceType: "DOCUMENT",
+                resourceId: documentId,
                 permission,
               });
               toast.success(t("Added {{name}} to the document", { name: group.name }));

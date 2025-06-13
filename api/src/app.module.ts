@@ -34,9 +34,7 @@ import { QueueModule } from "./_shared/queues/queue.module";
 import { EventsModule } from "./_shared/events/events.module";
 import { StarModule } from "./star/star.module";
 import { DocShareModule } from "./doc-share/doc-share.module";
-import { UserPermissionModule } from "./user-permission/user-permission.module";
 import { GroupModule } from "./group/group.module";
-import { GroupPermissionModule } from "./group-permission/group-permission.module";
 import { PermissionModule } from "./permission/permission.module";
 
 @Module({
@@ -88,9 +86,8 @@ import { PermissionModule } from "./permission/permission.module";
     EventsModule,
     StarModule,
     DocShareModule,
-    UserPermissionModule,
     GroupModule,
-    GroupPermissionModule,
+
     PermissionModule,
   ],
   providers: [

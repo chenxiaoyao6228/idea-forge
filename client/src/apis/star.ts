@@ -5,7 +5,7 @@ export const starApi = {
   /**
    * Create a new star
    */
-  create: async (data: CreateStarDto) => request.post<CreateStarDto, { data: Star; policies: any[] }>("/api/stars", data),
+  create: async (data: CreateStarDto) => request.post<CreateStarDto, { data: Star; permissions: any[] }>("/api/stars", data),
 
   /**
    * Get all stars for the current user
@@ -20,7 +20,7 @@ export const starApi = {
   /**
    * Update a star's order
    */
-  update: async (id: string, data: UpdateStarDto) => request.patch<UpdateStarDto, { data: Star; policies: any[] }>(`/api/stars/${id}`, data),
+  update: async (id: string, data: UpdateStarDto) => request.patch<UpdateStarDto, { data: Star; permissions: any[] }>(`/api/stars/${id}`, data),
 
   /**
    *

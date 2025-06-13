@@ -173,17 +173,17 @@ export class DocumentService {
       })),
     }));
 
-    // Generate policies for each doc
-    const policies: Record<string, any> = {};
+    // Generate permissions for each doc
+    const permissions: Record<string, Record<string, boolean>> = {};
     for (const doc of items) {
-      const level = await this.permissionService.resolveUserPermission(userId, "DOCUMENT", doc.id);
-      policies[doc.id] = this.permissionService.mapDocPermissionLevelToActions(level);
+      const abilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", doc.id, userId);
+      permissions[doc.id] = abilities as Record<string, boolean>;
     }
 
     return {
       pagination: { page, limit, total },
       data,
-      policies,
+      permissions,
     };
   }
 
@@ -328,8 +328,8 @@ export class DocumentService {
 
     return {
       data,
-      // Placeholder for policies
-      policies: isPublic ? undefined : this.presentPoliciesPlaceholder(userId, document),
+      // Placeholder for permissions
+      permissions: isPublic ? undefined : this.presentPoliciesPlaceholder(userId, document),
     };
   }
 
@@ -356,7 +356,7 @@ export class DocumentService {
   }
 
   private presentPoliciesPlaceholder(userId: string, document: any) {
-    // Placeholder for policies
+    // Placeholder for permissions
     return {
       [document.id]: {
         read: true,

@@ -8,6 +8,7 @@ import useSubSpaceStore from "./subspace";
 import useStarStore from "./star";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import useWorkspaceStore from "./workspace";
+import usePermissionStore from "./permission";
 
 interface FetchOptions {
   force?: boolean;
@@ -17,7 +18,7 @@ interface FetchOptions {
 
 interface FetchDetailResult {
   data: { document: DocumentEntity; workspace?: any; sharedTree?: any };
-  policies?: any;
+  permissions?: any;
 }
 
 export interface DocumentEntity {
@@ -194,6 +195,10 @@ const useDocumentStore = create<StoreState>()(
               }));
               get().upsertMany(documents);
             }
+
+            if (response.permissions) {
+              usePermissionStore.getState().setPermissions(response.permissions);
+            }
           } catch (error) {
             console.error("Failed to fetch children:", error);
             throw error;
@@ -208,7 +213,7 @@ const useDocumentStore = create<StoreState>()(
           }
 
           try {
-            const { data, policies } = (await documentApi.getDocument(id)) as FetchDetailResult;
+            const { data, permissions } = (await documentApi.getDocument(id)) as FetchDetailResult;
 
             if (!data.document) {
               throw new Error("Document not available");
@@ -262,7 +267,7 @@ const useDocumentStore = create<StoreState>()(
         move: async ({ id, subspaceId, parentId, index }) => {
           set({ isSaving: true });
           try {
-            const { documents: affectedDocuments, policies } = await documentApi.moveDocument({
+            const { documents: affectedDocuments, permissions } = await documentApi.moveDocument({
               id,
               subspaceId,
               parentId,
@@ -346,14 +351,6 @@ const useDocumentStore = create<StoreState>()(
         // permission
         fetchDocumentMemberships: async (documentId: string) => {
           return documentApi.listUserPermissions(documentId);
-        },
-
-        addUserToDocument: async (documentId: string, userId: string, permission: "EDIT" | "READ" | "NONE") => {
-          return documentApi.addUserPermission(documentId, { userId, permission });
-        },
-
-        removeUserFromDocument: async (documentId: string, targetUserId: string) => {
-          return documentApi.removeUserPermission(documentId, targetUserId);
         },
       })),
       {

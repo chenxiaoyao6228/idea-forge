@@ -3,15 +3,14 @@ import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShareWithMeLink } from "./components/share-with-me-link";
-import useDocUserPermissionStore from "@/stores/user-permission";
-import useDocGroupPermissionStore from "@/stores/group-permission";
-import useDocumentStore from "@/stores/document";
+import useDocumentStore, { DocumentEntity } from "@/stores/document";
 import useUserStore from "@/stores/user";
-import { UserPermissionResponse } from "contracts";
+import usePermissionStore from "@/stores/permission";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
+import { permissionApi } from "@/apis/permission";
 
 const SKELETON_KEYS = ["skeleton-1", "skeleton-2", "skeleton-3"] as const;
 
@@ -19,41 +18,39 @@ export default function SharedWithMe() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const { userInfo } = useUserStore();
-  const { list: listUserPermissions, currentUserPermissions, isFetching: isUserPermissionsFetching } = useDocUserPermissionStore();
-  const { list: listGroupPermissions, getByDocumentId: getGroupPermissionsByDocumentId, isFetching: isGroupPermissionsFetching } = useDocGroupPermissionStore();
-  const { entities: documents } = useDocumentStore();
+  const { upsertMany } = useDocumentStore();
+  const { setPermissions } = usePermissionStore();
+  const [isLoading, setIsLoading] = useState(true);
+  const [sharedDocuments, setSharedDocuments] = useState<DocumentEntity[]>([]);
 
   useEffect(() => {
     if (userInfo?.id) {
-      Promise.all([
-        // TODO: decide whether we should pass the whole query
-        listUserPermissions(userInfo?.id, { force: true }),
-        listGroupPermissions(
-          {
-            limit: 100,
-            page: 1,
-            sortBy: "createdAt",
-          },
-          { force: true },
-        ),
-      ]).catch((error) => {
-        console.error("Failed to load shared documents:", error);
-        toast.error(t("Failed to load shared documents"));
-      });
+      permissionApi
+        .getSharedWithMe({ page: 1, limit: 100 })
+        .then((res) => {
+          setSharedDocuments(res.data.documents);
+          upsertMany(res.data.documents);
+          setPermissions(res.data.permissions);
+        })
+        .catch(() => {
+          toast.error(t("Failed to load shared documents"));
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
-  }, [userInfo?.id, listUserPermissions, listGroupPermissions, t]);
+  }, [userInfo?.id, t, upsertMany, setPermissions]); // Remove setSharedDocuments and sharedDocuments from dependencies
 
-  // Auto-expand if there are permissions
+  // Auto-expand if there are documents
   useEffect(() => {
-    if (currentUserPermissions.length > 0) {
+    if (sharedDocuments.length > 0) {
       setIsOpen(true);
     }
-  }, [currentUserPermissions.length]);
+  }, [sharedDocuments]);
 
-  const isFetching = isUserPermissionsFetching || isGroupPermissionsFetching;
-  const hasPermissions = currentUserPermissions.length > 0;
+  const hasDocuments = sharedDocuments.length > 0;
 
-  if (!hasPermissions && !isFetching) {
+  if (!hasDocuments || isLoading) {
     return null;
   }
 
@@ -69,17 +66,12 @@ export default function SharedWithMe() {
         <CollapsibleContent>
           <ScrollArea className="max-h-[300px] min-h-[100px]">
             <div className="space-y-1 p-2">
-              {isFetching ? (
+              {isLoading ? (
                 SKELETON_KEYS.map((key) => <Skeleton key={key} className="h-8 w-full" />)
-              ) : currentUserPermissions.length === 0 ? (
+              ) : !hasDocuments ? (
                 <div className="text-sm text-muted-foreground p-2 text-center">{t("No shared documents yet")}</div>
               ) : (
-                currentUserPermissions.map((permission) => {
-                  const document = permission.documentId ? documents[permission.documentId] : undefined;
-                  // FIXME:
-                  // const groupPermissions = getGroupPermissionsByDocumentId(permission.documentId || "");
-                  return <ShareWithMeLink key={permission.id} permission={permission} document={document} />;
-                })
+                sharedDocuments.map((document) => <ShareWithMeLink key={document.id} document={document} />)
               )}
             </div>
           </ScrollArea>

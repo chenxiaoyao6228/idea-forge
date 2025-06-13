@@ -90,12 +90,12 @@ export const sharedWithMeResponseSchema = z.object({
   data: z.object({  
     documents: z.array(DocSchema),  
   }),  
-  policies: z.record(z.object({  
+  permissions: z.record(z.object({  
     read: z.boolean(),  
     update: z.boolean(),  
     delete: z.boolean(),  
     share: z.boolean(),  
-    comment: z.boolean().optional(),  
+    comment: z.boolean(),  
   })),  
 });  
   

@@ -85,7 +85,7 @@ export class MoveDocumentService {
       data: {
         documents: affectedDocuments.map((doc) => presentDocument(doc, { isPublic: true })),
       },
-      policies: subspaceChanged ? this.generatePolicies(affectedDocuments) : [],
+      permissions: subspaceChanged ? this.generatePolicies(affectedDocuments) : [],
     };
   }
 
@@ -305,8 +305,8 @@ export class MoveDocumentService {
   }
 
   /**
-   * Generate permission policies for affected documents
-   * Returns policies array when subspace changes affect permissions
+   * Generate permission permissions for affected documents
+   * Returns permissions array when subspace changes affect permissions
    */
   private generatePolicies(documents: any[]) {
     // TODO:
