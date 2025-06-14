@@ -12,7 +12,6 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 import { PermissionService } from "@/permission/permission.service";
-import fractionalIndex from "fractional-index";
 
 @Injectable()
 export class MoveDocumentService {
@@ -27,7 +26,7 @@ export class MoveDocumentService {
     const { id, subspaceId, parentId, index } = dto;
     const affectedDocuments: any[] = [];
 
-    // Existing document fetching and validation...
+    // Fetch and validate the document
     const document = await this.prisma.doc.findUnique({
       where: { id },
       include: { subspace: true },
@@ -39,14 +38,14 @@ export class MoveDocumentService {
 
     const targetSubspaceId = subspaceId || document.subspaceId;
     const subspaceChanged = targetSubspaceId !== document.subspaceId;
-    const parentChanged = parentId !== document.parentId;
 
-    // Update document properties
+    // Update document with client-provided fractional index
     const updatedDoc = await this.prisma.doc.update({
       where: { id },
       data: {
         subspaceId: targetSubspaceId,
         parentId: parentId || null,
+        ...(index && { index }), // Use fractional index directly from client
         updatedAt: new Date(),
       },
       include: { subspace: true },
@@ -70,34 +69,17 @@ export class MoveDocumentService {
       affectedDocuments.push(...childDocuments);
     }
 
-    // Update navigation tree structure
-    // Calculate fractional index for mydocs
-    if (targetSubspaceId === null) {
-      const newIndex = await this.calculateMyDocsIndex(id, parentId, index);
-
-      const updatedDoc = await this.prisma.doc.update({
-        where: { id },
-        data: {
-          subspaceId: null,
-          parentId: parentId || null,
-          index: newIndex,
-          updatedAt: new Date(),
-        },
-        include: { subspace: true },
-      });
-
-      affectedDocuments.push(updatedDoc);
-    } else {
-      // Existing subspace logic
+    // Update navigation tree structure (skip for mydocs)
+    if (targetSubspaceId !== null) {
       await this.updateNavigationTreeStructure(
         document,
         updatedDoc,
-        index,
+        undefined,
         subspaceChanged
       );
     }
 
-    // Emit events and return response...
+    // Emit WebSocket events
     await this.eventPublisher.publishWebsocketEvent({
       name: BusinessEvents.DOCUMENT_MOVE,
       workspaceId: document.workspaceId,
@@ -106,11 +88,18 @@ export class MoveDocumentService {
       data: {
         affectedDocuments,
         subspaceIds: subspaceChanged
-          ? [{ id: document.subspaceId }, { id: targetSubspaceId }]
-          : [{ id: targetSubspaceId }],
+          ? [{ id: document.subspaceId }, { id: targetSubspaceId }].filter(
+              (s) => s.id !== null
+            )
+          : targetSubspaceId
+          ? [{ id: targetSubspaceId }]
+          : [],
+        myDocsChanged:
+          targetSubspaceId === null || document.subspaceId === null,
       },
     });
 
+    // Generate permissions for affected documents
     const permissions: Record<string, Record<string, boolean>> = {};
     for (const doc of affectedDocuments) {
       const abilities =
@@ -132,43 +121,6 @@ export class MoveDocumentService {
     };
   }
 
-  private async calculateMyDocsIndex(
-    docId: string,
-    parentId: string | null,
-    targetIndex?: number
-  ): Promise<string> {
-    const siblings = await this.prisma.doc.findMany({
-      where: {
-        subspaceId: null,
-        parentId: parentId || null,
-        id: { not: docId },
-      },
-      orderBy: { index: "asc" },
-    });
-
-    if (siblings.length === 0) {
-      return fractionalIndex(null, null);
-    }
-
-    if (targetIndex === 0) {
-      // Insert at beginning
-      return fractionalIndex(null, siblings[0]?.index || null);
-    }
-
-    if (targetIndex === undefined || targetIndex >= siblings.length) {
-      // Insert at end
-      return fractionalIndex(
-        siblings[siblings.length - 1]?.index || null,
-        null
-      );
-    }
-
-    // Insert between siblings
-    const prevIndex = siblings[targetIndex - 1]?.index || null;
-    const nextIndex = siblings[targetIndex]?.index || null;
-    return fractionalIndex(prevIndex, nextIndex);
-  }
-
   /**
    * Recursively update subspaceId for all child documents when moving across subspaces
    * This ensures the entire document tree maintains consistency
@@ -182,7 +134,7 @@ export class MoveDocumentService {
       include: { subspace: true },
     });
 
-    const updatedChildren = [];
+    const updatedChildren: Array<any> = [];
 
     for (const child of childDocuments) {
       // Update each child document's subspaceId
@@ -428,21 +380,5 @@ export class MoveDocumentService {
       }
     }
     return null; // Node not found
-  }
-
-  /**
-   * Generate permission permissions for affected documents
-   * Returns permissions array when subspace changes affect permissions
-   */
-  private generatePolicies(documents: any[]) {
-    return documents.map((doc) => ({
-      id: doc.id,
-      abilities: {
-        read: true,
-        update: true,
-        delete: true,
-        move: true,
-      },
-    }));
   }
 }

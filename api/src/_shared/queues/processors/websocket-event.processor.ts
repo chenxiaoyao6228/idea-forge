@@ -13,7 +13,7 @@ import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension
 export class WebsocketEventProcessor {
   constructor(
     private realtimeGateway: RealtimeGateway,
-    @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient,
+    @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient
   ) {}
 
   // Process incoming WebSocket events from the queue
@@ -69,19 +69,31 @@ export class WebsocketEventProcessor {
   }
 
   // Handle document move events
-  private async handleDocumentMoveEvent(event: WebsocketEvent<any>, server: any) {
+  private async handleDocumentMoveEvent(
+    event: WebsocketEvent<any>,
+    server: any
+  ) {
     const { data, workspaceId, actorId } = event;
-    const { affectedDocuments, subspaceIds } = data;
+    const { affectedDocuments, subspaceIds, myDocsChanged } = data;
 
     // Emit document updates
     if (affectedDocuments?.length > 0) {
       affectedDocuments.forEach(({ id, updatedAt, subspaceId }) => {
-        // Emit to relevant subspace rooms for each document
-        server.to(`subspace:${subspaceId}`).emit(BusinessEvents.ENTITIES, {
-          event: event.name,
-          documentIds: [{ id, updatedAt }],
-          fetchIfMissing: true,
-        });
+        if (subspaceId) {
+          // Emit to relevant subspace rooms
+          server.to(`subspace:${subspaceId}`).emit(BusinessEvents.ENTITIES, {
+            event: event.name,
+            documentIds: [{ id, updatedAt }],
+            fetchIfMissing: true,
+          });
+        } else {
+          // Emit to mydocs room (per-user)
+          server.to(`user:${actorId}:mydocs`).emit(BusinessEvents.ENTITIES, {
+            event: event.name,
+            documentIds: [{ id, updatedAt }],
+            fetchIfMissing: true,
+          });
+        }
       });
     }
 
@@ -122,7 +134,9 @@ export class WebsocketEventProcessor {
     };
 
     // Emit to workspace room
-    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.ENTITIES, eventData);
+    server
+      .to(`workspace:${workspaceId}`)
+      .emit(BusinessEvents.ENTITIES, eventData);
 
     // Emit to actor's user room
     if (actorId) {
@@ -138,7 +152,10 @@ export class WebsocketEventProcessor {
   }
 
   // Handle subspace creation events
-  private async handleSubspaceCreateEvent(event: WebsocketEvent<any>, server: any) {
+  private async handleSubspaceCreateEvent(
+    event: WebsocketEvent<any>,
+    server: any
+  ) {
     const { data, name, timestamp, actorId, workspaceId } = event;
 
     // Determine target channels based on subspace type and permissions
@@ -155,7 +172,10 @@ export class WebsocketEventProcessor {
   }
 
   // Handle subspace update events
-  private async handleSubspaceUpdateEvent(event: WebsocketEvent<any>, server: any) {
+  private async handleSubspaceUpdateEvent(
+    event: WebsocketEvent<any>,
+    server: any
+  ) {
     const { data, workspaceId, actorId } = event;
     const { subspace } = data;
 
@@ -167,14 +187,20 @@ export class WebsocketEventProcessor {
   }
 
   // Handle subspace movement events
-  private async handleSubspaceMoveEvent(event: WebsocketEvent<any>, server: any) {
+  private async handleSubspaceMoveEvent(
+    event: WebsocketEvent<any>,
+    server: any
+  ) {
     const { data, name, workspaceId } = event;
     // Only emit to workspace room for movement events
     server.to(`workspace:${workspaceId}`).emit(name, data);
   }
 
   // Determine target channels for document events based on visibility and permissions
-  private getDocumentEventChannels(event: WebsocketEvent<any>, document: any): string[] {
+  private getDocumentEventChannels(
+    event: WebsocketEvent<any>,
+    document: any
+  ): string[] {
     const channels: string[] = [];
 
     if (event.actorId) {
@@ -196,7 +222,10 @@ export class WebsocketEventProcessor {
   }
 
   // Determine target channels for subspace events based on type and permissions
-  private getSubspaceEventChannels(event: WebsocketEvent<any>, subspace: any): string[] {
+  private getSubspaceEventChannels(
+    event: WebsocketEvent<any>,
+    subspace: any
+  ): string[] {
     const channels: string[] = [];
 
     if (event.actorId) {
