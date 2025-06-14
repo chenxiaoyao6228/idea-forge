@@ -17,7 +17,7 @@ export const DocSchema = z.object({
   publishedAt: z.coerce.date().nullable(),
   deletedAt: z.coerce.date().nullable(),
   parentId: z.string().nullable(),
-  position: z.number().int(),
+  index: z.string().nullable(),
   updatedAt: z.coerce.date(),
   createdAt: z.coerce.date(),
   icon: z.string().nullable(),
@@ -40,7 +40,6 @@ export const DocOptionalDefaultsSchema = DocSchema.merge(z.object({
   visibility: DocVisibilitySchema.optional(),
   id: z.string().cuid().optional(),
   content: z.string().optional(),
-  position: z.number().int().optional(),
   updatedAt: z.coerce.date().optional(),
   createdAt: z.coerce.date().optional(),
 }))

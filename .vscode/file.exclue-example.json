@@ -1,46 +1,44 @@
 {
-    "files.exclude": {
-        // root
-        ".github": true,
-        "**/turbo.json": true,
-        "README*.md": true,
-        ".gitignore": true,
-        "**/*.npmrc": true,
-        "**/.cursorrules": true,
-        "scripts": true,
-        "CHANGELOG.md": true,
-        ".dockerignore": true,
-        "LICENSE":true,
-        "Makefile":true,
-        // common
-        // "**/package.json": true,
-        "**/.env*": true,
-        "**/.turbo": true,
-        "**/node_modules": true,
-        "**/tsconfig.json": true,
-        "**/tsconfig.cjs.json": true,
-        "**/dist": true,
-        "**/build": true,
-        "**/logs": true,
-        "**/*.log": true,
-        "**/biome.json": true,
-        "**/*.pem": true,
-        "**/*.yaml": true,
-        "**/*.yml": true,
-        "**/*.lock": true,
-        // api workspace
-        "api/nest-cli.json": true,
-        "api/nodemon.json": true,
-        "api/Dockerfile*": true,
-        "api/ecosystem.config.js": true,
-        "api/webpack.config.js": true,
-        
-        // client workspace
-        "client/components.json": true,
-        "client/postcss.config.js": true,
-        "client/tailwind.config.js": true,
-        "client/vite.config.ts": true,
-        "client/i18next-parser.config.js": true,
-    
-      }
+  "files.exclude": {
+    // root
+    ".github": true,
+    "**/turbo.json": true,
+    "README*.md": true,
+    "**/.gitignore": true,
+    "**/*.npmrc": true,
+    // "**/.cursorrules": true,
+    "scripts": true,
+    "CHANGELOG.md": true,
+    ".dockerignore": true,
+    "LICENSE": true,
+    "Makefile": true,
+    // common
+    // "**/package.json": true,
+    "**/.env*": true,
+    "**/.turbo": true,
+    "**/node_modules": true,
+    "**/tsconfig.json": true,
+    "**/tsconfig.cjs.json": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/logs": true,
+    "**/*.log": true,
+    "**/biome.json": true,
+    "**/*.pem": true,
+    "**/*.yaml": true,
+    "**/*.yml": true,
+    "**/*.lock": true,
+    // api workspace
+    "api/nest-cli.json": true,
+    "api/nodemon.json": true,
+    "api/Dockerfile*": true,
+    "api/ecosystem.config.js": true,
+    "api/webpack.config.js": true,
+    // client workspace
+    "client/components.json": true,
+    "client/postcss.config.js": true,
+    "client/tailwind.config.js": true,
+    "client/vite.config.ts": true,
+    "client/i18next-parser.config.js": true,
+  }
 }

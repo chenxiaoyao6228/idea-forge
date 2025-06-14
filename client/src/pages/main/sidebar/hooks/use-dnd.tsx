@@ -1,4 +1,12 @@
-import { DragEndEvent, DragMoveEvent, DragOverEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import {
+  DragEndEvent,
+  DragMoveEvent,
+  DragOverEvent,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import fractionalIndex from "fractional-index";
 import { useCallback, useState } from "react";
 import useSubSpaceStore from "@/stores/subspace";
@@ -34,7 +42,7 @@ export function useDragAndDropContext() {
         delay: 300,
         tolerance: 5,
       },
-    }),
+    })
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -52,8 +60,29 @@ export function useDragAndDropContext() {
       const draggingItem = active.data.current as DragItem;
       const toDropItem = over.data.current as DropTarget;
 
-      if (draggingItem?.type === "subspace" && toDropItem?.accept?.includes("subspace")) {
-        const dragSubspace = allSubspaces.find((s) => s.id === draggingItem.subspaceId);
+      if (
+        draggingItem?.type === "document" &&
+        toDropItem?.accept?.includes("document")
+      ) {
+        const params = calculateDocumentMoveParams(draggingItem, toDropItem);
+
+        // Handle mydocs first-item positioning like subspaces
+        if (params.subspaceId === null && toDropItem.dropType === "top") {
+          params.index = 0;
+        }
+
+        if (params) {
+          await moveDocument(params);
+        }
+      }
+
+      if (
+        draggingItem?.type === "subspace" &&
+        toDropItem?.accept?.includes("subspace")
+      ) {
+        const dragSubspace = allSubspaces.find(
+          (s) => s.id === draggingItem.subspaceId
+        );
         if (!dragSubspace) return;
 
         let newIndex: string;
@@ -70,13 +99,20 @@ export function useDragAndDropContext() {
         }
         // normal order operation
         else if (toDropItem.dropType === "reorder") {
-          const dropSubspace = allSubspaces.find((s) => s.id === toDropItem.subspaceId);
+          const dropSubspace = allSubspaces.find(
+            (s) => s.id === toDropItem.subspaceId
+          );
           if (!dropSubspace || dragSubspace.id === dropSubspace.id) return;
 
-          const dropIndex = allSubspaces.findIndex((s) => s.id === dropSubspace.id);
+          const dropIndex = allSubspaces.findIndex(
+            (s) => s.id === dropSubspace.id
+          );
 
           const belowSubspace = allSubspaces[dropIndex + 1];
-          newIndex = fractionalIndex(dropSubspace.index, belowSubspace?.index || null);
+          newIndex = fractionalIndex(
+            dropSubspace.index,
+            belowSubspace?.index || null
+          );
         } else {
           return;
         }
@@ -84,14 +120,17 @@ export function useDragAndDropContext() {
         moveSubspace(dragSubspace.id, newIndex);
       }
 
-      if (draggingItem?.type === "document" && toDropItem?.accept?.includes("document")) {
+      if (
+        draggingItem?.type === "document" &&
+        toDropItem?.accept?.includes("document")
+      ) {
         const params = calculateDocumentMoveParams(draggingItem, toDropItem);
         if (params) {
           await moveDocument(params);
         }
       }
     },
-    [allSubspaces, moveSubspace, moveDocument],
+    [allSubspaces, moveSubspace, moveDocument]
   );
 
   const handleDragMove = useCallback((event: DragMoveEvent) => {
@@ -112,16 +151,26 @@ export function useDragAndDropContext() {
   };
 }
 
-function calculateDocumentMoveParams(draggingItem: DragItem, toDropItem: DropTarget) {
+function calculateDocumentMoveParams(
+  draggingItem: DragItem,
+  toDropItem: DropTarget
+) {
   return {
     id: draggingItem.id,
-    subspaceId: toDropItem.subspaceId || draggingItem.subspaceId,
-    parentId: toDropItem.dropType === "reparent" ? toDropItem.documentId : toDropItem.parentId,
+    subspaceId:
+      toDropItem.subspaceId === undefined ? null : toDropItem.subspaceId,
+    parentId:
+      toDropItem.dropType === "reparent"
+        ? toDropItem.documentId
+        : toDropItem.parentId,
     index: calculateNewIndex(draggingItem, toDropItem),
   };
 }
 
-function calculateNewIndex(draggingItem: DragItem, toDropItem: DropTarget): number {
+function calculateNewIndex(
+  draggingItem: DragItem,
+  toDropItem: DropTarget
+): number {
   if (toDropItem.dropType === "reorder") {
     // Determine whether to insert before or after the target document based on drop position
     const targetIndex = Number.parseInt(toDropItem.index || "0");

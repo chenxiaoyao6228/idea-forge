@@ -185,7 +185,7 @@ model Doc {
 
   // position
   parentId String?
-  position Int     @default(0)
+  index    String? // Fractional index for ordering
 
   // timestamps
   updatedAt DateTime @updatedAt

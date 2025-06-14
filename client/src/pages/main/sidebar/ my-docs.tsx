@@ -16,7 +16,7 @@ export default function MyDocsArea() {
   const handleCreateDocument = async () => {
     setIsCreating(true);
     try {
-      await createMyDocsDocument({ title: "New Document" });
+      await createMyDocsDocument({ title: "New Document" + Math.random().toString().substring(2, 5) });
     } catch (error) {
       console.error("Failed to create document:", error);
     } finally {
