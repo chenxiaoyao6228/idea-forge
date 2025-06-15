@@ -223,7 +223,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
       {hasDocuments && isExpanded && (
         <div className="ml-4">
           {subspace.navigationTree.map((node, index) => (
-            <DraggableDocumentContainer key={node.id} node={node} subspaceId={subspaceId} depth={depth + 1} index={index} />
+            <DraggableDocumentContainer key={node.id} node={node} parentId={null} subspaceId={subspaceId} depth={depth + 1} index={index} />
           ))}
         </div>
       )}

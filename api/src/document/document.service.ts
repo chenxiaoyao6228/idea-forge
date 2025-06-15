@@ -22,6 +22,7 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { DocShareService } from "../doc-share/doc-share.service";
 import { PermissionService } from "@/permission/permission.service";
+import fractionalIndex from "fractional-index";
 
 @Injectable()
 export class DocumentService {
@@ -33,6 +34,30 @@ export class DocumentService {
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
+    // Get the first document's index to generate new index
+    const firstDocument = await this.prisma.doc.findFirst({
+      where: {
+        workspaceId: dto.workspaceId,
+        subspaceId: dto.subspaceId,
+        parentId: dto.parentId,
+        index: { not: null }, // Only include documents with index set
+      },
+      orderBy: {
+        index: "asc", // This will sort lexicographically which works for fractional indices
+      },
+    });
+
+    // Generate new index
+    const newIndex = fractionalIndex(null, firstDocument?.index ?? null);
+
+    // Handle possible index collision
+    const finalIndex = await this.removeDocumentIndexCollision(
+      dto.workspaceId,
+      dto.subspaceId,
+      dto.parentId,
+      newIndex
+    );
+
     const doc = await this.prisma.doc.create({
       data: {
         ...dto,
@@ -40,6 +65,7 @@ export class DocumentService {
         createdById: authorId,
         lastModifiedById: authorId,
         publishedAt: new Date(),
+        index: finalIndex, // Set the calculated fractional index
       },
     });
 
@@ -99,6 +125,43 @@ export class DocumentService {
     });
 
     return presentDocument(doc, { isPublic: true });
+  }
+
+  private async removeDocumentIndexCollision(
+    workspaceId: string,
+    subspaceId: string | null,
+    parentId: string | null,
+    index: string
+  ): Promise<string> {
+    const existingDocument = await this.prisma.doc.findFirst({
+      where: {
+        workspaceId,
+        subspaceId,
+        parentId,
+        index,
+      },
+    });
+
+    if (!existingDocument) {
+      return index;
+    }
+
+    const nextDocument = await this.prisma.doc.findFirst({
+      where: {
+        workspaceId,
+        subspaceId,
+        parentId,
+        index: {
+          gt: index,
+        },
+      },
+      orderBy: {
+        index: "asc",
+      },
+    });
+
+    const nextIndex = nextDocument?.index || null;
+    return fractionalIndex(index, nextIndex);
   }
 
   async list(userId: string, dto: DocumentPagerDto) {

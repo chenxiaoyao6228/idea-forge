@@ -18,11 +18,11 @@ export interface DocumentLinkProps {
   depth: number;
   index: number;
   activeDocumentId?: string;
-  subspaceId?: string;
-  parentId?: string;
+  subspaceId: string | null;
+  parentId: string | null;
   isDragging?: boolean; // item being dragged
   isActiveDrop?: boolean; // item is the active drop target
-  getPathToDocument?: (documentId: string, subspaceId?: string) => NavigationNode[];
+  getPathToDocument?: (documentId: string, subspaceId: string | null) => NavigationNode[];
 }
 
 export function DocumentLink(props: DocumentLinkProps) {
@@ -46,7 +46,7 @@ export function DocumentLink(props: DocumentLinkProps) {
 
     // 如果是 mydocs（没有 subspaceId），使用传入的路径查找函数
     if (!subspaceId && props.getPathToDocument) {
-      const path = props.getPathToDocument(activeDocumentId);
+      const path = props.getPathToDocument(activeDocumentId, subspaceId);
       const pathIds = path.map((entry) => entry.id);
       return pathIds.includes(node.id) || isActiveDocument;
     }
@@ -85,7 +85,7 @@ export function DocumentLink(props: DocumentLinkProps) {
           // FIXME: remove the random number
           title: "New Document" + Math.floor(Math.random() * 1000),
           parentId: node.id,
-          subspaceId,
+          subspaceId: subspaceId || null,
         });
         setIsExpanded(true);
 
@@ -181,7 +181,7 @@ export function DocumentLink(props: DocumentLinkProps) {
       {hasChildren && isExpanded && (
         <div>
           {node.children?.map((child, childIndex) => (
-            <DraggableDocumentContainer key={child.id} node={child} subspaceId={subspaceId || ""} depth={depth + 1} index={childIndex} parentId={node.id} />
+            <DraggableDocumentContainer key={child.id} node={child} subspaceId={subspaceId || null} depth={depth + 1} index={childIndex} parentId={node.id} />
           ))}
         </div>
       )}

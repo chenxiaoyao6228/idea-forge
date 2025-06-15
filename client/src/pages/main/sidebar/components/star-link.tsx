@@ -14,8 +14,6 @@ import useDocumentStore from "@/stores/document";
 import useSubSpaceStore from "@/stores/subspace";
 import { StarEntity } from "@/stores/star";
 import { DocumentLink } from "./document-link";
-import { DraggableDocumentContainer } from "./draggable-document-container";
-import { DraggableSubspaceContainer } from "./draggable-subspace-container";
 
 interface StarLinkProps {
   star: StarEntity;
@@ -32,7 +30,6 @@ export function StarLink({ star, isDragging = false }: StarLinkProps) {
 
   const document = useDocumentStore((state) => state.entities[star.docId || ""]);
   const subspace = useSubSpaceStore((state) => state.entities[star.subspaceId || ""]);
-  //   const _star = useStarStore((state) => starEntitySelectors.selectById(state, star.id));
   const removeStar = useStarStore((state) => state.remove);
 
   // Auto-expand if contains active document
@@ -129,10 +126,10 @@ export function StarLink({ star, isDragging = false }: StarLinkProps) {
       {hasDocuments && isExpanded && (
         <div className="ml-4">
           {document?.children?.map((node, index) => (
-            <DocumentLink key={node.id} node={node} depth={1} index={index} subspaceId={document.subspaceId || ""} />
+            <DocumentLink key={node.id} node={node} depth={1} index={index} parentId={star.docId || null} subspaceId={document.subspaceId || null} />
           ))}
           {subspace?.navigationTree?.map((node, index) => (
-            <DocumentLink key={node.id} node={node} depth={1} index={index} subspaceId={subspace.id} />
+            <DocumentLink key={node.id} node={node} depth={1} index={index} parentId={star.docId || null} subspaceId={subspace.id} />
           ))}
         </div>
       )}

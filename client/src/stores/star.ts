@@ -2,7 +2,11 @@ import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
 import { starApi } from "@/apis/star";
-import createEntitySlice, { EntityState, EntityActions, EntitySelectors } from "./utils/entity-slice";
+import createEntitySlice, {
+  EntityState,
+  EntityActions,
+  EntitySelectors,
+} from "./utils/entity-slice";
 import useDocumentStore from "./document";
 
 export interface StarEntity {
@@ -23,13 +27,20 @@ interface State {
 interface Action {
   // API actions
   fetchList: () => Promise<StarEntity[]>;
-  create: (params: { docId?: string; subspaceId?: string; index?: string }) => Promise<StarEntity>;
+  create: (params: {
+    docId?: string;
+    subspaceId: string | null;
+    index?: string;
+  }) => Promise<StarEntity>;
   remove: (id: string) => Promise<void>;
   update: (id: string, index: string) => Promise<void>;
 
   // Helper methods
-  isStarred: (docId?: string, subspaceId?: string) => boolean;
-  getStarByTarget: (docId?: string, subspaceId?: string) => StarEntity | undefined;
+  isStarred: (docId?: string, subspaceId?: string | null) => boolean;
+  getStarByTarget: (
+    docId?: string,
+    subspaceId?: string | null
+  ) => StarEntity | undefined;
   needsUpdate: (id: string, updatedAt: Date) => boolean;
   handleStarUpdate: (starId: string, updatedAt?: string) => Promise<void>;
   handleStarRemove: (starId: string) => void;
@@ -40,11 +51,15 @@ const defaultState: State = {
   isLoaded: false,
 };
 
-const { initialState, selectors, createActions } = createEntitySlice<StarEntity>();
+const { initialState, selectors, createActions } =
+  createEntitySlice<StarEntity>();
 
 export const starEntitySelectors = selectors;
 
-type StoreState = State & Action & EntityState<StarEntity> & EntityActions<StarEntity>;
+type StoreState = State &
+  Action &
+  EntityState<StarEntity> &
+  EntityActions<StarEntity>;
 const useStarStore = create<StoreState>()(
   subscribeWithSelector(
     devtools(
@@ -71,15 +86,17 @@ const useStarStore = create<StoreState>()(
                 updatedAt: new Date(star.updatedAt),
               }));
 
-              const docIds = stars.filter((star) => star.docId).map((star) => star.docId!);
+              const docIds = stars
+                .filter((star) => star.docId)
+                .map((star) => star.docId!);
               if (docIds.length > 0) {
                 const documentStore = useDocumentStore.getState();
                 await Promise.all(
                   docIds.map((docId) =>
                     documentStore.fetchDetail(docId).catch((error) => {
                       console.warn(`Failed to fetch document ${docId}:`, error);
-                    }),
-                  ),
+                    })
+                  )
                 );
               }
 
@@ -94,7 +111,11 @@ const useStarStore = create<StoreState>()(
             }
           },
 
-          create: async (params: { docId?: string; subspaceId?: string; index?: string }) => {
+          create: async (params: {
+            docId?: string;
+            subspaceId: string | null;
+            index?: string;
+          }) => {
             try {
               const response = await starApi.create(params);
               const star: StarEntity = {
@@ -149,7 +170,13 @@ const useStarStore = create<StoreState>()(
 
           getStarByTarget: (docId, subspaceId) => {
             if (!docId && !subspaceId) return undefined;
-            return selectors.selectAll(get()).find((star) => (docId && star.docId === docId) || (subspaceId && star.subspaceId === subspaceId));
+            return selectors
+              .selectAll(get())
+              .find(
+                (star) =>
+                  (docId && star.docId === docId) ||
+                  (subspaceId && star.subspaceId === subspaceId)
+              );
           },
 
           needsUpdate: (id, updatedAt) => {
@@ -163,7 +190,12 @@ const useStarStore = create<StoreState>()(
           handleStarUpdate: async (starId, updatedAt) => {
             const existing = selectors.selectById(get(), starId);
 
-            if (existing && updatedAt && new Date(existing.updatedAt).getTime() === new Date(updatedAt).getTime()) {
+            if (
+              existing &&
+              updatedAt &&
+              new Date(existing.updatedAt).getTime() ===
+                new Date(updatedAt).getTime()
+            ) {
               return;
             }
 
@@ -195,9 +227,9 @@ const useStarStore = create<StoreState>()(
       }),
       {
         name: "starStore",
-      },
-    ),
-  ),
+      }
+    )
+  )
 );
 
 export default useStarStore;

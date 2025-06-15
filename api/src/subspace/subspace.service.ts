@@ -1,22 +1,39 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
-import { NavigationNode, NavigationNodeType, SubspaceTypeSchema } from "contracts";
+import {
+  CreateSubspaceDto,
+  UpdateSubspaceDto,
+  AddSubspaceMemberDto,
+  UpdateSubspaceMemberDto,
+} from "./subspace.dto";
+import {
+  NavigationNode,
+  NavigationNodeType,
+  SubspaceTypeSchema,
+} from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import {
+  type ExtendedPrismaClient,
+  PRISMA_CLIENT,
+} from "@/_shared/database/prisma/prisma.extension";
 import fractionalIndex from "fractional-index";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { presentSubspace, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PermissionService } from "@/permission/permission.service";
-import { SourceType, ResourceType, SubspaceType, PermissionLevel } from "@prisma/client";
+import {
+  SourceType,
+  ResourceType,
+  SubspaceType,
+  PermissionLevel,
+} from "@prisma/client";
 
 @Injectable()
 export class SubspaceService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient,
     private readonly eventPublisher: EventPublisherService,
-    private readonly permissionService: PermissionService,
+    private readonly permissionService: PermissionService
   ) {}
 
   async createDefaultGlobalSubspace(userId: string, workspaceId: string) {
@@ -28,20 +45,22 @@ export class SubspaceService {
         avatar: "",
         type: SubspaceTypeSchema.enum.PUBLIC,
       },
-      userId,
+      userId
     );
   }
 
   async createSubspace(dto: CreateSubspaceDto, creatorId: string) {
     // Check if user is a member of the workspace
-    const workspaceMember = await this.prismaService.workspaceMember.findUnique({
-      where: {
-        workspaceId_userId: {
-          workspaceId: dto.workspaceId,
-          userId: creatorId,
+    const workspaceMember = await this.prismaService.workspaceMember.findUnique(
+      {
+        where: {
+          workspaceId_userId: {
+            workspaceId: dto.workspaceId,
+            userId: creatorId,
+          },
         },
-      },
-    });
+      }
+    );
 
     if (!workspaceMember) {
       throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
@@ -62,7 +81,10 @@ export class SubspaceService {
     const newIndex = fractionalIndex(null, firstSubspace?.index ?? null);
 
     // Handle possible index collision
-    const finalIndex = await this.removeIndexCollision(dto.workspaceId, newIndex);
+    const finalIndex = await this.removeIndexCollision(
+      dto.workspaceId,
+      newIndex
+    );
 
     const subspace = await this.prismaService.subspace.create({
       data: {
@@ -87,7 +109,12 @@ export class SubspaceService {
 
     // Assign subspace type permissions
     // FIXME: ts type optimization
-    await this.permissionService.assignSubspaceTypePermissions(subspace.id, dto.type as SubspaceType, dto.workspaceId, creatorId);
+    await this.permissionService.assignSubspaceTypePermissions(
+      subspace.id,
+      dto.type as SubspaceType,
+      dto.workspaceId,
+      creatorId
+    );
 
     // Emit create event
     await this.eventPublisher.publishWebsocketEvent({
@@ -125,7 +152,10 @@ export class SubspaceService {
     }
 
     // handle index collision
-    const finalIndex = await this.removeIndexCollision(subspace.workspaceId, newIndex);
+    const finalIndex = await this.removeIndexCollision(
+      subspace.workspaceId,
+      newIndex
+    );
 
     const updatedSubspace = await this.prismaService.subspace.update({
       where: { id },
@@ -150,7 +180,10 @@ export class SubspaceService {
     };
   }
 
-  private async removeIndexCollision(workspaceId: string, index: string): Promise<string> {
+  private async removeIndexCollision(
+    workspaceId: string,
+    index: string
+  ): Promise<string> {
     const existingSubspace = await this.prismaService.subspace.findFirst({
       where: {
         workspaceId,
@@ -197,7 +230,11 @@ export class SubspaceService {
       },
     });
 
-    return presentSubspaces(workspaces.flatMap((workspaceMember) => workspaceMember.workspace.subspaces));
+    return presentSubspaces(
+      workspaces.flatMap(
+        (workspaceMember) => workspaceMember.workspace.subspaces
+      )
+    );
   }
 
   async getSubspace(id: string, userId: string) {
@@ -223,7 +260,9 @@ export class SubspaceService {
 
     // Check if user has access to this subspace
     const isWorkspaceMember = subspace.workspace.members.length > 0;
-    const isSubspaceMember = subspace.members.some((member) => member.userId === userId);
+    const isSubspaceMember = subspace.members.some(
+      (member) => member.userId === userId
+    );
     const isPublicSubspace = subspace.type === "PUBLIC";
 
     if (!isWorkspaceMember || (!isSubspaceMember && !isPublicSubspace)) {
@@ -354,7 +393,11 @@ export class SubspaceService {
   }
 
   // Add document to navigation tree
-  async addDocumentToNavigationTree(subspaceId: string, doc: any, parentId?: string) {
+  async addDocumentToNavigationTree(
+    subspaceId: string,
+    doc: any,
+    parentId?: string
+  ) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
     });
@@ -478,7 +521,11 @@ export class SubspaceService {
 
   // ==== Member Management ====
 
-  async addSubspaceMember(subspaceId: string, dto: AddSubspaceMemberDto, adminId: string) {
+  async addSubspaceMember(
+    subspaceId: string,
+    dto: AddSubspaceMemberDto,
+    adminId: string
+  ) {
     // Check if the user to be added is a member of the workspace
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
@@ -489,14 +536,16 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
     }
 
-    const workspaceMember = await this.prismaService.workspaceMember.findUnique({
-      where: {
-        workspaceId_userId: {
-          workspaceId: subspace.workspaceId,
-          userId: dto.userId,
+    const workspaceMember = await this.prismaService.workspaceMember.findUnique(
+      {
+        where: {
+          workspaceId_userId: {
+            workspaceId: subspace.workspaceId,
+            userId: dto.userId,
+          },
         },
-      },
-    });
+      }
+    );
 
     if (!workspaceMember) {
       throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
@@ -530,15 +579,22 @@ export class SubspaceService {
     };
   }
 
-  async updateSubspaceMember(subspaceId: string, memberId: string, dto: UpdateSubspaceMemberDto, currentUserId: string) {
+  async updateSubspaceMember(
+    subspaceId: string,
+    memberId: string,
+    dto: UpdateSubspaceMemberDto,
+    currentUserId: string
+  ) {
     // Check if current user is an admin of the subspace
-    const currentUserMember = await this.prismaService.subspaceMember.findFirst({
-      where: {
-        subspaceId,
-        userId: currentUserId,
-        role: "ADMIN",
-      },
-    });
+    const currentUserMember = await this.prismaService.subspaceMember.findFirst(
+      {
+        where: {
+          subspaceId,
+          userId: currentUserId,
+          role: "ADMIN",
+        },
+      }
+    );
 
     if (!currentUserMember) {
       throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
@@ -559,15 +615,21 @@ export class SubspaceService {
     };
   }
 
-  async removeSubspaceMember(subspaceId: string, memberId: string, currentUserId: string) {
+  async removeSubspaceMember(
+    subspaceId: string,
+    memberId: string,
+    currentUserId: string
+  ) {
     // Check if current user is an admin of the subspace
-    const currentUserMember = await this.prismaService.subspaceMember.findFirst({
-      where: {
-        subspaceId,
-        userId: currentUserId,
-        role: "ADMIN",
-      },
-    });
+    const currentUserMember = await this.prismaService.subspaceMember.findFirst(
+      {
+        where: {
+          subspaceId,
+          userId: currentUserId,
+          role: "ADMIN",
+        },
+      }
+    );
 
     if (!currentUserMember) {
       throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
@@ -614,7 +676,10 @@ export class SubspaceService {
     };
   }
 
-  async hasSubspaceAccess(userId: string, subspaceId: string): Promise<boolean> {
+  async hasSubspaceAccess(
+    userId: string,
+    subspaceId: string
+  ): Promise<boolean> {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
       include: {
@@ -654,7 +719,12 @@ export class SubspaceService {
 
   // ==== permissions ====
 
-  async addUserPermission(subspaceId: string, targetUserId: string, permission: PermissionLevel, currentUserId: string) {
+  async addUserPermission(
+    subspaceId: string,
+    targetUserId: string,
+    permission: PermissionLevel,
+    currentUserId: string
+  ) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
       include: {
@@ -722,7 +792,11 @@ export class SubspaceService {
     return userPermission;
   }
 
-  async removeUserPermission(subspaceId: string, targetUserId: string, currentUserId: string) {
+  async removeUserPermission(
+    subspaceId: string,
+    targetUserId: string,
+    currentUserId: string
+  ) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
       include: {
@@ -778,27 +852,33 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
     }
 
-    const permissions = await this.prismaService.subspaceMemberPermission.findMany({
-      where: {
-        subspaceId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            displayName: true,
+    const permissions =
+      await this.prismaService.subspaceMemberPermission.findMany({
+        where: {
+          subspaceId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              displayName: true,
+            },
           },
         },
-      },
-    });
+      });
 
     return {
       data: permissions,
     };
   }
 
-  async addGroupPermission(subspaceId: string, groupId: string, permission: PermissionLevel, currentUserId: string) {
+  async addGroupPermission(
+    subspaceId: string,
+    groupId: string,
+    permission: PermissionLevel,
+    currentUserId: string
+  ) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
       include: {
@@ -860,7 +940,11 @@ export class SubspaceService {
     return groupPermission;
   }
 
-  async removeGroupPermission(subspaceId: string, groupId: string, currentUserId: string) {
+  async removeGroupPermission(
+    subspaceId: string,
+    groupId: string,
+    currentUserId: string
+  ) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
       include: {

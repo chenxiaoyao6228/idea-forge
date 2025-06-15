@@ -124,7 +124,7 @@ export default function SharedWithMe() {
 
   const hasDocuments = sharedDocuments.length > 0;
 
-  if (!hasDocuments && !isLoading) {
+  if (!hasDocuments && !isLoading ) {
     return null;
   }
 
@@ -142,9 +142,7 @@ export default function SharedWithMe() {
             <div className="space-y-1 p-2">
               {isLoading ? (
                 SKELETON_KEYS.map((key) => <Skeleton key={key} className="h-8 w-full" />)
-              ) : !hasDocuments ? (
-                <div className="text-sm text-muted-foreground p-2 text-center">{t("No shared documents yet")}</div>
-              ) : (
+              )  : (
                 sharedDocuments.map((document) => <ShareWithMeLink key={document.id} document={document} loadingParents={loadingParents} />)
               )}
             </div>

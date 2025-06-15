@@ -8,10 +8,10 @@ import { DragOverlay, useDraggable, useDroppable } from "@dnd-kit/core";
 interface DraggableSubspaceContainerProps {
   subspace: SubspaceEntity;
   depth?: number;
-  belowSubspace?: SubspaceEntity;
+
 }
 
-export function DraggableSubspaceContainer({ subspace, depth = 0, belowSubspace }: DraggableSubspaceContainerProps) {
+export function DraggableSubspaceContainer({ subspace, depth = 0,  }: DraggableSubspaceContainerProps) {
   const [dropPosition, setDropPosition] = useState<"top" | "bottom">("bottom");
 
   // drag

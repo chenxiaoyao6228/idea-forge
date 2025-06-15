@@ -15,12 +15,14 @@ export const StarSchema = z.object({
 export type Star = z.infer<typeof StarSchema>;
 
 // Create star
-export const createStarSchema = z.object({
-  docId: z.string().cuid().optional(),
-  subspaceId: z.string().cuid().optional(),
-}).refine(data => data.docId || data.subspaceId, {
-  message: "Either docId or subspaceId must be provided",
-});
+export const createStarSchema = z
+  .object({
+    docId: z.string().cuid().optional(),
+    subspaceId: z.string().cuid().nullable(),
+  })
+  .refine((data) => data.docId || data.subspaceId, {
+    message: "Either docId or subspaceId must be provided",
+  });
 
 export type CreateStarDto = z.infer<typeof createStarSchema>;
 
@@ -44,4 +46,3 @@ export interface StarResponse {
 }
 
 export type ListStarResponse = BasePageResult<StarResponse>;
-

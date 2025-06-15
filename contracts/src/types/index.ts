@@ -11,7 +11,9 @@ export type NavigationNode = {
   icon?: string;
   color?: string;
   children: NavigationNode[];
-  subspaceId?: string;
+  subspaceId?: string | null;
+  parentId?: string | null;
   parent?: NavigationNode | null;
   depth?: number;
+  index?: string | null;
 };

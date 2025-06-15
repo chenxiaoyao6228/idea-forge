@@ -193,6 +193,8 @@ export function ShareWithMeLink({
                 node={childDoc}
                 depth={depth + 1}
                 index={index}
+                parentId={document.id}
+                subspaceId={null}
               />
             ))
           )}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,14 @@ import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { MyDocsLink } from "./components/my-doc-link";
 import useDocumentStore from "@/stores/document";
+import DropCursor from "./components/drop-cursor";
+import { useDroppable } from "@dnd-kit/core";
 
 export default function MyDocsArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const { createMyDocsDocument } = useDocumentStore();
+  const { getMyDocsRootDocuments, fetchMyDocsChildren, createMyDocsDocument } = useDocumentStore();
 
   const handleCreateDocument = async () => {
     setIsCreating(true);
@@ -23,6 +25,19 @@ export default function MyDocsArea() {
       setIsCreating(false);
     }
   };
+
+  const { isOver: isTopDropOver, setNodeRef: setTopDropRef } = useDroppable({  
+    id: "mydocs-drop-top",  
+    data: {  
+      accept: ["document"],  
+      dropType: "top",  
+      subspaceId: null,  
+      parentId: null,  
+      index: null,  
+    },  
+  });  
+
+
 
   return (
     <SidebarGroup>
@@ -45,7 +60,12 @@ export default function MyDocsArea() {
           </div>
         </div>
         <CollapsibleContent>
-          <MyDocsLink />
+          <div className="relative">  
+            <div ref={setTopDropRef} className="h-[1px]">  
+              <DropCursor isActiveDrop={isTopDropOver} innerRef={null} position="top" />  
+            </div>  
+            <MyDocsLink />  
+          </div>  
         </CollapsibleContent>
       </Collapsible>
     </SidebarGroup>

@@ -19,11 +19,11 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "outDir": "./dist",
-    "types": ["vite/client"],
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "paths": {
       "@/*": ["./src/*"],
       "@api/*": ["../api/src/*"],
-    },
+    }, 
   },
-  "include": ["src", "src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"]
+  "include": ["src", "src/**/*.ts", "src/**/*.tsx", "src/**/*.test.tsx", "src/**/*.d.ts"]
 }

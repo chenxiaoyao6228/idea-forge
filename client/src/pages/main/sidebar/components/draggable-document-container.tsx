@@ -6,10 +6,10 @@ import DropCursor from "./drop-cursor";
 
 interface DraggableDocumentContainerProps {
   node: NavigationNode;
-  subspaceId: string;
+  subspaceId: string | null;
+  parentId: string | null;
   depth: number;
   index: number;
-  parentId?: string;
 }
 
 export function DraggableDocumentContainer({ node, subspaceId, depth, index, parentId }: DraggableDocumentContainerProps) {

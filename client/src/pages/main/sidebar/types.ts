@@ -3,19 +3,18 @@ import { SubspaceEntity } from "@/stores/subspace";
 export interface DraggableItem {
   type: "subspace" | "document";
   id: string;
-  subspaceId?: string;
+  subspaceId: string | null;
 }
 
 export interface DropTarget {
   accept: string[];
   dropType: "top" | "bottom" | "reorder";
-  subspaceId?: string;
+  subspaceId: string | null;
 }
 
 export interface DraggableSubspaceContainerProps {
   subspace: SubspaceEntity;
   depth?: number;
-  belowSubspace?: SubspaceEntity;
 }
 
 export interface SubspaceLinkProps {

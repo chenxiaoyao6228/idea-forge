@@ -65,14 +65,14 @@ interface Action {
   createDocument: (options: {
     title: string;
     parentId: string | null;
-    subspaceId?: string;
+    subspaceId: string | null;
     workspaceId?: string;
   }) => Promise<string>;
   move: (params: {
     id: string;
-    subspaceId?: string | null;
+    subspaceId: string | null;
     parentId?: string | null;
-    index?: number;
+    index?: string;
   }) => Promise<void>;
 
   // Helper methods
@@ -101,7 +101,7 @@ interface Action {
   moveToMyDocs: (
     documentId: string,
     parentId?: string | null,
-    index?: number
+    index?: string
   ) => Promise<void>;
 }
 
@@ -148,10 +148,12 @@ const useDocumentStore = create<StoreState>()(
             .map((child) => ({
               id: child.id,
               title: child.title,
+              index: child.index,
+              subspaceId: child.subspaceId || null,
+              parent: null,
               type: NavigationNodeType.Document,
               url: `/${child.id}`,
               children: [],
-              parent: null,
               isDraft: !child.publishedAt,
               isArchived: !!child.archivedAt,
               isDeleted: !!child.deletedAt,
@@ -160,6 +162,8 @@ const useDocumentStore = create<StoreState>()(
           return {
             id: doc.id,
             title: doc.title,
+            subspaceId: doc.subspaceId || null,
+            parentId: doc.parentId || null,
             type: NavigationNodeType.Document,
             url: `/${doc.id}`,
             children,
@@ -333,6 +337,7 @@ const useDocumentStore = create<StoreState>()(
               });
 
             if (subspaceId) {
+              // FIXME: partial update instead of fetching the whole tree
               useSubSpaceStore
                 .getState()
                 .fetchNavigationTree(subspaceId, { force: true });
@@ -340,8 +345,6 @@ const useDocumentStore = create<StoreState>()(
               // For mydocs, refresh the local store since we don't have navigation trees
               get().upsertMany(affectedDocuments);
             }
-
-            get().upsertMany(affectedDocuments);
           } catch (error) {
             console.error("Failed to move document:", error);
             throw error;
@@ -396,6 +399,7 @@ const useDocumentStore = create<StoreState>()(
           try {
             await useStarStore.getState().create({
               docId: documentId,
+              subspaceId: null,
               index,
             });
           } catch (error) {
@@ -426,6 +430,8 @@ const useDocumentStore = create<StoreState>()(
               if (a.index && b.index) {
                 return a.index.localeCompare(b.index);
               }
+              if (a.index && !b.index) return -1;
+              if (!a.index && b.index) return 1;
               return (
                 new Date(a.createdAt).getTime() -
                 new Date(b.createdAt).getTime()
@@ -494,7 +500,7 @@ const useDocumentStore = create<StoreState>()(
           return get().createDocument({
             title: options.title,
             parentId: options.parentId || null,
-            subspaceId: undefined,
+            subspaceId: null,
             workspaceId,
           });
         },
@@ -502,7 +508,7 @@ const useDocumentStore = create<StoreState>()(
         moveToMyDocs: async (
           documentId: string,
           parentId?: string | null,
-          index?: number
+          index?: string
         ) => {
           return get().move({
             id: documentId,

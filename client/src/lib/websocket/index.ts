@@ -32,11 +32,7 @@ enum DisconnectReason {
 
 // Custom error class for WebSocket related errors
 class WebsocketError extends Error {
-  constructor(
-    public code: string,
-    message: string,
-    public data?: any,
-  ) {
+  constructor(public code: string, message: string, public data?: any) {
     super(message);
     this.name = "WebsocketError";
   }
@@ -123,14 +119,23 @@ class WebsocketService {
     this.setStatus(WebsocketStatus.DISCONNECTED, disconnectReason);
 
     // Only attempt to reconnect for certain disconnect reasons
-    if ([DisconnectReason.TIMEOUT, DisconnectReason.NETWORK_ERROR, DisconnectReason.ERROR].includes(disconnectReason)) {
+    if (
+      [
+        DisconnectReason.TIMEOUT,
+        DisconnectReason.NETWORK_ERROR,
+        DisconnectReason.ERROR,
+      ].includes(disconnectReason)
+    ) {
       setTimeout(() => this.reconnect(), 1000);
     }
   }
 
   // Establish WebSocket connection with timeout
   async connect(): Promise<void> {
-    if (this.status === WebsocketStatus.CONNECTED || this.status === WebsocketStatus.CONNECTING) {
+    if (
+      this.status === WebsocketStatus.CONNECTED ||
+      this.status === WebsocketStatus.CONNECTING
+    ) {
       return this.connectionPromise;
     }
 
@@ -155,7 +160,9 @@ class WebsocketService {
       // Wait for connection with timeout
       const timeoutPromise = resolvablePromise();
       const timeout = setTimeout(() => {
-        timeoutPromise.reject(new WebsocketError("CONNECTION_TIMEOUT", "Connection timeout"));
+        timeoutPromise.reject(
+          new WebsocketError("CONNECTION_TIMEOUT", "Connection timeout")
+        );
       }, 10000);
 
       this.socket.on("connect", () => {
@@ -167,14 +174,21 @@ class WebsocketService {
       this.socket.on("connect_error", (error) => {
         clearTimeout(timeout);
         console.error("[websocket]: Socket.IO connection error:", error);
-        const wsError = new WebsocketError("CONNECTION_ERROR", error.message, error);
+        const wsError = new WebsocketError(
+          "CONNECTION_ERROR",
+          error.message,
+          error
+        );
         this.setStatus(WebsocketStatus.ERROR, DisconnectReason.NETWORK_ERROR);
         this.socket?.emit("error", wsError);
       });
 
       return this.connectionPromise;
     } catch (error: any) {
-      const wsError = error instanceof WebsocketError ? error : new WebsocketError("CONNECTION_FAILED", error.message, error);
+      const wsError =
+        error instanceof WebsocketError
+          ? error
+          : new WebsocketError("CONNECTION_FAILED", error.message, error);
       this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
       this.socket?.emit("error", wsError);
       throw wsError;
@@ -184,7 +198,10 @@ class WebsocketService {
   // Handle reconnection with exponential backoff
   private async reconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      const error = new WebsocketError("MAX_RECONNECT_ATTEMPTS", "Maximum reconnection attempts reached");
+      const error = new WebsocketError(
+        "MAX_RECONNECT_ATTEMPTS",
+        "Maximum reconnection attempts reached"
+      );
       this.socket?.emit("error", error);
       this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
       return;
@@ -208,7 +225,10 @@ class WebsocketService {
       this.socket.disconnect();
       this.socket = null;
     }
-    this.setStatus(WebsocketStatus.DISCONNECTED, DisconnectReason.CLIENT_DISCONNECT);
+    this.setStatus(
+      WebsocketStatus.DISCONNECTED,
+      DisconnectReason.CLIENT_DISCONNECT
+    );
   }
 
   // Setup basic Socket.IO events
@@ -221,7 +241,10 @@ class WebsocketService {
     this.socket.on("error", (error) => {
       console.error("[websocket]: Socket.IO error:", error);
       this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
-      this.socket?.emit("error", new WebsocketError("SOCKET_ERROR", error.message, error));
+      this.socket?.emit(
+        "error",
+        new WebsocketError("SOCKET_ERROR", error.message, error)
+      );
     });
 
     // Authentication events
@@ -236,6 +259,7 @@ class WebsocketService {
         const userId = message.data?.userId;
         if (userId) {
           this.joinRoom(`user:${userId}`);
+          this.joinRoom(`user:${userId}:mydocs`);
         }
       }
     });
@@ -251,9 +275,15 @@ class WebsocketService {
       console.log("[websocket]: Connected to realtime gateway:", message.data);
     });
 
-    this.socket.on(SocketEvents.GATEWAY_DISCONNECT, (message: GatewayMessage) => {
-      console.log("[websocket]: Disconnected from realtime gateway:", message.data);
-    });
+    this.socket.on(
+      SocketEvents.GATEWAY_DISCONNECT,
+      (message: GatewayMessage) => {
+        console.log(
+          "[websocket]: Disconnected from realtime gateway:",
+          message.data
+        );
+      }
+    );
   }
 
   // Setup business-specific event handlers
@@ -293,7 +323,10 @@ class WebsocketService {
             if (updatedDocument && previousTitle !== updatedDocument.title) {
               if (updatedDocument.subspaceId) {
                 // TODO: update navigation tree by document update
-                await subspaceStore.fetchNavigationTree(updatedDocument.subspaceId, { force: true });
+                await subspaceStore.fetchNavigationTree(
+                  updatedDocument.subspaceId,
+                  { force: true }
+                );
               }
             }
           } catch (err: any) {
@@ -323,7 +356,9 @@ class WebsocketService {
 
           try {
             // Force refresh the subspace's document structure
-            await subspaceStore.fetchNavigationTree(subspaceId, { force: true });
+            await subspaceStore.fetchNavigationTree(subspaceId, {
+              force: true,
+            });
           } catch (err: any) {
             // Remove from local store if fetch fails (due to permissions or non-existence)
             if (err.status === 404 || err.status === 403) {
@@ -385,44 +420,53 @@ class WebsocketService {
      */
 
     // Handle star related events
-    this.socket.on(SocketEvents.STAR_CREATE, (event: PartialExcept<Star, "id">) => {
-      if (!event.createdAt || !event.updatedAt || !event.userId) return;
+    this.socket.on(
+      SocketEvents.STAR_CREATE,
+      (event: PartialExcept<Star, "id">) => {
+        if (!event.createdAt || !event.updatedAt || !event.userId) return;
 
-      const star: StarEntity = {
-        id: event.id,
-        docId: event.docId ?? null,
-        subspaceId: event.subspaceId ?? null,
-        index: event.index ?? null,
-        createdAt: new Date(event.createdAt),
-        updatedAt: new Date(event.updatedAt),
-        userId: event.userId,
-      };
-      useStarStore.getState().addOne(star);
-      console.log("[websocket]: Star created:", star);
-    });
+        const star: StarEntity = {
+          id: event.id,
+          docId: event.docId ?? null,
+          subspaceId: event.subspaceId ?? null,
+          index: event.index ?? null,
+          createdAt: new Date(event.createdAt),
+          updatedAt: new Date(event.updatedAt),
+          userId: event.userId,
+        };
+        useStarStore.getState().addOne(star);
+        console.log("[websocket]: Star created:", star);
+      }
+    );
 
-    this.socket.on(SocketEvents.STAR_UPDATE, (event: PartialExcept<Star, "id">) => {
-      if (!event.createdAt || !event.updatedAt || !event.userId) return;
+    this.socket.on(
+      SocketEvents.STAR_UPDATE,
+      (event: PartialExcept<Star, "id">) => {
+        if (!event.createdAt || !event.updatedAt || !event.userId) return;
 
-      const changes = {
-        docId: event.docId ?? null,
-        subspaceId: event.subspaceId ?? null,
-        index: event.index ?? null,
-        createdAt: new Date(event.createdAt),
-        updatedAt: new Date(event.updatedAt),
-        userId: event.userId,
-      };
-      useStarStore.getState().updateOne({
-        id: event.id,
-        changes,
-      });
-      console.log("[websocket]: Star updated:", { id: event.id, ...changes });
-    });
+        const changes = {
+          docId: event.docId ?? null,
+          subspaceId: event.subspaceId ?? null,
+          index: event.index ?? null,
+          createdAt: new Date(event.createdAt),
+          updatedAt: new Date(event.updatedAt),
+          userId: event.userId,
+        };
+        useStarStore.getState().updateOne({
+          id: event.id,
+          changes,
+        });
+        console.log("[websocket]: Star updated:", { id: event.id, ...changes });
+      }
+    );
 
-    this.socket.on(SocketEvents.STAR_DELETE, (event: { id: string; userId: string }) => {
-      useStarStore.getState().removeOne(event.id);
-      console.log("[websocket]: Star deleted:", event);
-    });
+    this.socket.on(
+      SocketEvents.STAR_DELETE,
+      (event: { id: string; userId: string }) => {
+        useStarStore.getState().removeOne(event.id);
+        console.log("[websocket]: Star deleted:", event);
+      }
+    );
 
     // Handle document creation
     this.socket.on(SocketEvents.DOCUMENT_UPDATE, (message: GatewayMessage) => {
@@ -432,7 +476,9 @@ class WebsocketService {
       useDocumentStore.getState().updateDocument(document);
 
       if (subspaceId) {
-        useSubSpaceStore.getState().updateDocument(subspaceId, document.id, document);
+        useSubSpaceStore
+          .getState()
+          .updateDocument(subspaceId, document.id, document);
       }
     });
 
@@ -471,7 +517,9 @@ class WebsocketService {
   // Room management methods
   joinRoom(roomId: string) {
     if (!this.socket?.connected) {
-      console.warn(`[websocket]: Cannot join room ${roomId}, socket not connected`);
+      console.warn(
+        `[websocket]: Cannot join room ${roomId}, socket not connected`
+      );
       return;
     }
 
@@ -486,7 +534,9 @@ class WebsocketService {
 
   leaveRoom(roomId: string) {
     if (!this.socket?.connected) {
-      console.warn(`[websocket]: Cannot leave room ${roomId}, socket not connected`);
+      console.warn(
+        `[websocket]: Cannot leave room ${roomId}, socket not connected`
+      );
       return;
     }
 

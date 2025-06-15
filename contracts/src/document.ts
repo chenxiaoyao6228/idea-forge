@@ -1,8 +1,12 @@
 import { z } from "zod";
-import {  DocOptionalDefaultsSchema,  DocTypeSchema, DocVisibilitySchema, PermissionLevelSchema } from "./schema";
+import {
+  DocOptionalDefaultsSchema,
+  DocTypeSchema,
+  DocVisibilitySchema,
+  PermissionLevelSchema,
+} from "./schema";
 import { BasePageResult, basePagerSchema } from "./_base";
 import { PermissionLevel } from "@prisma/client";
-
 
 // FIXME: the contentBinary cause Buffer error in client
 const DocSchema = z.object({
@@ -30,7 +34,7 @@ const DocSchema = z.object({
     email: z.string(),
     displayName: z.string(),
   }),
-})
+});
 
 const commonDocumentSchema = DocSchema.pick({
   id: true,
@@ -44,32 +48,36 @@ const commonDocumentSchema = DocSchema.pick({
   position: true,
   createdById: true,
   createdBy: true,
-})
+});
 export type CommonDocument = z.infer<typeof commonDocumentSchema>;
 
-const commonDocumentResponseSchema = commonDocumentSchema.merge(z.object({
-  isLeaf: z.boolean(),
-}))
+const commonDocumentResponseSchema = commonDocumentSchema.merge(
+  z.object({
+    isLeaf: z.boolean(),
+  })
+);
 
-export type CommonDocumentResponse = z.infer<typeof commonDocumentResponseSchema>;
+export type CommonDocumentResponse = z.infer<
+  typeof commonDocumentResponseSchema
+>;
 
+const commonSharedDocumentSchema = commonDocumentSchema.extend({
+  owner: z.object({
+    displayName: z.string().nullable(),
+    email: z.string(),
+  }),
+  permission: PermissionLevelSchema.optional(),
+  coverImage: z
+    .object({
+      scrollY: z.number(),
+      url: z.string(),
+    })
+    .nullable(),
+});
 
-const commonSharedDocumentSchema = commonDocumentSchema
-  .extend({
-    owner: z.object({
-      displayName: z.string().nullable(),
-      email: z.string(),
-    }),
-    permission:PermissionLevelSchema.optional(),
-    coverImage: z
-      .object({
-        scrollY: z.number(),
-        url: z.string(),
-      })
-      .nullable(),
-  });
-
-export type CommonSharedDocumentResponse = z.infer<typeof commonSharedDocumentSchema>;
+export type CommonSharedDocumentResponse = z.infer<
+  typeof commonSharedDocumentSchema
+>;
 
 // create doc
 export const createDocumentSchema = DocSchema.pick({
@@ -86,19 +94,20 @@ export type CreateDocumentDto = z.infer<typeof createDocumentSchema>;
 export interface CreateDocumentResponse extends CommonDocumentResponse {}
 
 // list doc
-export const listDocumentSchema = basePagerSchema.merge(DocOptionalDefaultsSchema.pick({
-  parentId: true, 
-  workspaceId: true,
-  subspaceId: true,
-  visibility: true,
-  archivedAt: true,
-  // isStarred: true,
-  type: true,
- })); 
+export const listDocumentSchema = basePagerSchema.merge(
+  DocOptionalDefaultsSchema.pick({
+    parentId: true,
+    workspaceId: true,
+    subspaceId: true,
+    visibility: true,
+    archivedAt: true,
+    // isStarred: true,
+    type: true,
+  })
+);
 export type ListDocumentDto = z.infer<typeof listDocumentSchema>;
 
-
-export type ListDocumentResponse = BasePageResult<CommonDocumentResponse>
+export type ListDocumentResponse = BasePageResult<CommonDocumentResponse>;
 
 // update doc
 export const updateDocumentSchema = z.object({
@@ -110,7 +119,6 @@ export const updateDocumentSchema = z.object({
 });
 
 export type UpdateDocumentDto = z.infer<typeof updateDocumentSchema>;
-
 
 // search doc
 export const searchDocumentSchema = z.object({
@@ -163,26 +171,25 @@ export interface SearchDocumentResponse {
 export const moveDocumentsSchema = z.object({
   id: z.string().cuid(),
   parentId: z.string().cuid().optional().nullish(),
-  subspaceId: z.string().cuid().optional().nullish(), // exist when moving to another subspace  
-  index: z.number().gte(0).optional()
+  subspaceId: z.string().cuid().optional().nullish(), // exist when moving to another subspace
+  index: z.string().optional().nullish(),
 });
 
 export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;
-
 
 // share doc
 export const docShareUserSchema = z.object({
   id: z.number(),
   email: z.string(),
   displayName: z.string().nullable(),
-  permission:PermissionLevelSchema,
+  permission: PermissionLevelSchema,
 });
 
 export type DocShareUser = z.infer<typeof docShareUserSchema>;
 
 export const shareDocumentSchema = z.object({
   email: z.string().email(),
-  permission:PermissionLevelSchema,
+  permission: PermissionLevelSchema,
   docId: z.string().cuid(),
   published: z.boolean().optional(),
   urlId: z.string().optional(),
@@ -194,10 +201,12 @@ export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
 // update doc
 export const updateSharePermissionSchema = z.object({
   userId: z.string(),
-  permission:PermissionLevelSchema,
+  permission: PermissionLevelSchema,
 });
 
-export type UpdateSharePermissionDto = z.infer<typeof updateSharePermissionSchema>;
+export type UpdateSharePermissionDto = z.infer<
+  typeof updateSharePermissionSchema
+>;
 
 export const removeShareSchema = z.object({
   targetUserId: z.string(),
@@ -213,23 +222,20 @@ export const updateCoverSchema = z.object({
 
 export type UpdateCoverDto = z.infer<typeof updateCoverSchema>;
 
-
-
 //  ============== response ==============
 
 export interface UpdateDocumentResponse extends CommonDocumentResponse {}
 
-export const detailDocumentSchema = commonDocumentSchema
-  .extend({
-    content: z.string(),
-    coverImage: z
-      .object({
-        scrollY: z.number(),
-        url: z.string(),
-      })
-      .nullable(),
-    permission:PermissionLevelSchema,
-  });
+export const detailDocumentSchema = commonDocumentSchema.extend({
+  content: z.string(),
+  coverImage: z
+    .object({
+      scrollY: z.number(),
+      url: z.string(),
+    })
+    .nullable(),
+  permission: PermissionLevelSchema,
+});
 
 export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;
 
@@ -237,7 +243,9 @@ export const detailSharedDocumentSchema = commonSharedDocumentSchema.extend({
   content: z.string(),
 });
 
-export type DetailSharedDocumentResponse = z.infer<typeof detailSharedDocumentSchema>;
+export type DetailSharedDocumentResponse = z.infer<
+  typeof detailSharedDocumentSchema
+>;
 
 export const docSharesSchema = z.array(docShareUserSchema);
 export type DocSharesResponse = z.infer<typeof docSharesSchema>;
