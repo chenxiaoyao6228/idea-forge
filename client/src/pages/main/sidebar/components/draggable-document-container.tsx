@@ -25,10 +25,10 @@ export function DraggableDocumentContainer({ node, subspaceId, depth, index, par
     id: node.id,
     data: {
       id: node.id,
+      title: node.title, // for visual display on development
       parentId,
       type: "document",
       subspaceId: subspaceId,
-      index,
     },
   });
 
@@ -39,12 +39,12 @@ export function DraggableDocumentContainer({ node, subspaceId, depth, index, par
     id: `document-reorder-${node.id}`,
     data: {
       documentId: node.id,
+      title: node.title, // for visual display on development
       subspaceId,
       parentId,
       accept: ["document"],
       dropType: "reorder",
       dropPosition,
-      index,
     },
   });
 
@@ -53,11 +53,11 @@ export function DraggableDocumentContainer({ node, subspaceId, depth, index, par
     id: `document-top-${node.id}`,
     data: {
       documentId: node.id,
+      title: node.title, // for visual display on development
       subspaceId,
       parentId,
       accept: ["document"],
       dropType: "top",
-      index: 0,
     },
     disabled: index > 0,
   });
@@ -67,6 +67,7 @@ export function DraggableDocumentContainer({ node, subspaceId, depth, index, par
     id: `document-reparent-${node.id}`,
     data: {
       documentId: node.id,
+      title: node.title, // for visual display on development
       subspaceId,
       parentId: node.id,
       accept: ["document"],

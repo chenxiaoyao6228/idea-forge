@@ -16,6 +16,7 @@ export function presentDocument(document: any, options?: { isPublic?: boolean })
       parentId: document.parentId,
       workspaceId: document.workspaceId,
       subspaceId: document.subspaceId,
+      index: document.index,
       // Include author info if not public
       // author: options?.isPublic
       //   ? undefined

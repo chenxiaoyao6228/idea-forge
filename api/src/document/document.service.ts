@@ -1,28 +1,15 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-  ForbiddenException,
-} from "@nestjs/common";
-import {
-  CreateDocumentDto,
-  DocumentPagerDto,
-  UpdateDocumentDto,
-  ShareDocumentDto,
-} from "./document.dto";
+import { Injectable, Inject, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto, ShareDocumentDto } from "./document.dto";
 import { NavigationNode, NavigationNodeType } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import {
-  type ExtendedPrismaClient,
-  PRISMA_CLIENT,
-} from "@/_shared/database/prisma/prisma.extension";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { presentDocument } from "./document.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { DocShareService } from "../doc-share/doc-share.service";
 import { PermissionService } from "@/permission/permission.service";
-import fractionalIndex from "fractional-index";
+import { generateFractionalIndex, handleIndexCollision } from "@/_shared/utils/fractional-index";
 
 @Injectable()
 export class DocumentService {
@@ -30,7 +17,7 @@ export class DocumentService {
     @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
     private readonly eventPublisher: EventPublisherService,
     private readonly docShareService: DocShareService,
-    private readonly permissionService: PermissionService
+    private readonly permissionService: PermissionService,
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
@@ -47,16 +34,17 @@ export class DocumentService {
       },
     });
 
-    // Generate new index
-    const newIndex = fractionalIndex(null, firstDocument?.index ?? null);
-
-    // Handle possible index collision
-    const finalIndex = await this.removeDocumentIndexCollision(
-      dto.workspaceId,
-      dto.subspaceId,
-      dto.parentId,
-      newIndex
-    );
+    // Generate new index and handle collisions using shared utilities
+    const newIndex = generateFractionalIndex(null, firstDocument?.index ?? null);
+    const documents = await this.prisma.doc.findMany({
+      where: {
+        workspaceId: dto.workspaceId,
+        subspaceId: dto.subspaceId,
+        parentId: dto.parentId,
+      },
+      select: { index: true },
+    });
+    const finalIndex = handleIndexCollision(documents, newIndex);
 
     const doc = await this.prisma.doc.create({
       data: {
@@ -87,11 +75,7 @@ export class DocumentService {
     }
 
     if (doc.subspaceId) {
-      await this.permissionService.propagateDocumentPermissionsToExistingMembers(
-        doc.id,
-        doc.subspaceId,
-        doc.workspaceId
-      );
+      await this.permissionService.propagateDocumentPermissionsToExistingMembers(doc.id, doc.subspaceId, doc.workspaceId);
     }
 
     if (doc.publishedAt && doc.subspaceId) {
@@ -127,46 +111,8 @@ export class DocumentService {
     return presentDocument(doc, { isPublic: true });
   }
 
-  private async removeDocumentIndexCollision(
-    workspaceId: string,
-    subspaceId: string | null,
-    parentId: string | null,
-    index: string
-  ): Promise<string> {
-    const existingDocument = await this.prisma.doc.findFirst({
-      where: {
-        workspaceId,
-        subspaceId,
-        parentId,
-        index,
-      },
-    });
-
-    if (!existingDocument) {
-      return index;
-    }
-
-    const nextDocument = await this.prisma.doc.findFirst({
-      where: {
-        workspaceId,
-        subspaceId,
-        parentId,
-        index: {
-          gt: index,
-        },
-      },
-      orderBy: {
-        index: "asc",
-      },
-    });
-
-    const nextIndex = nextDocument?.index || null;
-    return fractionalIndex(index, nextIndex);
-  }
-
   async list(userId: string, dto: DocumentPagerDto) {
-    const { archivedAt, subspaceId, parentId, page, limit, sortBy, sortOrder } =
-      dto;
+    const { archivedAt, subspaceId, parentId, page, limit, sortBy, sortOrder } = dto;
 
     const where: any = {
       // TODO: 这个查的时候是不是要加permission的限制条件?
@@ -258,12 +204,7 @@ export class DocumentService {
     // Generate permissions for each doc
     const permissions: Record<string, Record<string, boolean>> = {};
     for (const doc of items) {
-      const abilities =
-        await this.permissionService.getResourcePermissionAbilities(
-          "DOCUMENT",
-          doc.id,
-          userId
-        );
+      const abilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", doc.id, userId);
       permissions[doc.id] = abilities as Record<string, boolean>;
     }
 
@@ -284,17 +225,10 @@ export class DocumentService {
     });
 
     const shouldUpdateStructure =
-      updatedDoc.subspaceId &&
-      updatedDoc.publishedAt &&
-      !updatedDoc.archivedAt &&
-      (dto.title !== undefined || dto.icon !== undefined);
+      updatedDoc.subspaceId && updatedDoc.publishedAt && !updatedDoc.archivedAt && (dto.title !== undefined || dto.icon !== undefined);
 
     if (shouldUpdateStructure) {
-      await this.updateSubspaceNavigationTree(
-        updatedDoc.subspaceId!,
-        "update",
-        updatedDoc
-      );
+      await this.updateSubspaceNavigationTree(updatedDoc.subspaceId!, "update", updatedDoc);
     }
 
     await this.eventPublisher.publishWebsocketEvent({
@@ -417,19 +351,13 @@ export class DocumentService {
       document: serializedDocument,
       workspace: document.workspace,
       // Include shared tree if document is shared
-      sharedTree: document.docShare?.some(
-        (share) => share.includeChildDocuments
-      )
-        ? await this.getSharedTree(document.id)
-        : null,
+      sharedTree: document.docShare?.some((share) => share.includeChildDocuments) ? await this.getSharedTree(document.id) : null,
     };
 
     return {
       data,
       // Placeholder for permissions
-      permissions: isPublic
-        ? undefined
-        : this.presentPoliciesPlaceholder(userId, document),
+      permissions: isPublic ? undefined : this.presentPoliciesPlaceholder(userId, document),
     };
   }
 
@@ -480,11 +408,7 @@ export class DocumentService {
     };
   }
 
-  private async updateSubspaceNavigationTree(
-    subspaceId: string,
-    operation: "add" | "update" | "remove",
-    doc: any
-  ) {
+  private async updateSubspaceNavigationTree(subspaceId: string, operation: "add" | "update" | "remove", doc: any) {
     const subspace = await this.prisma.subspace.findUnique({
       where: { id: subspaceId },
     });
@@ -515,10 +439,7 @@ export class DocumentService {
     });
   }
 
-  private addDocumentToTree(
-    tree: NavigationNode[],
-    doc: any
-  ): NavigationNode[] {
+  private addDocumentToTree(tree: NavigationNode[], doc: any): NavigationNode[] {
     try {
       const docNode = this.docToNavigationNode(doc);
 
@@ -552,10 +473,7 @@ export class DocumentService {
     }
   }
 
-  private updateDocumentInTree(
-    tree: NavigationNode[],
-    doc: any
-  ): NavigationNode[] {
+  private updateDocumentInTree(tree: NavigationNode[], doc: any): NavigationNode[] {
     const updatedNode = this.docToNavigationNode(doc);
 
     return tree.map((node) => {
@@ -576,10 +494,7 @@ export class DocumentService {
     });
   }
 
-  private removeDocumentFromTree(
-    tree: NavigationNode[],
-    docId: string
-  ): NavigationNode[] {
+  private removeDocumentFromTree(tree: NavigationNode[], docId: string): NavigationNode[] {
     return tree
       .filter((node) => node.id !== docId)
       .map((node) => ({
@@ -646,10 +561,7 @@ export class DocumentService {
     };
   }
 
-  private async copyUnifiedPermissionsFromParent(
-    documentId: string,
-    parentDocumentId: string
-  ) {
+  private async copyUnifiedPermissionsFromParent(documentId: string, parentDocumentId: string) {
     const parentPermissions = await this.prisma.unifiedPermission.findMany({
       where: {
         resourceType: "DOCUMENT",

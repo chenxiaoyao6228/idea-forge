@@ -1,20 +1,12 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
-import {
-  DocTypeSchema,
-  DocVisibilitySchema,
-  NavigationNode,
-  NavigationNodeType,
-} from "contracts";
+import { DocTypeSchema, DocVisibilitySchema, NavigationNode, NavigationNodeType } from "contracts";
 import { documentApi } from "@/apis/document";
 
 import useSubSpaceStore from "./subspace";
 import useStarStore from "./star";
-import createEntitySlice, {
-  EntityState,
-  EntityActions,
-} from "./utils/entity-slice";
+import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import useWorkspaceStore from "./workspace";
 import usePermissionStore from "./permission";
 
@@ -22,6 +14,7 @@ interface FetchOptions {
   force?: boolean;
   prefetch?: boolean;
   shareId?: string;
+  silent?: boolean;
 }
 
 interface FetchDetailResult {
@@ -54,14 +47,8 @@ interface State {
 
 interface Action {
   // API actions
-  fetchDetail: (
-    id: string,
-    options?: FetchOptions
-  ) => Promise<FetchDetailResult>;
-  fetchChildren: (
-    parentId: string | null,
-    options?: { force?: boolean }
-  ) => Promise<void>;
+  fetchDetail: (id: string, options?: FetchOptions) => Promise<FetchDetailResult>;
+  fetchChildren: (parentId: string | null, options?: { force?: boolean }) => Promise<void>;
   createDocument: (options: {
     title: string;
     parentId: string | null;
@@ -70,7 +57,7 @@ interface Action {
   }) => Promise<string>;
   move: (params: {
     id: string;
-    subspaceId: string | null;
+    subspaceId?: string | null;
     parentId?: string | null;
     index?: string;
   }) => Promise<void>;
@@ -84,10 +71,7 @@ interface Action {
   updateDocument: (document: DocumentEntity) => void;
   setActiveDocument: (id?: string) => void;
   needsUpdate: (id: string, updatedAt: Date) => boolean;
-  handleDocumentUpdate: (
-    documentId: string,
-    updatedAt?: string
-  ) => Promise<void>;
+  handleDocumentUpdate: (documentId: string, updatedAt?: string) => Promise<void>;
   handleDocumentRemove: (documentId: string) => void;
 
   // my-docs
@@ -98,11 +82,7 @@ interface Action {
     title: string;
     parentId?: string | null;
   }) => Promise<string>;
-  moveToMyDocs: (
-    documentId: string,
-    parentId?: string | null,
-    index?: string
-  ) => Promise<void>;
+  moveToMyDocs: (documentId: string, parentId?: string | null, index?: string) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -116,30 +96,17 @@ const defaultState: State = {
 const documentEntitySlice = createEntitySlice<DocumentEntity>();
 export const documentSelectors = documentEntitySlice.selectors;
 
-type StoreState = State &
-  Action &
-  EntityState<DocumentEntity> &
-  EntityActions<DocumentEntity>;
+type StoreState = State & Action & EntityState<DocumentEntity> & EntityActions<DocumentEntity>;
 const useDocumentStore = create<StoreState>()(
   subscribeWithSelector(
     devtools(
       createComputed((state: StoreState) => ({
-        archivedDocuments: documentSelectors
-          .selectAll(state)
-          .filter((doc) => state.isArchived(doc)),
-        deletedDocuments: documentSelectors
-          .selectAll(state)
-          .filter((doc) => state.isDeleted(doc)),
-        draftDocuments: documentSelectors
-          .selectAll(state)
-          .filter((doc) => state.isDraft(doc)),
-        activeDocument: state.activeDocumentId
-          ? state.entities[state.activeDocumentId]
-          : undefined,
+        archivedDocuments: documentSelectors.selectAll(state).filter((doc) => state.isArchived(doc)),
+        deletedDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDeleted(doc)),
+        draftDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDraft(doc)),
+        activeDocument: state.activeDocumentId ? state.entities[state.activeDocumentId] : undefined,
         // TODO: 这里靠谱吗? document detail node和navigation  node 的结构不一样, 有可能detail没有加载, 不会生成对应的navigation node
-        getDocumentAsNavigationNode: (
-          documentId: string
-        ): NavigationNode | undefined => {
+        getDocumentAsNavigationNode: (documentId: string): NavigationNode | undefined => {
           const doc = state.entities[documentId];
           if (!doc) return undefined;
 
@@ -164,6 +131,7 @@ const useDocumentStore = create<StoreState>()(
             title: doc.title,
             subspaceId: doc.subspaceId || null,
             parentId: doc.parentId || null,
+            index: doc.index,
             type: NavigationNodeType.Document,
             url: `/${doc.id}`,
             children,
@@ -209,16 +177,13 @@ const useDocumentStore = create<StoreState>()(
         fetchChildren: async (parentId: string | null, options = {}) => {
           if (!options.force) {
             const existingDocs = documentSelectors.selectAll(get());
-            const hasChildren = existingDocs.some(
-              (doc) => doc.parentId === parentId
-            );
+            const hasChildren = existingDocs.some((doc) => doc.parentId === parentId);
             if (hasChildren) return;
           }
 
           set({ isFetching: true });
           try {
-            const workspaceId =
-              useWorkspaceStore.getState().currentWorkspace?.id;
+            const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
             if (!workspaceId) throw new Error("No active workspace");
 
             const response = await documentApi.list({
@@ -245,9 +210,7 @@ const useDocumentStore = create<StoreState>()(
             }
 
             if (response.permissions) {
-              usePermissionStore
-                .getState()
-                .setPermissions(response.permissions);
+              usePermissionStore.getState().setPermissions(response.permissions);
             }
           } catch (error) {
             console.error("Failed to fetch children:", error);
@@ -263,9 +226,7 @@ const useDocumentStore = create<StoreState>()(
           }
 
           try {
-            const { data, permissions } = (await documentApi.getDocument(
-              id
-            )) as FetchDetailResult;
+            const { data, permissions } = (await documentApi.getDocument(id)) as FetchDetailResult;
 
             if (!data.document) {
               throw new Error("Document not available");
@@ -273,11 +234,13 @@ const useDocumentStore = create<StoreState>()(
 
             get().upsertOne(data.document);
             const document = data.document;
-            get().setActiveDocument(document.id);
-            if (document.subspaceId) {
-              useSubSpaceStore
-                .getState()
-                .setActiveSubspace(document.subspaceId);
+
+            // Only set active states if not in silent mode
+            if (!options.silent) {
+              get().setActiveDocument(document.id);
+              if (document.subspaceId) {
+                useSubSpaceStore.getState().setActiveSubspace(document.subspaceId);
+              }
             }
 
             return {
@@ -295,16 +258,13 @@ const useDocumentStore = create<StoreState>()(
         createDocument: async ({ title, parentId, subspaceId }) => {
           set({ isSaving: true });
           try {
-            const workspaceId =
-              useWorkspaceStore.getState().currentWorkspace?.id;
+            const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
             if (!workspaceId) throw new Error("No active workspace");
 
             const response = (await documentApi.create({
               workspaceId,
               subspaceId: subspaceId || null,
-              visibility: subspaceId
-                ? DocVisibilitySchema.Enum.WORKSPACE
-                : DocVisibilitySchema.Enum.PRIVATE,
+              visibility: subspaceId ? DocVisibilitySchema.Enum.WORKSPACE : DocVisibilitySchema.Enum.PRIVATE,
               parentId: parentId || null,
               type: DocTypeSchema.Enum.NOTE,
               title,
@@ -328,23 +288,12 @@ const useDocumentStore = create<StoreState>()(
         move: async ({ id, subspaceId, parentId, index }) => {
           set({ isSaving: true });
           try {
-            const { documents: affectedDocuments, permissions } =
-              await documentApi.moveDocument({
-                id,
-                subspaceId,
-                parentId,
-                index,
-              });
-
-            if (subspaceId) {
-              // FIXME: partial update instead of fetching the whole tree
-              useSubSpaceStore
-                .getState()
-                .fetchNavigationTree(subspaceId, { force: true });
-            } else {
-              // For mydocs, refresh the local store since we don't have navigation trees
-              get().upsertMany(affectedDocuments);
-            }
+            const { permissions } = await documentApi.moveDocument({
+              id,
+              subspaceId,
+              parentId,
+              index,
+            });
           } catch (error) {
             console.error("Failed to move document:", error);
             throw error;
@@ -353,10 +302,7 @@ const useDocumentStore = create<StoreState>()(
           }
         },
 
-        handleDocumentUpdate: async (
-          documentId: string,
-          updatedAt?: string
-        ) => {
+        handleDocumentUpdate: async (documentId: string, updatedAt?: string) => {
           const existing = get().entities[documentId];
 
           if (existing && updatedAt && existing.updatedAt === updatedAt) {
@@ -364,7 +310,49 @@ const useDocumentStore = create<StoreState>()(
           }
 
           try {
-            await get().fetchDetail(documentId, { force: true });
+            // Use silent mode to avoid setting active states during batch updates
+            await get().fetchDetail(documentId, { force: true, silent: true });
+
+            const updatedDocument = get().entities[documentId];
+
+            // Handle my-docs reordering - check if document moved in/out of my-docs
+            if (updatedDocument && existing) {
+              const wasInMyDocs = !existing.subspaceId;
+              const isInMyDocs = !updatedDocument.subspaceId;
+
+              // If document structure changed (moved between my-docs and subspace)
+              if (wasInMyDocs !== isInMyDocs) {
+                // Trigger my-docs refresh if needed
+                if (wasInMyDocs || isInMyDocs) {
+                  // Could emit a custom event or call a refresh method
+                  console.log(`Document ${documentId} moved between my-docs and subspace`);
+                }
+              } else {
+                // log all my docs
+                console.log(
+                  "my docs",
+                  get()
+                    .getMyDocsRootDocuments()
+                    .map((doc) => ({
+                      title: doc.title,
+                      index: doc.index,
+                    })),
+                );
+                // my doc order changed
+                console.log(`Document ${documentId} order changed in my-docs`);
+                get().upsertOne(updatedDocument);
+              }
+
+              // Handle subspace navigation tree updates
+              if (
+                updatedDocument.subspaceId &&
+                (existing.title !== updatedDocument.title || existing.parentId !== updatedDocument.parentId || existing.index !== updatedDocument.index)
+              ) {
+                await useSubSpaceStore.getState().fetchNavigationTree(updatedDocument.subspaceId, {
+                  force: true,
+                });
+              }
+            }
           } catch (error: any) {
             console.error(`Failed to update document ${documentId}:`, error);
             if (error.status === 404 || error.status === 403) {
@@ -376,9 +364,7 @@ const useDocumentStore = create<StoreState>()(
         handleDocumentRemove: (documentId: string) => {
           const document = get().entities[documentId];
           if (document?.subspaceId) {
-            useSubSpaceStore
-              .getState()
-              .removeDocument(document.subspaceId, documentId);
+            useSubSpaceStore.getState().removeDocument(document.subspaceId, documentId);
           }
           get().removeOne(documentId);
         },
@@ -423,7 +409,7 @@ const useDocumentStore = create<StoreState>()(
         // my-docs
         getMyDocsRootDocuments: (): NavigationNode[] => {
           const allDocs = documentSelectors.selectAll(get());
-          return allDocs
+          const orderedDocs = allDocs
             .filter((doc) => !doc.subspaceId && !doc.parentId)
             .sort((a, b) => {
               // Sort by fractional index, fallback to creation date
@@ -432,13 +418,20 @@ const useDocumentStore = create<StoreState>()(
               }
               if (a.index && !b.index) return -1;
               if (!a.index && b.index) return 1;
-              return (
-                new Date(a.createdAt).getTime() -
-                new Date(b.createdAt).getTime()
-              );
+              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
             })
             .map((doc) => get().getDocumentAsNavigationNode(doc.id))
             .filter((node): node is NavigationNode => node !== undefined);
+
+          console.log(
+            "my orderedDocs",
+            orderedDocs.map((doc) => ({
+              title: doc.title,
+              index: doc.index,
+            })),
+          );
+
+          return orderedDocs;
         },
 
         getPathToDocumentInMyDocs: (documentId: string): NavigationNode[] => {
@@ -447,10 +440,7 @@ const useDocumentStore = create<StoreState>()(
 
           let path: NavigationNode[] = [];
 
-          const findPath = (
-            targetId: string,
-            currentPath: NavigationNode[] = []
-          ): boolean => {
+          const findPath = (targetId: string, currentPath: NavigationNode[] = []): boolean => {
             const doc = myDocs.find((d) => d.id === targetId);
             if (!doc) return false;
 
@@ -505,11 +495,7 @@ const useDocumentStore = create<StoreState>()(
           });
         },
 
-        moveToMyDocs: async (
-          documentId: string,
-          parentId?: string | null,
-          index?: string
-        ) => {
+        moveToMyDocs: async (documentId: string, parentId?: string | null, index?: string) => {
           return get().move({
             id: documentId,
             subspaceId: null,
@@ -520,9 +506,9 @@ const useDocumentStore = create<StoreState>()(
       })),
       {
         name: "documentStore",
-      }
-    )
-  )
+      },
+    ),
+  ),
 );
 
 export default useDocumentStore;

@@ -40,6 +40,12 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
     }).compile();
 
     service = module.get<MoveDocumentService>(MoveDocumentService);
+
+    mockPermissionService.getResourcePermissionAbilities.mockResolvedValue({
+      read: true,
+      write: true,
+    });
+
     jest.clearAllMocks();
   });
 
@@ -54,20 +60,11 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         index: "a",
       };
 
-      await expect(service.moveDocs("user1", dto as any)).rejects.toThrow(
-        ApiException
-      );
+      await expect(service.moveDocs("user1", dto as any)).rejects.toThrow(ApiException);
     });
   });
 
   describe("My-Docs Operations", () => {
-    beforeEach(() => {
-      mockPermissionService.getResourcePermissionAbilities.mockResolvedValue({
-        read: true,
-        write: true,
-      });
-    });
-
     it("should move document within my-docs with fractional index", async () => {
       const mockDoc = {
         id: "doc1",
@@ -123,9 +120,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
       };
       await service.moveDocs("user1", dto as any);
 
-      expect(
-        mockPermissionInheritance.updatePermissionsOnMove
-      ).toHaveBeenCalledWith("child1", "parent1", null);
+      expect(mockPermissionInheritance.updatePermissionsOnMove).toHaveBeenCalledWith("child1", "parent1", null);
     });
   });
 
@@ -153,12 +148,8 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
       });
 
       // Mock updateChildDocumentsSubspace to return empty array
-      jest
-        .spyOn(service as any, "updateChildDocumentsSubspace")
-        .mockResolvedValue([]);
-      jest
-        .spyOn(service as any, "updateNavigationTreeStructure")
-        .mockResolvedValue(undefined);
+      jest.spyOn(service as any, "updateChildDocumentsSubspace").mockResolvedValue([]);
+      jest.spyOn(service as any, "updateNavigationTreeStructure").mockResolvedValue(undefined);
 
       const dto = {
         id: "doc2",
@@ -174,7 +165,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
           data: expect.objectContaining({
             myDocsChanged: true,
           }),
-        })
+        }),
       );
     });
 
@@ -237,14 +228,8 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
       });
 
       // Mock the recursive child update
-      jest
-        .spyOn(service as any, "updateChildDocumentsSubspace")
-        .mockResolvedValue(
-          mockChildren.map((child) => ({ ...child, subspaceId: "sub1" }))
-        );
-      jest
-        .spyOn(service as any, "updateNavigationTreeStructure")
-        .mockResolvedValue(undefined);
+      jest.spyOn(service as any, "updateChildDocumentsSubspace").mockResolvedValue(mockChildren.map((child) => ({ ...child, subspaceId: "sub1" })));
+      jest.spyOn(service as any, "updateNavigationTreeStructure").mockResolvedValue(undefined);
 
       const dto = {
         id: "parent1",
@@ -276,9 +261,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         read: true,
       });
 
-      const updateNavigationTreeSpy = jest
-        .spyOn(service as any, "updateNavigationTreeStructure")
-        .mockResolvedValue(undefined);
+      const updateNavigationTreeSpy = jest.spyOn(service as any, "updateNavigationTreeStructure").mockResolvedValue(undefined);
 
       const dto = {
         id: "doc4",
@@ -288,12 +271,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
       };
       await service.moveDocs("user1", dto as any);
 
-      expect(updateNavigationTreeSpy).toHaveBeenCalledWith(
-        mockDoc,
-        expect.objectContaining({ parentId: "newParent" }),
-        undefined,
-        false
-      );
+      expect(updateNavigationTreeSpy).toHaveBeenCalledWith(mockDoc, expect.objectContaining({ parentId: "newParent" }), undefined, false);
     });
 
     it("should skip navigation tree updates for my-docs", async () => {
@@ -313,9 +291,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         read: true,
       });
 
-      const updateNavigationTreeSpy = jest
-        .spyOn(service as any, "updateNavigationTreeStructure")
-        .mockResolvedValue(undefined);
+      const updateNavigationTreeSpy = jest.spyOn(service as any, "updateNavigationTreeStructure").mockResolvedValue(undefined);
 
       const dto = { id: "doc5", subspaceId: null, parentId: null, index: "d" };
       await service.moveDocs("user1", dto as any);
@@ -351,7 +327,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
             myDocsChanged: true,
             subspaceIds: [],
           }),
-        })
+        }),
       );
     });
 
@@ -377,12 +353,8 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         read: true,
       });
 
-      jest
-        .spyOn(service as any, "updateChildDocumentsSubspace")
-        .mockResolvedValue([]);
-      jest
-        .spyOn(service as any, "updateNavigationTreeStructure")
-        .mockResolvedValue(undefined);
+      jest.spyOn(service as any, "updateChildDocumentsSubspace").mockResolvedValue([]);
+      jest.spyOn(service as any, "updateNavigationTreeStructure").mockResolvedValue(undefined);
 
       const dto = {
         id: "doc7",
@@ -398,7 +370,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
             myDocsChanged: false,
             subspaceIds: [{ id: "sub1" }, { id: "sub2" }],
           }),
-        })
+        }),
       );
     });
   });
@@ -433,9 +405,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
           delete: false,
         },
       });
-      expect(
-        mockPermissionService.getResourcePermissionAbilities
-      ).toHaveBeenCalledWith("DOCUMENT", "doc8", "user1");
+      expect(mockPermissionService.getResourcePermissionAbilities).toHaveBeenCalledWith("DOCUMENT", "doc8", "user1");
     });
 
     it("should call permission inheritance service for moves", async () => {
@@ -464,9 +434,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
       };
       await service.moveDocs("user1", dto as any);
 
-      expect(
-        mockPermissionInheritance.updatePermissionsOnMove
-      ).toHaveBeenCalledWith("doc9", "newParent", null);
+      expect(mockPermissionInheritance.updatePermissionsOnMove).toHaveBeenCalledWith("doc9", "newParent", null);
     });
 
     it("should handle permissions for multiple affected documents", async () => {
@@ -499,14 +467,8 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         .mockResolvedValueOnce({ read: true, write: false })
         .mockResolvedValueOnce({ read: false, write: false });
 
-      jest
-        .spyOn(service as any, "updateChildDocumentsSubspace")
-        .mockResolvedValue(
-          mockChildren.map((child) => ({ ...child, subspaceId: "sub1" }))
-        );
-      jest
-        .spyOn(service as any, "updateNavigationTreeStructure")
-        .mockResolvedValue(undefined);
+      jest.spyOn(service as any, "updateChildDocumentsSubspace").mockResolvedValue(mockChildren.map((child) => ({ ...child, subspaceId: "sub1" })));
+      jest.spyOn(service as any, "updateNavigationTreeStructure").mockResolvedValue(undefined);
 
       const dto = {
         id: "parent2",
@@ -521,9 +483,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         child3: { read: true, write: false },
         child4: { read: false, write: false },
       });
-      expect(
-        mockPermissionService.getResourcePermissionAbilities
-      ).toHaveBeenCalledTimes(3);
+      expect(mockPermissionService.getResourcePermissionAbilities).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -546,12 +506,8 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         read: true,
       });
 
-      jest
-        .spyOn(service as any, "updateChildDocumentsSubspace")
-        .mockResolvedValue([]);
-      jest
-        .spyOn(service as any, "updateNavigationTreeStructure")
-        .mockResolvedValue(undefined);
+      jest.spyOn(service as any, "updateChildDocumentsSubspace").mockResolvedValue([]);
+      jest.spyOn(service as any, "updateNavigationTreeStructure").mockResolvedValue(undefined);
 
       const dto = {
         id: "doc10",
@@ -574,15 +530,18 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
       };
 
       mockPrisma.doc.findUnique.mockResolvedValue(mockDoc);
+      // 添加这行来模拟 findMany 查询
+      mockPrisma.doc.findMany.mockResolvedValue([]);
       mockPrisma.doc.update.mockResolvedValue({
         ...mockDoc,
         parentId: "parent3",
+        index: "generated-index", // 添加生成的索引
       });
       mockPermissionService.getResourcePermissionAbilities.mockResolvedValue({
         read: true,
       });
 
-      const dto = { id: "doc11", subspaceId: null, parentId: "parent3" }; // No index provided
+      const dto = { id: "doc11", subspaceId: null, parentId: "parent3" };
       const result = await service.moveDocs("user1", dto as any);
 
       expect(mockPrisma.doc.update).toHaveBeenCalledWith({
@@ -590,6 +549,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         data: {
           subspaceId: null,
           parentId: "parent3",
+          index: expect.any(String), // 期望有生成的索引
           updatedAt: expect.any(Date),
         },
         include: { subspace: true },
@@ -613,12 +573,8 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         read: true,
       });
 
-      const updateNavigationTreeSpy = jest
-        .spyOn(service as any, "updateNavigationTreeStructure")
-        .mockResolvedValue(undefined);
-      const updateChildDocumentsSpy = jest
-        .spyOn(service as any, "updateChildDocumentsSubspace")
-        .mockResolvedValue([]);
+      const updateNavigationTreeSpy = jest.spyOn(service as any, "updateNavigationTreeStructure").mockResolvedValue(undefined);
+      const updateChildDocumentsSpy = jest.spyOn(service as any, "updateChildDocumentsSubspace").mockResolvedValue([]);
 
       const dto = {
         id: "doc12",
@@ -636,7 +592,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
             myDocsChanged: false,
             subspaceIds: [{ id: "sub1" }], // Only current subspace
           }),
-        })
+        }),
       );
     });
   });
@@ -671,14 +627,8 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         read: true,
       });
 
-      jest
-        .spyOn(service as any, "updateChildDocumentsSubspace")
-        .mockResolvedValue(
-          mockHierarchy.map((doc) => ({ ...doc, subspaceId: "sub1" }))
-        );
-      jest
-        .spyOn(service as any, "updateNavigationTreeStructure")
-        .mockResolvedValue(undefined);
+      jest.spyOn(service as any, "updateChildDocumentsSubspace").mockResolvedValue(mockHierarchy.map((doc) => ({ ...doc, subspaceId: "sub1" })));
+      jest.spyOn(service as any, "updateNavigationTreeStructure").mockResolvedValue(undefined);
 
       const dto = {
         id: "grandparent",
@@ -689,9 +639,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
       const result = await service.moveDocs("user1", dto as any);
 
       expect(result.data.documents).toHaveLength(5); // grandparent + 4 descendants
-      expect(
-        mockPermissionInheritance.updatePermissionsOnMove
-      ).toHaveBeenCalledWith("grandparent", null, "sub1");
+      expect(mockPermissionInheritance.updatePermissionsOnMove).toHaveBeenCalledWith("grandparent", null, "sub1");
     });
 
     it("should handle concurrent move operations", async () => {
@@ -709,13 +657,9 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         workspaceId: "ws1",
       };
 
-      mockPrisma.doc.findUnique
-        .mockResolvedValueOnce(mockDoc1)
-        .mockResolvedValueOnce(mockDoc2);
+      mockPrisma.doc.findUnique.mockResolvedValueOnce(mockDoc1).mockResolvedValueOnce(mockDoc2);
 
-      mockPrisma.doc.update
-        .mockResolvedValueOnce({ ...mockDoc1, index: "l" })
-        .mockResolvedValueOnce({ ...mockDoc2, index: "m" });
+      mockPrisma.doc.update.mockResolvedValueOnce({ ...mockDoc1, index: "l" }).mockResolvedValueOnce({ ...mockDoc2, index: "m" });
 
       mockPermissionService.getResourcePermissionAbilities.mockResolvedValue({
         read: true,
@@ -734,10 +678,7 @@ describe("MoveDocumentService - Comprehensive Tests", () => {
         index: "m",
       };
 
-      const [result1, result2] = await Promise.all([
-        service.moveDocs("user1", dto1 as any),
-        service.moveDocs("user1", dto2 as any),
-      ]);
+      const [result1, result2] = await Promise.all([service.moveDocs("user1", dto1 as any), service.moveDocs("user1", dto2 as any)]);
 
       expect(result1.data.documents[0].id).toBe("doc13");
       expect(result2.data.documents[0].id).toBe("doc14");

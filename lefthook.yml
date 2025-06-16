@@ -9,19 +9,21 @@ pre-commit:
     i18n:
       glob: "{client/src/**/*.{tsx,ts,jsx,js},**/locales/en.json}"
       run: |
-        echo "Running i18n process..."
-        pnpm i18n:process
-        echo "Adding translation files..."
+        echo "Running i18n process..."  
+        pnpm i18n:process  
+        echo "Adding translation files..."  
         git add api/locales/*.json && git add api/public/locales/*.json
     format:
       glob: "*.{js,ts,jsx,tsx,json}"
       run: |
-        pnpm biome format --write {staged_files}
+        echo "Running biome format..."  
+        pnpm biome format --write {staged_files}  
         git add {staged_files}
     lint:
       glob: "*.{js,ts,jsx,tsx}"
       run: |
-        pnpm biome lint {staged_files}
+        echo "Running biome lint with fixes..."  
+        pnpm biome check --write {staged_files}  
         git add {staged_files}
 
 commit-msg:

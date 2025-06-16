@@ -14,6 +14,7 @@
   "main": "index.js",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
+    "postinstall": "pnpm lefthook install",
     "reinstall": "rimraf pnpm-lock.yaml && rimraf package.lock.json && rimraf node_modules && pnpm install --force",
     "dev": "turbo run dev",
     "dev:api": "cd api && npm run dev",

@@ -8,10 +8,10 @@ import { PermissionListRequest, SharedWithMeResponse } from "contracts/dist/type
 @Injectable()
 export class PermissionService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
-    // FIXME: webpack complaining about circular dependency
+    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient, // FIXME: webpack complaining about circular dependency
+  ) {
     // @Inject(forwardRef(() => PermissionInheritanceService)) private readonly inheritanceService: PermissionInheritanceService,
-  ) {}
+  }
 
   // 获取用户所有权限
   async getUserAllPermissions(userId: string): Promise<UnifiedPermission[]> {
@@ -513,11 +513,22 @@ export class PermissionService {
     const skip = (page - 1) * limit;
 
     // Get all document permissions for the user with proper priority resolution
+    // Get document IDs first to filter out user's own documents
+    const docs = await this.prisma.doc.findMany({
+      where: {
+        authorId: { not: userId },
+      },
+      select: {
+        id: true,
+      },
+    });
+
     const documentPermissions = await this.prisma.unifiedPermission.findMany({
       where: {
         userId,
         resourceType: ResourceType.DOCUMENT,
         sourceType: { in: [SourceType.DIRECT, SourceType.GROUP] }, // Only shared permissions
+        resourceId: { in: docs.map((doc) => doc.id) }, // Only include documents not created by the user
       },
       orderBy: [{ resourceId: "asc" }, { priority: "asc" }],
     });
