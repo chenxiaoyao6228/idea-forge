@@ -2,7 +2,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["src/*"],  
+      "@test/*": ["test/*"],  
+      "@shared/*": ["src/_shared/*"]  
     },
     "outDir": "./dist",
     "strict": true,
@@ -26,6 +28,6 @@
     "strictPropertyInitialization": false,
 
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "test", "dist", ]
+  "include": ["src/**/*", "test/**/*"],  
+  "exclude": ["node_modules", "dist"]  
 }
