@@ -5,11 +5,17 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
     },
     "dev": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": false,
       "persistent": true
     },
@@ -39,9 +45,32 @@
     },
     "test": {
       "dependsOn": [
-        "build"
+        "^build"
       ],
+      "outputs": [
+        "coverage/**"
+      ],
+      "env": [
+        "DATABASE_URL",
+        "NODE_ENV"
+      ]
+    },
+    "test:unit": {
+      "dependsOn": [],
       "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [],
+      "env": [
+        "DATABASE_URL"
+      ]
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

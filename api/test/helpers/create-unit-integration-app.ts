@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
 import { PRISMA_CLIENT } from "@shared/database/prisma/prisma.extension";
+import { getTestPrisma } from "@test/setup/database-setup";
 
 export class ServiceTestBuilder<T> {
   private providers: any[] = [];
@@ -8,16 +9,21 @@ export class ServiceTestBuilder<T> {
 
   constructor(private ServiceClass: new (...args: any[]) => T) {}
 
-  withProvider(provider: any) {
-    this.providers.push(provider);
+  /**
+   * @param mockPrisma - A mock Prisma client to use in the test.
+   * If not provided, a new real test Prisma client will be created, connected to the test database.
+   * @returns The ServiceTestBuilder instance.
+   */
+  withPrisma(mockPrisma?: any) {
+    this.providers.push({
+      provide: PRISMA_CLIENT,
+      useValue: mockPrisma || getTestPrisma(),
+    });
     return this;
   }
 
-  withMockPrisma(mockPrisma: any) {
-    this.providers.push({
-      provide: PRISMA_CLIENT,
-      useValue: mockPrisma,
-    });
+  withProvider(provider: any) {
+    this.providers.push(provider);
     return this;
   }
 

@@ -5,14 +5,13 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   test: {
-    globals: true,
+    globals: true, // no need to import vitest api in tests
     environment: "node",
-    setupFiles: [
-      process.env.TEST_TYPE === "e2e"
-        ? resolve(__dirname, "./test/setup/e2e-setup.ts")
-        : resolve(__dirname, "./test/setup/unit-setup.ts"),
+    setupFiles: [resolve(__dirname, "./test/setup/global-setup.ts")],
+    include: [
+      "src/**/*.test.ts", // Unit tests & integration tests(connected to database)
+      "test/**/*.{test,spec}.ts", // Test directory tests
     ],
-    include: ["src/**/*.{test,spec}.ts", "test/**/*.{test,spec}.ts"],
     exclude: ["node_modules", "dist"],
     testTimeout: 30000,
     hookTimeout: 30000,
@@ -22,6 +21,9 @@ export default defineConfig({
         singleFork: true,
       },
     },
+  },
+  optimizeDeps: {
+    needsInterop: ["lodash"],
   },
   resolve: {
     alias: {
@@ -33,7 +35,7 @@ export default defineConfig({
   esbuild: false,
   plugins: [
     swc.vite({
-      module: { type: "es6" }, // Changed to ES6 modules
+      module: { type: "es6" },
     }),
     tsconfigPaths(),
   ],

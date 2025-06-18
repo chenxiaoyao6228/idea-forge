@@ -171,8 +171,10 @@ export interface SearchDocumentResponse {
 export const moveDocumentsSchema = z.object({
   id: z.string().cuid(),
   parentId: z.string().cuid().optional().nullish(),
-  subspaceId: z.string().cuid().optional().nullish(), // exist when moving to another subspace
-  index: z.string().optional().nullish(),
+  subspaceId: z.string().cuid().optional().nullish(),
+  index: z
+    .string()
+    .min(1, "index is required and must be a fractional-index string"),
 });
 
 export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;

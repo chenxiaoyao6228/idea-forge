@@ -8,5 +8,6 @@
     "peterschmalfeldt.explorer-exclude",
     "streetsidesoftware.code-spell-checker",
     "d-koppenhagen.vscode-code-review",
+    "vitest.explorer"
   ]
 }

@@ -26,6 +26,7 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
+    "types": ["vitest/globals"]
 
   },
   "include": ["src/**/*", "test/**/*"],  
