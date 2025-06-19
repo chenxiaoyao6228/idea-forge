@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
-import { useDocumentStore } from "../../../stores/doc-store";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import useDocumentStore from "@/stores/document";
 
 interface AddDocButtonProps {
   parentId: string | null;
@@ -12,7 +12,8 @@ interface AddDocButtonProps {
 
 export function AddDocButton({ parentId, subspaceId }: AddDocButtonProps) {
   const { t } = useTranslation();
-  const createDocument = useDocumentStore.use.createDocument();
+  const createDocument = useDocumentStore((state) => state.createDocument);
+
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
 

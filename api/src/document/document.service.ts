@@ -1,6 +1,6 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException } from "@nestjs/common";
 import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto, ShareDocumentDto } from "./document.dto";
-import { NavigationNode, NavigationNodeType } from "contracts";
+import { NavigationNode, NavigationNodeType, UpdateCoverDto } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
@@ -583,6 +583,166 @@ export class DocumentService {
           createdById: permission.createdById,
         },
       });
+    }
+  }
+
+  async updateCover(docId: string, userId: string, dto: UpdateCoverDto) {
+    // 1. verify doc and cover exist
+    const doc = await this.prisma.doc.findFirst({
+      where: { id: docId, authorId: userId },
+      include: { coverImage: true },
+    });
+    if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+
+    // 2. if no cover, create new cover
+    if (!doc.coverImage) {
+      if (!dto.url) throw new BadRequestException("URL is required for new cover");
+      return this.prisma.coverImage.create({
+        data: {
+          url: dto.url,
+          scrollY: dto.scrollY || 0,
+          docId: docId,
+          isPreset: dto.isPreset || false,
+        },
+      });
+    }
+
+    // 3. update existing cover
+    return this.prisma.coverImage.update({
+      where: { docId },
+      data: {
+        ...(dto.url && { url: dto.url }),
+        ...(dto.scrollY !== undefined && { scrollY: dto.scrollY }),
+        ...(dto.isPreset !== undefined && { isPreset: dto.isPreset }),
+      },
+    });
+  }
+
+  async removeCover(docId: string, userId: string) {
+    // 1. verify doc and cover exist
+    const doc = await this.prisma.doc.findFirst({
+      where: { id: docId, authorId: userId },
+      include: { coverImage: true },
+    });
+    if (!doc || !doc.coverImage) throw new ApiException(ErrorCodeEnum.DocumentCoverNotFound);
+
+    // 2. delete cover
+    return await this.prisma.coverImage.delete({
+      where: { docId },
+    });
+  }
+
+  async duplicate(userId: string, id: string) {
+    // Find original document with children
+    const originalDoc = await this.prisma.doc.findFirst({
+      where: {
+        id,
+        authorId: userId,
+        archivedAt: null,
+      },
+      include: {
+        coverImage: true,
+        children: {
+          where: { archivedAt: null },
+          include: {
+            coverImage: true,
+          },
+        },
+      },
+    });
+    if (!originalDoc) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+    // Get siblings to calculate position
+    const siblings = await this.prisma.doc.findMany({
+      where: {
+        parentId: originalDoc.parentId,
+        authorId: userId,
+        archivedAt: null,
+      },
+      orderBy: { index: "desc" },
+      take: 1,
+    });
+    const newIndex = generateFractionalIndex(null, siblings[0]?.index ?? null);
+    // Create duplicate document
+    const duplicatedDoc = await this.prisma.doc.create({
+      data: {
+        title: `${originalDoc.title} (copy)`,
+        // FIXME: the content is not sync with the contentBinary
+        content: originalDoc.content,
+        contentBinary: originalDoc.contentBinary,
+        authorId: userId,
+        parentId: originalDoc.parentId,
+        index: newIndex,
+        icon: originalDoc.icon,
+        archivedAt: null,
+      },
+    });
+    // Duplicate cover image if exists
+    if (originalDoc.coverImage) {
+      await this.prisma.coverImage.create({
+        data: {
+          docId: duplicatedDoc.id,
+          url: originalDoc.coverImage.url,
+          scrollY: originalDoc.coverImage.scrollY,
+          isPreset: originalDoc.coverImage.isPreset,
+        },
+      });
+    }
+    // Recursively duplicate children
+    if (originalDoc.children.length > 0) {
+      await this.duplicateChildren(originalDoc.children, duplicatedDoc.id, userId);
+    }
+    return {
+      ...duplicatedDoc,
+      isLeaf: originalDoc.children.length === 0,
+      icon: duplicatedDoc.icon,
+    };
+  }
+
+  private async duplicateChildren(children: any[], newParentId: string, userId: string) {
+    for (const child of children) {
+      // Create duplicate of child
+      const duplicatedChild = await this.prisma.doc.create({
+        data: {
+          title: child.title,
+          content: child.content,
+          contentBinary: child.contentBinary,
+          authorId: userId,
+          parentId: newParentId,
+          index: child.index,
+          icon: child.icon,
+          archivedAt: null,
+          createdById: userId,
+          lastModifiedById: userId,
+          workspaceId: child.workspaceId,
+          subspaceId: child.subspaceId,
+        },
+      });
+      // Duplicate child's cover image if exists
+      if (child.coverImage) {
+        await this.prisma.coverImage.create({
+          data: {
+            docId: duplicatedChild.id,
+            url: child.coverImage.url,
+            scrollY: child.coverImage.scrollY,
+            isPreset: child.coverImage.isPreset,
+          },
+        });
+      }
+
+      const grandchildren = await this.prisma.doc.findMany({
+        where: {
+          parentId: child.id,
+          archivedAt: null,
+        },
+        include: {
+          coverImage: true,
+        },
+      });
+      if (grandchildren.length > 0) {
+        await this.duplicateChildren(grandchildren, duplicatedChild.id, userId);
+      }
     }
   }
 }

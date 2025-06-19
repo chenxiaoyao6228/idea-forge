@@ -10,15 +10,12 @@ import type {
   ShareDocumentDto,
   RemoveShareDto,
   UpdateCoverDto,
-  DetailDocumentResponse,
   TrashDocumentResponse,
   SearchDocumentDto,
   SearchDocumentResponse,
   DuplicateDocumentResponse,
   ListDocumentResponse,
   ListDocumentDto,
-  DocUserPermissionResponse,
-  DocGroupPermissionResponse,
 } from "contracts";
 
 export const documentApi = {
@@ -69,9 +66,6 @@ export const documentApi = {
   getById: async (id: string) => {
     return request.get<CommonDocumentResponse>(`/api/documents/${id}`);
   },
-
-  // TODO: remove this after remove the old doc-store
-  moveDocuments: (dto: MoveDocumentsDto) => request.post<MoveDocumentsDto, CommonDocumentResponse[]>("/api/documents/move", dto),
 
   moveDocument: (dto: MoveDocumentsDto) => request.post<MoveDocumentsDto, any>("/api/documents/move", dto),
 

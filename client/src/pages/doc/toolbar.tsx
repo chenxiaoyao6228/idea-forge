@@ -1,5 +1,4 @@
-import React, { ElementRef, useRef, useState, useMemo, useEffect } from "react";
-import { DocTreeDataNode, useDocumentStore } from "../../stores/doc-store";
+import React, { ElementRef, useRef, useState, useMemo, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Smile, X } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
@@ -8,27 +7,43 @@ import { Emoji } from "emoji-picker-react";
 import { DOCUMENT_TITLE_ID } from "../../editor/constant";
 import { debounce } from "lodash-es";
 import { useTranslation } from "react-i18next";
+import useDocumentStore, { DocumentEntity } from "@/stores/document";
+import { PRESET_CATEGORIES } from "./constants";
+import { documentApi } from "@/apis/document";
 
 interface ToolbarProps {
-  doc: DocTreeDataNode;
+  doc: DocumentEntity;
   editable: boolean;
 }
 
 export const Toolbar = ({ doc, editable }: ToolbarProps) => {
   const { t } = useTranslation();
-  const updateDocument = useDocumentStore.use.updateDocument();
-  const generateDefaultCover = useDocumentStore.use.generateDefaultCover();
+
+  const generateDefaultCover = useCallback(async () => {
+    if (!doc.id) return;
+    const allPresetCovers = PRESET_CATEGORIES.flatMap((category) => category.items);
+    const randomCover = allPresetCovers[Math.floor(Math.random() * allPresetCovers.length)];
+
+    if (!randomCover) throw new Error("No preset covers available");
+
+    const response = await documentApi.updateCover(doc.id, {
+      url: randomCover.url,
+      scrollY: 50,
+      isPreset: true,
+    });
+  }, [doc.id]);
 
   const onIconSelect = (icon: string) => {
-    updateDocument(doc.id, { icon });
+    // TODO: update through websocket
+    documentApi.update(doc.id, { icon });
   };
 
-  const onRemoveIcon = () => {
-    updateDocument(doc.id, { icon: "" });
+  const onRemoveIcon = async () => {
+    await documentApi.update(doc.id, { icon: "" });
   };
 
-  const onUpdateTitle = (title: string) => {
-    updateDocument(doc.id, { title });
+  const onUpdateTitle = async (title: string) => {
+    await documentApi.update(doc.id, { title });
   };
 
   return (
@@ -44,8 +59,8 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
           </IconPicker>
         )}
 
-        {doc.id && !doc?.coverImage && (
-          <Button onClick={() => generateDefaultCover(doc.id)} className="text-muted-foreground text-xs" variant="outline" size="sm">
+        {doc?.id && !doc?.coverImage && (
+          <Button onClick={() => generateDefaultCover()} className="text-muted-foreground text-xs" variant="outline" size="sm">
             <ImageIcon className="h-4 w-4 mr-2" /> {t("Add cover")}
           </Button>
         )}
@@ -59,7 +74,7 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
 // Icon Selector
 
 interface IconSelectorProps {
-  doc: DocTreeDataNode;
+  doc: DocumentEntity;
   editable: boolean;
   onIconSelect: (icon: string) => void;
   onRemoveIcon: () => void;
@@ -102,7 +117,7 @@ const IconSelector = ({ doc, editable, onIconSelect, onRemoveIcon }: IconSelecto
 // Title Input
 
 interface TitleInputProps {
-  doc: DocTreeDataNode;
+  doc: DocumentEntity;
   editable: boolean;
   onUpdateTitle: (title: string) => void;
 }

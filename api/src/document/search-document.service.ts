@@ -26,7 +26,7 @@ export class SearchDocumentService {
           title: true,
         },
         orderBy: {
-          [sort]: order,
+          [String(sort || "createdAt")]: String(order || "desc"),
         },
         take: limit,
       });

@@ -151,14 +151,50 @@ describe("processDropEvent", () => {
         draggingItem,
         toDropItem,
         allSubspaces: mockSubspaces,
-        myDocsDocuments: mockMyDocsDocuments,
+        myDocsDocuments: [
+          { id: "mydoc1", index: "a" },
+          { id: "mydoc2", index: "b" },
+          { id: "mydoc3", index: "c" },
+        ],
         allDocuments: mockAllDocuments,
       };
 
       const result = processDropEvent(params);
-
       expect(result.type).toBe("document");
       expect(result.documentParams?.index).toBe("between-a-b"); // fractionalIndex('a', 'b')
+    });
+
+    it("should fallback to 'z' if indices are equal (fractionalIndex would throw)", () => {
+      const draggingItem: DragItem = {
+        id: "mydoc1",
+        type: "document",
+        title: "My Doc 1",
+        subspaceId: null,
+        index: "a",
+      };
+
+      const toDropItem: DropTarget = {
+        accept: ["document"],
+        dropType: "reorder",
+        subspaceId: null,
+        documentId: "mydoc1",
+        dropPosition: "bottom",
+      };
+
+      const params: DropEventParams = {
+        draggingItem,
+        toDropItem,
+        allSubspaces: mockSubspaces,
+        myDocsDocuments: [
+          { id: "mydoc1", index: "a" },
+          { id: "mydoc2", index: "a" },
+        ],
+        allDocuments: mockAllDocuments,
+      };
+
+      const result = processDropEvent(params);
+      expect(result.type).toBe("document");
+      expect(result.documentParams?.index).toBe("middle"); // fallback from mock
     });
   });
 
@@ -194,7 +230,7 @@ describe("processDropEvent", () => {
         id: "mydoc1",
         subspaceId: "space1",
         parentId: null,
-        index: undefined, // Server handles subspace indexing
+        index: "middle", // Server handles subspace indexing, now always a string
       });
     });
 
@@ -230,7 +266,7 @@ describe("processDropEvent", () => {
         id: "mydoc2",
         subspaceId: "space1",
         parentId: "subdoc1",
-        index: undefined, // Server handles subspace indexing
+        index: "middle", // Server handles subspace indexing, now always a string
       });
     });
   });
@@ -357,7 +393,7 @@ describe("processDropEvent", () => {
         id: "subdoc1",
         subspaceId: "space2",
         parentId: null,
-        index: undefined, // Server handles subspace indexing
+        index: "middle", // Server handles subspace indexing, now always a string
       });
     });
   });

@@ -4,7 +4,6 @@
 // import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 // import { ShareIcon } from "lucide-react";
 // import { Permission } from "contracts";
-// import { useDocumentStore } from "../../../stores/doc-store";
 // import { Select, SelectValue, SelectItem, SelectTrigger, SelectContent } from "@/components/ui/select";
 // import { treeUtils } from "../../../stores/utils/tree-util";
 // import { useParams } from "react-router-dom";

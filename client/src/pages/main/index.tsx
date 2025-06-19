@@ -13,47 +13,32 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils";
 import { useParams } from "react-router-dom";
 import { useEffect } from "react";
-// import { TrashDialog } from "@/pages/main/sidebar/trash-dialog";
 import { SearchDocDialog } from "@/pages/main/sidebar/search-doc-dialog";
-// import { usePrepareDoc } from "@/hooks/use-prepare-doc";
 import Loading from "@/components/ui/loading";
-import { useDocumentStore } from "../../stores/doc-store";
 import WorkspaceSwitcher from "./sidebar/workspace-switcher";
-// import { OthersDocs } from "./sidebar/others-docs";
 import UserSettings from "./sidebar/setting";
 import Doc from "../doc";
 import SubspacesArea from "./sidebar/subspaces";
-import { PrivateDocs } from "./sidebar/private";
 import { useDragAndDropContext } from "./sidebar/hooks/use-dnd";
-import useSubSpaceStore from "@/stores/subspace";
 import { DndContext } from "@dnd-kit/core";
 import { websocketService } from "@/lib/websocket";
 import StarsArea from "./sidebar/stars";
 import useUIStore from "@/stores/ui";
 import SharedWithMe from "./sidebar/shared-with-me";
 import MyDocsArea from "./sidebar/ my-docs";
+import useDocumentStore from "@/stores/document";
+import { TrashDialog } from "./sidebar/trash-dialog";
 
 export default function Main() {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
 
   const { docId } = useParams();
-  const setCurrentDocId = useDocumentStore.use.setCurrentDocId();
   const setActiveDocumentId = useUIStore((state) => state.setActiveDocumentId);
+  const isLoading = useDocumentStore((state) => state.isFetching);
 
   useEffect(() => {
-    // FIXME: remove setCurrentDocId
-    setCurrentDocId(docId || null);
     setActiveDocumentId(docId || "");
-  }, [docId, setCurrentDocId, setActiveDocumentId]);
-
-  // if (isLoading) {
-  //   return <Loading />;
-  // }
-
-  let content = <></>;
-  if (docId) {
-    content = <Doc />;
-  }
+  }, [docId, setActiveDocumentId]);
 
   useEffect(() => {
     websocketService.connect();
@@ -61,6 +46,15 @@ export default function Main() {
       websocketService.disconnect();
     };
   }, []);
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  let content = <></>;
+  if (docId) {
+    content = <Doc />;
+  }
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragMove={handleDragMove} onDragOver={handleDragOver}>
@@ -82,7 +76,7 @@ export default function Main() {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     {/* trash */}
-                    {/* <TrashDialog /> */}
+                    <TrashDialog />
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

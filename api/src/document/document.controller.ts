@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from "@nestjs/common";
-import { CreateDocumentDto, UpdateDocumentDto, MoveDocumentsDto, ShareDocumentDto } from "./document.dto";
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from "@nestjs/common";
+import { CreateDocumentDto, UpdateDocumentDto, MoveDocumentsDto, ShareDocumentDto, SearchDocumentDto } from "./document.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { DocumentService } from "./document.service";
 import { MoveDocumentService } from "./move-document.service";
@@ -7,6 +7,9 @@ import { Action } from "@/_shared/casl/ability.class";
 import { CheckPolicy } from "@/_shared/casl/policy.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
 import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
+import { SearchDocumentService } from "./search-document.service";
+import { DocumentTrashService } from "./trash-document.service";
+import { UpdateCoverDto } from "contracts";
 
 @UseGuards(PolicyGuard)
 @Controller("/api/documents")
@@ -16,6 +19,8 @@ export class DocumentController {
 
     private readonly moveDocumentService: MoveDocumentService,
     private readonly permissionInheritanceService: PermissionInheritanceService,
+    private readonly searchDocumentService: SearchDocumentService,
+    private readonly documentTrashService: DocumentTrashService,
   ) {}
 
   @Post()
@@ -24,8 +29,6 @@ export class DocumentController {
   }
 
   @Post("list")
-  // FIXME: chang to GET
-  // async list(@GetUser("id") userId: string, @Body() dto: DocumentPagerDto) {
   async list(@GetUser("id") userId: string, @Body() dto: any) {
     return this.documentService.list(userId, dto);
   }
@@ -40,6 +43,21 @@ export class DocumentController {
     }
 
     return result;
+  }
+
+  @Get("search")
+  async search(@GetUser("id") userId: string, @Query() dto: SearchDocumentDto) {
+    return this.searchDocumentService.searchDocuments(userId, dto);
+  }
+
+  @Get("trash")
+  getTrash(@GetUser("id") userId: string) {
+    return this.documentTrashService.getTrash(userId);
+  }
+
+  @Post("trash/empty")
+  emptyTrash(@GetUser("id") userId: string) {
+    return this.documentTrashService.emptyTrash(userId);
   }
 
   // ==============keep router without id above ==========================================
@@ -60,6 +78,11 @@ export class DocumentController {
     return this.documentService.remove(id, userId);
   }
 
+  @Post(":id/duplicate")
+  duplicate(@GetUser("id") userId: string, @Param("id") id: string) {
+    return this.documentService.duplicate(userId, id);
+  }
+
   // ============== doc share ==========================================
 
   @Post(":id/share")
@@ -70,5 +93,16 @@ export class DocumentController {
   @Get(":id/shares")
   async listDocShares(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.listDocShares(id);
+  }
+
+  //   // ============== cover =======================
+  @Patch(":id/cover")
+  async uploadCover(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: UpdateCoverDto) {
+    return this.documentService.updateCover(id, userId, dto);
+  }
+
+  @Delete(":id/cover")
+  async deleteCover(@GetUser("id") userId: string, @Param("id") id: string) {
+    return this.documentService.removeCover(id, userId);
   }
 }

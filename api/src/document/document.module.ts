@@ -14,11 +14,12 @@ import { DocShareModule } from "@/doc-share/doc-share.module";
 import { GroupModule } from "@/group/group.module";
 import { DocumentAbility } from "./document.ability";
 import { PermissionModule } from "@/permission/permission.module";
+import { DocumentTrashService } from "./trash-document.service";
 
 @Module({
   imports: [FileStoreModule, ScheduleModule.forRoot(), SubspaceModule, EventsModule, DocShareModule, GroupModule, PermissionModule],
   controllers: [DocumentController, ShareDocumentController],
-  providers: [DocumentService, ShareDocumentService, SystemDocumentService, MoveDocumentService, SearchDocumentService, DocumentAbility],
-  exports: [DocumentService, SystemDocumentService, SearchDocumentService, MoveDocumentService],
+  providers: [DocumentService, ShareDocumentService, SystemDocumentService, MoveDocumentService, SearchDocumentService, DocumentTrashService, DocumentAbility],
+  exports: [DocumentService, SystemDocumentService, SearchDocumentService, MoveDocumentService, DocumentTrashService],
 })
 export class DocumentModule {}

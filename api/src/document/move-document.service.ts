@@ -75,13 +75,13 @@ export class MoveDocumentService {
     affectedDocuments.push(updatedDoc);
 
     // Handle permission inheritance using new permission module
-    await this.permissionInheritanceService.updatePermissionsOnMove(id, parentId || null, targetSubspaceId);
+    await this.permissionInheritanceService.updatePermissionsOnMove(id, parentId || null, targetSubspaceId || null);
 
     // Handle subspace changes and child documents
     if (subspaceChanged) {
       const childDocuments = await this.updateChildDocumentsSubspace(
         id,
-        targetSubspaceId, // can be null for my-docs
+        targetSubspaceId || null, // can be null for my-docs
       );
       affectedDocuments.push(...childDocuments);
     }

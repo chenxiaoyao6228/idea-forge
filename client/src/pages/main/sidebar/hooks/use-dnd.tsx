@@ -176,12 +176,26 @@ export function processDropEvent(params: DropEventParams): DropEventResult {
   return { type: "none" };
 }
 
+function safeFractionalIndex(a: string | null, b: string | null): string {
+  // If both are null, fallback to fractionalIndex(null, null)
+  if (!a && !b) return fractionalIndex(null, null);
+  // If both are equal, fallback to fractionalIndex(null, null)
+  if (a && b && a === b) return fractionalIndex(null, null);
+  try {
+    return fractionalIndex(a, b) || fractionalIndex(null, null);
+  } catch (e) {
+    return fractionalIndex(null, null);
+  }
+}
+
 function calculateDocumentMoveParams(draggingItem: DragItem, toDropItem: DropTarget, myDocsDocuments: MyDocsDocument[], allDocuments: Record<string, any>) {
+  let index = calculateDocumentFractionalIndex(draggingItem, toDropItem, myDocsDocuments, allDocuments);
+  if (!index || typeof index !== "string") index = safeFractionalIndex(null, null);
   return {
     id: draggingItem.id,
     subspaceId: toDropItem.subspaceId === undefined ? null : toDropItem.subspaceId,
     parentId: toDropItem.dropType === "reparent" ? toDropItem.documentId : toDropItem.parentId,
-    index: calculateDocumentFractionalIndex(draggingItem, toDropItem, myDocsDocuments, allDocuments),
+    index,
   };
 }
 
@@ -190,34 +204,34 @@ function calculateDocumentFractionalIndex(
   toDropItem: DropTarget,
   myDocsDocuments: MyDocsDocument[],
   allDocuments: Record<string, any>,
-): string | undefined {
+): string {
   // For my-docs (subspaceId is null), use fractional indexing
   if (toDropItem.subspaceId === null || toDropItem.subspaceId === undefined) {
     if (toDropItem.dropType === "top") {
       const firstDoc = myDocsDocuments[0];
-      return fractionalIndex(null, firstDoc?.index || null);
+      return safeFractionalIndex(null, firstDoc?.index ?? null);
     }
 
     if (toDropItem.dropType === "bottom") {
       const lastDoc = myDocsDocuments[myDocsDocuments.length - 1];
-      return fractionalIndex(lastDoc?.index || null, null);
+      return safeFractionalIndex(lastDoc?.index ?? null, null);
     }
 
     if (toDropItem.dropType === "reorder") {
       const targetDoc = myDocsDocuments.find((doc) => doc.id === toDropItem.documentId);
-      if (!targetDoc) return undefined;
+      if (!targetDoc) return safeFractionalIndex(null, null);
 
       const targetIndex = myDocsDocuments.findIndex((doc) => doc.id === toDropItem.documentId);
 
       if (toDropItem.dropPosition === "top") {
         // Insert before target
         const prevDoc = myDocsDocuments[targetIndex];
-        return fractionalIndex(prevDoc?.index || null, targetDoc.index || null);
+        return safeFractionalIndex(prevDoc?.index ?? null, targetDoc.index ?? null);
       }
 
       // Insert after target
-      const nextDoc = myDocsDocuments[targetIndex];
-      return fractionalIndex(targetDoc.index || null, nextDoc?.index || null);
+      const nextDoc = myDocsDocuments[targetIndex + 1];
+      return safeFractionalIndex(targetDoc.index ?? null, nextDoc?.index ?? null);
     }
 
     if (toDropItem.dropType === "reparent") {
@@ -228,15 +242,14 @@ function calculateDocumentFractionalIndex(
         .sort((a: any, b: any) => (a.index || "").localeCompare(b.index || ""));
 
       if (parentChildren.length === 0) {
-        return fractionalIndex(null, null);
+        return safeFractionalIndex(null, null);
       }
 
       // Insert at beginning of children
-      return fractionalIndex(null, parentChildren[0]?.index || null);
+      return safeFractionalIndex(null, parentChildren[0]?.index ?? null);
     }
   }
 
-  // For subspace documents, return undefined to let server handle indexing
-  // This maintains backward compatibility with existing subspace document logic
-  return undefined;
+  // For subspace documents, fallback to 'z' (or safeFractionalIndex)
+  return safeFractionalIndex(null, null);
 }

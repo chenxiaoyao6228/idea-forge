@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
-import { DocTypeSchema, DocVisibilitySchema, NavigationNode, NavigationNodeType } from "contracts";
+import { CoverImage, DocTypeSchema, DocVisibilitySchema, NavigationNode, NavigationNodeType } from "contracts";
 import { documentApi } from "@/apis/document";
 
 import useSubSpaceStore from "./subspace";
@@ -31,9 +31,10 @@ export interface DocumentEntity {
   parentId?: string | null;
   type: string;
   visibility: string;
-  // publishedAt?: string | null;
-  // archivedAt?: string | null;
-  // deletedAt?: string | null;
+  coverImage?: CoverImage;
+  publishedAt?: string | null;
+  archivedAt?: string | null;
+  deletedAt?: string | null;
   [key: string]: any;
 }
 
@@ -205,7 +206,7 @@ const useDocumentStore = create<StoreState>()(
                 type: "NOTE",
                 visibility: "WORKSPACE",
                 workspaceId,
-              }));
+              })) as unknown as DocumentEntity[];
               get().upsertMany(documents);
             }
 
@@ -288,11 +289,12 @@ const useDocumentStore = create<StoreState>()(
         move: async ({ id, subspaceId, parentId, index }) => {
           set({ isSaving: true });
           try {
+            const safeIndex = typeof index === "string" && index.length > 0 ? index : "z";
             const { permissions } = await documentApi.moveDocument({
               id,
               subspaceId,
               parentId,
-              index,
+              index: safeIndex,
             });
           } catch (error) {
             console.error("Failed to move document:", error);
@@ -496,11 +498,12 @@ const useDocumentStore = create<StoreState>()(
         },
 
         moveToMyDocs: async (documentId: string, parentId?: string | null, index?: string) => {
+          const safeIndex = typeof index === "string" && index.length > 0 ? index : "z";
           return get().move({
             id: documentId,
             subspaceId: null,
             parentId: parentId || null,
-            index,
+            index: safeIndex,
           });
         },
       })),

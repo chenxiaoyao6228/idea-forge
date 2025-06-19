@@ -1,5 +1,4 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDocumentStore } from "@/stores/doc-store";
 import { CoverPicker } from "./cover-picker";
 import { useState, useRef, useEffect } from "react";
 import { useCoverImageStore } from "./coverImageStore";
@@ -7,6 +6,9 @@ import { UpdateCoverDto } from "contracts";
 import { useImageLoading } from "@/hooks/use-image-loading";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { documentApi } from "@/apis/document";
+import useDocumentStore from "@/stores/document";
+import { useCurrentDocument } from "@/hooks/use-current-document";
 
 interface CoverProps {
   cover?: {
@@ -22,10 +24,8 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, editable = fal
   const { t } = useTranslation();
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
-  const currentDocument = useDocumentStore.use.currentDocument();
-  const isCurrentDocLoading = useDocumentStore.use.isCurrentDocLoading();
-  const updateCover = useDocumentStore.use.updateCover();
-  const removeCover = useDocumentStore.use.removeCover();
+  const currentDocument = useCurrentDocument();
+  const isCurrentDocLoading = useDocumentStore((state) => state.isFetching);
   const [imagePosition, setImagePosition] = useState(cover.scrollY || 50);
   const [startY, setStartY] = useState(0);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -33,14 +33,14 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, editable = fal
 
   const handleImageSelect = async (dto: UpdateCoverDto) => {
     if (!currentDocument) return;
-    await updateCover(currentDocument.id, dto);
+    await documentApi.updateCover(currentDocument.id, dto);
   };
 
   const url = cover.url;
 
   const handleRemoveCover = async () => {
     if (!currentDocument) return;
-    await removeCover(currentDocument.id);
+    await documentApi.removeCover(currentDocument.id);
   };
 
   const handleChangeCover = () => {
@@ -54,7 +54,7 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, editable = fal
 
   const handleSavePosition = async () => {
     if (!currentDocument) return;
-    await updateCover(currentDocument.id, {
+    await documentApi.updateCover(currentDocument.id, {
       scrollY: imagePosition,
     });
     setIsRepositioning(false);

@@ -1,13 +1,12 @@
-import { useDocumentStore } from "../../../stores/doc-store";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/ui/icon";
-import { treeUtils } from "../../../stores/utils/tree-util";
 import { Separator } from "@/components/ui/separator";
 import { Emoji } from "emoji-picker-react";
-import { useParams } from "react-router-dom";
+import useUIStore from "@/stores/ui";
+import useDocumentStore from "@/stores/document";
 
 interface BreadcrumbItemData {
   id: string;
@@ -16,30 +15,21 @@ interface BreadcrumbItemData {
 }
 
 export default function DocumentBreadcrumb() {
-  const { docId: curDocId } = useParams();
-  const treeData = useDocumentStore.use.treeData();
+  const activeDocumentId = useUIStore((state) => state.activeDocumentId);
 
   const navigate = useNavigate();
 
   const getBreadcrumbItems = useCallback(() => {
-    const items: Array<BreadcrumbItemData> = [];
-    let currentNode = curDocId ? treeUtils.findNode(treeData, curDocId) : null;
-
-    while (currentNode) {
-      items.unshift({
-        id: currentNode.key as string,
-        title: currentNode.title as string,
-        icon: currentNode.icon as string,
-      });
-
-      const parentId = treeUtils.findParentKey(treeData, currentNode.key);
-      if (!parentId) break;
-
-      currentNode = treeUtils.findNode(treeData, parentId);
-    }
-
-    return items;
-  }, [curDocId, treeData]);
+    if (!activeDocumentId) return [];
+    // getPathToDocumentInMyDocs returns NavigationNode[]
+    const path = useDocumentStore.getState().getPathToDocumentInMyDocs(activeDocumentId);
+    // Map NavigationNode to BreadcrumbItemData
+    return path.map((node) => ({
+      id: node.id,
+      title: node.title,
+      icon: node.icon || "1f4c4", // fallback to 📄 if no icon
+    }));
+  }, [activeDocumentId]);
 
   const breadcrumbItems = getBreadcrumbItems();
 
