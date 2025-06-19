@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
 import { PRISMA_CLIENT } from "@shared/database/prisma/prisma.extension";
-import { getTestPrisma } from "@test/setup/database-setup";
+import { getTestPrisma } from "@test/setup/test-container-setup";
 
 export class ServiceTestBuilder<T> {
   private providers: any[] = [];
@@ -32,7 +32,7 @@ export class ServiceTestBuilder<T> {
     return this;
   }
 
-  async build(): Promise<ServiceTestContext<T>> {
+  async compile(): Promise<ServiceTestContext<T>> {
     const module = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({

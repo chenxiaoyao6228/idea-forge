@@ -2,7 +2,7 @@ import {
   clearDatabase,
   getTestPrisma,
   startTestPostgres,
-} from "./setup/database-setup";
+} from "./setup/test-container-setup";
 
 describe("clearDatabase", () => {
   beforeAll(async () => {

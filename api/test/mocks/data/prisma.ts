@@ -6,7 +6,7 @@ import {
   generateMockDocShare,
   generateMockWorkspaceMember,
 } from "@test/mocks/data/zod";
-import { getTestPrisma } from "@test/setup/database-setup";
+import { getTestPrisma } from "@test/setup/test-container-setup";
 
 export async function buildDocument(overrides: any = {}) {
   const prisma = getTestPrisma();

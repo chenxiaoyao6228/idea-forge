@@ -3,9 +3,10 @@ import { EventPublisherService } from "../_shared/events/event-publisher.service
 import { PermissionInheritanceService } from "../permission/permission-inheritance.service";
 import { PermissionService } from "../permission/permission.service";
 import { ServiceTestBuilder } from "@test/helpers/create-unit-integration-app";
-import { getTestPrisma } from "@test/setup/database-setup";
+import { getTestPrisma } from "@test/setup/test-container-setup";
 import { generateFractionalIndex } from "@/_shared/utils/fractional-index";
 import { v4 as uuidv4 } from "uuid";
+import { setupMocks } from "@test/setup/mock-setup";
 
 async function createComplexMockData() {
   const prisma = getTestPrisma();
@@ -170,6 +171,10 @@ describe("MoveDocumentService (integration)", () => {
   let ctx: any;
   let mockData: Awaited<ReturnType<typeof createComplexMockData>>;
 
+  beforeAll(async () => {
+    await setupMocks();
+  });
+
   beforeEach(async () => {
     mockData = await createComplexMockData();
     ctx = await new ServiceTestBuilder(MoveDocumentService)
@@ -190,7 +195,7 @@ describe("MoveDocumentService (integration)", () => {
           getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }),
         },
       })
-      .build();
+      .compile();
     service = ctx.service;
   });
 

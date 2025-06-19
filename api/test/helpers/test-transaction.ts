@@ -1,4 +1,4 @@
-import { getTestPrisma } from "../setup/database-setup";
+import { getTestPrisma } from "../setup/test-container-setup";
 
 export async function withTestTransaction<T>(
   testFn: (prisma: any) => Promise<T>

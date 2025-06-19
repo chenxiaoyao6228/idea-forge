@@ -3,21 +3,23 @@ import {
   startTestPostgres,
   stopTestPostgres,
   clearDatabase,
-} from "./database-setup";
-import { setupMocks } from "./mock-setup";
+  startTestRedis,
+  stopTestRedis,
+} from "./test-container-setup";
 
 beforeAll(async () => {
+  await startTestRedis();
   await startTestPostgres();
-  await setupMocks();
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterAll(async () => {
+  await stopTestRedis();
   await stopTestPostgres();
 });
 
 beforeEach(async () => {
-  console.log("=========clearing database=========");
+
   vi.clearAllMocks();
   await clearDatabase();
 });

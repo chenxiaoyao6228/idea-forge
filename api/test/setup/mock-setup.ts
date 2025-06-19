@@ -35,9 +35,19 @@ export async function setupMocks() {
       getDelayedCount: vi.fn().mockResolvedValue(0),
     }));
 
+    const MockJob = vi.fn().mockImplementation(() => ({
+      add: vi.fn().mockResolvedValue({}),
+      process: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+      on: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
+      getDelayedCount: vi.fn().mockResolvedValue(0),
+    }));
+
     return {
       default: MockQueue,
       Queue: MockQueue,
+      Job: MockJob,
     };
   });
 

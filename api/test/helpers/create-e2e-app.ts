@@ -6,6 +6,7 @@ import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
 import { AllExceptionsFilter } from "@shared/filters/all-exception.filter";
 import { HttpExceptionFilter } from "@shared/filters/http-exception.filter";
+import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 
 export class E2ETestBuilder {
   private moduleMetadata: ModuleMetadata = {
@@ -29,14 +30,14 @@ export class E2ETestBuilder {
     return this;
   }
 
-  async build(): Promise<E2ETestContext> {
+  async compile(): Promise<E2ETestContext> {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
           envFilePath: [".env.test", ".env"],
         }),
-        // DatabaseModule,
+        PrismaModule,
         ...this.moduleMetadata.imports!,
       ],
       controllers: this.moduleMetadata.controllers,

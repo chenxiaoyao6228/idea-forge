@@ -7,7 +7,9 @@ import {
   ExtendedPrismaClient,
   getExtendedPrismaClient,
 } from "@/_shared/database/prisma/prisma.extension";
+import { RedisContainer, StartedRedisContainer } from "@testcontainers/redis";
 
+let redisContainer: StartedRedisContainer | undefined;
 let container: StartedPostgreSqlContainer;
 let testPrisma: ExtendedPrismaClient;
 
@@ -57,4 +59,22 @@ export async function clearDatabase() {
     .join(", ");
   if (tables)
     await testPrisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} CASCADE;`);
+}
+
+// ================== Redis ==================
+
+export async function startTestRedis() {
+  redisContainer = await new RedisContainer("redis:7-alpine").start();
+  const host = redisContainer.getHost();
+  const port = redisContainer.getMappedPort(6379);
+
+  // Set env vars for your app to pick up
+  process.env.REDIS_HOST = host;
+  process.env.REDIS_PORT = port.toString();
+
+  return { host, port };
+}
+
+export async function stopTestRedis() {
+  if (container) await container.stop();
 }
