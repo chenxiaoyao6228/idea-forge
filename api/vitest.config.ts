@@ -5,6 +5,8 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   test: {
+    // see: https://www.reddit.com/r/node/comments/1jvuk6e/tests_fail_when_running_all_together_but_pass/
+    fileParallelism: false,
     globals: true, // no need to import vitest api in tests
     environment: "node",
     setupFiles: [resolve(__dirname, "./test/setup/global-setup.ts")],
