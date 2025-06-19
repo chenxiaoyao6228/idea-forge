@@ -54,4 +54,10 @@ export class AppController {
   async testI18nError() {
     throw new ApiException(ErrorCodeEnum.UserNotFound);
   }
+
+  @Public()
+  @Get("/test-ip")
+  async testIp() {
+    return this.appService.testIp();
+  }
 }

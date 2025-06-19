@@ -1,6 +1,7 @@
 import axios, { AxiosRequestConfig } from "axios";
 import useUserStore from "@/stores/user";
 import { RESPONSE_SUCCESS_CODE } from "@api/_shared/constants/api-response-constant";
+import { generateUuid } from "./uuid";
 
 type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
 
@@ -24,6 +25,7 @@ const request = axios.create({
   timeout: REQUEST_TIMEOUT,
   headers: {
     "Content-Type": "application/json",
+    "x-request-id": generateUuid(),
   },
 });
 

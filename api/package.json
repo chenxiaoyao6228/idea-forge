@@ -89,6 +89,7 @@
     "jsx-email": "^2.2.0",
     "lodash": "^4.17.21",
     "nest-winston": "^1.9.7",
+    "nestjs-cls": "^6.0.1",
     "nestjs-prisma": "^0.25.0",
     "nestjs-trpc": "^1.6.1",
     "nestjs-zod": "^4.2.0",

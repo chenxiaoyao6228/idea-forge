@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { type MiddlewareConsumer, Module, type NestModule, RequestMethod } from "@nestjs/common";
 import { SentryModule } from "@sentry/nestjs/setup";
 import { AppController } from "./app.controller";
@@ -13,7 +14,6 @@ import { ApiInterceptor } from "./_shared/interceptors/api.interceptor";
 import { ZodValidationPipe } from "./_shared/pipes/zod-validation.pipe";
 import { DocumentModule } from "./document/document.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
-import { join } from "node:path";
 import { FallbackMiddleware } from "./_shared/middlewares/fallback.middleware";
 import { ConfigsModule } from "./_shared/config/config.module";
 import { FileStoreModule } from "./file-store/file-store.module";
@@ -22,10 +22,8 @@ import { AIModule } from "./ai/ai.module";
 import { HttpModule } from "@nestjs/axios";
 import { AppService } from "./app.service";
 import { I18nNextModule } from "./_shared/i18next/i18n.module";
-import { I18nNextMiddleware } from "./_shared/i18next/i18n.middleware";
 import { HttpExceptionFilter } from "./_shared/filters/http-exception.filter";
 import { AllExceptionsFilter } from "./_shared/filters/all-exception.filter";
-import { SystemDocumentService } from "./document/system-document.service";
 import { WorkspaceModule } from "./workspace/workspace.module";
 import { SubspaceModule } from "./subspace/subspace.module";
 import { CaslModule } from "./_shared/casl/casl.module";
@@ -36,6 +34,9 @@ import { StarModule } from "./star/star.module";
 import { DocShareModule } from "./doc-share/doc-share.module";
 import { GroupModule } from "./group/group.module";
 import { PermissionModule } from "./permission/permission.module";
+import { ClsModule } from "nestjs-cls";
+import { UserIpInterceptor } from "./_shared/interceptors/user-ip.interceptor";
+import { generateUuid } from "./_shared/utils/uuid";
 
 @Module({
   controllers: [AppController],
@@ -66,6 +67,15 @@ import { PermissionModule } from "./permission/permission.module";
     HttpModule.register({
       timeout: 5000,
     }),
+    // see: https://papooch.github.io/nestjs-cls
+    ClsModule.forRoot({
+      global: true,
+      middleware: {
+        mount: true,
+        generateId: true,
+        idGenerator: (req: Request) => req.headers["x-request-id"] ?? generateUuid(),
+      },
+    }),
     LoggerModule,
     ConfigsModule,
     PrismaModule,
@@ -87,7 +97,6 @@ import { PermissionModule } from "./permission/permission.module";
     StarModule,
     DocShareModule,
     GroupModule,
-
     PermissionModule,
   ],
   providers: [
@@ -100,6 +109,10 @@ import { PermissionModule } from "./permission/permission.module";
       useClass: ApiInterceptor,
     },
     {
+      provide: APP_INTERCEPTOR,
+      useClass: UserIpInterceptor,
+    },
+    {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
@@ -108,12 +121,10 @@ import { PermissionModule } from "./permission/permission.module";
       useClass: HttpExceptionFilter,
     },
     AppService,
-    SystemDocumentService,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(I18nNextMiddleware).forRoutes("*");
     consumer.apply(FallbackMiddleware).forRoutes({
       path: "**",
       method: RequestMethod.GET,

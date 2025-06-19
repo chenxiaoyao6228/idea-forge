@@ -5,6 +5,7 @@ import * as winston from "winston";
 import "winston-daily-rotate-file";
 import { MailModule } from "../email/mail.module";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ClsService } from "nestjs-cls";
 
 const levelsColors = {
   error: "red",
@@ -19,10 +20,17 @@ const levelsColors = {
   imports: [
     WinstonModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
+      inject: [ConfigService, ClsService],
+      useFactory: (configService: ConfigService, cls: ClsService) => ({
         level: configService.get("NODE_ENV") === "production" ? "info" : "debug",
-        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.json(),
+          winston.format((info) => {
+            info.traceId = cls.getId(); // Add trace ID from CLS
+            return info;
+          })(),
+        ),
         transports: [
           // Error logs rotation
           new winston.transports.DailyRotateFile({
@@ -46,9 +54,11 @@ const levelsColors = {
             format: winston.format.combine(
               winston.format.timestamp(),
               winston.format.colorize(),
-              winston.format.printf(({ level, message, timestamp, ...meta }) => {
+              winston.format.printf(({ level, message, timestamp, traceId, ...meta }) => {
                 const color = levelsColors[level.toLowerCase()] || "white";
-                return chalk[color](`[IdeaForge] ${timestamp} ${level.toUpperCase()}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ""}`);
+                return chalk[color](
+                  `[IdeaForge] ${timestamp} ${level.toUpperCase()} [${traceId}]: ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ""}`,
+                );
               }),
             ),
           }),
