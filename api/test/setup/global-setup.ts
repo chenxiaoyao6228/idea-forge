@@ -1,20 +1,19 @@
 import { beforeEach, beforeAll, afterAll, vi } from "vitest";
 import {
-  setupDatabase,
-  teardownDatabase,
+  startTestPostgres,
+  stopTestPostgres,
   clearDatabase,
 } from "./database-setup";
 import { setupMocks } from "./mock-setup";
 
 beforeAll(async () => {
-  await setupDatabase();
+  await startTestPostgres();
   await setupMocks();
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterAll(async () => {
-  await clearDatabase();
-  await teardownDatabase();
+  await stopTestPostgres();
 });
 
 beforeEach(async () => {

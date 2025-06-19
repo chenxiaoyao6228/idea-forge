@@ -1,21 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [
-    "**/.env.*local"
-  ],
+  "globalDependencies": ["**/.env.*local"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
     },
     "dev": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },
@@ -44,29 +36,16 @@
       "cache": false
     },
     "test": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "coverage/**"
-      ],
-      "env": [
-        "DATABASE_URL",
-        "NODE_ENV"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
     },
     "test:unit": {
       "dependsOn": [],
       "outputs": []
     },
     "test:integration": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [],
-      "env": [
-        "DATABASE_URL"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": []
     },
     "test:watch": {
       "cache": false,

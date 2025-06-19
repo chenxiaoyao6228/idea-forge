@@ -6,14 +6,10 @@ import { ServiceTestBuilder } from "@test/helpers/create-unit-integration-app";
 import { getTestPrisma } from "@test/setup/database-setup";
 import { generateFractionalIndex } from "@/_shared/utils/fractional-index";
 import { v4 as uuidv4 } from "uuid";
-import {
-  buildWorkspace,
-  buildUser,
-  buildSubspace,
-  buildDocument,
-} from "@test/mocks/data/prisma";
 
 async function createComplexMockData() {
+  const prisma = getTestPrisma();
+
   // Generate UUIDs for all entities
   const workspaceId = uuidv4();
   const userId = uuidv4();
@@ -27,105 +23,113 @@ async function createComplexMockData() {
   const subspace2RootId = uuidv4();
 
   // Create workspace and user
-  const workspace = await buildWorkspace({
-    id: workspaceId,
-    name: "Test Workspace",
+  const workspace = await prisma.workspace.create({
+    data: { id: workspaceId, name: "Test Workspace" },
   });
-  const user = await buildUser({
-    id: userId,
-    displayName: "Test User",
-    email: `${userId}@test.com`,
+  const user = await prisma.user.create({
+    data: { id: userId, displayName: "Test User", email: `${userId}@test.com` },
   });
 
   // Create subspaces
-  const subspace1 = await buildSubspace({
-    id: subspace1Id,
-    name: "Engineering",
-    workspaceId: workspace.id,
-    navigationTree: [],
+  const subspace1 = await prisma.subspace.create({
+    data: {
+      id: subspace1Id,
+      name: "Engineering",
+      workspaceId: workspace.id,
+      navigationTree: [],
+    },
   });
-  const subspace2 = await buildSubspace({
-    id: subspace2Id,
-    name: "Marketing",
-    workspaceId: workspace.id,
-    navigationTree: [],
+  const subspace2 = await prisma.subspace.create({
+    data: {
+      id: subspace2Id,
+      name: "Marketing",
+      workspaceId: workspace.id,
+      navigationTree: [],
+    },
   });
   const subspaces = [subspace1, subspace2];
 
   // MyDocs: 2 roots, each with 1 child
-  const myDocsRoot1 = await buildDocument({
-    id: myDocsRoot1Id,
-    title: "Root 1",
-    index: "a",
-    workspaceId: workspace.id,
-    authorId: user.id,
-    createdById: user.id,
-    lastModifiedById: user.id,
-    subspaceId: null,
-    parentId: null,
+  const myDocsRoot1 = await prisma.doc.create({
+    data: {
+      id: myDocsRoot1Id,
+      title: "Root 1",
+      index: "a",
+      workspaceId: workspace.id,
+      authorId: user.id,
+      createdById: user.id,
+      lastModifiedById: user.id,
+      subspaceId: null,
+      parentId: null,
+    },
   });
-  const myDocsRoot2 = await buildDocument({
-    id: myDocsRoot2Id,
-    title: "Root 2",
-    index: "b",
-    workspaceId: workspace.id,
-    authorId: user.id,
-    createdById: user.id,
-    lastModifiedById: user.id,
-    subspaceId: null,
-    parentId: null,
+  const myDocsRoot2 = await prisma.doc.create({
+    data: {
+      id: myDocsRoot2Id,
+      title: "Root 2",
+      index: "b",
+      workspaceId: workspace.id,
+      authorId: user.id,
+      createdById: user.id,
+      lastModifiedById: user.id,
+      subspaceId: null,
+      parentId: null,
+    },
   });
-  const myDocsChild1 = await buildDocument({
-    id: myDocsChild1Id,
-    title: "Child 1",
-    index: "a",
-    workspaceId: workspace.id,
-    authorId: user.id,
-    createdById: user.id,
-    lastModifiedById: user.id,
-    subspaceId: null,
-    parentId: myDocsRoot1.id,
+  const myDocsChild1 = await prisma.doc.create({
+    data: {
+      id: myDocsChild1Id,
+      title: "Child 1",
+      index: "a",
+      workspaceId: workspace.id,
+      authorId: user.id,
+      createdById: user.id,
+      lastModifiedById: user.id,
+      subspaceId: null,
+      parentId: myDocsRoot1.id,
+    },
   });
-  const myDocsChild2 = await buildDocument({
-    id: myDocsChild2Id,
-    title: "Child 2",
-    index: "a",
-    workspaceId: workspace.id,
-    authorId: user.id,
-    createdById: user.id,
-    lastModifiedById: user.id,
-    subspaceId: null,
-    parentId: myDocsRoot2.id,
+  const myDocsChild2 = await prisma.doc.create({
+    data: {
+      id: myDocsChild2Id,
+      title: "Child 2",
+      index: "a",
+      workspaceId: workspace.id,
+      authorId: user.id,
+      createdById: user.id,
+      lastModifiedById: user.id,
+      subspaceId: null,
+      parentId: myDocsRoot2.id,
+    },
   });
-  const myDocsDocuments = [
-    myDocsRoot1,
-    myDocsRoot2,
-    myDocsChild1,
-    myDocsChild2,
-  ];
+  const myDocsDocuments = [myDocsRoot1, myDocsRoot2, myDocsChild1, myDocsChild2];
 
   // Subspace docs: 1 root per subspace
-  const subspace1Root = await buildDocument({
-    id: subspace1RootId,
-    title: "S1 Root",
-    index: "a",
-    workspaceId: workspace.id,
-    authorId: user.id,
-    createdById: user.id,
-    lastModifiedById: user.id,
-    subspaceId: subspace1.id,
-    parentId: null,
+  const subspace1Root = await prisma.doc.create({
+    data: {
+      id: subspace1RootId,
+      title: "S1 Root",
+      index: "a",
+      workspaceId: workspace.id,
+      authorId: user.id,
+      createdById: user.id,
+      lastModifiedById: user.id,
+      subspaceId: subspace1.id,
+      parentId: null,
+    },
   });
-  const subspace2Root = await buildDocument({
-    id: subspace2RootId,
-    title: "S2 Root",
-    index: "a",
-    workspaceId: workspace.id,
-    authorId: user.id,
-    createdById: user.id,
-    lastModifiedById: user.id,
-    subspaceId: subspace2.id,
-    parentId: null,
+  const subspace2Root = await prisma.doc.create({
+    data: {
+      id: subspace2RootId,
+      title: "S2 Root",
+      index: "a",
+      workspaceId: workspace.id,
+      authorId: user.id,
+      createdById: user.id,
+      lastModifiedById: user.id,
+      subspaceId: subspace2.id,
+      parentId: null,
+    },
   });
   const subspaceDocuments = {
     [subspace1Id]: [subspace1Root],
@@ -161,15 +165,12 @@ async function createComplexMockData() {
   };
 }
 
-describe.sequential("MoveDocumentService (integration)", () => {
+describe("MoveDocumentService (integration)", () => {
   let service: MoveDocumentService;
   let ctx: any;
   let mockData: Awaited<ReturnType<typeof createComplexMockData>>;
-  let count = 0;
 
   beforeEach(async () => {
-    count++;
-    console.log("=========beforeEach count=========", count);
     mockData = await createComplexMockData();
     ctx = await new ServiceTestBuilder(MoveDocumentService)
       .withPrisma()
@@ -186,9 +187,7 @@ describe.sequential("MoveDocumentService (integration)", () => {
       .withProvider({
         provide: PermissionService,
         useValue: {
-          getResourcePermissionAbilities: vi
-            .fn()
-            .mockResolvedValue({ read: true, write: true }),
+          getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }),
         },
       })
       .build();
@@ -196,71 +195,56 @@ describe.sequential("MoveDocumentService (integration)", () => {
   });
 
   afterEach(async () => {
-    console.log("=========afterEach count=========", count);
     if (ctx) await ctx.close();
   });
 
-  // it("should handle deep nesting reparenting in mydocs", async () => {
-  //   const prisma = getTestPrisma();
-  //   // Find a doc whose parent is not the target parent and is not root
-  //   const targetParent = mockData.myDocsDocuments[1];
-  //   const sourceDoc = mockData.myDocsDocuments.find(
-  //     (doc) =>
-  //       doc.parentId &&
-  //       doc.parentId !== targetParent.id &&
-  //       doc.id !== targetParent.id
-  //   );
-  //   if (!sourceDoc)
-  //     throw new Error("No suitable sourceDoc found for reparenting test");
+  it("should handle deep nesting reparenting in mydocs", async () => {
+    const prisma = getTestPrisma();
+    // Find a doc whose parent is not the target parent and is not root
+    const targetParent = mockData.myDocsDocuments[1];
+    const sourceDoc = mockData.myDocsDocuments.find((doc) => doc.parentId && doc.parentId !== targetParent.id && doc.id !== targetParent.id);
+    if (!sourceDoc) throw new Error("No suitable sourceDoc found for reparenting test");
 
-  //   // Find siblings of the target parent to determine the correct index
-  //   const siblings = await prisma.doc.findMany({
-  //     where: { parentId: targetParent.id, subspaceId: null },
-  //     orderBy: { index: "asc" },
-  //   });
+    // Find siblings of the target parent to determine the correct index
+    const siblings = await prisma.doc.findMany({
+      where: { parentId: targetParent.id, subspaceId: null },
+      orderBy: { index: "asc" },
+    });
 
-  //   // Place at the end of the children
-  //   const lastIndex =
-  //     siblings.length > 0 ? siblings[siblings.length - 1].index : null;
-  //   const newIndex = generateFractionalIndex(lastIndex, null);
-  //   // Record old parentId before the move
-  //   const oldParentId = sourceDoc.parentId;
-  //   console.log(
-  //     "sourceDoc.id:",
-  //     sourceDoc.id,
-  //     "oldParentId:",
-  //     oldParentId,
-  //     "targetParent.id:",
-  //     targetParent.id
-  //   );
-  //   const result = await service.moveDocs(mockData.user.id, {
-  //     id: sourceDoc.id,
-  //     subspaceId: null,
-  //     parentId: targetParent.id,
-  //     index: newIndex,
-  //   });
-  //   expect(result.data.documents[0].parentId).toBe(targetParent.id);
+    // Place at the end of the children
+    const lastIndex = siblings.length > 0 ? siblings[siblings.length - 1].index : null;
+    const newIndex = generateFractionalIndex(lastIndex, null);
+    // Record old parentId before the move
+    const oldParentId = sourceDoc.parentId;
+    console.log("sourceDoc.id:", sourceDoc.id, "oldParentId:", oldParentId, "targetParent.id:", targetParent.id);
+    const result = await service.moveDocs(mockData.user.id, {
+      id: sourceDoc.id,
+      subspaceId: null,
+      parentId: targetParent.id,
+      index: newIndex,
+    });
+    expect(result.data.documents[0].parentId).toBe(targetParent.id);
 
-  //   // DB assertion: check parentId in DB
-  //   const updatedDoc = await prisma.doc.findUnique({
-  //     where: { id: sourceDoc.id },
-  //   });
-  //   expect(updatedDoc?.parentId).toBe(targetParent.id);
+    // DB assertion: check parentId in DB
+    const updatedDoc = await prisma.doc.findUnique({
+      where: { id: sourceDoc.id },
+    });
+    expect(updatedDoc?.parentId).toBe(targetParent.id);
 
-  //   // Check the old parent no longer has the sourceDoc as a child
-  //   if (oldParentId && oldParentId !== targetParent.id) {
-  //     const oldSiblings = await prisma.doc.findMany({
-  //       where: { parentId: oldParentId },
-  //     });
-  //     expect(oldSiblings.map((d) => d.id)).not.toContain(sourceDoc.id);
-  //   }
+    // Check the old parent no longer has the sourceDoc as a child
+    if (oldParentId && oldParentId !== targetParent.id) {
+      const oldSiblings = await prisma.doc.findMany({
+        where: { parentId: oldParentId },
+      });
+      expect(oldSiblings.map((d) => d.id)).not.toContain(sourceDoc.id);
+    }
 
-  //   //  Check the children of the new parent
-  //   const children = await prisma.doc.findMany({
-  //     where: { parentId: targetParent.id },
-  //   });
-  //   expect(children.map((c) => c.id)).toContain(sourceDoc.id);
-  // });
+    //  Check the children of the new parent
+    const children = await prisma.doc.findMany({
+      where: { parentId: targetParent.id },
+    });
+    expect(children.map((c) => c.id)).toContain(sourceDoc.id);
+  });
 
   it("should reorder root level documents in mydocs", async () => {
     // Use an existing root doc
@@ -331,15 +315,9 @@ describe.sequential("MoveDocumentService (integration)", () => {
     const updatedSubspace = await prisma.subspace.findUnique({
       where: { id: subspace.id },
     });
-    const tree = Array.isArray(updatedSubspace?.navigationTree)
-      ? updatedSubspace.navigationTree
-      : [];
+    const tree = Array.isArray(updatedSubspace?.navigationTree) ? updatedSubspace.navigationTree : [];
     const findInTree = (tree: any[], id: string): boolean =>
-      tree.some(
-        (node) =>
-          node.id === id ||
-          (Array.isArray(node.children) && findInTree(node.children, id))
-      );
+      tree.some((node) => node.id === id || (Array.isArray(node.children) && findInTree(node.children, id)));
     expect(findInTree(tree, sourceDoc.id)).toBe(false);
   });
 
@@ -385,15 +363,9 @@ describe.sequential("MoveDocumentService (integration)", () => {
     const updatedSubspace = await prisma.subspace.findUnique({
       where: { id: targetSubspace.id },
     });
-    const tree = Array.isArray(updatedSubspace?.navigationTree)
-      ? updatedSubspace.navigationTree
-      : [];
+    const tree = Array.isArray(updatedSubspace?.navigationTree) ? updatedSubspace.navigationTree : [];
     const findInTree = (tree: any[], id: string): boolean =>
-      tree.some(
-        (node) =>
-          node.id === id ||
-          (Array.isArray(node.children) && findInTree(node.children, id))
-      );
+      tree.some((node) => node.id === id || (Array.isArray(node.children) && findInTree(node.children, id)));
     expect(findInTree(tree, sourceDoc.id)).toBe(true);
   });
 
@@ -444,17 +416,9 @@ describe.sequential("MoveDocumentService (integration)", () => {
       where: { id: targetSubspace.id },
     });
     const findInTree = (tree: any[], id: string): boolean =>
-      tree.some(
-        (node) =>
-          node.id === id ||
-          (Array.isArray(node.children) && findInTree(node.children, id))
-      );
-    const sourceTree = Array.isArray(updatedSourceSubspace?.navigationTree)
-      ? updatedSourceSubspace.navigationTree
-      : [];
-    const targetTree = Array.isArray(updatedTargetSubspace?.navigationTree)
-      ? updatedTargetSubspace.navigationTree
-      : [];
+      tree.some((node) => node.id === id || (Array.isArray(node.children) && findInTree(node.children, id)));
+    const sourceTree = Array.isArray(updatedSourceSubspace?.navigationTree) ? updatedSourceSubspace.navigationTree : [];
+    const targetTree = Array.isArray(updatedTargetSubspace?.navigationTree) ? updatedTargetSubspace.navigationTree : [];
     expect(findInTree(sourceTree, sourceDoc.id)).toBe(false);
     expect(findInTree(targetTree, sourceDoc.id)).toBe(true);
   });
@@ -498,14 +462,8 @@ describe.sequential("MoveDocumentService (integration)", () => {
 
   it("should trigger permission inheritance and event publishing", async () => {
     const sourceDoc = mockData.myDocsDocuments[0];
-    const spyPermission = vi.spyOn(
-      (service as any).permissionInheritanceService,
-      "updatePermissionsOnMove"
-    );
-    const spyEvent = vi.spyOn(
-      (service as any).eventPublisher,
-      "publishWebsocketEvent"
-    );
+    const spyPermission = vi.spyOn((service as any).permissionInheritanceService, "updatePermissionsOnMove");
+    const spyEvent = vi.spyOn((service as any).eventPublisher, "publishWebsocketEvent");
     await service.moveDocs(mockData.user.id, {
       id: sourceDoc.id,
       subspaceId: null,
@@ -553,7 +511,7 @@ describe.sequential("MoveDocumentService (integration)", () => {
         subspaceId: null,
         parentId: sourceDoc.id,
         index: "a",
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -565,7 +523,7 @@ describe.sequential("MoveDocumentService (integration)", () => {
         subspaceId: null,
         parentId: "non-existent-id",
         index: "a",
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -661,8 +619,7 @@ describe.sequential("MoveDocumentService (integration)", () => {
       where: { parentId: parent.id, subspaceId: null },
       orderBy: { index: "asc" },
     });
-    const lastIndex =
-      siblings.length > 0 ? siblings[siblings.length - 1].index : null;
+    const lastIndex = siblings.length > 0 ? siblings[siblings.length - 1].index : null;
     const newIndex = generateFractionalIndex(lastIndex, null);
 
     const result = await service.moveDocs(mockData.user.id, {

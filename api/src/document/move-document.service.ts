@@ -1,8 +1,5 @@
 import { Injectable, Inject } from "@nestjs/common";
-import {
-  type ExtendedPrismaClient,
-  PRISMA_CLIENT,
-} from "@/_shared/database/prisma/prisma.extension";
+import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { MoveDocumentsDto } from "./document.dto";
 import { presentDocument } from "./document.presenter";
 import { NavigationNode, NavigationNodeType } from "contracts";
@@ -12,10 +9,7 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 import { PermissionService } from "@/permission/permission.service";
-import {
-  generateFractionalIndex,
-  handleIndexCollision,
-} from "@/_shared/utils/fractional-index";
+import { handleIndexCollision } from "@/_shared/utils/fractional-index";
 import { HttpStatus } from "@nestjs/common";
 
 @Injectable()
@@ -24,7 +18,7 @@ export class MoveDocumentService {
     @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionInheritanceService: PermissionInheritanceService,
-    private readonly permissionService: PermissionService
+    private readonly permissionService: PermissionService,
   ) {}
 
   async moveDocs(authorId: string, dto: MoveDocumentsDto) {
@@ -43,18 +37,12 @@ export class MoveDocumentService {
 
     // Prevent a document from being its own parent
     if (id === parentId) {
-      throw new ApiException(
-        ErrorCodeEnum.DocumentCircularReference,
-        HttpStatus.BAD_REQUEST
-      );
+      throw new ApiException(ErrorCodeEnum.DocumentCircularReference, HttpStatus.BAD_REQUEST);
     }
 
     // Require index to be a non-empty string (fractional-index)
     if (typeof index !== "string" || !index) {
-      throw new ApiException(
-        ErrorCodeEnum.InternalServerError,
-        HttpStatus.BAD_REQUEST
-      );
+      throw new ApiException(ErrorCodeEnum.InternalServerError, HttpStatus.BAD_REQUEST);
     }
 
     // Use the provided subspaceId (can be null), do not fallback to old value
@@ -87,29 +75,20 @@ export class MoveDocumentService {
     affectedDocuments.push(updatedDoc);
 
     // Handle permission inheritance using new permission module
-    await this.permissionInheritanceService.updatePermissionsOnMove(
-      id,
-      parentId || null,
-      targetSubspaceId
-    );
+    await this.permissionInheritanceService.updatePermissionsOnMove(id, parentId || null, targetSubspaceId);
 
     // Handle subspace changes and child documents
     if (subspaceChanged) {
       const childDocuments = await this.updateChildDocumentsSubspace(
         id,
-        targetSubspaceId // can be null for my-docs
+        targetSubspaceId, // can be null for my-docs
       );
       affectedDocuments.push(...childDocuments);
     }
 
     // Update navigation tree structure (skip for mydocs)
     if (targetSubspaceId !== null) {
-      await this.updateNavigationTreeStructure(
-        document,
-        updatedDoc,
-        undefined,
-        subspaceChanged
-      );
+      await this.updateNavigationTreeStructure(document, updatedDoc, undefined, subspaceChanged);
     }
 
     // Emit WebSocket events
@@ -121,34 +100,24 @@ export class MoveDocumentService {
       data: {
         affectedDocuments,
         subspaceIds: subspaceChanged
-          ? [{ id: document.subspaceId }, { id: targetSubspaceId }].filter(
-              (s) => s.id !== null
-            )
+          ? [{ id: document.subspaceId }, { id: targetSubspaceId }].filter((s) => s.id !== null)
           : targetSubspaceId
-          ? [{ id: targetSubspaceId }]
-          : [],
-        myDocsChanged:
-          targetSubspaceId === null || document.subspaceId === null,
+            ? [{ id: targetSubspaceId }]
+            : [],
+        myDocsChanged: targetSubspaceId === null || document.subspaceId === null,
       },
     });
 
     // Generate permissions for affected documents
     const permissions: Record<string, Record<string, boolean>> = {};
     for (const doc of affectedDocuments) {
-      const abilities =
-        await this.permissionService.getResourcePermissionAbilities(
-          "DOCUMENT",
-          doc.id,
-          authorId
-        );
+      const abilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", doc.id, authorId);
       permissions[doc.id] = abilities as Record<string, boolean>;
     }
 
     return {
       data: {
-        documents: affectedDocuments.map((doc) =>
-          presentDocument(doc, { isPublic: true })
-        ),
+        documents: affectedDocuments.map((doc) => presentDocument(doc, { isPublic: true })),
       },
       permissions,
     };
@@ -158,10 +127,7 @@ export class MoveDocumentService {
    * Recursively update subspaceId for all child documents when moving across subspaces
    * This ensures the entire document tree maintains consistency
    */
-  private async updateChildDocumentsSubspace(
-    parentId: string,
-    newSubspaceId: string | null
-  ) {
+  private async updateChildDocumentsSubspace(parentId: string, newSubspaceId: string | null) {
     const childDocuments = await this.prisma.doc.findMany({
       where: { parentId },
       include: { subspace: true },
@@ -179,10 +145,7 @@ export class MoveDocumentService {
       updatedChildren.push(updated);
 
       // Recursively update grandchildren documents
-      const grandChildren = await this.updateChildDocumentsSubspace(
-        child.id,
-        newSubspaceId
-      );
+      const grandChildren = await this.updateChildDocumentsSubspace(child.id, newSubspaceId);
       updatedChildren.push(...grandChildren);
     }
 
@@ -193,12 +156,7 @@ export class MoveDocumentService {
    * Update navigationTree structure in affected subspaces
    * Handles both cross-subspace moves and within-subspace reordering
    */
-  private async updateNavigationTreeStructure(
-    oldDoc: any,
-    newDoc: any,
-    index?: number,
-    subspaceChanged = false
-  ) {
+  private async updateNavigationTreeStructure(oldDoc: any, newDoc: any, index?: number, subspaceChanged = false) {
     // Skip navigation tree updates for mydocs (subspaceId is null)
     if (newDoc.subspaceId === null) {
       return;
@@ -206,26 +164,13 @@ export class MoveDocumentService {
 
     if (subspaceChanged) {
       if (oldDoc.subspaceId) {
-        await this.removeDocumentFromNavigationTree(
-          oldDoc.subspaceId,
-          oldDoc.id
-        );
+        await this.removeDocumentFromNavigationTree(oldDoc.subspaceId, oldDoc.id);
       }
       if (newDoc.subspaceId) {
-        await this.addDocumentToNavigationTree(
-          newDoc.subspaceId,
-          newDoc,
-          newDoc.parentId,
-          index
-        );
+        await this.addDocumentToNavigationTree(newDoc.subspaceId, newDoc, newDoc.parentId, index);
       }
     } else if (newDoc.subspaceId) {
-      await this.moveDocumentInNavigationTree(
-        newDoc.subspaceId,
-        newDoc.id,
-        newDoc.parentId,
-        index
-      );
+      await this.moveDocumentInNavigationTree(newDoc.subspaceId, newDoc.id, newDoc.parentId, index);
     }
   }
 
@@ -233,12 +178,7 @@ export class MoveDocumentService {
    * Add a document node to the navigationTree at specified position
    * Creates the navigation node structure and inserts it properly
    */
-  private async addDocumentToNavigationTree(
-    subspaceId: string,
-    doc: any,
-    parentId?: string,
-    index?: number
-  ) {
+  private async addDocumentToNavigationTree(subspaceId: string, doc: any, parentId?: string, index?: number) {
     const subspace = await this.prisma.subspace.findUnique({
       where: { id: subspaceId },
     });
@@ -263,12 +203,7 @@ export class MoveDocumentService {
       navigationTree.splice(insertIndex, 0, docNode);
     } else {
       // Insert under specified parent document
-      navigationTree = this.insertIntoTree(
-        navigationTree,
-        parentId,
-        docNode,
-        index
-      );
+      navigationTree = this.insertIntoTree(navigationTree, parentId, docNode, index);
     }
 
     // Save updated navigationTree back to database
@@ -282,10 +217,7 @@ export class MoveDocumentService {
    * Remove a document from the navigationTree structure
    * Cleans up the tree by removing the document node completely
    */
-  private async removeDocumentFromNavigationTree(
-    subspaceId: string,
-    docId: string
-  ) {
+  private async removeDocumentFromNavigationTree(subspaceId: string, docId: string) {
     const subspace = await this.prisma.subspace.findUnique({
       where: { id: subspaceId },
     });
@@ -293,10 +225,7 @@ export class MoveDocumentService {
     if (!subspace?.navigationTree) return;
 
     // Remove document node from tree structure
-    const navigationTree = this.removeFromTree(
-      subspace.navigationTree as any[],
-      docId
-    );
+    const navigationTree = this.removeFromTree(subspace.navigationTree as any[], docId);
 
     // Save cleaned navigationTree back to database
     await this.prisma.subspace.update({
@@ -309,12 +238,7 @@ export class MoveDocumentService {
    * Move a document within the same subspace navigationTree
    * Handles reordering and reparenting within the same subspace
    */
-  private async moveDocumentInNavigationTree(
-    subspaceId: string,
-    docId: string,
-    newParentId?: string,
-    newIndex?: number
-  ) {
+  private async moveDocumentInNavigationTree(subspaceId: string, docId: string, newParentId?: string, newIndex?: number) {
     const subspace = await this.prisma.subspace.findUnique({
       where: { id: subspaceId },
     });
@@ -333,17 +257,11 @@ export class MoveDocumentService {
     // 3. Insert the document at its new position
     if (!newParentId) {
       // Move to root level
-      const insertIndex =
-        newIndex !== undefined ? newIndex : navigationTree.length;
+      const insertIndex = newIndex !== undefined ? newIndex : navigationTree.length;
       navigationTree.splice(insertIndex, 0, removedNode);
     } else {
       // Move under new parent document
-      navigationTree = this.insertIntoTree(
-        navigationTree,
-        newParentId,
-        removedNode,
-        newIndex
-      );
+      navigationTree = this.insertIntoTree(navigationTree, newParentId, removedNode, newIndex);
     }
 
     // Save updated navigationTree structure
@@ -357,12 +275,7 @@ export class MoveDocumentService {
    * Insert a node into the tree structure under a specific parent
    * Recursively searches for parent and inserts node at specified index
    */
-  private insertIntoTree(
-    tree: any[],
-    parentId: string,
-    node: any,
-    index?: number
-  ): any[] {
+  private insertIntoTree(tree: any[], parentId: string, node: any, index?: number): any[] {
     return tree.map((item) => {
       if (item.id === parentId) {
         // Found the parent - insert node into its children
@@ -370,12 +283,7 @@ export class MoveDocumentService {
         item.children.splice(insertIndex, 0, node);
       } else if (item.children?.length > 0) {
         // Recursively search in children
-        item.children = this.insertIntoTree(
-          item.children,
-          parentId,
-          node,
-          index
-        );
+        item.children = this.insertIntoTree(item.children, parentId, node, index);
       }
       return item;
     });
@@ -391,9 +299,7 @@ export class MoveDocumentService {
       .map((node) => ({
         ...node,
         // Recursively clean children
-        children: node.children
-          ? this.removeFromTree(node.children, docId)
-          : [],
+        children: node.children ? this.removeFromTree(node.children, docId) : [],
       }));
   }
 

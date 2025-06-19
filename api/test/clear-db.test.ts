@@ -1,12 +1,12 @@
 import {
-  setupDatabase,
   clearDatabase,
   getTestPrisma,
+  startTestPostgres,
 } from "./setup/database-setup";
 
 describe("clearDatabase", () => {
   beforeAll(async () => {
-    await setupDatabase();
+    await startTestPostgres();
   });
 
   it("should remove all data from all tables", async () => {
