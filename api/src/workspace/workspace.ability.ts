@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { User } from "contracts";
 import { ResourceType, PermissionLevel } from "@prisma/client";
 import { PermissionService } from "@/permission/permission.service";
-import { ModelName } from "@/_shared/database/prisma/prisma.extension";
+import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 
 @Injectable()
 @DefineAbility("Workspace" as ModelName)

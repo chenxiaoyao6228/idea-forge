@@ -5,15 +5,13 @@ import { RealtimeGateway } from "../../socket/events/realtime.gateway";
 import { WebsocketEvent } from "../../events/types/websocket.event";
 import { BusinessEvents } from "../../socket/business-event.constant";
 import { presentStar } from "../../../star/star.presenter";
-import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
-import { Inject } from "@nestjs/common";
-import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Processor("websocket-events")
 export class WebsocketEventProcessor {
   constructor(
     private realtimeGateway: RealtimeGateway,
-    @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
   ) {}
 
   // Process incoming WebSocket events from the queue

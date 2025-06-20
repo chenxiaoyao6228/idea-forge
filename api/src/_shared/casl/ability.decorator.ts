@@ -1,4 +1,4 @@
-import { ModelName } from "@/_shared/database/prisma/prisma.extension";
+import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 
 export const ABILITY_FACTORY_KEY = "__ABILITY_FACTORY_KEY__";
 

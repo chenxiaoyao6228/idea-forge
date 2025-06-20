@@ -3,13 +3,13 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { TokenUsageResponse } from "contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { UpdateUserTokenLimitDto } from "./ai.dto";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 const MONTHLY_TOKEN_LIMIT = 10000;
 
 @Injectable()
 export class TokenUsageService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async updateTokenUsage(userId: string, usedTokens: number) {
     const usage = await this.getOrCreateTokenUsage(userId);
@@ -21,7 +21,7 @@ export class TokenUsageService {
     }
 
     // Update token usage
-    return this.prisma.aITokenUsage.update({
+    return this.prismaService.aITokenUsage.update({
       where: { userId },
       data: {
         tokensUsed: usage.tokensUsed + usedTokens,
@@ -30,12 +30,12 @@ export class TokenUsageService {
   }
 
   private async getOrCreateTokenUsage(userId: string) {
-    const usage = await this.prisma.aITokenUsage.findUnique({
+    const usage = await this.prismaService.aITokenUsage.findUnique({
       where: { userId },
     });
 
     if (!usage) {
-      return this.prisma.aITokenUsage.create({
+      return this.prismaService.aITokenUsage.create({
         data: {
           userId,
           tokensUsed: 0,
@@ -55,7 +55,7 @@ export class TokenUsageService {
   }
 
   private async resetMonthlyUsage(userId: string) {
-    await this.prisma.aITokenUsage.update({
+    await this.prismaService.aITokenUsage.update({
       where: { userId },
       data: {
         tokensUsed: 0,
@@ -80,7 +80,7 @@ export class TokenUsageService {
   }
 
   async updateUserTokenLimit(dto: UpdateUserTokenLimitDto) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: { email: dto.email },
       include: { aiTokenUsage: true },
     });
@@ -90,7 +90,7 @@ export class TokenUsageService {
     }
 
     if (!user.aiTokenUsage) {
-      return this.prisma.aITokenUsage.create({
+      return this.prismaService.aITokenUsage.create({
         data: {
           userId: user.id,
           monthlyLimit: dto.monthlyLimit,
@@ -99,14 +99,14 @@ export class TokenUsageService {
       });
     }
 
-    return this.prisma.aITokenUsage.update({
+    return this.prismaService.aITokenUsage.update({
       where: { userId: user.id },
       data: { monthlyLimit: dto.monthlyLimit, tokensUsed: dto.monthlyUsed },
     });
   }
 
   async getUserTokenUsage(email: string): Promise<TokenUsageResponse> {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: { email },
       include: { aiTokenUsage: true },
     });

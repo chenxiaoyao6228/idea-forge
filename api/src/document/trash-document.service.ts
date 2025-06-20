@@ -1,17 +1,17 @@
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 
 @Injectable()
 export class DocumentTrashService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
+  constructor(private readonly prismaService: PrismaService) {}
   private static isCleanupRunning = false;
 
   async emptyTrash(userId: string) {
     // Get all archived documents
-    const archivedDocs = await this.prisma.doc.findMany({
+    const archivedDocs = await this.prismaService.doc.findMany({
       where: {
         authorId: userId,
         archivedAt: { not: null },
@@ -31,7 +31,7 @@ export class DocumentTrashService {
 
   async permanentDelete(id: string, userId: string) {
     // Verify document exists and belongs to user
-    const doc = await this.prisma.doc.findFirst({
+    const doc = await this.prismaService.doc.findFirst({
       where: {
         id,
         authorId: userId,
@@ -49,24 +49,24 @@ export class DocumentTrashService {
 
     // Delete document's cover image if exists
     if (doc.coverImage) {
-      await this.prisma.coverImage.delete({
+      await this.prismaService.coverImage.delete({
         where: { docId: id },
       });
     }
 
     // Delete document's shares
-    await this.prisma.docShare.deleteMany({
+    await this.prismaService.docShare.deleteMany({
       where: { docId: id },
     });
 
     // Finally delete the document
-    return await this.prisma.doc.delete({
+    return await this.prismaService.doc.delete({
       where: { id },
     });
   }
 
   private async permanentDeleteChildren(parentId: string, userId: string) {
-    const children = await this.prisma.doc.findMany({
+    const children = await this.prismaService.doc.findMany({
       where: {
         parentId,
         authorId: userId,
@@ -81,25 +81,25 @@ export class DocumentTrashService {
 
       // Delete child's cover image if exists
       if (child.coverImage) {
-        await this.prisma.coverImage.delete({
+        await this.prismaService.coverImage.delete({
           where: { docId: child.id },
         });
       }
 
       // Delete child's shares
-      await this.prisma.docShare.deleteMany({
+      await this.prismaService.docShare.deleteMany({
         where: { docId: child.id },
       });
 
       // Delete the child document
-      await this.prisma.doc.delete({
+      await this.prismaService.doc.delete({
         where: { id: child.id },
       });
     }
   }
 
   async getTrash(userId: string) {
-    return await this.prisma.doc.findMany({
+    return await this.prismaService.doc.findMany({
       where: {
         authorId: userId,
         archivedAt: { not: null },
@@ -118,7 +118,7 @@ export class DocumentTrashService {
 
   async restore(id: string, userId: string) {
     // Verify document exists and belongs to user
-    const doc = await this.prisma.doc.findFirst({
+    const doc = await this.prismaService.doc.findFirst({
       where: {
         id,
         authorId: userId,
@@ -137,7 +137,7 @@ export class DocumentTrashService {
     // Restore document and all its children
     await this.restoreChildren(id, userId);
 
-    return await this.prisma.doc.update({
+    return await this.prismaService.doc.update({
       where: { id },
       data: {
         archivedAt: null,
@@ -152,7 +152,7 @@ export class DocumentTrashService {
   }
 
   private async restoreChildren(parentId: string, userId: string) {
-    const children = await this.prisma.doc.findMany({
+    const children = await this.prismaService.doc.findMany({
       where: {
         parentId,
         authorId: userId,
@@ -162,7 +162,7 @@ export class DocumentTrashService {
 
     for (const child of children) {
       await this.restoreChildren(child.id, userId);
-      await this.prisma.doc.update({
+      await this.prismaService.doc.update({
         where: { id: child.id },
         data: { archivedAt: null },
       });
@@ -183,7 +183,7 @@ export class DocumentTrashService {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      await this.prisma.$transaction(async (tx) => {
+      await this.prismaService.$transaction(async (tx) => {
         const expiredDocs = await tx.doc.findMany({
           where: {
             archivedAt: { not: null },

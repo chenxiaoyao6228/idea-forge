@@ -3,15 +3,14 @@ import {
   PostgreSqlContainer,
 } from "@testcontainers/postgresql";
 import { execSync } from "child_process";
-import {
-  ExtendedPrismaClient,
-  getExtendedPrismaClient,
-} from "@/_shared/database/prisma/prisma.extension";
+
 import { RedisContainer, StartedRedisContainer } from "@testcontainers/redis";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+
 
 let redisContainer: StartedRedisContainer | undefined;
 let container: StartedPostgreSqlContainer;
-let testPrisma: ExtendedPrismaClient;
+let testPrisma: PrismaService;
 
 /*
  * https://www.npmjs.com/package/testcontainers
@@ -31,7 +30,7 @@ export async function startTestPostgres() {
   execSync(`DATABASE_URL='${url}' pnpm prisma migrate deploy`, {
     stdio: "inherit",
   });
-  testPrisma = getExtendedPrismaClient({ url });
+  testPrisma = new PrismaService();
   await testPrisma.$connect();
   return url;
 }
@@ -43,7 +42,8 @@ export async function stopTestPostgres() {
 
 export function getTestPrisma() {
   if (!testPrisma) {
-    testPrisma = getExtendedPrismaClient({ url: process.env.DATABASE_URL });
+    testPrisma = new PrismaService();
+    testPrisma.$connect();
   }
   return testPrisma;
 }

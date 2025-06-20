@@ -1,28 +1,28 @@
-import { ConflictException, Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { hash } from "argon2";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { CreateUserDto, UpdateUserDto } from "@/auth/auth.dto";
 import { UserListRequestDto } from "contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { UserStatus, Prisma } from "@prisma/client";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class UserService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async createUser(data: CreateUserDto) {
-    const { password, ...userData } = data;
+    const { password, email, status } = data;
 
-    const user = await this.prisma.user.create({
+    const user = await this.prismaService.user.create({
       data: {
-        email: userData.email,
-        status: userData.status,
+        email,
+        status,
       },
     });
 
     if (password) {
-      await this.prisma.password.create({
+      await this.prismaService.password.create({
         data: {
           hash: await hash(password),
           userId: user.id,
@@ -34,15 +34,15 @@ export class UserService {
   }
 
   async getUserByEmail(email: string) {
-    return await this.prisma.user.findUnique({ where: { email } });
+    return await this.prismaService.user.findUnique({ where: { email } });
   }
 
   async getUserById(id: string) {
-    return await this.prisma.user.findUnique({ where: { id } });
+    return await this.prismaService.user.findUnique({ where: { id } });
   }
 
   async getUserWithPassword(email: string) {
-    return await this.prisma.user.findUnique({
+    return await this.prismaService.user.findUnique({
       where: { email },
       include: { password: true },
     });
@@ -50,7 +50,7 @@ export class UserService {
 
   async updateUser(id: string, data: UpdateUserDto) {
     try {
-      return await this.prisma.user.update({
+      return await this.prismaService.user.update({
         where: { id },
         data,
       });
@@ -63,14 +63,14 @@ export class UserService {
   }
 
   async updateHashedRefreshToken(id: string, hashedRefreshToken: string) {
-    return await this.prisma.user.update({
+    return await this.prismaService.user.update({
       where: { id },
       data: { hashedRefreshToken },
     });
   }
 
   async updateUserStatus(email: string, status: UserStatus) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: { email },
     });
 
@@ -78,14 +78,14 @@ export class UserService {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
     }
 
-    return await this.prisma.user.update({
+    return await this.prismaService.user.update({
       where: { email },
       data: { status },
     });
   }
 
   async updateUserPassword(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: { email },
       include: { password: true },
     });
@@ -98,14 +98,14 @@ export class UserService {
 
     if (user.password) {
       // Update existing password
-      return await this.prisma.password.update({
+      return await this.prismaService.password.update({
         where: { userId: user.id },
         data: { hash: hashedPassword },
       });
     }
 
     // Create new password
-    return await this.prisma.password.create({
+    return await this.prismaService.password.create({
       data: {
         hash: hashedPassword,
         userId: user.id,
@@ -129,7 +129,7 @@ export class UserService {
 
     try {
       const [users, total] = await Promise.all([
-        this.prisma.user.findMany({
+        this.prismaService.user.findMany({
           where,
           skip,
           take,
@@ -146,7 +146,7 @@ export class UserService {
             updatedAt: true,
           },
         }),
-        this.prisma.user.count({ where }),
+        this.prismaService.user.count({ where }),
       ]);
 
       return {

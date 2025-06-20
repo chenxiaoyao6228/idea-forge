@@ -34,9 +34,8 @@ import { StarModule } from "./star/star.module";
 import { DocShareModule } from "./doc-share/doc-share.module";
 import { GroupModule } from "./group/group.module";
 import { PermissionModule } from "./permission/permission.module";
-import { ClsModule } from "nestjs-cls";
 import { UserIpInterceptor } from "./_shared/interceptors/user-ip.interceptor";
-import { generateUuid } from "./_shared/utils/uuid";
+import { SharedClsModule } from "./_shared/utils/cls.module";
 
 @Module({
   controllers: [AppController],
@@ -67,15 +66,7 @@ import { generateUuid } from "./_shared/utils/uuid";
     HttpModule.register({
       timeout: 5000,
     }),
-    // see: https://papooch.github.io/nestjs-cls
-    ClsModule.forRoot({
-      global: true,
-      middleware: {
-        mount: true,
-        generateId: true,
-        idGenerator: (req: Request) => req.headers["x-request-id"] ?? generateUuid(),
-      },
-    }),
+    SharedClsModule.forRoot(),
     LoggerModule,
     ConfigsModule,
     PrismaModule,

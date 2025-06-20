@@ -1,6 +1,6 @@
 import { SetMetadata } from "@nestjs/common";
 import { Action } from "./ability.class";
-import { ModelName } from "@/_shared/database/prisma/prisma.extension";
+import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 
 export const CHECK_POLICY_KEY = "__check_policy_key__";
 

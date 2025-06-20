@@ -1,15 +1,13 @@
-import { Inject, Injectable, OnModuleInit, UnauthorizedException } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
+import { Injectable, OnModuleInit, UnauthorizedException } from "@nestjs/common";
 import { Hocuspocus } from "@hocuspocus/server";
 import { Database } from "@hocuspocus/extension-database";
 import { Throttle } from "@hocuspocus/extension-throttle";
 import { Logger } from "@hocuspocus/extension-logger";
 import { ConfigService } from "@nestjs/config";
 import { UserService } from "@/user/user.service";
-import { Permission } from "contracts";
 import { TiptapTransformer } from "@hocuspocus/transformer";
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,7 +27,7 @@ export class CollaborationService implements OnModuleInit {
   private readonly secretKey: Buffer;
 
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
     private configService: ConfigService,
     private userService: UserService,
   ) {
@@ -45,7 +43,7 @@ export class CollaborationService implements OnModuleInit {
     permission: Permission;
   }> {
     // 1. Check if user is the owner
-    const doc = await this.prisma.doc.findUnique({
+    const doc = await this.prismaService.doc.findUnique({
       where: { id: documentId },
     });
 
@@ -59,7 +57,7 @@ export class CollaborationService implements OnModuleInit {
     }
 
     // 2. Check shared permissions
-    const share = await this.prisma.docShare.findFirst({
+    const share = await this.prismaService.docShare.findFirst({
       where: {
         docId: documentId,
         userId: userId,
@@ -70,7 +68,7 @@ export class CollaborationService implements OnModuleInit {
       throw new UnauthorizedException("No access to this document");
     }
 
-    return { permission: share.permission as Permission };
+    return { permission: share.permission as any };
   }
 
   async generateCollabToken(userId: string): Promise<string> {
@@ -177,7 +175,7 @@ export class CollaborationService implements OnModuleInit {
         new Database({
           fetch: async ({ documentName }) => {
             // await delay(100000);
-            const doc = await this.prisma.doc.findUnique({
+            const doc = await this.prismaService.doc.findUnique({
               where: { id: documentName },
               select: { contentBinary: true },
             });
@@ -192,7 +190,7 @@ export class CollaborationService implements OnModuleInit {
             const json = TiptapTransformer.fromYdoc(document, "default");
             const jsonStr = JSON.stringify(json);
 
-            await this.prisma.doc.update({
+            await this.prismaService.doc.update({
               where: { id: documentName },
               data: { contentBinary: state, content: jsonStr },
             });

@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { DiscoveryService, Reflector } from "@nestjs/core";
 import { BaseAbility } from "./ability.class";
 import { ABILITY_FACTORY_KEY } from "./ability.decorator";
-import { ModelName } from "@/_shared/database/prisma/prisma.extension";
+import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 
 @Injectable()
 export class AbilityService implements OnModuleInit {

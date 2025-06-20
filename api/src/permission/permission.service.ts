@@ -1,14 +1,12 @@
-import { forwardRef, Inject, Injectable } from "@nestjs/common";
-import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
-import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
+import { Injectable } from "@nestjs/common";
 import { ResourceType, PermissionLevel, UnifiedPermission, WorkspaceRole, SubspaceRole, SourceType, SubspaceType, GuestStatus } from "@prisma/client";
-import { PermissionInheritanceService } from "./permission-inheritance.service";
 import { PermissionListRequest, SharedWithMeResponse } from "contracts/dist/types/permission";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class PermissionService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient, // FIXME: webpack complaining about circular dependency
+    private readonly prismaService: PrismaService, // FIXME: webpack complaining about circular dependency
   ) {
     // @Inject(forwardRef(() => PermissionInheritanceService)) private readonly inheritanceService: PermissionInheritanceService,
   }
@@ -16,7 +14,7 @@ export class PermissionService {
   // 获取用户所有权限
   async getUserAllPermissions(userId: string): Promise<UnifiedPermission[]> {
     // 获取按优先级排序的权限
-    const userPermissions = await this.prisma.unifiedPermission.findMany({
+    const userPermissions = await this.prismaService.unifiedPermission.findMany({
       where: { userId },
       orderBy: { priority: "asc" },
     });
@@ -25,7 +23,7 @@ export class PermissionService {
   }
 
   async getResourcePermissionAbilities(resourceType: ResourceType, resourceId: string, userId: string) {
-    const permissions = await this.prisma.unifiedPermission.findMany({
+    const permissions = await this.prismaService.unifiedPermission.findMany({
       where: { resourceType, resourceId, userId },
       orderBy: { priority: "asc" },
     });
@@ -41,28 +39,28 @@ export class PermissionService {
 
   // TODO: remove the below three and merge into one
   async getUserPermissions(userId: string, resourceType: ResourceType, resourceId: string) {
-    return this.prisma.unifiedPermission.findMany({
+    return this.prismaService.unifiedPermission.findMany({
       where: { userId, resourceType, resourceId },
       orderBy: { priority: "asc" },
     });
   }
 
   async getUserWorkspacePermissions(userId: string) {
-    return this.prisma.unifiedPermission.findMany({
+    return this.prismaService.unifiedPermission.findMany({
       where: { userId, resourceType: ResourceType.WORKSPACE },
       orderBy: { priority: "asc" },
     });
   }
 
   async getUserSubspacePermissions(userId: string) {
-    return this.prisma.unifiedPermission.findMany({
+    return this.prismaService.unifiedPermission.findMany({
       where: { userId, resourceType: ResourceType.SUBSPACE },
       orderBy: { priority: "asc" },
     });
   }
 
   async getUserDocumentPermissions(userId: string) {
-    return this.prisma.unifiedPermission.findMany({
+    return this.prismaService.unifiedPermission.findMany({
       where: { userId, resourceType: ResourceType.DOCUMENT },
       orderBy: { priority: "asc" },
     });
@@ -70,7 +68,7 @@ export class PermissionService {
 
   // TODO: 支持 Guest 权限
   async resolveUserPermission(userId: string, resourceType: ResourceType, resourceId: string): Promise<PermissionLevel> {
-    const permissions = await this.prisma.unifiedPermission.findMany({
+    const permissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         userId,
         resourceType,
@@ -99,7 +97,7 @@ export class PermissionService {
     const sourceType = this.mapWorkspaceRoleToSourceType(role);
     const priority = this.getPriorityBySourceType(sourceType);
 
-    return await this.prisma.unifiedPermission.upsert({
+    return await this.prismaService.unifiedPermission.upsert({
       where: {
         userId_guestId_resourceType_resourceId_sourceType: {
           userId,
@@ -128,7 +126,7 @@ export class PermissionService {
     const sourceType = this.mapSubspaceRoleToSourceType(role);
     const priority = this.getPriorityBySourceType(sourceType);
 
-    return await this.prisma.unifiedPermission.upsert({
+    return await this.prismaService.unifiedPermission.upsert({
       where: {
         userId_guestId_resourceType_resourceId_sourceType: {
           userId,
@@ -155,7 +153,7 @@ export class PermissionService {
   async assignDocumentPermission(userId: string, docId: string, permission: PermissionLevel, createdById: string, sourceType: SourceType = SourceType.DIRECT) {
     const priority = this.getPriorityBySourceType(sourceType);
 
-    return await this.prisma.unifiedPermission.upsert({
+    return await this.prismaService.unifiedPermission.upsert({
       where: {
         userId_guestId_resourceType_resourceId_sourceType: {
           userId,
@@ -180,7 +178,7 @@ export class PermissionService {
 
   // 支持成员组权限分配
   async assignGroupPermissions(groupId: string, resourceType: ResourceType, resourceId: string, permission: PermissionLevel, createdById: string) {
-    const groupMembers = await this.prisma.memberGroupUser.findMany({
+    const groupMembers = await this.prismaService.memberGroupUser.findMany({
       where: { groupId },
       include: { user: true },
     });
@@ -188,7 +186,7 @@ export class PermissionService {
     const permissions: UnifiedPermission[] = [];
 
     for (const member of groupMembers) {
-      const groupPermission = await this.prisma.unifiedPermission.create({
+      const groupPermission = await this.prismaService.unifiedPermission.create({
         data: {
           userId: member.userId,
           resourceType,
@@ -209,7 +207,7 @@ export class PermissionService {
   // 邀请协作访客
   async inviteGuestCollaborator(docId: string, email: string, permission: PermissionLevel, inviterId: string, expireDays = 30) {
     // 获取文档所属工作空间
-    const doc = await this.prisma.doc.findUnique({
+    const doc = await this.prismaService.doc.findUnique({
       where: { id: docId },
       select: { workspaceId: true },
     });
@@ -219,7 +217,7 @@ export class PermissionService {
     }
 
     // 创建或更新访客
-    const guest = await this.prisma.guestCollaborator.upsert({
+    const guest = await this.prismaService.guestCollaborator.upsert({
       where: {
         email_workspaceId: {
           email,
@@ -240,7 +238,7 @@ export class PermissionService {
     });
 
     // 创建访客权限
-    const guestPermission = await this.prisma.unifiedPermission.create({
+    const guestPermission = await this.prismaService.unifiedPermission.create({
       data: {
         guestId: guest.id,
         resourceType: ResourceType.DOCUMENT,
@@ -275,7 +273,7 @@ export class PermissionService {
 
   // 全员空间权限分配
   private async assignWorkspaceWideSubspacePermissions(subspaceId: string, workspaceId: string, creatorId: string) {
-    const workspaceMembers = await this.prisma.workspaceMember.findMany({
+    const workspaceMembers = await this.prismaService.workspaceMember.findMany({
       where: { workspaceId },
     });
     // TODO: 每次都要遍历, 待优化
@@ -291,7 +289,7 @@ export class PermissionService {
     await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
 
     // 其他工作空间成员可以评论
-    const workspaceMembers = await this.prisma.workspaceMember.findMany({
+    const workspaceMembers = await this.prismaService.workspaceMember.findMany({
       where: {
         workspaceId,
         userId: { not: creatorId },
@@ -299,7 +297,7 @@ export class PermissionService {
     });
 
     for (const member of workspaceMembers) {
-      await this.prisma.unifiedPermission.create({
+      await this.prismaService.unifiedPermission.create({
         data: {
           userId: member.userId,
           resourceType: ResourceType.SUBSPACE,
@@ -327,14 +325,14 @@ export class PermissionService {
 
   // 移除权限
   async removePermission(permissionId: string) {
-    return await this.prisma.unifiedPermission.delete({
+    return await this.prismaService.unifiedPermission.delete({
       where: { id: permissionId },
     });
   }
 
   // 更新权限
   async updatePermission(permissionId: string, newPermission: PermissionLevel) {
-    return await this.prisma.unifiedPermission.update({
+    return await this.prismaService.unifiedPermission.update({
       where: { id: permissionId },
       data: { permission: newPermission },
     });
@@ -346,13 +344,13 @@ export class PermissionService {
    */
   async propagateDocumentPermissionsToExistingMembers(documentId: string, subspaceId: string, workspaceId: string): Promise<void> {
     // Get all workspace members with their roles
-    const workspaceMembers = await this.prisma.workspaceMember.findMany({
+    const workspaceMembers = await this.prismaService.workspaceMember.findMany({
       where: { workspaceId },
       include: { user: true },
     });
 
     // Get all subspace members with their roles
-    const subspaceMembers = await this.prisma.subspaceMember.findMany({
+    const subspaceMembers = await this.prismaService.subspaceMember.findMany({
       where: { subspaceId },
       include: { user: true },
     });
@@ -361,7 +359,7 @@ export class PermissionService {
     for (const member of workspaceMembers) {
       const permission = this.mapWorkspaceRoleToPermission(member.role);
 
-      await this.prisma.unifiedPermission.create({
+      await this.prismaService.unifiedPermission.create({
         data: {
           userId: member.userId,
           resourceType: ResourceType.DOCUMENT,
@@ -379,7 +377,7 @@ export class PermissionService {
       const permission = this.mapSubspaceRoleToPermission(member.role);
 
       // Use upsert to handle cases where workspace member is also subspace member
-      await this.prisma.unifiedPermission.upsert({
+      await this.prismaService.unifiedPermission.upsert({
         where: {
           userId_guestId_resourceType_resourceId_sourceType: {
             userId: member.userId,
@@ -514,7 +512,7 @@ export class PermissionService {
 
     // Get all document permissions for the user with proper priority resolution
     // Get document IDs first to filter out user's own documents
-    const docs = await this.prisma.doc.findMany({
+    const docs = await this.prismaService.doc.findMany({
       where: {
         authorId: { not: userId },
       },
@@ -523,7 +521,7 @@ export class PermissionService {
       },
     });
 
-    const documentPermissions = await this.prisma.unifiedPermission.findMany({
+    const documentPermissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         userId,
         resourceType: ResourceType.DOCUMENT,
@@ -548,7 +546,7 @@ export class PermissionService {
     const paginatedDocIds = documentIds.slice(skip, skip + limit);
 
     // Get document details
-    const documents = await this.prisma.doc.findMany({
+    const documents = await this.prismaService.doc.findMany({
       where: { id: { in: paginatedDocIds } },
     });
 

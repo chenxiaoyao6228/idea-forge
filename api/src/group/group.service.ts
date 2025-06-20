@@ -1,20 +1,20 @@
-import { Injectable, Inject } from "@nestjs/common";
-import { PrismaClient, Prisma } from "@prisma/client";
-import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { GroupPresenter } from "./group.presenter";
 import { CreateGroupDto, UpdateGroupDto, GroupInfoDto, GroupListRequestDto, AddGroupUserDto, RemoveGroupUserDto } from "./group.dto";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class GroupService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    private readonly prismaService: PrismaService,
     private readonly groupPresenter: GroupPresenter,
   ) {}
 
   async getGroupInfo(userId: string, dto: GroupInfoDto) {
-    const group = await this.prisma.memberGroup.findUnique({
+    const group = await this.prismaService.memberGroup.findUnique({
       where: { id: dto.id },
       include: {
         members: {
@@ -49,7 +49,7 @@ export class GroupService {
     const limit = dto.limit ?? 10;
 
     const [groups, total] = await Promise.all([
-      this.prisma.memberGroup.findMany({
+      this.prismaService.memberGroup.findMany({
         where,
         include: {
           members: {
@@ -62,14 +62,14 @@ export class GroupService {
         take: limit,
         orderBy: { createdAt: "desc" },
       }),
-      this.prisma.memberGroup.count({ where }),
+      this.prismaService.memberGroup.count({ where }),
     ]);
 
     return this.groupPresenter.presentGroupList(groups, total, page, limit);
   }
 
   async createGroup(userId: string, dto: CreateGroupDto) {
-    const group = await this.prisma.memberGroup.create({
+    const group = await this.prismaService.memberGroup.create({
       data: {
         ...dto,
         members: {
@@ -91,7 +91,7 @@ export class GroupService {
   }
 
   async updateGroup(userId: string, dto: UpdateGroupDto) {
-    const group = await this.prisma.memberGroup.update({
+    const group = await this.prismaService.memberGroup.update({
       where: { id: dto.id },
       data: {
         name: dto.name,
@@ -111,7 +111,7 @@ export class GroupService {
   }
 
   async deleteGroup(userId: string, dto: GroupInfoDto) {
-    await this.prisma.memberGroup.delete({
+    await this.prismaService.memberGroup.delete({
       where: { id: dto.id },
     });
 
@@ -119,7 +119,7 @@ export class GroupService {
   }
 
   async addUserToGroup(userId: string, dto: AddGroupUserDto) {
-    const group = await this.prisma.memberGroup.update({
+    const group = await this.prismaService.memberGroup.update({
       where: { id: dto.id },
       data: {
         members: {
@@ -142,14 +142,14 @@ export class GroupService {
 
   async removeUserFromGroup(userId: string, dto: RemoveGroupUserDto) {
     // First delete the member
-    await this.prisma.memberGroupUser.deleteMany({
+    await this.prismaService.memberGroupUser.deleteMany({
       where: {
         AND: [{ userId: dto.userId }, { groupId: dto.id }],
       },
     });
 
     // Then get the updated group
-    const group = await this.prisma.memberGroup.findUnique({
+    const group = await this.prismaService.memberGroup.findUnique({
       where: { id: dto.id },
       include: {
         members: {
@@ -169,7 +169,7 @@ export class GroupService {
 
   async searchGroupsForSharing(userId: string, docId: string, query?: string) {
     // Get all groups that already have access to the document
-    const existingGroupIds = await this.prisma.docGroupPermission
+    const existingGroupIds = await this.prismaService.docGroupPermission
       .findMany({
         where: { docId },
         select: { groupId: true },
@@ -177,7 +177,7 @@ export class GroupService {
       .then((permissions) => permissions.map((p) => p.groupId));
 
     // Get all groups the user has access to
-    const userGroups = await this.prisma.memberGroupUser
+    const userGroups = await this.prismaService.memberGroupUser
       .findMany({
         where: { userId },
         select: { groupId: true },
@@ -185,7 +185,7 @@ export class GroupService {
       .then((memberships) => memberships.map((m) => m.groupId));
 
     // Search groups
-    const groups = await this.prisma.memberGroup.findMany({
+    const groups = await this.prismaService.memberGroup.findMany({
       where: {
         AND: [
           {

@@ -3,19 +3,20 @@ import { CanActivate } from "@nestjs/common";
 import { Action } from "./ability.class";
 import { Reflector } from "@nestjs/core";
 import { CHECK_POLICY_KEY } from "./policy.decorator";
-import { ExtendedPrismaClient, InjectPrismaClient, ModelName } from "@/_shared/database/prisma/prisma.extension";
+import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 import { AbilityService } from "./casl.service";
 import { subject } from "@casl/ability";
 import { getRequestItemId } from "./util";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { PrismaService } from "../database/prisma/prisma.service";
 
 @Injectable()
 export class PolicyGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private abilityService: AbilityService,
-    @InjectPrismaClient() private readonly prisma: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -35,7 +36,7 @@ export class PolicyGuard implements CanActivate {
       const ability = await this.abilityService.abilityMap[model].createForUser(user);
 
       if (id) {
-        const item = await this.prisma[model].findUniqueOrThrow({ where: { id } });
+        const item = await this.prismaService[model].findUniqueOrThrow({ where: { id } });
 
         return ability.can(action, subject(model, item));
       }

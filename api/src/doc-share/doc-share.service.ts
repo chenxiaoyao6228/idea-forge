@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { Inject } from "@nestjs/common";
 import { presentDocShare } from "./doc-share.presenter";
 import { DocShareInfoDto, CreateShareDto, UpdateShareDto, RevokeShareDto, ShareListRequestDto, ListSharedWithMeDto, ListSharedByMeDto } from "./doc-share.dto";
 import { DocShare, Prisma } from "@prisma/client";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 type DocShareWithRelations = DocShare & {
   doc: {
@@ -36,13 +36,13 @@ type DocShareWithRelations = DocShare & {
 
 @Injectable()
 export class DocShareService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async getShareInfo(userId: string, dto: DocShareInfoDto) {
     const { id, documentId } = dto;
     const shares: DocShareWithRelations[] = [];
 
-    const share = await this.prisma.docShare.findFirst({
+    const share = await this.prismaService.docShare.findFirst({
       where: id
         ? {
             id,
@@ -69,7 +69,7 @@ export class DocShareService {
     }
 
     if (documentId) {
-      const document = await this.prisma.doc.findUnique({
+      const document = await this.prismaService.doc.findUnique({
         where: { id: documentId },
         include: {
           workspace: true,
@@ -83,7 +83,7 @@ export class DocShareService {
 
       // Check for parent document shares
       if (document.parentId) {
-        const parentShare = await this.prisma.docShare.findFirst({
+        const parentShare = await this.prismaService.docShare.findFirst({
           where: {
             docId: document.parentId,
             revokedAt: null,
@@ -137,7 +137,7 @@ export class DocShareService {
     };
 
     const [shares, total] = await Promise.all([
-      this.prisma.docShare.findMany({
+      this.prismaService.docShare.findMany({
         where,
         include: {
           doc: {
@@ -153,7 +153,7 @@ export class DocShareService {
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.docShare.count({ where }),
+      this.prismaService.docShare.count({ where }),
     ]);
 
     return {
@@ -165,7 +165,7 @@ export class DocShareService {
   async createShare(userId: string, dto: CreateShareDto) {
     const { documentId, published = false, urlId, includeChildDocuments = false } = dto;
 
-    const document = await this.prisma.doc.findUnique({
+    const document = await this.prismaService.doc.findUnique({
       where: { id: documentId },
       include: {
         workspace: true,
@@ -176,7 +176,7 @@ export class DocShareService {
       throw new NotFoundException("Document not found");
     }
 
-    const share = await this.prisma.docShare.create({
+    const share = await this.prismaService.docShare.create({
       data: {
         docId: documentId,
         authorId: userId,
@@ -205,7 +205,7 @@ export class DocShareService {
   async updateShare(userId: string, dto: UpdateShareDto) {
     const { id, includeChildDocuments, published, urlId, allowIndexing } = dto;
 
-    const share = await this.prisma.docShare.findUnique({
+    const share = await this.prismaService.docShare.findUnique({
       where: { id },
       include: {
         doc: {
@@ -227,7 +227,7 @@ export class DocShareService {
       throw new NotFoundException("Not authorized to update this share");
     }
 
-    const updatedShare = await this.prisma.docShare.update({
+    const updatedShare = await this.prismaService.docShare.update({
       where: { id },
       data: {
         includeChildDocuments,
@@ -254,7 +254,7 @@ export class DocShareService {
   async revokeShare(userId: string, dto: RevokeShareDto) {
     const { id } = dto;
 
-    const share = await this.prisma.docShare.findUnique({
+    const share = await this.prismaService.docShare.findUnique({
       where: { id },
     });
 
@@ -266,7 +266,7 @@ export class DocShareService {
       throw new NotFoundException("Not authorized to revoke this share");
     }
 
-    await this.prisma.docShare.update({
+    await this.prismaService.docShare.update({
       where: { id },
       data: {
         revokedAt: new Date(),
@@ -297,8 +297,8 @@ export class DocShareService {
     };
 
     const [total, shares] = await Promise.all([
-      this.prisma.docShare.count({ where }),
-      this.prisma.docShare.findMany({
+      this.prismaService.docShare.count({ where }),
+      this.prismaService.docShare.findMany({
         where,
         skip,
         take: limit,
@@ -378,8 +378,8 @@ export class DocShareService {
     };
 
     const [total, shares] = await Promise.all([
-      this.prisma.docShare.count({ where }),
-      this.prisma.docShare.findMany({
+      this.prismaService.docShare.count({ where }),
+      this.prismaService.docShare.findMany({
         where,
         skip,
         take: limit,

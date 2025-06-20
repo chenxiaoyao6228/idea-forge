@@ -1,9 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { CreateStarDto } from "./star.dto";
 import { UpdateStarDto } from "./star.dto";
-import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
-import { Inject } from "@nestjs/common";
-import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
 import { presentStar } from "./star.presenter";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
@@ -12,11 +9,12 @@ import { WebsocketEvent } from "@/_shared/events/types/websocket.event";
 import { InjectQueue } from "@nestjs/bull";
 import fractionalIndex from "fractional-index";
 import { Queue } from "bull";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class StarService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
     @InjectQueue("websocket-events") private readonly websocketQueue: Queue,
   ) {}
 

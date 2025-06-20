@@ -3,18 +3,18 @@ import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto, ShareDocumentDt
 import { NavigationNode, NavigationNodeType, UpdateCoverDto } from "contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { presentDocument } from "./document.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { DocShareService } from "../doc-share/doc-share.service";
 import { PermissionService } from "@/permission/permission.service";
 import { generateFractionalIndex, handleIndexCollision } from "@/_shared/utils/fractional-index";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class DocumentService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly docShareService: DocShareService,
     private readonly permissionService: PermissionService,
@@ -22,7 +22,7 @@ export class DocumentService {
 
   async create(authorId: string, dto: CreateDocumentDto) {
     // Get the first document's index to generate new index
-    const firstDocument = await this.prisma.doc.findFirst({
+    const firstDocument = await this.prismaService.doc.findFirst({
       where: {
         workspaceId: dto.workspaceId,
         subspaceId: dto.subspaceId,
@@ -36,7 +36,7 @@ export class DocumentService {
 
     // Generate new index and handle collisions using shared utilities
     const newIndex = generateFractionalIndex(null, firstDocument?.index ?? null);
-    const documents = await this.prisma.doc.findMany({
+    const documents = await this.prismaService.doc.findMany({
       where: {
         workspaceId: dto.workspaceId,
         subspaceId: dto.subspaceId,
@@ -46,7 +46,7 @@ export class DocumentService {
     });
     const finalIndex = handleIndexCollision(documents, newIndex);
 
-    const doc = await this.prisma.doc.create({
+    const doc = await this.prismaService.doc.create({
       data: {
         ...dto,
         authorId,
@@ -58,7 +58,7 @@ export class DocumentService {
     });
 
     // Create direct OWNER permission for the document author
-    await this.prisma.unifiedPermission.create({
+    await this.prismaService.unifiedPermission.create({
       data: {
         userId: authorId,
         resourceType: "DOCUMENT",
@@ -145,7 +145,7 @@ export class DocumentService {
     };
 
     const [items, total] = await Promise.all([
-      this.prisma.doc.findMany({
+      this.prismaService.doc.findMany({
         where,
         orderBy: { [sortBy || "createdAt"]: sortOrder || "desc" },
         skip: (page - 1) * limit,
@@ -174,7 +174,7 @@ export class DocumentService {
           },
         },
       }),
-      this.prisma.doc.count({ where }),
+      this.prismaService.doc.count({ where }),
     ]);
 
     const data = items.map((doc) => ({
@@ -219,7 +219,7 @@ export class DocumentService {
     const data: any = { ...dto };
     data.lastModifiedById = userId;
 
-    const updatedDoc = await this.prisma.doc.update({
+    const updatedDoc = await this.prismaService.doc.update({
       where: { id },
       data,
     });
@@ -246,7 +246,7 @@ export class DocumentService {
   }
 
   async remove(id: string, userId: string) {
-    const doc = await this.prisma.doc.findUnique({
+    const doc = await this.prismaService.doc.findUnique({
       where: { id },
     });
 
@@ -258,7 +258,7 @@ export class DocumentService {
       await this.updateSubspaceNavigationTree(doc.subspaceId, "remove", doc);
     }
 
-    await this.prisma.doc.update({
+    await this.prismaService.doc.update({
       where: { id },
       data: {
         archivedAt: new Date(),
@@ -270,7 +270,7 @@ export class DocumentService {
   }
 
   async findOne(id: string, userId: string) {
-    const document = await this.prisma.doc.findUnique({
+    const document = await this.prismaService.doc.findUnique({
       where: { id },
       include: {
         author: {
@@ -362,7 +362,7 @@ export class DocumentService {
   }
 
   private async getSharedTree(documentId: string): Promise<NavigationNode[]> {
-    const document = await this.prisma.doc.findUnique({
+    const document = await this.prismaService.doc.findUnique({
       where: { id: documentId },
       include: {
         children: {
@@ -409,7 +409,7 @@ export class DocumentService {
   }
 
   private async updateSubspaceNavigationTree(subspaceId: string, operation: "add" | "update" | "remove", doc: any) {
-    const subspace = await this.prisma.subspace.findUnique({
+    const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
     });
 
@@ -431,7 +431,7 @@ export class DocumentService {
         break;
     }
 
-    await this.prisma.subspace.update({
+    await this.prismaService.subspace.update({
       where: { id: subspaceId },
       data: {
         navigationTree: navigationTree,
@@ -507,7 +507,7 @@ export class DocumentService {
 
   async shareDocument(userId: string, docId: string, dto: ShareDocumentDto) {
     // Check if document exists
-    const doc = await this.prisma.doc.findUnique({
+    const doc = await this.prismaService.doc.findUnique({
       where: { id: docId },
     });
 
@@ -531,7 +531,7 @@ export class DocumentService {
 
   async listDocShares(docId: string) {
     // Get all share information for the document
-    const shares = await this.prisma.docShare.findMany({
+    const shares = await this.prismaService.docShare.findMany({
       where: {
         docId: docId,
         revokedAt: null, // Only get non-revoked shares
@@ -562,7 +562,7 @@ export class DocumentService {
   }
 
   private async copyUnifiedPermissionsFromParent(documentId: string, parentDocumentId: string) {
-    const parentPermissions = await this.prisma.unifiedPermission.findMany({
+    const parentPermissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         resourceType: "DOCUMENT",
         resourceId: parentDocumentId,
@@ -570,7 +570,7 @@ export class DocumentService {
     });
 
     for (const permission of parentPermissions) {
-      await this.prisma.unifiedPermission.create({
+      await this.prismaService.unifiedPermission.create({
         data: {
           userId: permission.userId,
           guestId: permission.guestId,
@@ -588,7 +588,7 @@ export class DocumentService {
 
   async updateCover(docId: string, userId: string, dto: UpdateCoverDto) {
     // 1. verify doc and cover exist
-    const doc = await this.prisma.doc.findFirst({
+    const doc = await this.prismaService.doc.findFirst({
       where: { id: docId, authorId: userId },
       include: { coverImage: true },
     });
@@ -597,7 +597,7 @@ export class DocumentService {
     // 2. if no cover, create new cover
     if (!doc.coverImage) {
       if (!dto.url) throw new BadRequestException("URL is required for new cover");
-      return this.prisma.coverImage.create({
+      return this.prismaService.coverImage.create({
         data: {
           url: dto.url,
           scrollY: dto.scrollY || 0,
@@ -608,7 +608,7 @@ export class DocumentService {
     }
 
     // 3. update existing cover
-    return this.prisma.coverImage.update({
+    return this.prismaService.coverImage.update({
       where: { docId },
       data: {
         ...(dto.url && { url: dto.url }),
@@ -620,21 +620,21 @@ export class DocumentService {
 
   async removeCover(docId: string, userId: string) {
     // 1. verify doc and cover exist
-    const doc = await this.prisma.doc.findFirst({
+    const doc = await this.prismaService.doc.findFirst({
       where: { id: docId, authorId: userId },
       include: { coverImage: true },
     });
     if (!doc || !doc.coverImage) throw new ApiException(ErrorCodeEnum.DocumentCoverNotFound);
 
     // 2. delete cover
-    return await this.prisma.coverImage.delete({
+    return await this.prismaService.coverImage.delete({
       where: { docId },
     });
   }
 
   async duplicate(userId: string, id: string) {
     // Find original document with children
-    const originalDoc = await this.prisma.doc.findFirst({
+    const originalDoc = await this.prismaService.doc.findFirst({
       where: {
         id,
         authorId: userId,
@@ -654,7 +654,7 @@ export class DocumentService {
       throw new ApiException(ErrorCodeEnum.DocumentNotFound);
     }
     // Get siblings to calculate position
-    const siblings = await this.prisma.doc.findMany({
+    const siblings = await this.prismaService.doc.findMany({
       where: {
         parentId: originalDoc.parentId,
         authorId: userId,
@@ -665,7 +665,7 @@ export class DocumentService {
     });
     const newIndex = generateFractionalIndex(null, siblings[0]?.index ?? null);
     // Create duplicate document
-    const duplicatedDoc = await this.prisma.doc.create({
+    const duplicatedDoc = await this.prismaService.doc.create({
       data: {
         title: `${originalDoc.title} (copy)`,
         // FIXME: the content is not sync with the contentBinary
@@ -680,7 +680,7 @@ export class DocumentService {
     });
     // Duplicate cover image if exists
     if (originalDoc.coverImage) {
-      await this.prisma.coverImage.create({
+      await this.prismaService.coverImage.create({
         data: {
           docId: duplicatedDoc.id,
           url: originalDoc.coverImage.url,
@@ -703,7 +703,7 @@ export class DocumentService {
   private async duplicateChildren(children: any[], newParentId: string, userId: string) {
     for (const child of children) {
       // Create duplicate of child
-      const duplicatedChild = await this.prisma.doc.create({
+      const duplicatedChild = await this.prismaService.doc.create({
         data: {
           title: child.title,
           content: child.content,
@@ -721,7 +721,7 @@ export class DocumentService {
       });
       // Duplicate child's cover image if exists
       if (child.coverImage) {
-        await this.prisma.coverImage.create({
+        await this.prismaService.coverImage.create({
           data: {
             docId: duplicatedChild.id,
             url: child.coverImage.url,
@@ -731,7 +731,7 @@ export class DocumentService {
         });
       }
 
-      const grandchildren = await this.prisma.doc.findMany({
+      const grandchildren = await this.prismaService.doc.findMany({
         where: {
           parentId: child.id,
           archivedAt: null,

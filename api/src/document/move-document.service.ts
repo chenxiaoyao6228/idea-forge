@@ -1,5 +1,4 @@
-import { Injectable, Inject } from "@nestjs/common";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { Injectable } from "@nestjs/common";
 import { MoveDocumentsDto } from "./document.dto";
 import { presentDocument } from "./document.presenter";
 import { NavigationNode, NavigationNodeType } from "contracts";
@@ -11,22 +10,31 @@ import { PermissionInheritanceService } from "@/permission/permission-inheritanc
 import { PermissionService } from "@/permission/permission.service";
 import { handleIndexCollision } from "@/_shared/utils/fractional-index";
 import { HttpStatus } from "@nestjs/common";
+import { ClsService } from "nestjs-cls";
+import { Transactional, TransactionHost } from "@nestjs-cls/transactional";
+import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { ExtendedPrismaClient } from "../../../_design/prisma2/extended-prisma-client";
 
 @Injectable()
 export class MoveDocumentService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionInheritanceService: PermissionInheritanceService,
     private readonly permissionService: PermissionService,
+    private readonly cls: ClsService,
+    private readonly txHost: TransactionHost<TransactionalAdapterPrisma<ExtendedPrismaClient>>,
   ) {}
 
+  @Transactional()
   async moveDocs(authorId: string, dto: MoveDocumentsDto) {
     const { id, subspaceId, parentId, index } = dto;
     const affectedDocuments: any[] = [];
 
+    // Use txHost.tx instead of getting prisma from cls
+    const prisma = this.txHost.tx;
+
     // Fetch and validate the document
-    const document = await this.prisma.doc.findUnique({
+    const document = await prisma.doc.findUnique({
       where: { id },
       include: { subspace: true },
     });
@@ -50,7 +58,7 @@ export class MoveDocumentService {
     const subspaceChanged = targetSubspaceId !== document.subspaceId;
 
     // Always resolve index collision using handleIndexCollision
-    const documents = await this.prisma.doc.findMany({
+    const documents = await prisma.doc.findMany({
       where: {
         workspaceId: document.workspaceId,
         subspaceId: targetSubspaceId,
@@ -61,7 +69,7 @@ export class MoveDocumentService {
     const finalIndex = handleIndexCollision(documents, index);
 
     // Update document with the calculated or validated index
-    const updatedDoc = await this.prisma.doc.update({
+    const updatedDoc = await prisma.doc.update({
       where: { id },
       data: {
         subspaceId: targetSubspaceId,
@@ -128,7 +136,8 @@ export class MoveDocumentService {
    * This ensures the entire document tree maintains consistency
    */
   private async updateChildDocumentsSubspace(parentId: string, newSubspaceId: string | null) {
-    const childDocuments = await this.prisma.doc.findMany({
+    const prisma = this.txHost.tx;
+    const childDocuments = await prisma.doc.findMany({
       where: { parentId },
       include: { subspace: true },
     });
@@ -137,7 +146,7 @@ export class MoveDocumentService {
 
     for (const child of childDocuments) {
       // Update each child document's subspaceId
-      const updated = await this.prisma.doc.update({
+      const updated = await prisma.doc.update({
         where: { id: child.id },
         data: { subspaceId: newSubspaceId },
         include: { subspace: true },
@@ -179,7 +188,8 @@ export class MoveDocumentService {
    * Creates the navigation node structure and inserts it properly
    */
   private async addDocumentToNavigationTree(subspaceId: string, doc: any, parentId?: string, index?: number) {
-    const subspace = await this.prisma.subspace.findUnique({
+    const prisma = this.txHost.tx;
+    const subspace = await prisma.subspace.findUnique({
       where: { id: subspaceId },
     });
 
@@ -207,7 +217,7 @@ export class MoveDocumentService {
     }
 
     // Save updated navigationTree back to database
-    await this.prisma.subspace.update({
+    await prisma.subspace.update({
       where: { id: subspaceId },
       data: { navigationTree },
     });
@@ -218,7 +228,8 @@ export class MoveDocumentService {
    * Cleans up the tree by removing the document node completely
    */
   private async removeDocumentFromNavigationTree(subspaceId: string, docId: string) {
-    const subspace = await this.prisma.subspace.findUnique({
+    const prisma = this.txHost.tx;
+    const subspace = await prisma.subspace.findUnique({
       where: { id: subspaceId },
     });
 
@@ -228,7 +239,7 @@ export class MoveDocumentService {
     const navigationTree = this.removeFromTree(subspace.navigationTree as any[], docId);
 
     // Save cleaned navigationTree back to database
-    await this.prisma.subspace.update({
+    await prisma.subspace.update({
       where: { id: subspaceId },
       data: { navigationTree },
     });
@@ -239,7 +250,8 @@ export class MoveDocumentService {
    * Handles reordering and reparenting within the same subspace
    */
   private async moveDocumentInNavigationTree(subspaceId: string, docId: string, newParentId?: string, newIndex?: number) {
-    const subspace = await this.prisma.subspace.findUnique({
+    const prisma = this.txHost.tx;
+    const subspace = await prisma.subspace.findUnique({
       where: { id: subspaceId },
     });
 
@@ -265,7 +277,7 @@ export class MoveDocumentService {
     }
 
     // Save updated navigationTree structure
-    await this.prisma.subspace.update({
+    await prisma.subspace.update({
       where: { id: subspaceId },
       data: { navigationTree },
     });

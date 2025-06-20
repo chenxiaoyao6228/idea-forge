@@ -1,13 +1,12 @@
-import { PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { Inject, Injectable, forwardRef } from "@nestjs/common";
-import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
 import { SourceType, ResourceType, PermissionLevel, UnifiedPermission, SubspaceType, SubspaceRole } from "@prisma/client";
 import { PermissionService } from "./permission.service";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class PermissionInheritanceService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
     @Inject(forwardRef(() => PermissionService)) private readonly permissionService: PermissionService,
   ) {}
 
@@ -29,7 +28,7 @@ export class PermissionInheritanceService {
   // 工作空间权限传播到所有子空间和文档
   private async propagateWorkspacePermissions(workspaceId: string, permission: UnifiedPermission) {
     // 1. 传播到所有子空间
-    const subspaces = await this.prisma.subspace.findMany({
+    const subspaces = await this.prismaService.subspace.findMany({
       where: { workspaceId },
     });
 
@@ -43,7 +42,7 @@ export class PermissionInheritanceService {
 
   // 子空间权限传播到所有文档
   private async propagateSubspacePermissions(subspaceId: string, permission: UnifiedPermission) {
-    const docs = await this.prisma.doc.findMany({
+    const docs = await this.prismaService.doc.findMany({
       where: { subspaceId },
     });
 
@@ -57,12 +56,12 @@ export class PermissionInheritanceService {
 
   // 文档权限传播到子文档
   async propagateToChildren(parentDocId: string, permission: UnifiedPermission) {
-    const childDocs = await this.prisma.doc.findMany({
+    const childDocs = await this.prismaService.doc.findMany({
       where: { parentId: parentDocId },
     });
 
     for (const child of childDocs) {
-      await this.prisma.unifiedPermission.create({
+      await this.prismaService.unifiedPermission.create({
         data: {
           userId: permission.userId,
           guestId: permission.guestId,
@@ -83,7 +82,7 @@ export class PermissionInheritanceService {
 
   // 统一的权限创建方法
   private async createInheritedPermission(resourceType: ResourceType, resourceId: string, sourcePermission: UnifiedPermission, sourceType: SourceType) {
-    await this.prisma.unifiedPermission.create({
+    await this.prismaService.unifiedPermission.create({
       data: {
         userId: sourcePermission.userId,
         guestId: sourcePermission.guestId,
@@ -101,7 +100,7 @@ export class PermissionInheritanceService {
   // 文档移动时更新权限
   async updatePermissionsOnMove(docId: string, newParentId: string | null, newSubspaceId: string | null) {
     // 1. 清理现有继承权限
-    await this.prisma.unifiedPermission.deleteMany({
+    await this.prismaService.unifiedPermission.deleteMany({
       where: {
         resourceType: ResourceType.DOCUMENT,
         resourceId: docId,
@@ -125,7 +124,7 @@ export class PermissionInheritanceService {
 
   // 从父文档继承权限
   private async inheritFromParent(docId: string, parentDocId: string) {
-    const parentPermissions = await this.prisma.unifiedPermission.findMany({
+    const parentPermissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         resourceType: ResourceType.DOCUMENT,
         resourceId: parentDocId,
@@ -133,7 +132,7 @@ export class PermissionInheritanceService {
     });
 
     for (const parentPerm of parentPermissions) {
-      await this.prisma.unifiedPermission.create({
+      await this.prismaService.unifiedPermission.create({
         data: {
           userId: parentPerm.userId,
           guestId: parentPerm.guestId,
@@ -152,7 +151,7 @@ export class PermissionInheritanceService {
   // 应用子空间权限到文档
   private async applySubspacePermissions(docId: string, subspaceId: string) {
     // 获取子空间成员权限
-    const subspaceMembers = await this.prisma.subspaceMember.findMany({
+    const subspaceMembers = await this.prismaService.subspaceMember.findMany({
       where: { subspaceId },
       include: { user: true },
     });
@@ -162,7 +161,7 @@ export class PermissionInheritanceService {
       const sourceType = member.role === SubspaceRole.ADMIN ? SourceType.SUBSPACE_ADMIN : SourceType.SUBSPACE_MEMBER;
       const priority = member.role === SubspaceRole.ADMIN ? 3 : 4;
 
-      await this.prisma.unifiedPermission.create({
+      await this.prismaService.unifiedPermission.create({
         data: {
           userId: member.userId,
           resourceType: ResourceType.DOCUMENT,
@@ -178,7 +177,7 @@ export class PermissionInheritanceService {
 
   // 递归更新子文档权限
   private async updateChildDocumentsPermissions(docId: string) {
-    const childDocs = await this.prisma.doc.findMany({
+    const childDocs = await this.prismaService.doc.findMany({
       where: { parentId: docId },
     });
 
@@ -190,7 +189,7 @@ export class PermissionInheritanceService {
 
   // 级联更新继承权限
   async updateInheritedPermissions(sourcePermissionId: string, newPermission: PermissionLevel) {
-    await this.prisma.unifiedPermission.updateMany({
+    await this.prismaService.unifiedPermission.updateMany({
       where: { sourceId: sourcePermissionId },
       data: { permission: newPermission },
     });
@@ -198,7 +197,7 @@ export class PermissionInheritanceService {
 
   // 级联删除继承权限
   async cleanupInheritedPermissions(sourcePermissionId: string) {
-    await this.prisma.unifiedPermission.deleteMany({
+    await this.prismaService.unifiedPermission.deleteMany({
       where: { sourceId: sourcePermissionId },
     });
   }
@@ -217,7 +216,7 @@ export class PermissionInheritanceService {
     switch (subspaceType) {
       case SubspaceType.WORKSPACE_WIDE:
         // 清理所有工作空间成员的自动权限
-        await this.prisma.unifiedPermission.deleteMany({
+        await this.prismaService.unifiedPermission.deleteMany({
           where: {
             resourceType: ResourceType.SUBSPACE,
             resourceId: subspaceId,
@@ -227,7 +226,7 @@ export class PermissionInheritanceService {
         break;
       case SubspaceType.PUBLIC:
         // 清理公开空间的评论权限
-        await this.prisma.unifiedPermission.deleteMany({
+        await this.prismaService.unifiedPermission.deleteMany({
           where: {
             resourceType: ResourceType.SUBSPACE,
             resourceId: subspaceId,
@@ -246,12 +245,12 @@ export class PermissionInheritanceService {
   // 处理成员组权限变更
   async updateGroupPermissions(groupId: string, resourceType: ResourceType, resourceId: string, newPermission: PermissionLevel) {
     // 更新组内所有成员的权限
-    const groupMembers = await this.prisma.memberGroupUser.findMany({
+    const groupMembers = await this.prismaService.memberGroupUser.findMany({
       where: { groupId },
     });
 
     for (const member of groupMembers) {
-      await this.prisma.unifiedPermission.updateMany({
+      await this.prismaService.unifiedPermission.updateMany({
         where: {
           userId: member.userId,
           resourceType,
@@ -263,7 +262,7 @@ export class PermissionInheritanceService {
     }
 
     // 传播到子资源
-    const groupPermissions = await this.prisma.unifiedPermission.findMany({
+    const groupPermissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         resourceType,
         resourceId,
@@ -278,7 +277,7 @@ export class PermissionInheritanceService {
 
   // 处理访客权限过期
   async cleanupExpiredGuestPermissions() {
-    const expiredGuests = await this.prisma.guestCollaborator.findMany({
+    const expiredGuests = await this.prismaService.guestCollaborator.findMany({
       where: {
         expireAt: { lt: new Date() },
         status: { not: "EXPIRED" },
@@ -287,12 +286,12 @@ export class PermissionInheritanceService {
 
     for (const guest of expiredGuests) {
       // 删除过期访客的所有权限
-      await this.prisma.unifiedPermission.deleteMany({
+      await this.prismaService.unifiedPermission.deleteMany({
         where: { guestId: guest.id },
       });
 
       // 更新访客状态
-      await this.prisma.guestCollaborator.update({
+      await this.prismaService.guestCollaborator.update({
         where: { id: guest.id },
         data: { status: "EXPIRED" },
       });

@@ -1,16 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException, HttpStatus, Inject } from "@nestjs/common";
+import { Injectable, NotFoundException, HttpStatus } from "@nestjs/common";
 import { OssService } from "./oss.service";
 import { v4 as uuidv4 } from "uuid";
 import { validImageExts } from "./constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { UploadCredentialsResponse } from "contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class FileService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
     private ossService: OssService,
   ) {}
 
@@ -32,7 +32,7 @@ export class FileService {
     // TODO: Generate corresponding Content-Type based on file type
     const contentType = "image/png";
     // 3. Pre-create record
-    const fileRecord = await this.prisma.file.create({
+    const fileRecord = await this.prismaService.file.create({
       data: {
         key: fileKey,
         status: "pending",
@@ -70,14 +70,14 @@ export class FileService {
     }
 
     // 2. Update file record
-    const file = await this.prisma.file.findFirstOrThrow({
+    const file = await this.prismaService.file.findFirstOrThrow({
       where: {
         key: params.fileKey,
         status: "pending",
       },
     });
 
-    const updateFile = await this.prisma.file.update({
+    const updateFile = await this.prismaService.file.update({
       where: { id: file.id },
       data: {
         status: "active",
@@ -108,7 +108,7 @@ export class FileService {
       });
 
       // 2. Create file record
-      await this.prisma.file.create({
+      await this.prismaService.file.create({
         data: {
           key: fileKey,
           status: "active",
@@ -133,7 +133,7 @@ export class FileService {
     fileId: string;
   }) {
     // Verify file ownership
-    const file = await this.prisma.file.findFirst({
+    const file = await this.prismaService.file.findFirst({
       where: {
         id: params.fileId,
         userId: params.userId,
@@ -148,7 +148,7 @@ export class FileService {
     await this.ossService.deleteFile(file.key);
 
     // Delete from database
-    return this.prisma.file.delete({
+    return this.prismaService.file.delete({
       where: { id: params.fileId },
     });
   }
@@ -157,7 +157,7 @@ export class FileService {
     userId: string;
     fileId: string;
   }) {
-    const file = await this.prisma.file.findFirst({
+    const file = await this.prismaService.file.findFirst({
       where: {
         id: params.fileId,
         userId: params.userId,

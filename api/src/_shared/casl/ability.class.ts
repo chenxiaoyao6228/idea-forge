@@ -1,7 +1,7 @@
 import { createPrismaAbility } from "@casl/prisma";
 import { AbilityBuilder, AbilityClass, PureAbility } from "@casl/ability";
-import { ModelName } from "@/_shared/database/prisma/prisma.extension";
 import { User } from "@prisma/client";
+import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 
 export enum Action {
   // Basic CRUD operations

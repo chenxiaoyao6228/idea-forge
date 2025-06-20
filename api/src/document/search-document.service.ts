@@ -1,11 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { SearchDocumentDto } from "./document.dto";
 import { ContentMatch, SearchDocumentResponse } from "contracts";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class SearchDocumentService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async searchDocuments(authorId: string, { keyword, sort, order, limit }: SearchDocumentDto): Promise<SearchDocumentResponse> {
     try {
@@ -16,7 +16,7 @@ export class SearchDocumentService {
         };
       }
       // Title matches remain the same
-      const titleMatches = await this.prisma.doc.findMany({
+      const titleMatches = await this.prismaService.doc.findMany({
         where: {
           authorId,
           title: { contains: keyword, mode: "insensitive" },
@@ -32,7 +32,7 @@ export class SearchDocumentService {
       });
 
       // Modified content matches query with context
-      const contentMatches = await this.prisma.$queryRaw<ContentMatch[]>`
+      const contentMatches = await this.prismaService.$queryRaw<ContentMatch[]>`
         WITH RECURSIVE JsonContent AS (
           SELECT 
             d.id,

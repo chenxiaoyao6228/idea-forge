@@ -638,4 +638,44 @@ describe("MoveDocumentService (integration)", () => {
     expect(updated?.parentId).toBe(parent.id);
     expect(updated?.index && updated.index > "b").toBe(true);
   });
+
+  describe("transactions", () => {
+    it("should rollback all changes when an error occurs during a transaction", async () => {
+      const prisma = getTestPrisma();
+      const docId = mockData.myDocsDocuments[0].id;
+      const originalDoc = await prisma.doc.findUnique({ where: { id: docId } });
+
+      // Start a transaction and throw an error after update
+      let errorCaught = false;
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.doc.update({
+            where: { id: docId },
+            data: { title: "Should Rollback" },
+          });
+          throw new Error("Intentional error to trigger rollback");
+        });
+      } catch (e) {
+        errorCaught = true;
+      }
+      expect(errorCaught).toBe(true);
+      // The title should not be updated
+      const docAfter = await prisma.doc.findUnique({ where: { id: docId } });
+      expect(docAfter?.title).toBe(originalDoc?.title);
+    });
+
+    it("should commit all changes when transaction succeeds", async () => {
+      const prisma = getTestPrisma();
+      const docId = mockData.myDocsDocuments[1].id;
+      const newTitle = "Committed Title";
+      await prisma.$transaction(async (tx) => {
+        await tx.doc.update({
+          where: { id: docId },
+          data: { title: newTitle },
+        });
+      });
+      const updatedDoc = await prisma.doc.findUnique({ where: { id: docId } });
+      expect(updatedDoc?.title).toBe(newTitle);
+    });
+  });
 });

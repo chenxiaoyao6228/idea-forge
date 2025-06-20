@@ -1,20 +1,20 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
 import { WorkspaceListResponse } from "contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { presentWorkspace, presentWorkspaces } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
-import { ResourceType, WorkspaceRole, PermissionLevel, SourceType, GuestStatus, WorkspaceMember } from "@prisma/client";
+import { ResourceType, WorkspaceRole, WorkspaceMember } from "@prisma/client";
 import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 import { PermissionService } from "@/permission/permission.service";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class WorkspaceService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prismaService: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
     private readonly subspaceService: SubspaceService,
     private readonly permissionService: PermissionService,
     private readonly inheritanceService: PermissionInheritanceService,

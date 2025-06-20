@@ -1,11 +1,11 @@
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
-import { Inject, Injectable } from "@nestjs/common";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class SystemDocumentService {
   constructor(
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
     private configService: ConfigService,
   ) {}
 
@@ -15,7 +15,7 @@ export class SystemDocumentService {
 
   async shareWelcomeDocument(userId: string) {
     // Get system user
-    const systemUser = await this.prisma.user.findUnique({
+    const systemUser = await this.prismaService.user.findUnique({
       where: { email: this.SYSTEM_EMAIL },
     });
 
@@ -24,7 +24,7 @@ export class SystemDocumentService {
     }
 
     // Get welcome document
-    const welcomeDoc = await this.prisma.doc.findFirst({
+    const welcomeDoc = await this.prismaService.doc.findFirst({
       where: {
         title: this.WELCOME_DOC_TITLE,
         authorId: systemUser.id,
@@ -36,7 +36,7 @@ export class SystemDocumentService {
     }
 
     // Share document with new user
-    await this.prisma.docShare.create({
+    await this.prismaService.docShare.create({
       data: {
         docId: welcomeDoc.id,
         userId: userId,

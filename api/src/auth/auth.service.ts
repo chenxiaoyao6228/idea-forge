@@ -17,8 +17,8 @@ import { ipToCity } from "@/_shared/utils/common";
 import { Logger } from "winston";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
 import { UserService } from "@/user/user.service";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 interface LoginMetadata {
   ip?: string;
@@ -29,7 +29,7 @@ export class AuthService {
   private tokenUpdateLocks = new Map<number, Promise<{ accessToken: string; refreshToken: string; user: UserResponseData }>>();
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-    @Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient,
+    private readonly prismaService: PrismaService,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly redis: RedisService,
@@ -95,7 +95,7 @@ export class AuthService {
     // create login history async
     if (metadata?.ip) {
       ipToCity(metadata.ip).then((location) => {
-        this.prisma.userLoginHistory
+        this.prismaService.userLoginHistory
           .create({
             data: {
               userId: user.id,
@@ -201,7 +201,7 @@ export class AuthService {
     }
 
     if (!user.password) {
-      const connection = await this.prisma.connection.findFirst({
+      const connection = await this.prismaService.connection.findFirst({
         where: {
           userId: user.id,
         },
@@ -342,7 +342,7 @@ export class AuthService {
       }
 
       // 1. check if the user has already connected with the provider
-      const connection = await this.prisma.connection.findUnique({
+      const connection = await this.prismaService.connection.findUnique({
         where: {
           providerName_providerId: {
             providerName,
@@ -370,7 +370,7 @@ export class AuthService {
       }
 
       // 2. check if the email has already been used
-      const existingUser = await this.prisma.user.findUnique({
+      const existingUser = await this.prismaService.user.findUnique({
         where: { email },
       });
 
@@ -393,7 +393,7 @@ export class AuthService {
       }
 
       // 3. new user, create new user and connection
-      const newUser = await this.prisma.user.create({
+      const newUser = await this.prismaService.user.create({
         data: {
           email: email.toLowerCase(),
           displayName,

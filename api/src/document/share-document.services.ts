@@ -1,12 +1,12 @@
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { CommonSharedDocumentResponse, DocSharesResponse, Permission, RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "contracts";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { CommonSharedDocumentResponse, RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { type ExtendedPrismaClient, PRISMA_CLIENT } from "@/_shared/database/prisma/prisma.extension";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
 export class ShareDocumentService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: ExtendedPrismaClient) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async getSharedDocuments(userId: string): Promise<CommonSharedDocumentResponse[]> {
     // const docs = await this.prisma.doc.findMany({
@@ -39,13 +39,13 @@ export class ShareDocumentService {
   }
 
   async shareDocument(userId: string, dto: ShareDocumentDto) {
-    const doc = await this.prisma.doc.findFirst({
+    const doc = await this.prismaService.doc.findFirst({
       where: { id: dto.docId, authorId: userId },
     });
 
     if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
 
-    const targetUser = await this.prisma.user.findFirst({
+    const targetUser = await this.prismaService.user.findFirst({
       where: { email: dto.email },
     });
 
@@ -55,7 +55,7 @@ export class ShareDocumentService {
       throw new ApiException(ErrorCodeEnum.CannotShareWithYourself);
     }
 
-    const existingShare = await this.prisma.docShare.findFirst({
+    const existingShare = await this.prismaService.docShare.findFirst({
       where: { docId: dto.docId, userId: targetUser.id },
     });
 
@@ -63,7 +63,7 @@ export class ShareDocumentService {
       throw new ApiException(ErrorCodeEnum.DocumentAlreadyShared);
     }
 
-    await this.prisma.docShare.create({
+    await this.prismaService.docShare.create({
       data: {
         docId: dto.docId,
         userId: targetUser.id,
@@ -80,13 +80,13 @@ export class ShareDocumentService {
   }
 
   async removeShare(id: string, userId: string, dto: RemoveShareDto) {
-    const doc = await this.prisma.doc.findFirst({
+    const doc = await this.prismaService.doc.findFirst({
       where: { id, authorId: userId },
     });
 
     if (!doc) throw new NotFoundException("Document not found");
 
-    await this.prisma.docShare.deleteMany({
+    await this.prismaService.docShare.deleteMany({
       where: { docId: id, userId: dto.targetUserId },
     });
 
@@ -94,13 +94,13 @@ export class ShareDocumentService {
   }
 
   async updateSharePermission(id: string, userId: string, dto: UpdateSharePermissionDto) {
-    const doc = await this.prisma.doc.findFirst({
+    const doc = await this.prismaService.doc.findFirst({
       where: { id, authorId: userId },
     });
 
     if (!doc) throw new NotFoundException("Document not found");
 
-    await this.prisma.docShare.updateMany({
+    await this.prismaService.docShare.updateMany({
       where: { docId: id, userId: dto.userId },
       data: { permission: dto.permission },
     });
