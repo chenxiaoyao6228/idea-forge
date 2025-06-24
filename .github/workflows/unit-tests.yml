@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [master, develop, feature/workspace]
     paths:
-      - "client/**"
-      - "api/**"
+      - "apps/client/**"
+      - "apps/api/**"
 
 jobs:
   test:

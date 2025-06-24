@@ -112,7 +112,7 @@ docker-compose -f $DOCKER_COMPOSE_FILE up -d
 echo "🔧 Running database migrations..."
 docker-compose -f $DOCKER_COMPOSE_FILE run --rm \
   idea-forge \
-  sh -c "cd api && pnpm prisma migrate deploy"
+  sh -c "cd apps/api && pnpm prisma migrate deploy"
 
 # If migrations successful, start the services
 if [ $? -eq 0 ]; then

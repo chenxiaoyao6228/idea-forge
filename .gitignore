@@ -6,6 +6,7 @@ node_modules
 # Testing
 coverage
 .nyc_output
+.cache
 
 # Production
 dist
@@ -54,16 +55,16 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Client
-client/node_modules
-client/dist
-client/src/components/ui/icons.d.ts
+apps/client/node_modules
+apps/client/dist
+apps/client/src/components/ui/icons.d.ts
 
 # Api
-api/node_modules
+apps/api/node_modules
 # app build
-api/view
+apps/api/view
 # upload
-api/uploads
+apps/api/uploads
 
 
 ## npmrc

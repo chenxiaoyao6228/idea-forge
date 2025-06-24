@@ -1,0 +1,33 @@
+{
+  "name": "@idea/contracts",
+  "version": "1.0.0",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "scripts": {
+    "predev": "cd ../../apps/api && npx prisma generate",
+    "dev": "npm run predev && concurrently \"tsc -p tsconfig.cjs.json -w\" \"tsc -p tsconfig.json -w\"",
+    "build": "rimraf dist && tsc -p tsconfig.cjs.json && tsc -p tsconfig.json",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/node": "18.11.18",
+    "concurrently": "^8.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "~5.6.2"
+  },
+  "dependencies": {
+    "@prisma/client": "5.11.0",
+    "zod": "^3.23.8"
+  },
+  "peerDependencies": {
+    "typescript": "~5.6.2"
+  }
+}

@@ -33,7 +33,7 @@
     "pinstall": "find client api  -name \"node_modules\" -type d -exec rm -rf {} + && pnpm install --force",
     "removeLocks": "find . -name 'pnpm-lock.yaml' -type f -delete",
     "setup": "node scripts/setup-vscode.js && cd ./api && npm run setup",
-    "i18n:extract": "cd client && npm run i18n:extract",
+    "i18n:extract": "cd apps/client && npm run i18n:extract",
     "i18n:translate": "node scripts/i18n/update-translation.js",
     "i18n:process": "pnpm i18n:extract && pnpm i18n:translate",
     "bump:patch": "node scripts/bump-version.js patch",

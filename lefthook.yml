@@ -2,17 +2,16 @@
 #
 #   Refer for explanation to following link:
 #   https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
-
 pre-commit:
   parallel: false
   commands:
     i18n:
-      glob: "{client/src/**/*.{tsx,ts,jsx,js},**/locales/en.json}"
+      glob: "{apps/client/src/**/*.{tsx,ts,jsx,js},apps/api/src/**/*.{tsx,ts,jsx,js},**/locales/en.json}"
       run: |
         echo "Running i18n process..."  
         pnpm i18n:process  
         echo "Adding translation files..."  
-        git add api/locales/*.json && git add api/public/locales/*.json
+        git add apps/api/locales/*.json && git add apps/api/public/locales/*.json
     format:
       glob: "*.{js,ts,jsx,tsx,json}"
       run: |
