@@ -1,5 +1,5 @@
 {
-  "name": "client",
+  "name": "@idea/client",
   "private": true,
   "version": "0.0.0",
   "type": "module",

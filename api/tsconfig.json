@@ -1,4 +1,5 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
@@ -7,19 +8,15 @@
       "@shared/*": ["src/_shared/*"]  
     },
     "outDir": "./dist",
-    "strict": true,
-    "module": "commonjs",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "target": "ES2021",
     "jsx": "react-jsx",
     "sourceMap": true,
     "incremental": true,
-    "skipLibCheck": true,
     "strictNullChecks": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
@@ -27,7 +24,6 @@
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
     "types": ["vitest/globals"]
-
   },
   "include": ["src/**/*", "test/**/*"],  
   "exclude": ["node_modules", "dist"]  

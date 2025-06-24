@@ -1,19 +1,18 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "strict": true,
     "declaration": true,
     "declarationMap": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "target": "ES2021",
+    "declarationDir": "./dist/types",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "rootDir": "src",
     "outDir": "./dist/esm",
-    "declarationDir": "./dist/types",
-    "module": "ESNext",
     "resolveJsonModule": true
   },
   "include": ["src/**/*", "src/_base.ts"],

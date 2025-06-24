@@ -5,10 +5,7 @@ import {
   clearDatabase,
 } from "./test-container-setup";
 
-// Start containers and write env synchronously before anything else
-(async () => {
-  await startContainersAndWriteEnv();
-})();
+await startContainersAndWriteEnv();
 
 
 afterAll(async () => {

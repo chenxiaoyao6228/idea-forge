@@ -1,9 +1,8 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "../", 
     "baseUrl": ".", 
-    "strict": true,
-    "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "esModuleInterop": true,
@@ -12,7 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "moduleResolution": "Bundler", 
-    "target": "ESNext", 
     "sourceMap": true, 
     "noImplicitAny": false,
     "useDefineForClassFields": true, 
@@ -22,8 +20,8 @@
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "paths": {
       "@/*": ["./src/*"],
-      "@api/*": ["../api/src/*"],
-    }, 
+      "@api/*": ["../api/src/*"]
+    }
   },
   "include": ["src", "src/**/*.ts", "src/**/*.tsx", "src/**/*.test.tsx", "src/**/*.d.ts"]
 }
