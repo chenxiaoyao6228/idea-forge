@@ -26,6 +26,7 @@ export type BasePageResult<T> = {
     page: number;
     limit: number;
     total: number;
+    pageCount: number;
   },
   data: T[]
   permissions?: Record<string, Record<string, boolean>>

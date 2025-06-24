@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { hash } from "argon2";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { CreateUserDto, UpdateUserDto } from "@/auth/auth.dto";
+import { CreateUserDto, UpdateUserDto } from "./user.dto";
 import { UserListRequestDto } from "contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { UserStatus, Prisma } from "@prisma/client";
@@ -115,9 +115,6 @@ export class UserService {
 
   async searchUser(dto: UserListRequestDto) {
     const { page = 1, limit = 10, query, sortBy = "createdAt", sortOrder = "desc" } = dto;
-    const skip = (page - 1) * Number(limit);
-    const take = Number(limit);
-
     const where: Prisma.UserWhereInput = {
       status: UserStatus.ACTIVE,
       ...(query
@@ -128,34 +125,16 @@ export class UserService {
     };
 
     try {
-      const [users, total] = await Promise.all([
-        this.prismaService.user.findMany({
-          where,
-          skip,
-          take,
-          orderBy: {
-            [sortBy]: sortOrder,
-          },
-          select: {
-            id: true,
-            email: true,
-            imageUrl: true,
-            displayName: true,
-            status: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        }),
-        this.prismaService.user.count({ where }),
-      ]);
+      const { data, pagination } = await this.prismaService.user.paginateWithApiFormat({
+        where,
+        orderBy: [{ [sortBy]: sortOrder }, { email: "asc" }],
+        page,
+        limit,
+      });
 
       return {
-        pagination: {
-          page,
-          limit: take,
-          total,
-        },
-        data: users.map((user) => ({
+        pagination,
+        data: data.map((user) => ({
           ...user,
           id: user.id.toString(),
           createdAt: user.createdAt.toISOString(),

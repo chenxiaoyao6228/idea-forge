@@ -1,25 +1,21 @@
-import { beforeEach, beforeAll, afterAll, vi } from "vitest";
+// import { beforeEach, beforeAll, afterAll, vi } from "vitest";
 import {
-  startTestPostgres,
-  stopTestPostgres,
+  startContainersAndWriteEnv,
+  stopContainers,
   clearDatabase,
-  startTestRedis,
-  stopTestRedis,
 } from "./test-container-setup";
 
-beforeAll(async () => {
-  await startTestRedis();
-  await startTestPostgres();
-  vi.spyOn(console, "warn").mockImplementation(() => {});
-});
+// Start containers and write env synchronously before anything else
+(async () => {
+  await startContainersAndWriteEnv();
+})();
+
 
 afterAll(async () => {
-  await stopTestRedis();
-  await stopTestPostgres();
+  await stopContainers();
 });
 
 beforeEach(async () => {
-
   vi.clearAllMocks();
   await clearDatabase();
 });

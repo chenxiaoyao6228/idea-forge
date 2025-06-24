@@ -1,14 +1,15 @@
-import { DynamicModule } from "@nestjs/common";
-import { ClsModule } from "nestjs-cls";
+import { Global, Module } from "@nestjs/common";
+import { ClsModule as ClsModuleBase } from "nestjs-cls";
 import { ClsPluginTransactional } from "@nestjs-cls/transactional";
 import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { PrismaModule } from "../database/prisma/prisma.module";
 import { generateUuid } from "./uuid";
 import { PrismaService } from "../database/prisma/prisma.service";
 
-export class SharedClsModule {
-  static forRoot(): DynamicModule {
-    return ClsModule.forRoot({
+@Global()
+@Module({
+  imports: [
+    ClsModuleBase.forRoot({
       global: true,
       middleware: {
         mount: true,
@@ -24,6 +25,7 @@ export class SharedClsModule {
           }),
         }),
       ],
-    });
-  }
-}
+    }),
+  ],
+})
+export class ClsModule {}

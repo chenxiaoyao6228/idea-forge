@@ -1,7 +1,3 @@
-// !! IMPORTANT !! Must be at the top of the file, otherwise the environment variables will not be loaded
-import * as dotenv from "dotenv";
-dotenv.config();
-
 // Sentry
 import "./_shared/utils/sentry";
 

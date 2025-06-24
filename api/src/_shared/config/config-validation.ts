@@ -56,7 +56,7 @@ export const envSchema = z.object({
   DEEPSEEK_API_KEY_1: z.string().min(1),
 
   /* SENTRY CONFIG */
-  SENTRY_DSN: z.string().url().optional(),
+  SENTRY_DSN: z.string().optional(),
   // Build-time variables don't need to be validated here
   // SENTRY_AUTH_TOKEN: z.string().optional(),
   // SENTRY_AUTH_TOKEN_REACT: z.string().optional(),
@@ -66,7 +66,7 @@ const clientEnvSchema = z.object({
   /* CLIENT CONFIG */
   CLIENT_APP_URL: z.string().url(),
   CLIENT_COLLAB_WS_URL: z.string().url(),
-  CLIENT_SENTRY_DSN: z.string().url().optional(),
+  CLIENT_SENTRY_DSN: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

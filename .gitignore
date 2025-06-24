@@ -74,6 +74,7 @@ api/uploads
 !.env.project
 !.env.vault
 !.env.example
+!.env.test
 
 # deploy
 scripts/builder/build-job.env

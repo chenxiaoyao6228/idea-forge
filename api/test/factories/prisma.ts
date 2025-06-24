@@ -5,7 +5,7 @@ import {
   generateMockDocument,
   generateMockDocShare,
   generateMockWorkspaceMember,
-} from "@test/mocks/data/zod";
+} from "./zod";
 import { getTestPrisma } from "@test/setup/test-container-setup";
 
 export async function buildDocument(overrides: any = {}) {

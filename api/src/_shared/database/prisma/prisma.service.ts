@@ -1,30 +1,22 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
-import { pagination } from "prisma-extension-pagination";
-import { DEFAULT_LIMIT } from "@/_shared/dtos/pager.dto";
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { PrismaClient } from "@prisma/client";
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  constructor() {
-    super();
-    this.$extends(
-      //see:  https://github.com/deptyped/prisma-extension-pagination
-      pagination({
-        cursor: {
-          limit: DEFAULT_LIMIT,
-          getCursor: ({ id }) => id,
-          parseCursor: (cursor) => ({ id: cursor }),
+export class PrismaService extends PrismaClient implements OnModuleInit {
+  constructor(configService: ConfigService) {
+    const databaseUrl = configService.get<string>("DATABASE_URL");
+
+    super({
+      datasources: {
+        db: {
+          url: databaseUrl,
         },
-        pages: {
-          limit: DEFAULT_LIMIT,
-        },
-      }),
-    );
+      },
+    });
   }
+
   async onModuleInit() {
     await this.$connect();
-  }
-  async onModuleDestroy() {
-    await this.$disconnect();
   }
 }

@@ -1,16 +1,21 @@
+import { Test, TestingModule } from "@nestjs/testing";
 import { MoveDocumentService } from "./move-document.service";
 import { EventPublisherService } from "../_shared/events/event-publisher.service";
 import { PermissionInheritanceService } from "../permission/permission-inheritance.service";
 import { PermissionService } from "../permission/permission.service";
-import { ServiceTestBuilder } from "@test/helpers/create-unit-integration-app";
-import { getTestPrisma } from "@test/setup/test-container-setup";
 import { generateFractionalIndex } from "@/_shared/utils/fractional-index";
 import { v4 as uuidv4 } from "uuid";
-import { setupMocks } from "@test/setup/mock-setup";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { PrismaClient } from "@prisma/client";
+import { getTestPrisma } from "@test/setup/test-container-setup";
+import { ConfigsModule } from "@/_shared/config/config.module";
+import { RealtimeGateway } from "@/_shared/socket/events/realtime.gateway";
+import { SocketModule } from "@/_shared/socket/socket.module";
+import { LoggerModule } from "@/_shared/utils/logger.module";
+import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
+import { ClsModule } from "@/_shared/utils/cls.module";
 
-async function createComplexMockData() {
-  const prisma = getTestPrisma();
-
+async function createComplexMockData(tx: PrismaClient) {
   // Generate UUIDs for all entities
   const workspaceId = uuidv4();
   const userId = uuidv4();
@@ -24,15 +29,15 @@ async function createComplexMockData() {
   const subspace2RootId = uuidv4();
 
   // Create workspace and user
-  const workspace = await prisma.workspace.create({
+  const workspace = await tx.workspace.create({
     data: { id: workspaceId, name: "Test Workspace" },
   });
-  const user = await prisma.user.create({
+  const user = await tx.user.create({
     data: { id: userId, displayName: "Test User", email: `${userId}@test.com` },
   });
 
   // Create subspaces
-  const subspace1 = await prisma.subspace.create({
+  const subspace1 = await tx.subspace.create({
     data: {
       id: subspace1Id,
       name: "Engineering",
@@ -40,7 +45,7 @@ async function createComplexMockData() {
       navigationTree: [],
     },
   });
-  const subspace2 = await prisma.subspace.create({
+  const subspace2 = await tx.subspace.create({
     data: {
       id: subspace2Id,
       name: "Marketing",
@@ -51,7 +56,7 @@ async function createComplexMockData() {
   const subspaces = [subspace1, subspace2];
 
   // MyDocs: 2 roots, each with 1 child
-  const myDocsRoot1 = await prisma.doc.create({
+  const myDocsRoot1 = await tx.doc.create({
     data: {
       id: myDocsRoot1Id,
       title: "Root 1",
@@ -64,7 +69,7 @@ async function createComplexMockData() {
       parentId: null,
     },
   });
-  const myDocsRoot2 = await prisma.doc.create({
+  const myDocsRoot2 = await tx.doc.create({
     data: {
       id: myDocsRoot2Id,
       title: "Root 2",
@@ -77,7 +82,7 @@ async function createComplexMockData() {
       parentId: null,
     },
   });
-  const myDocsChild1 = await prisma.doc.create({
+  const myDocsChild1 = await tx.doc.create({
     data: {
       id: myDocsChild1Id,
       title: "Child 1",
@@ -90,7 +95,7 @@ async function createComplexMockData() {
       parentId: myDocsRoot1.id,
     },
   });
-  const myDocsChild2 = await prisma.doc.create({
+  const myDocsChild2 = await tx.doc.create({
     data: {
       id: myDocsChild2Id,
       title: "Child 2",
@@ -106,7 +111,7 @@ async function createComplexMockData() {
   const myDocsDocuments = [myDocsRoot1, myDocsRoot2, myDocsChild1, myDocsChild2];
 
   // Subspace docs: 1 root per subspace
-  const subspace1Root = await prisma.doc.create({
+  const subspace1Root = await tx.doc.create({
     data: {
       id: subspace1RootId,
       title: "S1 Root",
@@ -119,7 +124,7 @@ async function createComplexMockData() {
       parentId: null,
     },
   });
-  const subspace2Root = await prisma.doc.create({
+  const subspace2Root = await tx.doc.create({
     data: {
       id: subspace2RootId,
       title: "S2 Root",
@@ -168,43 +173,43 @@ async function createComplexMockData() {
 
 describe("MoveDocumentService (integration)", () => {
   let service: MoveDocumentService;
-  let ctx: any;
+  let module: TestingModule;
   let mockData: Awaited<ReturnType<typeof createComplexMockData>>;
-
-  beforeAll(async () => {
-    await setupMocks();
-  });
+  let prisma: PrismaService;
+  let eventPublisherMock: { publishWebsocketEvent: any };
+  let permissionInheritanceMock: { updatePermissionsOnMove: any };
+  let permissionMock: { getResourcePermissionAbilities: any };
+  let realtimeGatewayMock: { sendToUser: any };
 
   beforeEach(async () => {
-    mockData = await createComplexMockData();
-    ctx = await new ServiceTestBuilder(MoveDocumentService)
-      .withPrisma()
-      .withProvider({
-        provide: EventPublisherService,
-        useValue: { publishWebsocketEvent: vi.fn() },
-      })
-      .withProvider({
-        provide: PermissionInheritanceService,
-        useValue: {
-          updatePermissionsOnMove: vi.fn().mockResolvedValue(undefined),
-        },
-      })
-      .withProvider({
-        provide: PermissionService,
-        useValue: {
-          getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }),
-        },
-      })
-      .compile();
-    service = ctx.service;
+    console.log("beforeEach in move-document.service.int.test.ts");
+    eventPublisherMock = { publishWebsocketEvent: vi.fn().mockResolvedValue(undefined) };
+    permissionInheritanceMock = { updatePermissionsOnMove: vi.fn().mockResolvedValue(undefined) };
+    permissionMock = { getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }) };
+    realtimeGatewayMock = { sendToUser: vi.fn() };
+
+    module = await Test.createTestingModule({
+      imports: [ConfigsModule, ClsModule, PrismaModule],
+      providers: [
+        MoveDocumentService,
+        { provide: EventPublisherService, useValue: eventPublisherMock },
+        { provide: PermissionInheritanceService, useValue: permissionInheritanceMock },
+        { provide: PermissionService, useValue: permissionMock },
+      ],
+    }).compile();
+
+    service = module.get(MoveDocumentService);
+    prisma = module.get(PrismaService);
+
+    mockData = await createComplexMockData(prisma);
   });
 
   afterEach(async () => {
-    if (ctx) await ctx.close();
+    vi.clearAllMocks();
+    // No need to disconnect prisma here as it's handled globally
   });
 
   it("should handle deep nesting reparenting in mydocs", async () => {
-    const prisma = getTestPrisma();
     // Find a doc whose parent is not the target parent and is not root
     const targetParent = mockData.myDocsDocuments[1];
     const sourceDoc = mockData.myDocsDocuments.find((doc) => doc.parentId && doc.parentId !== targetParent.id && doc.id !== targetParent.id);
@@ -264,7 +269,6 @@ describe("MoveDocumentService (integration)", () => {
     expect(result.data.documents).toHaveLength(1);
 
     // DB assertion: check index in DB
-    const prisma = getTestPrisma();
     const updatedDoc = await prisma.doc.findUnique({
       where: { id: sourceDoc.id },
     });
@@ -278,7 +282,6 @@ describe("MoveDocumentService (integration)", () => {
   });
 
   it("should move document from subspace to my-docs (draft), recursively updating all children", async () => {
-    const prisma = getTestPrisma();
     // Pick a subspace and a root doc in it
     const subspace = mockData.subspaces[0];
     const sourceDoc = mockData.subspaceDocuments[subspace.id][0];
@@ -327,7 +330,6 @@ describe("MoveDocumentService (integration)", () => {
   });
 
   it("should move document from my-docs to subspace, recursively updating all children", async () => {
-    const prisma = getTestPrisma();
     const targetSubspace = mockData.subspaces[1];
     const sourceDoc = mockData.myDocsDocuments[0];
 
@@ -375,7 +377,6 @@ describe("MoveDocumentService (integration)", () => {
   });
 
   it("should move document between subspaces, recursively updating all children and navigation trees", async () => {
-    const prisma = getTestPrisma();
     const sourceSubspace = mockData.subspaces[0];
     const targetSubspace = mockData.subspaces[1];
     const sourceDoc = mockData.subspaceDocuments[sourceSubspace.id][0];
@@ -455,6 +456,9 @@ describe("MoveDocumentService (integration)", () => {
 
   it("should not change subspaceId or parentId when moving to the same parent/index (no-op)", async () => {
     const sourceDoc = mockData.myDocsDocuments[0];
+    if (sourceDoc.index === null) {
+      throw new Error("Source document index is null, skipping no-op test.");
+    }
     const result = await service.moveDocs(mockData.user.id, {
       id: sourceDoc.id,
       subspaceId: null,
@@ -467,20 +471,22 @@ describe("MoveDocumentService (integration)", () => {
 
   it("should trigger permission inheritance and event publishing", async () => {
     const sourceDoc = mockData.myDocsDocuments[0];
-    const spyPermission = vi.spyOn((service as any).permissionInheritanceService, "updatePermissionsOnMove");
-    const spyEvent = vi.spyOn((service as any).eventPublisher, "publishWebsocketEvent");
+    if (sourceDoc.index === null) {
+      throw new Error("Source document index is null, skipping no-op test.");
+    }
+
     await service.moveDocs(mockData.user.id, {
       id: sourceDoc.id,
       subspaceId: null,
       parentId: null,
-      index: "b",
+      index: "b", // a different index to ensure move happens
     });
-    expect(spyPermission).toHaveBeenCalled();
-    expect(spyEvent).toHaveBeenCalled();
+
+    expect(permissionInheritanceMock.updatePermissionsOnMove).toHaveBeenCalled();
+    expect(eventPublisherMock.publishWebsocketEvent).toHaveBeenCalled();
   });
 
   it("should move a leaf document from subspace to my-docs", async () => {
-    const prisma = getTestPrisma();
     const subspace = mockData.subspaces[0];
     // Pick a leaf doc (no children)
     const leafDoc = await prisma.doc.create({
@@ -533,7 +539,6 @@ describe("MoveDocumentService (integration)", () => {
   });
 
   it("should recursively update all descendants when moving a large subtree between subspaces", async () => {
-    const prisma = getTestPrisma();
     const sourceSubspace = mockData.subspaces[0];
     const targetSubspace = mockData.subspaces[1];
     // Build a deep tree
@@ -573,7 +578,6 @@ describe("MoveDocumentService (integration)", () => {
   });
 
   it("should generate a new index when moving to the end of a parent's children", async () => {
-    const prisma = getTestPrisma();
     const parent = mockData.myDocsDocuments[0];
     // Add two children
     const child1 = await prisma.doc.create({
@@ -641,7 +645,6 @@ describe("MoveDocumentService (integration)", () => {
 
   describe("transactions", () => {
     it("should rollback all changes when an error occurs during a transaction", async () => {
-      const prisma = getTestPrisma();
       const docId = mockData.myDocsDocuments[0].id;
       const originalDoc = await prisma.doc.findUnique({ where: { id: docId } });
 
@@ -665,7 +668,6 @@ describe("MoveDocumentService (integration)", () => {
     });
 
     it("should commit all changes when transaction succeeds", async () => {
-      const prisma = getTestPrisma();
       const docId = mockData.myDocsDocuments[1].id;
       const newTitle = "Committed Title";
       await prisma.$transaction(async (tx) => {

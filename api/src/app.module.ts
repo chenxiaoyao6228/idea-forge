@@ -35,7 +35,7 @@ import { DocShareModule } from "./doc-share/doc-share.module";
 import { GroupModule } from "./group/group.module";
 import { PermissionModule } from "./permission/permission.module";
 import { UserIpInterceptor } from "./_shared/interceptors/user-ip.interceptor";
-import { SharedClsModule } from "./_shared/utils/cls.module";
+import { ClsModule } from "@/_shared/utils/cls.module";
 
 @Module({
   controllers: [AppController],
@@ -66,9 +66,9 @@ import { SharedClsModule } from "./_shared/utils/cls.module";
     HttpModule.register({
       timeout: 5000,
     }),
-    SharedClsModule.forRoot(),
     LoggerModule,
     ConfigsModule,
+    ClsModule,
     PrismaModule,
     RedisModule,
     AuthModule,

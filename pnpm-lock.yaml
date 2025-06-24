@@ -307,6 +307,15 @@ importers:
       '@sentry/webpack-plugin':
         specifier: ^3.1.2
         version: 3.4.0(webpack@5.99.9)
+      '@suites/di.nestjs':
+        specifier: ^3.0.1
+        version: 3.0.1(@nestjs/common@10.4.17)(reflect-metadata@0.1.14)
+      '@suites/doubles.vitest':
+        specifier: ^3.0.1
+        version: 3.0.1(@vitest/spy@2.1.9)(vitest@1.6.1)
+      '@suites/unit':
+        specifier: ^3.0.1
+        version: 3.0.1
       '@swc/cli':
         specifier: ^0.7.7
         version: 0.7.7(@swc/core@1.11.24)
@@ -438,7 +447,7 @@ importers:
         version: 6.7.3
       '@casl/prisma':
         specifier: ^1.5.1
-        version: 1.5.1(@casl/ability@6.7.3)(@prisma/client@5.11.0)
+        version: 1.5.1(@casl/ability@6.7.3)(@prisma/client@6.10.1)
       '@casl/react':
         specifier: ^5.0.0
         version: 5.0.0(@casl/ability@6.7.3)(react@18.3.1)
@@ -1965,18 +1974,6 @@ packages:
     resolution: {integrity: sha512-A4L28Ko+phJAsTDhRjzCOZWECQWN2jzZnJPnROWWHjJpyMq1h7h9ZqjwS2WbIUa3Z474X1ZPSgW0f1PboZGC0A==}
     dependencies:
       '@ucast/mongo2js': 1.4.0
-    dev: false
-
-  /@casl/prisma@1.5.1(@casl/ability@6.7.3)(@prisma/client@5.11.0):
-    resolution: {integrity: sha512-SkR0LaBSLVA0aXiYwFDTXIzfQgovpJHr7sXneuKkaw44dlFe0MwtpCMjZs7aCSIJK4SP1yGnHQcKFY7briMf9A==}
-    peerDependencies:
-      '@casl/ability': ^5.3.0 || ^6.0.0
-      '@prisma/client': ^2.14.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0
-    dependencies:
-      '@casl/ability': 6.7.3
-      '@prisma/client': 5.11.0
-      '@ucast/core': 1.10.2
-      '@ucast/js': 3.0.4
     dev: false
 
   /@casl/prisma@1.5.1(@casl/ability@6.7.3)(@prisma/client@6.10.1):
@@ -8034,6 +8031,70 @@ packages:
   /@socket.io/component-emitter@3.1.2:
     resolution: {integrity: sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA==}
 
+  /@suites/core.unit@3.0.1:
+    resolution: {integrity: sha512-X5xNg5EK1zAKXo4WS1fyBcViyvWvUWCEaA1fv/3ow5mD9AkKnIQajqm9pLAkUl/BM73baLQv9biLnmEHje1ghA==}
+    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
+    dependencies:
+      '@suites/types.common': 3.0.0
+      '@suites/types.di': 3.0.0
+      lodash.isequal: 4.5.0
+    dev: true
+
+  /@suites/di.nestjs@3.0.1(@nestjs/common@10.4.17)(reflect-metadata@0.1.14):
+    resolution: {integrity: sha512-mcXq9GgaE1hC/5Qu69tJZrhSE7dcWJAWHzRvnRyx6UV9XP2Ze6aRK4/uCkviG84A1il4QLNQy+NvhOf0LooDgA==}
+    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
+    requiresBuild: true
+    peerDependencies:
+      '@nestjs/common': '>= 8.0'
+      reflect-metadata: <1.0.0
+    dependencies:
+      '@nestjs/common': 10.4.17(reflect-metadata@0.1.14)(rxjs@7.8.2)
+      '@suites/types.common': 3.0.0
+      '@suites/types.di': 3.0.0
+      reflect-metadata: 0.1.14
+    dev: true
+
+  /@suites/doubles.vitest@3.0.1(@vitest/spy@2.1.9)(vitest@1.6.1):
+    resolution: {integrity: sha512-CldGybIRIUNR88CXWb9ofCAoIg7RnBQ3uItpe7b0YGFhSl5fFwuzQuqBjUVkof0Fe9PyloCZ0U1lAzcxwgfwww==}
+    engines: {node: ^18.12.0 || >=20.0.0}
+    requiresBuild: true
+    peerDependencies:
+      '@vitest/spy': '>= 1.0'
+      vitest: '>= 1.0'
+    dependencies:
+      '@suites/core.unit': 3.0.1
+      '@suites/types.common': 3.0.0
+      '@suites/types.doubles': 3.0.0
+      '@vitest/spy': 2.1.9
+      vitest: 1.6.1(@types/node@18.11.18)(@vitest/ui@1.6.1)
+    dev: true
+
+  /@suites/types.common@3.0.0:
+    resolution: {integrity: sha512-+kCWmVAyEI01P4d/t3LbrOCq1xXQlh3SsPstn1uBuC/MDMW/pENHkU5xVC9G8VOW/pkXh53KXwbHIxpJImp4Zw==}
+    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
+    dev: true
+
+  /@suites/types.di@3.0.0:
+    resolution: {integrity: sha512-RzvgfTsjg3KrJ3SRbo9J84g5mRfkMZMzinLTjAQO+yCBBz+YMhbwaUXDBX70RcFGiAHjTNPg0jWjis3FHPH8Dg==}
+    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
+    dependencies:
+      '@suites/types.common': 3.0.0
+    dev: true
+
+  /@suites/types.doubles@3.0.0:
+    resolution: {integrity: sha512-B5sHH98qU7Fq+ozA42J3LLv846xRJn2ndx1xfLr0oaKxEG6Xud/vmdJpH65F/2P7DNMJkxWo/VDIqXrN4UDcvg==}
+    dev: true
+
+  /@suites/unit@3.0.1:
+    resolution: {integrity: sha512-28RLtgxG8NH6zcBvfiMGqbToWNTs2WnTPa9GWQ2k1laXueGILDTTRjQrsApIAlbtRF5lGuGPynRFEMBAL+90Mw==}
+    engines: {node: ^16.10.0 || ^18.12.0 || >=20.0.0}
+    dependencies:
+      '@suites/core.unit': 3.0.1
+      '@suites/types.common': 3.0.0
+      '@suites/types.di': 3.0.0
+      '@suites/types.doubles': 3.0.0
+    dev: true
+
   /@swc/cli@0.7.7(@swc/core@1.11.24):
     resolution: {integrity: sha512-j4yYm9bx3pxWofaJKX1BFwj/3ngUDynN4UIQ2Xd2h0h/7Gt7zkReBTpDN7g5S13mgAYxacaTHTOUsz18097E8w==}
     engines: {node: '>= 16.14.0'}
@@ -8338,6 +8399,7 @@ packages:
 
   /@tiptap-pro/extension-drag-handle@2.19.1(@tiptap-pro/extension-node-range@2.19.1)(@tiptap/core@2.12.0)(@tiptap/extension-collaboration@2.12.0)(@tiptap/pm@2.12.0)(y-prosemirror@1.3.5):
     resolution: {integrity: sha512-I+niuYQd516ZpjrXlXkDeo67ymULgDJLY3XMYYfV57JIdOYIBPIXIk/ahYqaokWzlJVre/FcW8eGltmbADVTDw==}
+    deprecated: '"@tiptap-pro/extension-drag-handle" was made open source and can now be installed from "@tiptap/extension-drag-handle" instead.'
     peerDependencies:
       '@tiptap-pro/extension-node-range': ^2.7.7
       '@tiptap/core': ^2.0.0
@@ -8365,6 +8427,7 @@ packages:
 
   /@tiptap-pro/extension-node-range@2.19.1(@tiptap/core@2.12.0)(@tiptap/pm@2.12.0):
     resolution: {integrity: sha512-zvema4EPeLf1+nwLBD5+mbjPlJqhMBD6T90At4kjfHMjQVAa0yMV8ENoDh3kGldeGs0YDpQMb4Klv2WSpYN7Zw==}
+    deprecated: '"@tiptap-pro/extension-node-range" was made open source and can now be installed from "@tiptap/extension-node-range" instead.'
     peerDependencies:
       '@tiptap/core': ^2.0.0
       '@tiptap/pm': ^2.0.0
@@ -15483,6 +15546,11 @@ packages:
   /lodash.isboolean@3.0.3:
     resolution: {integrity: sha512-Bz5mupy2SVbPHURB98VAcw+aHh4vRV5IPNhILUCsOzRmsTmSQ17jIuqopAentWoehktxGd9e/hbIXq980/1QJg==}
     dev: false
+
+  /lodash.isequal@4.5.0:
+    resolution: {integrity: sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ==}
+    deprecated: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+    dev: true
 
   /lodash.isfunction@3.0.9:
     resolution: {integrity: sha512-AirXNj15uRIMMPihnkInB4i3NHeb4iBtNg9WRWuK2o31S+ePwwNmDPaTL3o7dTJ+VXNZim7rFs4rxN4YU1oUJw==}

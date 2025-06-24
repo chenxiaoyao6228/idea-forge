@@ -3,14 +3,14 @@ import {
   PostgreSqlContainer,
 } from "@testcontainers/postgresql";
 import { execSync } from "child_process";
+import { unlinkSync, writeFileSync } from "fs";
 
 import { RedisContainer, StartedRedisContainer } from "@testcontainers/redis";
-import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-
+import { PrismaClient } from "@prisma/client";
 
 let redisContainer: StartedRedisContainer | undefined;
-let container: StartedPostgreSqlContainer;
-let testPrisma: PrismaService;
+let postgresContainer: StartedPostgreSqlContainer;
+let testPrisma: PrismaClient;
 
 /*
  * https://www.npmjs.com/package/testcontainers
@@ -18,32 +18,54 @@ let testPrisma: PrismaService;
  * https://www.prisma.io/docs/orm/prisma-client/testing/unit-testing
  */
 
-export async function startTestPostgres() {
-  container = await new PostgreSqlContainer("postgres:15")
-    .withDatabase("testdb")
-    .withUsername("testuser")
-    .withPassword("testpass")
+export async function startContainersAndWriteEnv() {
+  console.log("========== Starting test postgres container ==========");
+  postgresContainer = await new PostgreSqlContainer("postgres:15")
+    .withDatabase("ideaforge")
+    .withUsername("postgres")
+    .withPassword("123456")
     .start();
-
-  const url = container.getConnectionUri();
-  process.env.DATABASE_URL = url;
-  execSync(`DATABASE_URL='${url}' pnpm prisma migrate deploy`, {
-    stdio: "inherit",
-  });
-  testPrisma = new PrismaService();
+  const pgUrl = postgresContainer.getConnectionUri();
+  console.log("========== Test postgres url ==========", pgUrl);
+  testPrisma = new PrismaClient({ datasources: { db: { url: pgUrl } } });
   await testPrisma.$connect();
-  return url;
+
+  redisContainer = await new RedisContainer("redis:7-alpine").withExposedPorts(7379).start();
+  const redisHost = redisContainer.getHost();
+  const redisPort = redisContainer.getMappedPort(7379);
+
+  // Write to .env.testcontainers
+  const envContent = `DATABASE_URL=${pgUrl}\nREDIS_HOST=${redisHost}\nREDIS_PORT=${redisPort}\n`;
+  writeFileSync(process.cwd() + "/.env.testcontainers", envContent);
+
+  // Also set process.env for current process
+  process.env.DATABASE_URL = pgUrl;
+  process.env.REDIS_HOST = redisHost;
+  process.env.REDIS_PORT = String(redisPort);
+
+
+  execSync(
+    `npx prisma migrate deploy --schema=${process.cwd()}/prisma/schema.prisma`,
+    {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        DATABASE_URL: pgUrl,
+      },
+    }
+  );
 }
 
-export async function stopTestPostgres() {
+export async function stopContainers() {
   if (testPrisma) await testPrisma.$disconnect();
-  if (container) await container.stop();
+  if (postgresContainer) await postgresContainer.stop();
+  if (redisContainer) await redisContainer.stop();
+  unlinkSync(process.cwd() + "/.env.testcontainers");
 }
 
 export function getTestPrisma() {
   if (!testPrisma) {
-    testPrisma = new PrismaService();
-    testPrisma.$connect();
+    throw new Error("Test Prisma client not initialized. Make sure startContainersAndWriteEnv() is called.");
   }
   return testPrisma;
 }
@@ -61,20 +83,3 @@ export async function clearDatabase() {
     await testPrisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} CASCADE;`);
 }
 
-// ================== Redis ==================
-
-export async function startTestRedis() {
-  redisContainer = await new RedisContainer("redis:7-alpine").start();
-  const host = redisContainer.getHost();
-  const port = redisContainer.getMappedPort(6379);
-
-  // Set env vars for your app to pick up
-  process.env.REDIS_HOST = host;
-  process.env.REDIS_PORT = port.toString();
-
-  return { host, port };
-}
-
-export async function stopTestRedis() {
-  if (container) await container.stop();
-}

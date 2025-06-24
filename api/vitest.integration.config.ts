@@ -5,14 +5,25 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   test: {
+    // see: https://www.reddit.com/r/node/comments/1jvuk6e/tests_fail_when_running_all_together_but_pass/
+    fileParallelism: false,
     globals: true, // no need to import vitest api in tests
     environment: "node",
+    cache: false,
+    setupFiles: [resolve(__dirname, "./test/setup/global-setup.ts")],
     include: [
-      "src/**/*.unit.test.ts",
+      "src/**/*.int.test.ts",
+      "test/**/*.e2e.test.ts",
     ],
     exclude: ["node_modules", "dist"],
-    testTimeout: 5000,
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
     pool: "forks",
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
   },
   optimizeDeps: {
     needsInterop: ["lodash"],
@@ -31,4 +42,4 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
-});
+}); 
