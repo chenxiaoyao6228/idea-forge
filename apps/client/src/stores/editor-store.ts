@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { HocuspocusProvider } from "@hocuspocus/provider";
-import { TableOfContentDataItem } from "@tiptap-pro/extension-table-of-contents";
+import { TableOfContentDataItem } from "@tiptap/extension-table-of-contents";
 import { Editor } from "@tiptap/react";
 
 export type DocumentStatus =

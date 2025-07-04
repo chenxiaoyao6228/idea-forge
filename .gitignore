@@ -67,8 +67,6 @@ apps/api/view
 apps/api/uploads
 
 
-## npmrc
-.npmrc
 
 .env*
 .flaskenv*

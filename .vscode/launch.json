@@ -6,9 +6,9 @@
       "request": "launch",
       "type": "chrome",
       "url": "http://localhost:5000",
-      "webRoot": "${workspaceFolder}/client",
+      "webRoot": "${workspaceFolder}/apps/client",
       "skipFiles": [
-        "${workspaceFolder}/client/node_modules/**/*.js",
+        "${workspaceFolder}/apps/client/node_modules/**/*.js",
         "<node_internals>/**"
       ]
     },
@@ -18,11 +18,11 @@
       "type": "node",
       "request": "attach",
       "port": 9333,
-      "cwd": "${workspaceFolder}/api",
+      "cwd": "${workspaceFolder}/apps/api",
       "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/api/dist/**/*.js"],
+      "outFiles": ["${workspaceFolder}/apps/api/dist/**/*.js"],
       "skipFiles": [
-        "${workspaceFolder}/api/node_modules/**/*.js",
+        "${workspaceFolder}/apps/api/node_modules/**/*.js",
         "<node_internals>/**",
         "**/async_hooks.js"
       ]

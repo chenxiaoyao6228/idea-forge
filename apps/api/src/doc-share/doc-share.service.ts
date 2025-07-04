@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Inject } from "@nestjs/common";
 import { presentDocShare } from "./doc-share.presenter";
 import { DocShareInfoDto, CreateShareDto, UpdateShareDto, RevokeShareDto, ShareListRequestDto, ListSharedWithMeDto, ListSharedByMeDto } from "./doc-share.dto";
-import { DocShare, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { DocShare } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 type DocShareWithRelations = DocShare & {
@@ -23,12 +23,12 @@ type DocShareWithRelations = DocShare & {
     } | null;
   };
   author: {
-    id: number;
+    id: string;
     email: string;
     displayName: string | null;
   };
   sharedTo: {
-    id: number;
+    id: string;
     email: string;
     displayName: string | null;
   };
@@ -103,7 +103,7 @@ export class DocShareService {
         });
 
         if (parentShare) {
-          shares.push(parentShare as DocShareWithRelations);
+          shares.push(parentShare);
         }
       }
     }
@@ -114,7 +114,7 @@ export class DocShareService {
 
     return {
       data: {
-        shares: shares.map(presentDocShare),
+        shares: shares.map((share) => presentDocShare(share)),
       },
     };
   }
@@ -158,7 +158,7 @@ export class DocShareService {
 
     return {
       pagination: { page, limit, total },
-      data: shares.map((share) => presentDocShare(share as DocShareWithRelations)),
+      data: shares.map((share) => presentDocShare(share)),
     };
   }
 
@@ -198,7 +198,7 @@ export class DocShareService {
     });
 
     return {
-      data: presentDocShare(share as DocShareWithRelations),
+      data: presentDocShare(share),
     };
   }
 

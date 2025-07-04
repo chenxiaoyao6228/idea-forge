@@ -2,7 +2,7 @@ import { TestBed } from "@suites/unit";
 import { UserService } from "./user.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import type { Mocked } from "@suites/doubles.vitest";
-import { UserStatus } from "@prisma/client";
+import { UserStatus } from "@idea/contracts";
 
 describe("UserService with @suites", () => {
   let service: UserService;

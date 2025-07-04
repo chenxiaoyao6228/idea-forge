@@ -32,7 +32,7 @@ function Register() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<z.infer<typeof RegisterRequestSchema>>({
-    resolver: zodResolver(RegisterRequestSchema),
+    resolver: zodResolver(RegisterRequestSchema as any),
     defaultValues: {
       email: "",
       password: "",

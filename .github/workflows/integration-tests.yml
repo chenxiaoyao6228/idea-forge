@@ -29,8 +29,6 @@ jobs:
       - name: Setup .npmrc for Tiptap Pro private registry
         run: |
           echo "link-workspace-packages=true" > .npmrc
-          echo "@tiptap-pro:registry=https://registry.tiptap.dev/" >> .npmrc
-          echo "//registry.tiptap.dev/:_authToken=${{ secrets.TIPTAP_AUTH_TOKEN }}" >> .npmrc
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

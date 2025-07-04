@@ -1,7 +1,7 @@
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { FileService } from "./file-store.service";
 import { Controller, Post, Body } from "@nestjs/common";
-import { User } from "@prisma/client";
+import { User } from "@idea/contracts";
 import { UploadCredentialsDto, ConfirmUploadDto, ProxyImageDto } from "./file.dto";
 import { ConfirmUploadResponse, ProxyImageResponse } from "@idea/contracts";
 import { UploadCredentialsResponse } from "@idea/contracts";

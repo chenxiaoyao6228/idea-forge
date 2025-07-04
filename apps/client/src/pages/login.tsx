@@ -30,7 +30,7 @@ function LoginPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginRequest>({
-    resolver: zodResolver(LoginRequestSchema),
+    resolver: zodResolver(LoginRequestSchema as any),
     defaultValues: {
       remember: true,
       email: location.state?.email || "",

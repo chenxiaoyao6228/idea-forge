@@ -18,7 +18,7 @@ export function useSubspaceOperations() {
         name: "New Subspace" + ids.length + 1,
         description: "New Subspace Description",
         avatar: "",
-        type: SubspaceTypeSchema.Enum.PUBLIC,
+        type: SubspaceTypeSchema.enum.PUBLIC,
         workspaceId: currentWorkspace?.id!,
       });
     } catch (error) {

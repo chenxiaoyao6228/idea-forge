@@ -4,7 +4,8 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { CreateUserDto, UpdateUserDto } from "./user.dto";
 import { UserListRequestDto } from "@idea/contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { UserStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { UserStatus } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()

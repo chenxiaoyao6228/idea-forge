@@ -3,8 +3,8 @@ import { resolvablePromise } from "../async";
 import useSubSpaceStore from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
 import useStarStore, { StarEntity } from "@/stores/star";
-import { Star } from "@idea/contracts";
 import { PartialExcept } from "@/types";
+import type { Star } from "@idea/contracts";
 
 type SocketWithAuthentication = Socket & {
   authenticated?: boolean;

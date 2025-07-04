@@ -1,30 +1,40 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// old prisma-client generator for runtime, used in the backend
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
+generator clientType {
+  provider      = "prisma-client"
+  output        = "../prisma-type-generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
 generator zod {
   provider                         = "zod-prisma-types"
-  output                           = "../../contracts/src/schema"
-  useMultipleFiles                 = true // default is false
-  writeBarrelFiles                 = true // default is true
-  createInputTypes                 = false // default is true
+  prismaClientPath                 = "./_prisma-zod-input"
+  output                           = "../prisma-type-generated/zod"
   createModelTypes                 = true // default is true
+  writeBarrelFiles                 = true // default is true
+  useDefaultValidators             = true // default is true
+  coerceDate                       = true // default is true
+  createInputTypes                 = false // default is true
+  useMultipleFiles                 = false // default is false
+  createOutputTypes                = false // default is true
   addInputTypeValidation           = false // default is true
+  addInputTypeSchemas              = false // default is true
   addIncludeType                   = false // default is true
   addSelectType                    = false // default is true
   validateWhereUniqueInput         = false // default is false
-  createOptionalDefaultValuesTypes = true // default is false
+  createOptionalDefaultValuesTypes = false // default is false
   createRelationValuesTypes        = false // default is false
   createPartialTypes               = false // default is false
-  useDefaultValidators             = true // default is true
-  coerceDate                       = true // default is true
   writeNullishInModelTypes         = false // default is false
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model UnifiedPermission {

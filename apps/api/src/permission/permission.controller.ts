@@ -1,7 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
-import { ResourceType, PermissionLevel } from "@prisma/client";
-
+import { ResourceType, PermissionLevel } from "@idea/contracts";
 import { CheckPolicy } from "@/_shared/casl/policy.decorator";
 import { AddUserPermissionDto, AddGroupPermissionDto, UpdatePermissionDto, PermissionListRequestDto } from "./permission.dto";
 import { Action } from "@/_shared/casl/ability.class";
@@ -83,13 +82,8 @@ export class PermissionController {
 
   */
   @Get("resolve/:resourceType/:resourceId")
-  async resolvePermission(
-    @Param("resourceType") resourceType: ResourceType,
-    @Param("resourceId") resourceId: string,
-    @GetUser("id") userId: string,
-    @Query("guestId") guestId?: string,
-  ) {
-    const permission = await this.permissionService.resolveUserPermission(userId, resourceType, resourceId, guestId);
+  async resolvePermission(@Param("resourceType") resourceType: ResourceType, @Param("resourceId") resourceId: string, @GetUser("id") userId: string) {
+    const permission = await this.permissionService.resolveUserPermission(userId, resourceType, resourceId);
     return { permission };
   }
 

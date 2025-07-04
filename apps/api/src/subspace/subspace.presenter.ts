@@ -1,5 +1,4 @@
-import { Subspace } from "@prisma/client";
-import { SubspaceSchema } from "@idea/contracts";
+import { Subspace } from "@idea/contracts";
 
 export function presentSubspace(subspace: Subspace) {
   return {

@@ -58,20 +58,8 @@ Idea Forge is built with modern technologies:
 
 > ⚠️ Note for users in China: Due to Docker being blocked, please use Docker image acceleration or a VPN to pull images
 
-2. Configure Tiptap Pro Extension
 
-   a. Register and login at [tiptap.dev](https://tiptap.dev/)
-   b. Get your token from [cloud.tiptap.dev/pro-extensions](https://cloud.tiptap.dev/pro-extensions)
-   c. Create a `.npmrc` file in the project root with:
-
-```bash
-link-workspace-packages=true
-
-@tiptap-pro:registry=https://registry.tiptap.dev/
-//registry.tiptap.dev/:_authToken={your_token}
-```
-
-3. Start Development Environment
+2. Start Development Environment
 
 ```bash
 # Install dependencies and setup local Docker environment

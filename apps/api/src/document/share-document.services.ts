@@ -39,40 +39,32 @@ export class ShareDocumentService {
   }
 
   async shareDocument(userId: string, dto: ShareDocumentDto) {
-    const doc = await this.prismaService.doc.findFirst({
-      where: { id: dto.docId, authorId: userId },
-    });
-
-    if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
-
-    const targetUser = await this.prismaService.user.findFirst({
-      where: { email: dto.email },
-    });
-
-    if (!targetUser) throw new ApiException(ErrorCodeEnum.UserNotFound);
-
-    if (targetUser.id === userId) {
-      throw new ApiException(ErrorCodeEnum.CannotShareWithYourself);
-    }
-
-    const existingShare = await this.prismaService.docShare.findFirst({
-      where: { docId: dto.docId, userId: targetUser.id },
-    });
-
-    if (existingShare) {
-      throw new ApiException(ErrorCodeEnum.DocumentAlreadyShared);
-    }
-
-    await this.prismaService.docShare.create({
-      data: {
-        docId: dto.docId,
-        userId: targetUser.id,
-        permission: dto.permission,
-        authorId: userId,
-      },
-    });
-
-    return this.getDocShares(dto.docId, userId);
+    // const doc = await this.prismaService.doc.findFirst({
+    //   where: { id: dto.docId, authorId: userId },
+    // });
+    // if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    // const targetUser = await this.prismaService.user.findFirst({
+    //   where: { email: dto.email },
+    // });
+    // if (!targetUser) throw new ApiException(ErrorCodeEnum.UserNotFound);
+    // if (targetUser.id === userId) {
+    //   throw new ApiException(ErrorCodeEnum.CannotShareWithYourself);
+    // }
+    // const existingShare = await this.prismaService.docShare.findFirst({
+    //   where: { docId: dto.docId, userId: targetUser.id },
+    // });
+    // if (existingShare) {
+    //   throw new ApiException(ErrorCodeEnum.DocumentAlreadyShared);
+    // }
+    // await this.prismaService.docShare.create({
+    //   data: {
+    //     docId: dto.docId,
+    //     userId: targetUser.id,
+    //     permission: dto.permission,
+    //     authorId: userId,
+    //   },
+    // });
+    // return this.getDocShares(dto.docId, userId);
   }
 
   async getDocShares(id: string, userId: string) {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Patch, Param, Delete } from "@nestjs/common";
 import { StarService } from "./star.service";
 import { CreateStarDto, UpdateStarDto } from "./star.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";

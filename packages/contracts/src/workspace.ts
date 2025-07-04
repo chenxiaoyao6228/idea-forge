@@ -1,13 +1,22 @@
-import { WorkspaceMemberSchema, WorkspaceOptionalDefaultsSchema, WorkspaceSchema, WorkspaceRoleSchema } from "./schema";
-
 import { z } from "zod";
 
+import { WorkspaceMemberSchema, WorkspaceRoleSchema, WorkspaceSchema } from "./prisma-type-generated";
+
 // Create workspace
-export const CreateWorkspaceRequestSchema = WorkspaceOptionalDefaultsSchema;
+export const CreateWorkspaceRequestSchema = WorkspaceSchema.pick({
+  name: true,
+  description: true,
+  avatar: true,
+});
 export type CreateWorkspaceRequest = z.infer<typeof CreateWorkspaceRequestSchema>;
 
 // Update workspace
-export const UpdateWorkspaceRequestSchema = WorkspaceOptionalDefaultsSchema;
+export const UpdateWorkspaceRequestSchema = WorkspaceSchema.pick({
+  name: true,
+  description: true,
+  avatar: true,
+  settings: true,
+});
 export type UpdateWorkspaceRequest = z.infer<typeof UpdateWorkspaceRequestSchema>;
 
 export const UpdateWorkspaceMemberResponseSchema = z.object({

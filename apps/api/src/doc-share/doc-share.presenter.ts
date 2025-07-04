@@ -1,4 +1,4 @@
-import { DocShare } from "@prisma/client";
+import { DocShare } from "@idea/contracts";
 import { ShareResponse } from "@idea/contracts";
 
 export function presentDocShare(
@@ -20,12 +20,12 @@ export function presentDocShare(
       } | null;
     };
     author: {
-      id: number;
+      id: string;
       email: string;
       displayName: string | null;
     };
     sharedTo: {
-      id: number;
+      id: string;
       email: string;
       displayName: string | null;
     };

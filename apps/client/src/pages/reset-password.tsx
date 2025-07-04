@@ -12,15 +12,15 @@ import { useTranslation } from "react-i18next";
 import { TFunction } from "i18next";
 
 const createPasswordAndConfirmPasswordSchema = (t: TFunction) =>
-  z.object({ password: z.string(), confirmPassword: z.string() }).superRefine(({ confirmPassword, password }, ctx) => {
-    if (confirmPassword !== password) {
-      ctx.addIssue({
-        path: ["confirmPassword"],
-        code: "custom",
-        message: t("The passwords must match"),
-      });
-    }
-  });
+  z
+    .object({
+      password: z.string().min(1, t("Password is required")),
+      confirmPassword: z.string().min(1, t("Confirm password is required")),
+    })
+    .refine(({ confirmPassword, password }) => confirmPassword === password, {
+      message: t("The passwords must match"),
+      path: ["confirmPassword"],
+    });
 
 function ResetPasswordPage() {
   const { t } = useTranslation();
@@ -35,7 +35,7 @@ function ResetPasswordPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm({
-    resolver: zodResolver(createPasswordAndConfirmPasswordSchema(t)),
+    resolver: zodResolver(createPasswordAndConfirmPasswordSchema(t) as any),
     defaultValues: {
       password: "",
       confirmPassword: "",

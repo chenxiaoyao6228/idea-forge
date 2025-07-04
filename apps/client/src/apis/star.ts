@@ -1,5 +1,6 @@
 import request from "@/lib/request";
-import { Star, CreateStarDto, UpdateStarDto, StarResponse, ListStarResponse } from "@idea/contracts";
+import type { Star } from "@idea/contracts";
+import { CreateStarDto, UpdateStarDto, StarResponse } from "@idea/contracts";
 
 export const starApi = {
   /**

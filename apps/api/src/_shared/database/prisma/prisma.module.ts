@@ -1,6 +1,6 @@
 import { Global, Module } from "@nestjs/common";
 import { PrismaService } from "./prisma.service";
-import { extendedPrismaClient } from "./prisma.extension";
+import { extendedPrismaClient, ExtendedPrismaClient } from "./prisma.extension";
 import { ConfigService } from "@nestjs/config";
 import { ConfigsModule } from "@/_shared/config/config.module";
 
@@ -13,7 +13,7 @@ import { ConfigsModule } from "@/_shared/config/config.module";
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const prismaService = new PrismaService(configService);
-        return extendedPrismaClient(prismaService);
+        return extendedPrismaClient(prismaService) as PrismaService & ExtendedPrismaClient;
       },
     },
   ],

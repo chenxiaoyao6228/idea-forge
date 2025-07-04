@@ -1,18 +1,8 @@
 import { z } from "zod";
 import { BasePageResult, basePagerSchema } from "./_base";
+import { Star } from "./prisma-type-generated";
 
-// Star schema
-export const StarSchema = z.object({
-  id: z.string().cuid(),
-  docId: z.string().cuid().nullable(),
-  subspaceId: z.string().cuid().nullable(),
-  index: z.string().nullable(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
-  userId: z.string(),
-});
-
-export type Star = z.infer<typeof StarSchema>;
+// ===== DTO/Response =====
 
 // Create star
 export const createStarSchema = z

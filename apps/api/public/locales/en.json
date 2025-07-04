@@ -41,6 +41,7 @@
   "Confident": "Confident",
   "Confirm": "Confirm",
   "Confirm Password": "Confirm Password",
+  "Confirm password is required": "Confirm password is required",
   "Connect with {{provider}}": "Connect with {{provider}}",
   "Connecting with {{provider}}": "Connecting with {{provider}}",
   "Connection timed out. Please check your internet connection and try again.": "Connection timed out. Please check your internet connection and try again.",
@@ -160,6 +161,7 @@
   "Password": "Password",
   "Password Reset": "Password Reset",
   "Password is incorrect": "Password is incorrect",
+  "Password is required": "Password is required",
   "Password must be at least 8 characters": "Password must be at least 8 characters",
   "Password reset failed": "Password reset failed",
   "Password reset request failed": "Password reset request failed",
@@ -254,7 +256,6 @@
   "insert Below": "insert Below",
   "workspace description": "workspace description",
   "workspace name": "workspace name",
-  "{{count}} members_many": "{{count}} members",
-  "{{count}} members_one": "{{count}} members",
-  "{{count}} members_other": "{{count}} members"
+  "{{count}} members": "{{count}} members",
+  "{{count}} members_plural": "{{count}} members"
 }

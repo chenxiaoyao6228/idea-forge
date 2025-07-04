@@ -12,9 +12,8 @@ import {
   SubspaceGroupPermission,
   SubspaceUserPermissionResponse,
   SubspaceGroupPermissionResponse,
+  Subspace,
 } from "@idea/contracts";
-
-import { Subspace } from "@idea/contracts";
 
 export const subspaceApi = {
   // Subspace operations

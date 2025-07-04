@@ -13,7 +13,7 @@ import { HttpStatus } from "@nestjs/common";
 import { ClsService } from "nestjs-cls";
 import { Transactional, TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { ExtendedPrismaClient } from "../../../_design/prisma2/extended-prisma-client";
+import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
 
 @Injectable()
 export class MoveDocumentService {

@@ -1,6 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
-import { CreateDocumentDto, SearchDocumentDto, UpdateDocumentDto, MoveDocumentsDto } from "./document.dto";
-import { DocumentService } from "./document.service";
+import { Controller, Get, Post, Body, Patch, Param, Delete } from "@nestjs/common";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "@idea/contracts";
 import { ShareDocumentService } from "./share-document.services";

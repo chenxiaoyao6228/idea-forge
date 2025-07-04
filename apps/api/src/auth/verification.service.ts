@@ -5,9 +5,10 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { UserService } from "@/user/user.service";
 import { DocumentService } from "@/document/document.service";
-import { UserStatus, VerificationCodeType } from "@idea/contracts";
+import { VerificationCodeType } from "@idea/contracts";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
+import { UserStatus } from "@idea/contracts";
 
 interface VerificationCodeConfig {
   codeExpiry: number;

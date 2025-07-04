@@ -1,7 +1,7 @@
-import { UnifiedPermission, ResourceType, PermissionLevel } from "@prisma/client";
+import { ResourceType, PermissionLevel } from "@idea/contracts";
 
 import { Injectable } from "@nestjs/common";
-import { User } from "@prisma/client";
+import { User } from "@idea/contracts";
 import { DefineAbility } from "@/_shared/casl/ability.decorator";
 import { Action, AppAbility, BaseAbility } from "@/_shared/casl/ability.class";
 import { PermissionService } from "@/permission/permission.service";

@@ -1,7 +1,6 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import OpenAI from "openai";
-import { AIProviderConfig } from "./ai.type";
 import { Subject, Observable } from "rxjs";
 import { AIStreamResponse, AIStreamRequest, ChatMessage } from "@idea/contracts";
 import { faker } from "@faker-js/faker";
@@ -10,6 +9,7 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 import { Inject } from "@nestjs/common";
+import { AIProviderConfig } from "./ai.type";
 
 @Injectable()
 export class AIProviderService implements OnModuleInit {
@@ -120,7 +120,7 @@ export class AIProviderService implements OnModuleInit {
   // FIXME: remove this after the AI feature is stable
   async streamCompletionMock(request: AIStreamRequest): Promise<Observable<AIStreamResponse>> {
     if (process.env.NODE_ENV === "production") {
-      return this.streamCompletion(request, 0);
+      return this.streamCompletion(request, "0");
     }
 
     const subject = new Subject<AIStreamResponse>();

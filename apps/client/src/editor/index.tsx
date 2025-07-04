@@ -15,8 +15,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, WifiOff } from "lucide-react";
 import AIPanel from "./ai-panel";
-import { getHierarchicalIndexes } from "@tiptap-pro/extension-table-of-contents";
-import TableOfContents from "@tiptap-pro/extension-table-of-contents";
+import { getHierarchicalIndexes } from "@tiptap/extension-table-of-contents";
+import TableOfContents from "@tiptap/extension-table-of-contents";
 import React from "react";
 import { TextSelection } from "@tiptap/pm/state";
 

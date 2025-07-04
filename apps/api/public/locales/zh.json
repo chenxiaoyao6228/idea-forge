@@ -42,6 +42,7 @@
   "Confident": "自信",
   "Confirm": "确认",
   "Confirm Password": "确认密码",
+  "Confirm password is required": "确认密码为必填项",
   "Connect with {{provider}}": "与{{provider}}连接",
   "Connecting with {{provider}}": "正在与{{provider}}连接",
   "Connection timed out. Please check your internet connection and try again.": "连接超时。请检查您的网络连接后重试。",
@@ -167,6 +168,7 @@
   "Password": "密码",
   "Password Reset": "密码重置",
   "Password is incorrect": "密码错误",
+  "Password is required": "密码为必填项",
   "Password must be at least 8 characters": "密码长度至少为8个字符",
   "Password reset failed": "密码重置失败",
   "Password reset request failed": "密码重置请求失败",
@@ -268,7 +270,9 @@
   "insert Below": "在下方插入",
   "workspace description": "工作区描述",
   "workspace name": "工作区名称",
+  "{{count}} members": "{{count}} 位成员",
   "{{count}} members_many": "{{count}} 位成员",
   "{{count}} members_one": "{{count}} 位成员",
-  "{{count}} members_other": "{{count}} 位成员"
+  "{{count}} members_other": "{{count}} 位成员",
+  "{{count}} members_plural": "{{count}} 位成员"
 }

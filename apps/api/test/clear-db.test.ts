@@ -1,12 +1,12 @@
 import {
   clearDatabase,
   getTestPrisma,
-  startTestPostgres,
+  startContainersAndWriteEnv
 } from "./setup/test-container-setup";
 
 describe("clearDatabase", () => {
   beforeAll(async () => {
-    await startTestPostgres();
+    await startContainersAndWriteEnv();
   });
 
   it("should remove all data from all tables", async () => {

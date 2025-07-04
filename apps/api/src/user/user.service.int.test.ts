@@ -2,7 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { ConfigsModule } from "@/_shared/config/config.module";
 import { UserService } from "./user.service";
-import { UserStatus } from "@prisma/client";
+import { UserStatus } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ClsModule } from "@/_shared/utils/cls.module";
 

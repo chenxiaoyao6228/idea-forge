@@ -25,7 +25,13 @@ export default ({ mode }) => {
     },
     plugins: [
       isDev && checker({
-        typescript: true,
+        typescript: {
+          tsconfigPath: './tsconfig.json',
+          buildMode: false,
+        },
+        overlay: {
+          initialIsOpen: false,
+        },
       }),
       isDev ? inspectorServer() : null,
       !isDev && timeReporter(),

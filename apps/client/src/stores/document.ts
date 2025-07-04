@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
-import { CoverImage, DocTypeSchema, DocVisibilitySchema, NavigationNode, NavigationNodeType } from "@idea/contracts";
+import { CoverImage, DocTypeSchema, DocVisibilitySchema } from "@idea/contracts";
+import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 
 import useSubSpaceStore from "./subspace";
@@ -196,6 +197,7 @@ const useDocumentStore = create<StoreState>()(
               archivedAt: null,
               workspaceId,
               subspaceId: null,
+              type: DocTypeSchema.enum.NOTE,
             });
 
             if (response.data) {
@@ -265,9 +267,9 @@ const useDocumentStore = create<StoreState>()(
             const response = (await documentApi.create({
               workspaceId,
               subspaceId: subspaceId || null,
-              visibility: subspaceId ? DocVisibilitySchema.Enum.WORKSPACE : DocVisibilitySchema.Enum.PRIVATE,
+              visibility: subspaceId ? DocVisibilitySchema.enum.WORKSPACE : DocVisibilitySchema.enum.PRIVATE,
               parentId: parentId || null,
-              type: DocTypeSchema.Enum.NOTE,
+              type: DocTypeSchema.enum.NOTE,
               title,
               content: "",
             })) as any;

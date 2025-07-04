@@ -3,7 +3,12 @@ import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
 import { groupApi } from "@/apis/group";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
-import { Group } from "@/types/group";
+
+export interface GroupEntity {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 interface FetchOptions {
   force?: boolean;
@@ -18,9 +23,9 @@ interface State {
 
 interface Action {
   // API actions
-  fetch: (options?: FetchOptions) => Promise<Group[]>;
-  create: (data: { name: string; description?: string }) => Promise<Group>;
-  update: (id: string, data: { name?: string; description?: string }) => Promise<Group>;
+  fetch: (options?: FetchOptions) => Promise<GroupEntity[]>;
+  create: (data: { name: string; description?: string }) => Promise<GroupEntity>;
+  update: (id: string, data: { name?: string; description?: string }) => Promise<GroupEntity>;
   delete: (id: string) => Promise<void>;
 
   // Helper methods
@@ -32,10 +37,10 @@ const defaultState: State = {
   isLoaded: false,
 };
 
-const groupEntitySlice = createEntitySlice<Group>();
+const groupEntitySlice = createEntitySlice<GroupEntity>();
 export const groupSelectors = groupEntitySlice.selectors;
 
-type StoreState = State & Action & EntityState<Group> & EntityActions<Group>;
+type StoreState = State & Action & EntityState<GroupEntity> & EntityActions<GroupEntity>;
 const useGroupStore = create<StoreState>()(
   subscribeWithSelector(
     devtools(
@@ -61,9 +66,6 @@ const useGroupStore = create<StoreState>()(
             const groups = response.data.map((group) => ({
               id: group.id,
               name: group.name,
-              memberCount: group.members.length,
-              createdAt: group.createdAt.toISOString(),
-              updatedAt: group.updatedAt.toISOString(),
             }));
             get().setAll(groups);
             return groups;
@@ -79,14 +81,10 @@ const useGroupStore = create<StoreState>()(
               ...data,
               workspaceId: "default", // TODO: Get from workspace context
               description: data.description || null,
-              validUntil: null,
             });
             const group = {
               id: response.data.id,
               name: response.data.name,
-              memberCount: response.data.members.length,
-              createdAt: response.data.createdAt.toISOString(),
-              updatedAt: response.data.updatedAt.toISOString(),
             };
             get().addOne(group);
             return group;
@@ -107,9 +105,6 @@ const useGroupStore = create<StoreState>()(
             const group = {
               id: response.data.id,
               name: response.data.name,
-              memberCount: response.data.members.length,
-              createdAt: response.data.createdAt.toISOString(),
-              updatedAt: response.data.updatedAt.toISOString(),
             };
             get().updateOne({ id, changes: group });
             return group;

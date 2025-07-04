@@ -1,6 +1,13 @@
 {
-    "watch": [".env", "webpack.config.js", "package.json"],
-    "exec": "NODE_ENV=development DEBUG=true dotenvx run --   webpack --config webpack.config.js --watch",
-    "ext": "env,js,json",
-    "ignore": ["node_modules", "dist"]
-  }
+  "watch": [
+    ".env",
+    "webpack.config.js",
+    "package.json"
+  ],
+  "exec": "NODE_ENV=development DEBUG=true dotenv-flow -p . -- webpack --config webpack.config.js --watch",
+  "ext": "env,js,json",
+  "ignore": [
+    "node_modules",
+    "dist"
+  ]
+}

@@ -8,6 +8,7 @@ import { UserService } from "@/user/user.service";
 import { TiptapTransformer } from "@hocuspocus/transformer";
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { PermissionLevel } from "@idea/contracts";
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,8 +41,9 @@ export class CollaborationService implements OnModuleInit {
     documentId: string,
     userId: string,
   ): Promise<{
-    permission: Permission;
+    permission: PermissionLevel;
   }> {
+    // FIXME: use the new unified permission service to handle this
     // 1. Check if user is the owner
     const doc = await this.prismaService.doc.findUnique({
       where: { id: documentId },
@@ -88,7 +90,7 @@ export class CollaborationService implements OnModuleInit {
     return token;
   }
 
-  private async verifyCollabToken(token: string): Promise<number> {
+  private async verifyCollabToken(token: string) {
     try {
       const tokenBuffer = Buffer.from(token, "base64");
 

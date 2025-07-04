@@ -18,7 +18,8 @@ export class SubspaceController {
   }
 
   @Get("")
-  @CheckPolicy(Action.Read, "Subspace")
+  // TODO: add policy check
+  // @CheckPolicy(Action.Read, "Subspace")
   async getSubspaces(@GetUser("id") userId: string, @Query("workspaceId") workspaceId?: string) {
     return this.subspaceService.getUserSubWorkspaces(userId, workspaceId);
   }

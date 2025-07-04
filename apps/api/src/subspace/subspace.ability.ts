@@ -1,18 +1,16 @@
 import { Action, AppAbility, BaseAbility } from "@/_shared/casl/ability.class";
 import { DefineAbility } from "@/_shared/casl/ability.decorator";
 import { Injectable } from "@nestjs/common";
-import { User } from "@idea/contracts";
-import { ResourceType, PermissionLevel } from "@prisma/client";
 import { PermissionService } from "@/permission/permission.service";
-import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
+import { PermissionLevel, ResourceType, User } from "@idea/contracts";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
-@DefineAbility("Subspace" as ModelName)
+@DefineAbility("Subspace" as Prisma.ModelName)
 export class SubspaceAbility extends BaseAbility {
   constructor(private readonly permissionService: PermissionService) {
     super();
   }
-
   async createForUser(user: User): Promise<AppAbility> {
     return this.createAbilityAsync(async (builder) => {
       const { can } = builder;

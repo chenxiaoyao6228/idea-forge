@@ -1,19 +1,16 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { GroupPresenter } from "./group.presenter";
-import { CreateGroupDto, UpdateGroupDto, GroupInfoDto, GroupListRequestDto, AddGroupUserDto, RemoveGroupUserDto } from "./group.dto";
+import { CreateGroupDto, UpdateGroupDto, GroupListRequestDto, AddGroupUserDto, RemoveGroupUserDto } from "./group.dto";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { presentGroup } from "./group.presenter";
 
 @Injectable()
 export class GroupService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly groupPresenter: GroupPresenter,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  async getGroupInfo(userId: string, dto: GroupInfoDto) {
+  async getGroupInfo(userId: string, dto: { id: string }) {
     const group = await this.prismaService.memberGroup.findUnique({
       where: { id: dto.id },
       include: {
@@ -29,7 +26,7 @@ export class GroupService {
       throw new ApiException(ErrorCodeEnum.GroupNotFound);
     }
 
-    return this.groupPresenter.presentGroupInfo(group);
+    return presentGroup(group);
   }
 
   async listGroups(userId: string, dto: GroupListRequestDto) {
@@ -65,7 +62,12 @@ export class GroupService {
       this.prismaService.memberGroup.count({ where }),
     ]);
 
-    return this.groupPresenter.presentGroupList(groups, total, page, limit);
+    return {
+      data: groups.map(presentGroup),
+      total,
+      page,
+      limit,
+    };
   }
 
   async createGroup(userId: string, dto: CreateGroupDto) {
@@ -87,7 +89,7 @@ export class GroupService {
       },
     });
 
-    return this.groupPresenter.presentGroupInfo(group);
+    return presentGroup(group);
   }
 
   async updateGroup(userId: string, dto: UpdateGroupDto) {
@@ -107,10 +109,10 @@ export class GroupService {
       },
     });
 
-    return this.groupPresenter.presentGroupInfo(group);
+    return presentGroup(group);
   }
 
-  async deleteGroup(userId: string, dto: GroupInfoDto) {
+  async deleteGroup(userId: string, dto: { id: string }) {
     await this.prismaService.memberGroup.delete({
       where: { id: dto.id },
     });
@@ -137,7 +139,7 @@ export class GroupService {
       },
     });
 
-    return this.groupPresenter.presentGroupInfo(group);
+    return presentGroup(group);
   }
 
   async removeUserFromGroup(userId: string, dto: RemoveGroupUserDto) {
@@ -164,59 +166,57 @@ export class GroupService {
       throw new ApiException(ErrorCodeEnum.GroupNotFound);
     }
 
-    return this.groupPresenter.presentGroupInfo(group);
+    return presentGroup(group);
   }
 
-  async searchGroupsForSharing(userId: string, docId: string, query?: string) {
-    // Get all groups that already have access to the document
-    const existingGroupIds = await this.prismaService.docGroupPermission
-      .findMany({
-        where: { docId },
-        select: { groupId: true },
-      })
-      .then((permissions) => permissions.map((p) => p.groupId));
-
-    // Get all groups the user has access to
-    const userGroups = await this.prismaService.memberGroupUser
-      .findMany({
-        where: { userId },
-        select: { groupId: true },
-      })
-      .then((memberships) => memberships.map((m) => m.groupId));
-
-    // Search groups
-    const groups = await this.prismaService.memberGroup.findMany({
-      where: {
-        AND: [
-          {
-            OR: [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }],
-          },
-          {
-            id: {
-              in: userGroups, // Only show groups user has access to
-              notIn: existingGroupIds, // Exclude groups that already have access
-            },
-          },
-        ],
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        _count: {
-          select: {
-            members: true, // Get member count
-          },
-        },
-      },
-      take: 10, // Limit results
-    });
-
-    return {
-      data: groups.map((group) => ({
-        ...group,
-        memberCount: group._count.members,
-      })),
-    };
+  async searchGroupsForSharing(userId: string, id: string, query?: string) {
+    // FIXME:
+    // // Get all groups that already have access to the document
+    // const existingGroupIds = await this.prismaService.unifiedPermission
+    //   .findMany({
+    //     where: { resourceType: ResourceType.GROUP, resourceId: dto.id },
+    //     select: { id: true },
+    //   })
+    //   .then((permissions) => permissions.map((p) => p.id));
+    // // Get all groups the user has access to
+    // const userGroups = await this.prismaService.memberGroupUser
+    //   .findMany({
+    //     where: { userId },
+    //     select: { groupId: true },
+    //   })
+    //   .then((memberships) => memberships.map((m) => m.groupId));
+    // // Search groups
+    // const groups = await this.prismaService.memberGroup.findMany({
+    //   where: {
+    //     AND: [
+    //       {
+    //         OR: [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }],
+    //       },
+    //       {
+    //         id: {
+    //           in: userGroups, // Only show groups user has access to
+    //           notIn: existingGroupIds, // Exclude groups that already have access
+    //         },
+    //       },
+    //     ],
+    //   },
+    //   select: {
+    //     id: true,
+    //     name: true,
+    //     description: true,
+    //     _count: {
+    //       select: {
+    //         members: true, // Get member count
+    //       },
+    //     },
+    //   },
+    //   take: 10, // Limit results
+    // });
+    // return {
+    //   data: groups.map((group) => ({
+    //     ...group,
+    //     memberCount: group._count.members,
+    //   })),
+    // };
   }
 }

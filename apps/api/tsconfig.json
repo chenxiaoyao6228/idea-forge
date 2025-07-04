@@ -7,6 +7,7 @@
       "@test/*": ["test/*"],  
       "@shared/*": ["src/_shared/*"]  
     },
+    "moduleResolution": "node",
     "outDir": "./dist",
     "declaration": true,
     "removeComments": true,
@@ -23,6 +24,7 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
+    "composite": true,
     "types": ["vitest/globals"]
   },
   "include": ["src/**/*", "test/**/*"],  

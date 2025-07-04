@@ -40,7 +40,7 @@ export function ShareButton({ documentId }: ShareButtonProps) {
   const [permission, setPermission] = React.useState<"READ" | "EDIT">("READ");
 
   const form = useForm<ShareFormValues>({
-    resolver: zodResolver(shareSchema),
+    resolver: zodResolver(shareSchema as any),
     defaultValues: {
       query: "",
     },
@@ -160,7 +160,8 @@ export function ShareButton({ documentId }: ShareButtonProps) {
                           </Avatar>
                           <div>
                             <p className="text-sm font-medium">{group.name}</p>
-                            <p className="text-xs text-muted-foreground">{t("{{count}} members", { count: group.members.length })}</p>
+                            {/* FIXME: */}
+                            <p className="text-xs text-muted-foreground">{t("{{count}} members", { count: 0 })}</p>
                           </div>
                         </div>
                       </div>

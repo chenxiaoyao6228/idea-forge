@@ -1,5 +1,5 @@
 import { pagination } from "prisma-extension-pagination";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { DEFAULT_LIMIT } from "@/_shared/dtos/pager.dto";
 
 export const extendedPrismaClient = (client: PrismaClient) =>
@@ -65,9 +65,9 @@ export type ModelName = Prisma.ModelName;
 
 export type AllModelNames = Prisma.TypeMap["meta"]["modelProps"];
 
-export type ModelFindInput<T extends AllModelNames> = NonNullable<Parameters<ExtendedPrismaClient[T]["findFirst"]>[0]>;
+export type ModelFindInput<T extends AllModelNames> = NonNullable<Parameters<PrismaClient[T]["findFirst"]>[0]>;
 
-export type ModelCreateInput<T extends AllModelNames> = NonNullable<Parameters<ExtendedPrismaClient[T]["create"]>[0]>;
+export type ModelCreateInput<T extends AllModelNames> = NonNullable<Parameters<PrismaClient[T]["create"]>[0]>;
 
 export type ModelInputWhere<T extends AllModelNames> = ModelFindInput<T>["where"];
 

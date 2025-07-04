@@ -58,20 +58,7 @@ Idea Forge 采用现代技术构建：
 
 > ⚠️ 国内用户注意：由于 Docker 被墙，请使用 Docker 镜像加速或科学上网拉取镜像
 
-2. 配置 Tiptap Pro 扩展
-
-   a. 在 [tiptap.dev](https://tiptap.dev/) 注册并登录
-   b. 从 [cloud.tiptap.dev/pro-extensions](https://cloud.tiptap.dev/pro-extensions) 获取令牌
-   c. 在项目根目录创建 `.npmrc` 文件，内容如下：
-
-```bash
-link-workspace-packages=true
-
-@tiptap-pro:registry=https://registry.tiptap.dev/
-//registry.tiptap.dev/:_authToken={your_token}
-```
-
-3. 启动开发环境
+2. 启动开发环境
 
 ```bash
 # 安装依赖并设置本地 Docker 环境

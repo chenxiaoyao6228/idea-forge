@@ -94,7 +94,7 @@ export class FileService {
 
   async uploadFile(params: {
     userId: string;
-    file: Express.Multer.File;
+    file: any;
   }) {
     const { file, userId } = params;
     const ext = file.mimetype.split("/")[1];
@@ -192,7 +192,7 @@ export class FileService {
         originalname: filename,
         mimetype: contentType || "image/jpeg",
         size: buffer.length,
-      } as Express.Multer.File;
+      } as any;
 
       // 3. Upload to file storage
       const uploadResult = await this.uploadFile({

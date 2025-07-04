@@ -73,8 +73,6 @@ check_env_vars
 if [ ! -f "${ROOT_DIR}/.npmrc" ]; then
     cat > "${ROOT_DIR}/.npmrc" << EOL
 link-workspace-packages=true
-@tiptap-pro:registry=https://registry.tiptap.dev/
-//registry.tiptap.dev/:_authToken=${TIPTAP_AUTH_TOKEN}
 EOL
 fi
 

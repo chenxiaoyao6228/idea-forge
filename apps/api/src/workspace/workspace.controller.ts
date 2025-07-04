@@ -1,12 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { WorkspaceService } from "./workspace.service";
-import { User, WorkspaceDetailResponse, WorkspaceListResponse } from "@idea/contracts";
+import { WorkspaceListResponse } from "@idea/contracts";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
-import { WorkspaceRole } from "@prisma/client";
 import { Action } from "@/_shared/casl/ability.class";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
 import { CheckPolicy } from "@/_shared/casl/policy.decorator";
+import { WorkspaceRole } from "@idea/contracts";
 
 @UseGuards(PolicyGuard)
 @Controller("api/workspaces")

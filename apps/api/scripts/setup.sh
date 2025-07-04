@@ -126,15 +126,11 @@ echo "🔄 Applying migrations..."
 
 # Generate Prisma client first
 echo "📦 Generating Prisma client..."
-npx prisma generate || {
+npm run prisma:generate || {
     echo "❌ Failed to generate Prisma client"
     exit 1
 }
 
-# Then run prisma init
-npm run prisma:init:local || {
-    echo "❌ Failed to initialize Prisma"
-    exit 1
-}
+
 
 echo "✨ IdeaForge setup complete! 🎉"

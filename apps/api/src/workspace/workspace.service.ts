@@ -4,12 +4,12 @@ import { WorkspaceListResponse } from "@idea/contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
-import { presentWorkspace, presentWorkspaces } from "./workspace.presenter";
+import { presentWorkspace } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
-import { ResourceType, WorkspaceRole, WorkspaceMember } from "@prisma/client";
 import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 import { PermissionService } from "@/permission/permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { ResourceType, WorkspaceRole, WorkspaceMember } from "@idea/contracts";
 
 @Injectable()
 export class WorkspaceService {
@@ -75,7 +75,6 @@ export class WorkspaceService {
         name: user.email + "'s Workspace",
         description: "default workspace for user",
         avatar: "",
-        settings: {},
       },
       userId,
     );
@@ -85,7 +84,7 @@ export class WorkspaceService {
    * Get all workspaces accessible to the current user
    * Creates default workspace if user has none
    */
-  async getUserWorkspaces(currentUserId: string): Promise<WorkspaceListResponse> {
+  async getUserWorkspaces(currentUserId: string) {
     const user = await this.prismaService.user.findUnique({
       where: { id: currentUserId },
       include: {
@@ -104,11 +103,11 @@ export class WorkspaceService {
 
     if (user.workspaceMembers.length === 0) {
       const workspace = await this.CreateDefaultWorkspace(currentUserId);
-      return [workspace];
+      return [presentWorkspace(workspace)];
     }
 
     const workspaces = user.workspaceMembers.map((member) => member.workspace);
-    return presentWorkspaces(workspaces);
+    return workspaces.map(presentWorkspace);
   }
 
   /**
@@ -213,7 +212,7 @@ export class WorkspaceService {
         name: dto.name,
         description: dto.description,
         avatar: dto.avatar,
-        settings: dto.settings,
+        ...(dto.settings !== undefined && { settings: dto.settings as any }),
       },
     });
 

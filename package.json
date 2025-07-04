@@ -13,15 +13,16 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": {
+    "pinstall": "find client api  -name \"node_modules\" -type d -exec rm -rf {} + && pnpm install --force",
     "preinstall": "npx only-allow pnpm",
     "postinstall": "pnpm lefthook install",
     "reinstall": "rimraf pnpm-lock.yaml && rimraf package.lock.json && rimraf node_modules && pnpm install --force",
-    "dev": "turbo run dev",
-    "dev:api": "cd api && npm run dev",
-    "dev:client": "cd client && npm dev",
+    "dev": "turbo run dev --parallel",
+    "dev:api": "concurrently \"pnpm -F @idea/contracts dev\" \"pnpm -F @idea/api dev\"",
+    "dev:client": "pnpm -F @idea/client dev",
     "build": "turbo run build",
-    "build:client": "cd client && npm run build",
-    "build:api": "cd api && npm run build",
+    "build:client": "pnpm -F @idea/client build",
+    "build:api": "pnpm -F @idea/api build",
     "start": "turbo run start",
     "clean": "turbo run clean",
     "test": "turbo run test",
@@ -30,7 +31,6 @@
     "format:fix": "turbo format --continue -- --write",
     "lint": "turbo lint --continue --",
     "lint:fix": "turbo lint --continue -- --write",
-    "pinstall": "find client api  -name \"node_modules\" -type d -exec rm -rf {} + && pnpm install --force",
     "removeLocks": "find . -name 'pnpm-lock.yaml' -type f -delete",
     "setup": "node scripts/setup-vscode.js && cd ./api && npm run setup",
     "i18n:extract": "cd apps/client && npm run i18n:extract",
@@ -39,25 +39,40 @@
     "bump:patch": "node scripts/bump-version.js patch",
     "bump:minor": "node scripts/bump-version.js minor",
     "bump:major": "node scripts/bump-version.js major",
-    "prisma:push": "pnpm -F database push",
-    "prisma:studio": "pnpm -F database studio",
-    "migrate:dev": "pnpm -F database migrate:dev",
-    "migrate:deploy": "pnpm -F database migrate:deploy"
+    "prisma:push": "pnpm -F @idea/api push",
+    "prisma:studio": "pnpm -F @idea/api studio",
+    "migrate:dev": "pnpm -F @idea/api migrate:dev",
+    "migrate:deploy": "pnpm -F @idea/api migrate:deploy"
+  },
+  "dependencies": {
+    "utility-types": "^3.11.0",
+    "zod": "3.25.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.2",
     "@commitlint/cli": "^17.8.1",
     "@commitlint/config-conventional": "^17.8.1",
     "@types/node": "18.11.18",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "concurrently": "^8.2.2",
     "conventional-changelog-cli": "^5.0.0",
     "dotenv": "^16.4.5",
+    "dotenv-flow-cli": "1.1.1",
     "kill-port-process": "^3.2.1",
     "lefthook": "^1.8.2",
     "openai": "^4.78.1",
+    "prisma": "6.10.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "ts-node": "^10.9.2",
     "turbo": "^2.1.2",
-    "typescript": "^5"
+    "typescript": "^5.8",
+    "vite": "^6.0.1",
+    "vitest": "^2.1.9",
+    "@vitest/ui": "^3.2.3",
+    "rimraf": "^5.0.0",
+    "tsup": "^8.5.0"
   },
   "commitlint": {
     "extends": [
@@ -70,9 +85,5 @@
     "pnpm": ">=8.5.1",
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
-  },
-  "dependencies": {
-    "rimraf": "^5.0.0",
-    "utility-types": "^3.11.0"
   }
 }

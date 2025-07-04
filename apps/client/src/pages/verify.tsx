@@ -8,13 +8,21 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
-import { CodeValidateRequest, CodeValidateRequestSchema } from "@idea/contracts";
+import { CodeValidateRequest, VerificationCodeTypeSchema } from "@idea/contracts";
+import { z } from "zod";
 
 // Define query parameter names
 export const emailQueryParam = "email";
 export const typeQueryParam = "type";
 export const codeQueryParam = "code";
 export const redirectToQueryParam = "redirectTo";
+
+const CodeValidateSchemaFactory = (t) =>
+  z.object({
+    email: z.string().email(),
+    code: z.string(),
+    type: VerificationCodeTypeSchema,
+  });
 
 function VerifyPage() {
   const navigate = useNavigate();
@@ -36,7 +44,7 @@ function VerifyPage() {
     formState: { errors, isSubmitting },
     setValue,
   } = useForm<CodeValidateRequest>({
-    resolver: zodResolver(CodeValidateRequestSchema),
+    resolver: zodResolver(CodeValidateSchemaFactory(t) as any),
     defaultValues: {
       code: "",
       email,

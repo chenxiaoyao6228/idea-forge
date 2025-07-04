@@ -88,7 +88,6 @@ export default function Main() {
             <SharedWithMe />
             <SubspacesArea />
             <MyDocsArea />
-            {/* <OthersDocs /> */}
           </SidebarContent>
           <SidebarFooter>
             <UserSettings />

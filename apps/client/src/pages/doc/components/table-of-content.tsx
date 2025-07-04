@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { TableOfContentDataItem } from "@tiptap-pro/extension-table-of-contents";
+import type { TableOfContentDataItem } from "@tiptap/extension-table-of-contents";
 import { TextSelection } from "@tiptap/pm/state";
 import type React from "react";
 import { useEditorStore } from "../../../stores/editor-store";

@@ -1,35 +1,6 @@
 import { z } from "zod";
-import { DocOptionalDefaultsSchema, DocTypeSchema, DocVisibilitySchema, PermissionLevelSchema } from "./schema";
 import { BasePageResult, basePagerSchema } from "./_base";
-import { PermissionLevel } from "@prisma/client";
-
-// FIXME: the contentBinary cause Buffer error in client
-const DocSchema = z.object({
-  type: DocTypeSchema,
-  visibility: DocVisibilitySchema,
-  id: z.string().cuid(),
-  title: z.string(),
-  content: z.string(),
-  // contentBinary: z.instanceof(Buffer).nullable(),
-  archivedAt: z.coerce.date().nullable(),
-  publishedAt: z.coerce.date().nullable(),
-  deletedAt: z.coerce.date().nullable(),
-  parentId: z.string().nullable(),
-  position: z.number().int(),
-  updatedAt: z.coerce.date(),
-  createdAt: z.coerce.date(),
-  icon: z.string().nullable(),
-  coverImageId: z.string().nullable(),
-  authorId: z.number().int(),
-  workspaceId: z.string(),
-  subspaceId: z.string().nullable(),
-  createdById: z.number().int(),
-  createdBy: z.object({
-    id: z.number().int(),
-    email: z.string(),
-    displayName: z.string(),
-  }),
-});
+import { PermissionLevelSchema, DocSchema } from "./prisma-type-generated";
 
 const commonDocumentSchema = DocSchema.pick({
   id: true,
@@ -40,9 +11,7 @@ const commonDocumentSchema = DocSchema.pick({
   updatedAt: true,
   parentId: true,
   icon: true,
-  position: true,
   createdById: true,
-  createdBy: true,
 });
 export type CommonDocument = z.infer<typeof commonDocumentSchema>;
 
@@ -59,7 +28,11 @@ const commonSharedDocumentSchema = commonDocumentSchema.extend({
     displayName: z.string().nullable(),
     email: z.string(),
   }),
-  permission: PermissionLevelSchema.optional(),
+  permission: z
+    .object({
+      level: z.enum(["READ", "WRITE"]),
+    })
+    .optional(),
   coverImage: z
     .object({
       scrollY: z.number(),
@@ -86,13 +59,11 @@ export interface CreateDocumentResponse extends CommonDocumentResponse {}
 
 // list doc
 export const listDocumentSchema = basePagerSchema.merge(
-  DocOptionalDefaultsSchema.pick({
+  DocSchema.pick({
     parentId: true,
     workspaceId: true,
     subspaceId: true,
-    visibility: true,
     archivedAt: true,
-    // isStarred: true,
     type: true,
   }),
 );
@@ -170,17 +141,21 @@ export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;
 
 // share doc
 export const docShareUserSchema = z.object({
-  id: z.number(),
+  id: z.string(),
   email: z.string(),
   displayName: z.string().nullable(),
-  permission: PermissionLevelSchema,
+  permission: z.object({
+    level: z.enum(["READ", "WRITE"]),
+  }),
 });
 
 export type DocShareUser = z.infer<typeof docShareUserSchema>;
 
 export const shareDocumentSchema = z.object({
   email: z.string().email(),
-  permission: PermissionLevelSchema,
+  permission: z.object({
+    level: z.enum(["READ", "WRITE"]),
+  }),
   docId: z.string().cuid(),
   published: z.boolean().optional(),
   urlId: z.string().optional(),
@@ -223,7 +198,9 @@ export const detailDocumentSchema = commonDocumentSchema.extend({
       url: z.string(),
     })
     .nullable(),
-  permission: PermissionLevelSchema,
+  permission: z.object({
+    level: z.enum(["READ", "WRITE"]),
+  }),
 });
 
 export type DetailDocumentResponse = z.infer<typeof detailDocumentSchema>;
@@ -255,7 +232,7 @@ export interface DocUserPermissionResponse {
   id: string;
   userId: string;
   documentId: string;
-  permission: PermissionLevel;
+  permission: z.infer<typeof PermissionLevelSchema>;
   createdAt: Date;
   updatedAt: Date;
   user: {
@@ -269,7 +246,7 @@ export interface DocGroupPermissionResponse {
   id: string;
   groupId: string;
   documentId: string;
-  permission: PermissionLevel;
+  permission: z.infer<typeof PermissionLevelSchema>;
   createdAt: Date;
   updatedAt: Date;
   group: {

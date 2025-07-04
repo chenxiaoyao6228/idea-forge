@@ -1,5 +1,5 @@
 import { Inject, Injectable, forwardRef } from "@nestjs/common";
-import { SourceType, ResourceType, PermissionLevel, UnifiedPermission, SubspaceType, SubspaceRole } from "@prisma/client";
+import { SourceType, ResourceType, PermissionLevel, UnifiedPermission, SubspaceType, SubspaceRole } from "@idea/contracts";
 import { PermissionService } from "./permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 

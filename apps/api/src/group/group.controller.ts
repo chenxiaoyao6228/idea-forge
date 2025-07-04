@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Patch, Delete, Get, Param } from "@nestjs/common";
 import { GroupService } from "./group.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
-import { CreateGroupDto, UpdateGroupDto, GroupInfoDto, GroupListRequestDto, AddGroupUserDto, RemoveGroupUserDto } from "./group.dto";
+import { CreateGroupDto, UpdateGroupDto, GroupListRequestDto, AddGroupUserDto } from "./group.dto";
 
 @Controller("/api/groups")
 export class GroupController {

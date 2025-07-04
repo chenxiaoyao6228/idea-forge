@@ -7,11 +7,7 @@ import { generateFractionalIndex } from "@/_shared/utils/fractional-index";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PrismaClient } from "@prisma/client";
-import { getTestPrisma } from "@test/setup/test-container-setup";
 import { ConfigsModule } from "@/_shared/config/config.module";
-import { RealtimeGateway } from "@/_shared/socket/events/realtime.gateway";
-import { SocketModule } from "@/_shared/socket/socket.module";
-import { LoggerModule } from "@/_shared/utils/logger.module";
 import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { ClsModule } from "@/_shared/utils/cls.module";
 
@@ -323,7 +319,7 @@ describe("MoveDocumentService (integration)", () => {
     const updatedSubspace = await prisma.subspace.findUnique({
       where: { id: subspace.id },
     });
-    const tree = Array.isArray(updatedSubspace?.navigationTree) ? updatedSubspace.navigationTree : [];
+    const tree = updatedSubspace?.navigationTree && Array.isArray(updatedSubspace.navigationTree) ? updatedSubspace.navigationTree : [];
     const findInTree = (tree: any[], id: string): boolean =>
       tree.some((node) => node.id === id || (Array.isArray(node.children) && findInTree(node.children, id)));
     expect(findInTree(tree, sourceDoc.id)).toBe(false);
@@ -370,7 +366,7 @@ describe("MoveDocumentService (integration)", () => {
     const updatedSubspace = await prisma.subspace.findUnique({
       where: { id: targetSubspace.id },
     });
-    const tree = Array.isArray(updatedSubspace?.navigationTree) ? updatedSubspace.navigationTree : [];
+    const tree = updatedSubspace?.navigationTree && Array.isArray(updatedSubspace.navigationTree) ? updatedSubspace.navigationTree : [];
     const findInTree = (tree: any[], id: string): boolean =>
       tree.some((node) => node.id === id || (Array.isArray(node.children) && findInTree(node.children, id)));
     expect(findInTree(tree, sourceDoc.id)).toBe(true);
@@ -423,8 +419,8 @@ describe("MoveDocumentService (integration)", () => {
     });
     const findInTree = (tree: any[], id: string): boolean =>
       tree.some((node) => node.id === id || (Array.isArray(node.children) && findInTree(node.children, id)));
-    const sourceTree = Array.isArray(updatedSourceSubspace?.navigationTree) ? updatedSourceSubspace.navigationTree : [];
-    const targetTree = Array.isArray(updatedTargetSubspace?.navigationTree) ? updatedTargetSubspace.navigationTree : [];
+    const sourceTree = updatedSourceSubspace?.navigationTree && Array.isArray(updatedSourceSubspace.navigationTree) ? updatedSourceSubspace.navigationTree : [];
+    const targetTree = updatedTargetSubspace?.navigationTree && Array.isArray(updatedTargetSubspace.navigationTree) ? updatedTargetSubspace.navigationTree : [];
     expect(findInTree(sourceTree, sourceDoc.id)).toBe(false);
     expect(findInTree(targetTree, sourceDoc.id)).toBe(true);
   });

@@ -6,11 +6,9 @@ import { JwtService } from "@nestjs/jwt";
 import type { ConfigType } from "@nestjs/config";
 import { RedisService } from "@/_shared/database/redis/redis.service";
 import { MailService } from "@/_shared/email/mail.service";
-import { User, UserStatus } from "@prisma/client";
 import { VerificationService } from "./verification.service";
 import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto } from "./auth.dto";
 import { AuthResponse, LoginResponseData, UserResponseData } from "@idea/contracts";
-import { DocumentService } from "@/document/document.service";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 import { CollaborationService } from "@/collaboration/collaboration.service";
 import { ipToCity } from "@/_shared/utils/common";
@@ -19,6 +17,7 @@ import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { UserService } from "@/user/user.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { User, UserStatus } from "@idea/contracts";
 
 interface LoginMetadata {
   ip?: string;
@@ -26,7 +25,7 @@ interface LoginMetadata {
 
 @Injectable()
 export class AuthService {
-  private tokenUpdateLocks = new Map<number, Promise<{ accessToken: string; refreshToken: string; user: UserResponseData }>>();
+  private tokenUpdateLocks = new Map<string, Promise<{ accessToken: string; refreshToken: string; user: UserResponseData }>>();
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     private readonly prismaService: PrismaService,
@@ -35,7 +34,6 @@ export class AuthService {
     private readonly redis: RedisService,
     private readonly mailService: MailService,
     private readonly verificationService: VerificationService,
-    private readonly documentService: DocumentService,
     private readonly collaborationService: CollaborationService,
   ) {}
 
@@ -407,8 +405,6 @@ export class AuthService {
           },
         },
       });
-
-      await this.documentService.createDefault(newUser.id);
 
       const { accessToken, refreshToken } = await this.generateJWTToken(newUser.id);
       const collabToken = await this.collaborationService.generateCollabToken(newUser.id);

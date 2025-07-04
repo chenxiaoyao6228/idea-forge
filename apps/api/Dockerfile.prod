@@ -18,9 +18,9 @@ COPY .npmrc ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 COPY package.json ./
-COPY shared/package.json ./shared/
-COPY api/package.json ./api/
-COPY client/package.json ./client/
+COPY apps/api/package.json ./apps/api/
+COPY apps/client/package.json ./apps/client/
+COPY packages/contracts/package.json ./packages/contracts/
 
 # List all files to verify copies
 RUN ls -la
@@ -43,14 +43,12 @@ ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 
 
-RUN cd shared && pnpm build
-
-RUN cd api && pnpm build
+RUN pnpm -F @idea/contracts build
+RUN pnpm -F @idea/api build
 
 # set sentry auth token for react because sentry does not custom key for token
 ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN_REACT
-
-RUN cd client && pnpm build
+RUN pnpm -F @idea/client build
 
 
 ## production stage
@@ -65,33 +63,20 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-lock.yaml ./
-COPY --from=builder /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /app/apps/api/public ./apps/api/public
+COPY --from=builder /app/apps/api/ecosystem.config.js ./apps/api/ecosystem.config.js
+# TODO: handle env file
+COPY --from=builder /app/apps/api/.env.vault ./apps/api/.env.vault
 
-# shared
-COPY --from=builder /app/shared/package.json ./shared/
-COPY --from=builder /app/shared/dist ./shared/dist
+COPY --from=builder /app/packages/contracts/dist ./packages/contracts/dist
+COPY --from=builder /app/packages/contracts/package.json ./packages/contracts/package.json
 
-
-# api
-COPY --from=builder /app/api/dist ./api/dist
-COPY --from=builder /app/api/package.json ./api/package.json
-COPY --from=builder /app/api/public ./api/public
-COPY --from=builder /app/api/prisma ./api/prisma
-COPY --from=builder /app/api/ecosystem.config.js ./api/ecosystem.config.js
-COPY --from=builder /app/api/.env.vault ./api/.env.vault
-
-RUN cat ./api/.env.vault
-
-# client build
-COPY --from=builder /app/api/view ./api/view 
+COPY --from=builder /app/apps/client/dist ./apps/client/dist
+COPY --from=builder /app/apps/client/package.json ./apps/client/package.json
 
 RUN pnpm install --prod --frozen-lockfile
-
-# Make sure prisma schema is up to date
-RUN cd api && pnpm prisma generate
-
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:5000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"

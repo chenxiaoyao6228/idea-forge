@@ -3,13 +3,13 @@ import { Response } from "express";
 import { AIProviderService } from "./ai.service";
 import { AIStreamRequest, TokenUsageResponse } from "@idea/contracts";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
-import { User } from "@prisma/client";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { TokenUsageService } from "./token-usage.service";
 import { ConfigService } from "@nestjs/config";
 import { UserService } from "@/user/user.service";
 import { UpdateUserTokenLimitDto } from "./ai.dto";
+import { User } from "@idea/contracts";
 
 @Controller("api/ai")
 export class AIController {

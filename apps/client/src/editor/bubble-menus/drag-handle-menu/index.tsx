@@ -1,6 +1,6 @@
 import { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { useState, useCallback } from "react";
-import DragHandle from "@tiptap-pro/extension-drag-handle-react";
+import DragHandle from "@tiptap/extension-drag-handle-react";
 import type { MenuProps } from "../type";
 import { Editor } from "@tiptap/core";
 import DragButton from "./drag-button";

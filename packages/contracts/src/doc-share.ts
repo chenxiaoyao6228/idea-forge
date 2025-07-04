@@ -1,14 +1,7 @@
 import { z } from "zod";
-import { basePagerSchema } from "./_base";
-import { permissionLevelSchema } from "./permission";
-import { PermissionLevel } from "@prisma/client";
 
-export const docShareUserSchema = z.object({
-  id: z.number(),
-  email: z.string(),
-  displayName: z.string().nullable(),
-  permission: z.nativeEnum(PermissionLevel),
-});
+import { basePagerSchema } from "./_base";
+import { PermissionLevelSchema } from "./prisma-type-generated";
 
 export const docShareInfoSchema = z.object({
   id: z.string().optional(),
@@ -34,15 +27,18 @@ export const revokeShareSchema = z.object({
   id: z.string(),
 });
 
-export const shareListRequestSchema = basePagerSchema.extend({
+export const shareListRequestSchema = basePagerSchema.merge(
+  z.object({
+    workspaceId: z.string().optional(),
+    subspaceId: z.string().optional(),
+  }),
+);
+
+export const listSharedWithMeSchema = z.object({
   query: z.string().optional(),
 });
 
-export const listSharedWithMeSchema = basePagerSchema.extend({
-  query: z.string().optional(),
-});
-
-export const listSharedByMeSchema = basePagerSchema.extend({
+export const listSharedByMeSchema = z.object({
   query: z.string().optional(),
 });
 
@@ -68,16 +64,16 @@ export const shareResponseSchema = z.object({
       .nullable(),
   }),
   author: z.object({
-    id: z.number(),
+    id: z.string(),
     email: z.string(),
     displayName: z.string().nullable(),
   }),
   sharedTo: z.object({
-    id: z.number(),
+    id: z.string(),
     email: z.string(),
     displayName: z.string().nullable(),
   }),
-  permission: z.nativeEnum(PermissionLevel),
+  permission: PermissionLevelSchema,
   includeChildDocuments: z.boolean(),
   published: z.boolean(),
   urlId: z.string().nullable(),
@@ -112,8 +108,6 @@ export const shareRevokeResponseSchema = z.object({
   success: z.boolean(),
 });
 
-// Types
-export type DocShareUser = z.infer<typeof docShareUserSchema>;
 export type DocShareInfoDto = z.infer<typeof docShareInfoSchema>;
 export type CreateShareDto = z.infer<typeof createShareSchema>;
 export type UpdateShareDto = z.infer<typeof updateShareSchema>;

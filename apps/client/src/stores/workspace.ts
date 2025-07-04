@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { devtools, subscribeWithSelector, persist } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
 import { workspaceApi } from "@/apis/workspace";
-import { Workspace } from "@idea/contracts";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 
 export interface WorkspaceEntity {

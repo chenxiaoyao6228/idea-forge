@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordRequest>({
-    resolver: zodResolver(ForgotPasswordRequestSchema),
+    resolver: zodResolver(ForgotPasswordRequestSchema as any),
     defaultValues: {
       email: "",
     },

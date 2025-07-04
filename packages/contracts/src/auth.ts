@@ -1,10 +1,10 @@
-import { UserStatus } from "@prisma/client";
 import { z } from "zod";
+import { PermissionLevelSchema, UserStatusSchema } from "./prisma-type-generated";
 
-export const VERIFICATION_CODE_TYPES = ["register", "reset-password", "change-email", "2fa"] as const;
+// ===== Database Models =====
 
-export const VerificationTypeSchema = z.enum(VERIFICATION_CODE_TYPES);
-export type VerificationCodeType = z.infer<typeof VerificationTypeSchema>;
+export const VerificationCodeTypeSchema = z.enum(["register", "reset-password", "change-email", "2fa"]);
+export type VerificationCodeType = z.infer<typeof VerificationCodeTypeSchema>;
 
 export const Provider = {
   google: "google",
@@ -13,7 +13,8 @@ export const Provider = {
 
 export type Provider = (typeof Provider)[keyof typeof Provider];
 
-// Common schemas
+// ===== DTO/Response =====
+
 export const EmailSchema = z.string().email();
 export const PwdSchema = z.string().min(6).max(30);
 export const DisplayNameSchema = z.string().min(1).max(50);
@@ -96,7 +97,7 @@ export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordRequestSchema>;
 export const CodeValidateRequestSchema = z.object({
   email: EmailSchema,
   code: z.string().length(6),
-  type: VerificationTypeSchema,
+  type: VerificationCodeTypeSchema,
 });
 export type CodeValidateRequest = z.infer<typeof CodeValidateRequestSchema>;
 
@@ -113,7 +114,7 @@ export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
 export const CreateUserRequestSchema = z.object({
   email: EmailSchema,
   password: z.string().optional(),
-  status: z.nativeEnum(UserStatus),
+  status: UserStatusSchema,
 });
 export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>;
 
@@ -126,3 +127,15 @@ export const CreateOAuthUserRequestSchema = CreateUserRequestSchema.extend({
   providerName: z.nativeEnum(Provider).optional(),
 });
 export type CreateOAuthUserRequest = z.infer<typeof CreateOAuthUserRequestSchema>;
+
+export const AuthUserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  displayName: z.string().nullable(),
+  status: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  permissions: z.array(PermissionLevelSchema).optional(),
+});
+
+export type AuthUser = z.infer<typeof AuthUserSchema>;

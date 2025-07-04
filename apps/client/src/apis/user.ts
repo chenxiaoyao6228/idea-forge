@@ -1,5 +1,6 @@
 import request from "@/lib/request";
-import type { User, UpdateUserRequest, UserListRequestDto, UserListResponse } from "@idea/contracts";
+import type { UpdateUserRequest, UserListRequestDto, UserListResponse } from "@idea/contracts";
+import type { User } from "@idea/contracts";
 
 export interface UserResponse {
   data: User;

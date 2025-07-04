@@ -1,55 +1,34 @@
 import { z } from "zod";
 import { basePagerSchema } from "./_base";
-import { DocSchema } from "./schema/modelSchema/DocSchema";
-
-// Enums from schema
-export const resourceTypeSchema = z.enum(["WORKSPACE", "SUBSPACE", "DOCUMENT"]);
-export const sourceTypeSchema = z.enum(["DIRECT", "GROUP", "SUBSPACE_ADMIN", "SUBSPACE_MEMBER", "WORKSPACE_ADMIN", "WORKSPACE_MEMBER", "GUEST"]);
-export const permissionLevelSchema = z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE", "OWNER"]);
-
-// Core permission schema
-export const unifiedPermissionSchema = z.object({
-  id: z.string(),
-  userId: z.string().nullable(),
-  resourceType: resourceTypeSchema,
-  resourceId: z.string(),
-  permission: permissionLevelSchema,
-  sourceType: sourceTypeSchema,
-  sourceId: z.string().nullable(),
-  priority: z.number(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  createdById: z.string(),
-  guestId: z.string().nullable(),
-});
+import { PermissionLevelSchema, ResourceTypeSchema, UnifiedPermissionSchema } from "./prisma-type-generated";
 
 // Request schemas
 export const addUserPermissionSchema = z.object({
   userId: z.string(),
-  resourceType: resourceTypeSchema,
+  resourceType: ResourceTypeSchema,
   resourceId: z.string(),
-  permission: permissionLevelSchema,
+  permission: PermissionLevelSchema,
 });
 
 export const addGroupPermissionSchema = z.object({
   groupId: z.string(),
-  resourceType: resourceTypeSchema,
+  resourceType: ResourceTypeSchema,
   resourceId: z.string(),
-  permission: permissionLevelSchema,
+  permission: PermissionLevelSchema,
 });
 
 export const updatePermissionSchema = z.object({
-  permission: permissionLevelSchema,
+  permission: PermissionLevelSchema,
 });
 
 export const permissionListRequestSchema = basePagerSchema.extend({
-  resourceType: resourceTypeSchema.optional(),
+  resourceType: ResourceTypeSchema.optional(),
   resourceId: z.string().optional(),
   userId: z.string().optional(),
 });
 
 // Response schemas
-export const permissionResponseSchema = unifiedPermissionSchema.extend({
+export const permissionResponseSchema = UnifiedPermissionSchema.extend({
   user: z
     .object({
       id: z.string(),
@@ -77,7 +56,7 @@ export const sharedWithMeResponseSchema = z.object({
     total: z.number(),
   }),
   data: z.object({
-    documents: z.array(DocSchema),
+    documents: z.array(z.any()), // DocSchema 替换为 any 或本地定义
   }),
   permissions: z.record(
     z.object({
@@ -90,12 +69,9 @@ export const sharedWithMeResponseSchema = z.object({
   ),
 });
 
-// Types
-export type UnifiedPermission = z.infer<typeof unifiedPermissionSchema>;
 export type AddUserPermissionRequest = z.infer<typeof addUserPermissionSchema>;
 export type AddGroupPermissionRequest = z.infer<typeof addGroupPermissionSchema>;
 export type UpdatePermissionRequest = z.infer<typeof updatePermissionSchema>;
 export type PermissionListRequest = z.infer<typeof permissionListRequestSchema>;
 export type PermissionResponse = z.infer<typeof permissionResponseSchema>;
 export type SharedWithMeResponse = z.infer<typeof sharedWithMeResponseSchema>;
-2;

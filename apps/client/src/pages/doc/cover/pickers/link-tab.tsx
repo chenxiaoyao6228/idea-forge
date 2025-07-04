@@ -28,7 +28,7 @@ export function LinkTab({ onSelect, onClose }: LinkTabProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormData>({
-    resolver: zodResolver(schemaFactory(t)),
+    resolver: zodResolver(schemaFactory(t) as any),
     defaultValues: {
       url: "",
     },

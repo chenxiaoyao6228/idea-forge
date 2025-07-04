@@ -1,8 +1,7 @@
 import { Action, AppAbility, BaseAbility } from "@/_shared/casl/ability.class";
 import { DefineAbility } from "@/_shared/casl/ability.decorator";
 import { Injectable } from "@nestjs/common";
-import { User } from "@idea/contracts";
-import { ResourceType, PermissionLevel } from "@prisma/client";
+import { ResourceType, PermissionLevel, User } from "@idea/contracts";
 import { PermissionService } from "@/permission/permission.service";
 import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 

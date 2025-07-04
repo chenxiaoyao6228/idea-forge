@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
-import { NavigationNode, NavigationNodeType, SubspaceTypeSchema } from "@idea/contracts";
+import { SubspaceTypeSchema } from "@idea/contracts";
+import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import fractionalIndex from "fractional-index";
@@ -8,7 +9,7 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { presentSubspace, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PermissionService } from "@/permission/permission.service";
-import { SourceType, ResourceType, SubspaceType, PermissionLevel } from "@prisma/client";
+import { SourceType, ResourceType, SubspaceType, PermissionLevel } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
@@ -708,15 +709,7 @@ export class SubspaceService {
         priority: 2,
         createdById: currentUserId,
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            displayName: true,
-          },
-        },
-      },
+      include: {},
     });
 
     return userPermission;
@@ -743,11 +736,14 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
     }
 
-    await this.prismaService.subspaceMemberPermission.delete({
+    await this.prismaService.unifiedPermission.delete({
       where: {
-        subspaceId_userId: {
-          subspaceId,
+        userId_guestId_resourceType_resourceId_sourceType: {
           userId: targetUserId,
+          guestId: "",
+          resourceType: ResourceType.SUBSPACE,
+          resourceId: subspaceId,
+          sourceType: SourceType.DIRECT,
         },
       },
     });
@@ -778,20 +774,8 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
     }
 
-    const permissions = await this.prismaService.subspaceMemberPermission.findMany({
-      where: {
-        subspaceId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            displayName: true,
-          },
-        },
-      },
-    });
+    // TODO:
+    const permissions = {};
 
     return {
       data: permissions,
@@ -828,36 +812,12 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.GroupNotFound);
     }
 
-    // Create or update group permission
-    const groupPermission = await this.prismaService.docGroupPermission.upsert({
-      where: {
-        docId_groupId: {
-          docId: subspaceId,
-          groupId,
-        },
-      },
-      update: {
-        permission,
-      },
-      create: {
-        docId: subspaceId,
-        groupId,
-        permission,
-        userId: currentUserId,
-        createdById: currentUserId,
-      },
-      include: {
-        group: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-          },
-        },
-      },
-    });
+    // TODO:
+    const permissions = {};
 
-    return groupPermission;
+    return {
+      data: permissions,
+    };
   }
 
   async removeGroupPermission(subspaceId: string, groupId: string, currentUserId: string) {
@@ -881,14 +841,14 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
     }
 
-    await this.prismaService.docGroupPermission.delete({
-      where: {
-        docId_groupId: {
-          docId: subspaceId,
-          groupId,
-        },
-      },
-    });
+    // await this.prismaService.docGroupPermission.delete({
+    //   where: {
+    //     docId_groupId: {
+    //       docId: subspaceId,
+    //       groupId,
+    //     },
+    //   },
+    // });
 
     return { success: true };
   }
@@ -916,20 +876,8 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
     }
 
-    const permissions = await this.prismaService.docGroupPermission.findMany({
-      where: {
-        docId: subspaceId,
-      },
-      include: {
-        group: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-          },
-        },
-      },
-    });
+    // TODO:
+    const permissions = {};
 
     return {
       data: permissions,
