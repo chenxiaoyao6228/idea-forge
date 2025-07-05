@@ -1,16 +1,15 @@
-import { BullModule, BullRootModuleOptions } from "@nestjs/bull";
+import { BullModule } from "@nestjs/bullmq";
 import { Global, Module } from "@nestjs/common";
 import { WebsocketEventProcessor } from "./processors/websocket-event.processor";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 
-// FIXME: not global ?
 @Global()
 @Module({
   imports: [
     BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService): Promise<BullRootModuleOptions> => ({
-        redis: {
+      useFactory: async (configService: ConfigService) => ({
+        connection: {
           host: configService.get("REDIS_HOST"),
           port: configService.get("REDIS_PORT"),
         },
@@ -19,10 +18,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
     }),
     BullModule.registerQueue({ name: "websocket-events" }),
   ],
-  providers: [
-    WebsocketEventProcessor,
-    // Other processors...
-  ],
+  providers: [WebsocketEventProcessor],
   exports: [BullModule],
 })
 export class QueueModule {}

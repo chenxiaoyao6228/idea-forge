@@ -15,12 +15,6 @@ export class AppController {
     private readonly mailService: MailService,
   ) {}
 
-  @Public()
-  @Get("health")
-  async health() {
-    return "ok";
-  }
-
   // ============= test router below =============
   @Public()
   @Get("/test-sentry")

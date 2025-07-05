@@ -1,6 +1,6 @@
 // WebSocket event processor for handling real-time business events
-import { Processor, Process } from "@nestjs/bull";
-import { Job } from "bull";
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Job } from "bullmq";
 import { RealtimeGateway } from "../../socket/events/realtime.gateway";
 import { WebsocketEvent } from "../../events/types/websocket.event";
 import { BusinessEvents } from "../../socket/business-event.constant";
@@ -8,15 +8,16 @@ import { presentStar } from "../../../star/star.presenter";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Processor("websocket-events")
-export class WebsocketEventProcessor {
+export class WebsocketEventProcessor extends WorkerHost {
   constructor(
     private realtimeGateway: RealtimeGateway,
     private readonly prismaService: PrismaService,
-  ) {}
+  ) {
+    super();
+  }
 
   // Process incoming WebSocket events from the queue
-  @Process("websocket-event")
-  async handleWebsocketEvent(job: Job<WebsocketEvent<any>>) {
+  async process(job: Job<WebsocketEvent<any>>) {
     const event = job.data;
     const { data, name, timestamp, actorId, workspaceId } = event;
     const server = this.realtimeGateway.server;

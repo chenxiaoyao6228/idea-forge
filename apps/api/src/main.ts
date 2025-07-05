@@ -13,12 +13,17 @@ import { AllExceptionsFilter } from "./_shared/filters/all-exception.filter";
 import { HttpExceptionFilter } from "./_shared/filters/http-exception.filter";
 import rateLimit from "express-rate-limit";
 import { I18nNextService } from "./_shared/i18next/i18n.service";
+import helmet from "helmet";
+import { json, urlencoded } from "express";
+import { Reflector } from "@nestjs/core";
+import compression from "compression";
+
 declare const module: any;
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: {
-      origin: true,
+      origin: process.env.CORS_ORIGINS?.split(",") || [`http://localhost:${process.env.NEST_API_PORT}`],
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
@@ -29,6 +34,38 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
+  // Security headers with CSP configuration for development
+  const isDev = configService.get("NODE_ENV") === "development";
+
+  if (isDev) {
+    // Development: Allow inline scripts and Vite dev server
+    app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "http://localhost:5173", "http://localhost:3000"],
+            styleSrc: ["'self'", "'unsafe-inline'", "http://localhost:5173"],
+            imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
+            connectSrc: ["'self'", "http://localhost:5173", "ws://localhost:5173"],
+            fontSrc: ["'self'", "data:", "http:", "https:"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+          },
+        },
+      }),
+    );
+  } else {
+    // Production: Use strict CSP
+    app.use(helmet());
+  }
+
+  // Enable trust proxy for reverse proxies (Heroku, AWS ELB, Nginx, etc)
+  app.enable("trust proxy");
+
+  app.use(compression());
+
   // Get Real IP address
   app.use(requestIpMw({ attributeName: "ip" }));
 
@@ -39,6 +76,13 @@ async function bootstrap() {
       max: 1000, // limit each IP to 1000 requests per windowMs
     }),
   );
+
+  // Body parsing middleware with 50MB limits
+  app.use(json({ limit: "50mb" }));
+  app.use(urlencoded({ limit: "50mb", extended: true }));
+
+  // Get reflector for interceptors
+  const reflector = app.get(Reflector);
 
   // Filters
   const i18nService = app.get(I18nNextService);
@@ -58,6 +102,11 @@ async function bootstrap() {
 
   const port = configService.get("NEST_API_PORT", 5000);
 
+  // Enable shutdown hooks only in production
+  if (!isDev) {
+    app.enableShutdownHooks();
+  }
+
   // For pm2 cluster mode
   if (process.env.NODE_APP_INSTANCE) {
     if (process.env.NODE_APP_INSTANCE === "0") {
@@ -69,19 +118,26 @@ async function bootstrap() {
     console.log(`Application is running on: ${await app.getUrl()}`);
   }
 
-  process.on("SIGINT", async () => {
-    console.log("Received SIGINT signal, shutting down application...");
-    await app.close();
-    process.exit(0);
-  });
+  // Keep your existing signal handlers for development
+  if (isDev) {
+    process.on("SIGINT", async () => {
+      console.log("Received SIGINT signal, shutting down application...");
+      await app.close();
+      process.exit(0);
+    });
 
-  process.on("SIGTERM", async () => {
-    console.log("Received SIGTERM signal, shutting down application...");
-    console.log("======= will take a few seconds for nestjs to restart ========");
-    await app.close();
-    process.exit(0);
-  });
+    process.on("SIGTERM", async () => {
+      console.log("Received SIGTERM signal, shutting down application...");
+      console.log("======= will take a few seconds for nestjs to restart ========");
+      await app.close();
+      process.exit(0);
+    });
+  }
 
+  /*
+   * FIXME: fix this if have time
+   * NOTE: standalone vite config might working on stand nestjs project, but not working on monorepo project
+   */
   // if (module.hot) {
   //   module.hot.accept(() => {
   //     console.log("Module updated, reloading...");

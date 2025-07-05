@@ -6,9 +6,9 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { WebsocketEvent } from "@/_shared/events/types/websocket.event";
-import { InjectQueue } from "@nestjs/bull";
+import { InjectQueue } from "@nestjs/bullmq";
 import fractionalIndex from "fractional-index";
-import { Queue } from "bull";
+import { Queue } from "bullmq";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()

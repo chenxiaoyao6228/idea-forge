@@ -126,7 +126,8 @@ export class UserService {
     };
 
     try {
-      const { data, pagination } = await this.prismaService.user.paginateWithApiFormat({
+      // FIXME:
+      const { data, pagination } = await (this.prismaService.user as any).paginateWithApiFormat({
         where,
         orderBy: [{ [sortBy]: sortOrder }, { email: "asc" }],
         page,

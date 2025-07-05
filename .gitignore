@@ -42,6 +42,7 @@ lerna-debug.log*
 # Temp directories
 .temp
 .tmp
+**/.vite/**
 
 # Runtime data
 .turbo
@@ -65,6 +66,8 @@ apps/api/node_modules
 apps/api/view
 # upload
 apps/api/uploads
+# prisma type generated
+apps/api/prisma-type-generated
 
 
 
