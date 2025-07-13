@@ -6,12 +6,12 @@ import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { Emoji } from "emoji-picker-react";
 import useUIStore from "@/stores/ui";
-import useDocumentStore from "@/stores/document";
+import useSubSpaceStore from "@/stores/subspace";
 
 interface BreadcrumbItemData {
   id: string;
   title: string;
-  icon: string;
+  icon?: string;
 }
 
 export default function DocumentBreadcrumb() {
@@ -19,16 +19,20 @@ export default function DocumentBreadcrumb() {
 
   const navigate = useNavigate();
 
+  // FIXME: this only handle subspace navigation tree, there might be other cases like star
   const getBreadcrumbItems = useCallback(() => {
     if (!activeDocumentId) return [];
     // getPathToDocumentInMyDocs returns NavigationNode[]
-    const path = useDocumentStore.getState().getPathToDocumentInMyDocs(activeDocumentId);
+    const path = useSubSpaceStore.getState().getPathToDocument(activeDocumentId, activeDocumentId);
     // Map NavigationNode to BreadcrumbItemData
-    return path.map((node) => ({
-      id: node.id,
-      title: node.title,
-      icon: node.icon || "1f4c4", // fallback to 📄 if no icon
-    }));
+    return path.map(
+      (node) =>
+        ({
+          id: node.id,
+          title: node.title,
+          icon: node.icon ?? undefined,
+        }) as BreadcrumbItemData,
+    );
   }, [activeDocumentId]);
 
   const breadcrumbItems = getBreadcrumbItems();
@@ -42,7 +46,7 @@ export default function DocumentBreadcrumb() {
   const renderBreadcrumbItem = (item: BreadcrumbItemData) => {
     return (
       <div className="flex items-center gap-1">
-        <Emoji unified={item.icon} size={20} />
+        {item.icon ? <Emoji unified={item.icon} size={20} /> : null}
         {item.title}
       </div>
     );

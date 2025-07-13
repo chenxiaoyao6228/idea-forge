@@ -61,7 +61,6 @@ export interface CreateDocumentResponse extends CommonDocumentResponse {}
 export const listDocumentSchema = basePagerSchema.merge(
   DocSchema.pick({
     parentId: true,
-    workspaceId: true,
     subspaceId: true,
     archivedAt: true,
     type: true,
@@ -134,7 +133,7 @@ export const moveDocumentsSchema = z.object({
   id: z.string().cuid(),
   parentId: z.string().cuid().optional().nullish(),
   subspaceId: z.string().cuid().optional().nullish(),
-  index: z.string().min(1, "index is required and must be a fractional-index string"),
+  index: z.number().optional(),
 });
 
 export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;

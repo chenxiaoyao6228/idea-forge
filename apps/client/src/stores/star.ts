@@ -98,11 +98,7 @@ const useStarStore = create<StoreState>()(
             }
           },
 
-          create: async (params: {
-            docId?: string;
-            subspaceId: string | null;
-            index?: string;
-          }) => {
+          create: async (params) => {
             try {
               const response = await starApi.create(params);
               const star: StarEntity = {

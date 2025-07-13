@@ -53,7 +53,7 @@ const usePermissionStore = create<StoreState>()(
         ...permissionEntitySlice.initialState,
         ...permissionEntitySlice.createActions(set),
 
-        fetchResourcePermissions: async (resourceType: string, resourceId: string) => {
+        fetchResourcePermissions: async (resourceType, resourceId) => {
           set({ isFetching: true });
           try {
             const response = await permissionApi.getResourcePermissions(resourceType, resourceId);
@@ -63,7 +63,7 @@ const usePermissionStore = create<StoreState>()(
           }
         },
 
-        setPermissions: (permissions: Record<string, Record<string, boolean>>) => {
+        setPermissions: (permissions) => {
           const entities = Object.entries(permissions).map(([id, abilities]) => ({
             id,
             abilities: { ...defaultAbilities, ...abilities },
@@ -71,19 +71,19 @@ const usePermissionStore = create<StoreState>()(
           get().setAll(entities);
         },
 
-        updatePermission: (id: string, abilities: Record<string, boolean>) => {
+        updatePermission: (id, abilities) => {
           get().upsertOne({
             id,
             abilities: { ...defaultAbilities, ...abilities },
           });
         },
 
-        getAbilities: (id: string) => {
+        getAbilities: (id) => {
           const permission = get().entities[id];
           return permission ? permission.abilities : defaultAbilities;
         },
 
-        hasPermission: (id: string, action: string) => {
+        hasPermission: (id, action) => {
           const abilities = get().getAbilities(id);
           return abilities[action] || false;
         },

@@ -37,11 +37,6 @@ export class DocumentController {
   // @CheckPolicy(Action.Move, "Doc")
   async moveDocuments(@GetUser("id") userId: string, @Body() dto: MoveDocumentsDto) {
     const result = await this.moveDocumentService.moveDocs(userId, dto);
-
-    if (dto.parentId) {
-      await this.permissionInheritanceService.updatePermissionsOnMove(dto.id, dto.parentId, dto.subspaceId ?? null);
-    }
-
     return result;
   }
 

@@ -61,9 +61,6 @@ async function bootstrap() {
     app.use(helmet());
   }
 
-  // Enable trust proxy for reverse proxies (Heroku, AWS ELB, Nginx, etc)
-  app.enable("trust proxy");
-
   app.use(compression());
 
   // Get Real IP address

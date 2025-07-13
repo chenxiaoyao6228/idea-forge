@@ -4,13 +4,11 @@ import { createComputed } from "zustand-computed";
 import { CoverImage, DocTypeSchema, DocVisibilitySchema } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
-
-import useSubSpaceStore from "./subspace";
+import useSubSpaceStore, { getPersonalSubspace } from "./subspace";
 import useStarStore from "./star";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import useWorkspaceStore from "./workspace";
 import usePermissionStore from "./permission";
-
 interface FetchOptions {
   force?: boolean;
   prefetch?: boolean;
@@ -36,6 +34,10 @@ export interface DocumentEntity {
   publishedAt?: string | null;
   archivedAt?: string | null;
   deletedAt?: string | null;
+  lastModifiedById?: string;
+  createdById?: string;
+  updatedAt: string;
+  createdAt: string;
   [key: string]: any;
 }
 
@@ -45,12 +47,13 @@ interface State {
   isLoaded: boolean;
   activeDocumentId?: string;
   sharedCache: Record<string, { sharedTree: any; workspace: any }>;
+  movingDocumentId: string | null; // track moving state
 }
 
 interface Action {
-  // API actions
+  // Existing API actions
   fetchDetail: (id: string, options?: FetchOptions) => Promise<FetchDetailResult>;
-  fetchChildren: (parentId: string | null, options?: { force?: boolean }) => Promise<void>;
+  fetchChildren: ({ parentId, subspaceId, options }: { parentId: string | null; subspaceId: string | null; options?: { force?: boolean } }) => Promise<void>;
   createDocument: (options: {
     title: string;
     parentId: string | null;
@@ -60,31 +63,50 @@ interface Action {
   move: (params: {
     id: string;
     subspaceId?: string | null;
+    oldSubspaceId?: string | null;
     parentId?: string | null;
-    index?: string;
+    index?: number;
   }) => Promise<void>;
 
-  // Helper methods
+  //document lifecycle methods
+  publish: (documentId: string, subspaceId: string, options?: { user?: any }) => Promise<void>;
+  unpublish: (documentId: string, options?: { detach?: boolean; user?: any }) => Promise<void>;
+  archive: (documentId: string, options?: { user?: any }) => Promise<void>;
+  restore: (documentId: string, subspaceId: string, options?: { user?: any }) => Promise<void>;
+  delete: (documentId: string, options?: { permanent?: boolean; user?: any }) => Promise<void>;
+
+  //navigation and structure methods
+  toNavigationNode: (documentId: string) => NavigationNode | undefined;
+  addToSubspaceStructure: (documentId: string, subspaceId: string, index?: number) => void;
+  removeFromSubspaceStructure: (documentId: string, subspaceId: string) => void;
+  updateInSubspaceStructure: (documentId: string, subspaceId: string, updates: Partial<DocumentEntity>) => void;
+
+  //child management
+  findAllChildDocumentIds: (documentId: string) => string[];
+  findChildDocuments: (documentId: string) => DocumentEntity[];
+  findDescendants: (documentId: string) => DocumentEntity[];
+
+  // Existing helper methods
   star: (documentId: string, index?: string) => Promise<void>;
   unStar: (documentId: string) => Promise<void>;
   isArchived: (doc: DocumentEntity) => boolean;
   isDeleted: (doc: DocumentEntity) => boolean;
   isDraft: (doc: DocumentEntity) => boolean;
+  isPublished: (doc: DocumentEntity) => boolean;
   updateDocument: (document: DocumentEntity) => void;
   setActiveDocument: (id?: string) => void;
   needsUpdate: (id: string, updatedAt: Date) => boolean;
   handleDocumentUpdate: (documentId: string, updatedAt?: string) => Promise<void>;
   handleDocumentRemove: (documentId: string) => void;
 
-  // my-docs
-  getMyDocsRootDocuments: () => NavigationNode[];
+  getPersonalRootDocuments: () => NavigationNode[];
   getPathToDocumentInMyDocs: (documentId: string) => NavigationNode[];
   fetchMyDocsChildren: (parentId: string | null) => Promise<void>;
   createMyDocsDocument: (options: {
     title: string;
     parentId?: string | null;
   }) => Promise<string>;
-  moveToMyDocs: (documentId: string, parentId?: string | null, index?: string) => Promise<void>;
+  moveToMyDocs: (documentId: string, parentId?: string | null, index?: number) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -93,90 +115,313 @@ const defaultState: State = {
   isLoaded: false,
   activeDocumentId: undefined,
   sharedCache: {},
+  movingDocumentId: null,
 };
 
 const documentEntitySlice = createEntitySlice<DocumentEntity>();
 export const documentSelectors = documentEntitySlice.selectors;
 
 type StoreState = State & Action & EntityState<DocumentEntity> & EntityActions<DocumentEntity>;
+
 const useDocumentStore = create<StoreState>()(
   subscribeWithSelector(
     devtools(
       createComputed((state: StoreState) => ({
+        // Existing computed properties
         archivedDocuments: documentSelectors.selectAll(state).filter((doc) => state.isArchived(doc)),
         deletedDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDeleted(doc)),
         draftDocuments: documentSelectors.selectAll(state).filter((doc) => state.isDraft(doc)),
+        publishedDocuments: documentSelectors.selectAll(state).filter((doc) => state.isPublished(doc)),
         activeDocument: state.activeDocumentId ? state.entities[state.activeDocumentId] : undefined,
-        // TODO: 这里靠谱吗? document detail node和navigation  node 的结构不一样, 有可能detail没有加载, 不会生成对应的navigation node
+
+        //computed properties
+        inSubspace: (subspaceId: string) => documentSelectors.selectAll(state).filter((doc) => doc.subspaceId === subspaceId),
+
+        rootInSubspace: (subspaceId: string) => documentSelectors.selectAll(state).filter((doc) => doc.subspaceId === subspaceId && !doc.parentId),
+
+        publishedInSubspace: (subspaceId: string) =>
+          documentSelectors.selectAll(state).filter((doc) => doc.subspaceId === subspaceId && state.isPublished(doc)),
+
+        draftsInSubspace: (subspaceId: string) => documentSelectors.selectAll(state).filter((doc) => doc.subspaceId === subspaceId && state.isDraft(doc)),
+
+        archivedInSubspace: (subspaceId: string) => documentSelectors.selectAll(state).filter((doc) => doc.subspaceId === subspaceId && state.isArchived(doc)),
+
+        // Navigation node conversion
         getDocumentAsNavigationNode: (documentId: string): NavigationNode | undefined => {
           const doc = state.entities[documentId];
           if (!doc) return undefined;
 
           const children = Object.values(state.entities)
             .filter((child) => child.parentId === documentId)
-            .map((child) => ({
-              id: child.id,
-              title: child.title,
-              index: child.index,
-              subspaceId: child.subspaceId || null,
-              parent: null,
-              type: NavigationNodeType.Document,
-              url: `/${child.id}`,
-              children: [],
-              isDraft: !child.publishedAt,
-              isArchived: !!child.archivedAt,
-              isDeleted: !!child.deletedAt,
-            }));
+            .map((child) => state.toNavigationNode(child.id))
+            .filter(Boolean) as NavigationNode[];
 
           return {
             id: doc.id,
             title: doc.title,
-            subspaceId: doc.subspaceId || null,
-            parentId: doc.parentId || null,
-            index: doc.index,
             type: NavigationNodeType.Document,
             url: `/${doc.id}`,
             children,
-            parent: doc.parentId
-              ? {
-                  id: doc.parentId,
-                  title: "",
-                  type: NavigationNodeType.Document,
-                  url: `/${doc.parentId}`,
-                  children: [],
-                  parent: null,
-                }
-              : null,
-            // isDraft: !doc.publishedAt,
-            // isArchived: !!doc.archivedAt,
-            // isDeleted: !!doc.deletedAt,
+            parent: null,
           };
         },
+
         getChildDocuments: (parentId: string): NavigationNode[] => {
           return Object.values(state.entities)
             .filter((doc) => doc.parentId === parentId)
-            .map((doc) => ({
-              id: doc.id,
-              title: doc.title,
-              type: NavigationNodeType.Document,
-              url: `/${doc.id}`,
-              children: [],
-              parent: null,
-              isDraft: !doc.publishedAt,
-              isArchived: !!doc.archivedAt,
-              isDeleted: !!doc.deletedAt,
-            }));
+            .map((doc) => state.toNavigationNode(doc.id))
+            .filter(Boolean) as NavigationNode[];
         },
       }))((set, get) => ({
         ...defaultState,
         ...documentEntitySlice.initialState,
         ...documentEntitySlice.createActions(set),
 
+        // Existing helper methods
         isArchived: (doc: DocumentEntity) => !!doc.archivedAt,
         isDeleted: (doc: DocumentEntity) => !!doc.deletedAt,
         isDraft: (doc: DocumentEntity) => !doc.publishedAt,
+        isPublished: (doc: DocumentEntity) => !!doc.publishedAt,
 
-        fetchChildren: async (parentId: string | null, options = {}) => {
+        //document lifecycle methods
+        publish: async (documentId, subspaceId, options = {}) => {
+          const doc = get().entities[documentId];
+          if (!doc) throw new Error("Document not found");
+
+          set({ isSaving: true });
+          try {
+            // Update document
+            get().updateOne({
+              id: documentId,
+              changes: {
+                publishedAt: new Date().toISOString(),
+                subspaceId,
+                lastModifiedById: options.user?.id || doc.lastModifiedById,
+                updatedAt: new Date().toISOString(),
+              },
+            });
+
+            // Add to subspace structure
+            useSubSpaceStore.getState().addDocument(subspaceId, doc);
+          } finally {
+            set({ isSaving: false });
+          }
+        },
+
+        unpublish: async (documentId, options = { detach: false }) => {
+          const doc = get().entities[documentId];
+          if (!doc) throw new Error("Document not found");
+
+          set({ isSaving: true });
+          try {
+            // Remove from subspace structure
+            if (doc.subspaceId) {
+              useSubSpaceStore.getState().removeDocument(doc.subspaceId, documentId);
+            }
+
+            // Update document
+            get().updateOne({
+              id: documentId,
+              changes: {
+                publishedAt: null,
+                subspaceId: options.detach ? null : doc.subspaceId,
+                lastModifiedById: options.user?.id || doc.lastModifiedById,
+                updatedAt: new Date().toISOString(),
+              },
+            });
+          } finally {
+            set({ isSaving: false });
+          }
+        },
+
+        archive: async (documentId, options = {}) => {
+          const doc = get().entities[documentId];
+          if (!doc) throw new Error("Document not found");
+
+          set({ isSaving: true });
+          try {
+            // Remove from subspace structure
+            if (doc.subspaceId) {
+              useSubSpaceStore.getState().removeDocument(doc.subspaceId, documentId);
+            }
+
+            // Archive document and all children
+            const childIds = get().findAllChildDocumentIds(documentId);
+            const allIds = [documentId, ...childIds];
+
+            get().updateMany(
+              allIds.map((id) => ({
+                id,
+                changes: {
+                  archivedAt: new Date().toISOString(),
+                  lastModifiedById: options.user?.id || doc.lastModifiedById,
+                  updatedAt: new Date().toISOString(),
+                },
+              })),
+            );
+          } finally {
+            set({ isSaving: false });
+          }
+        },
+
+        restore: async (documentId, subspaceId, options = {}) => {
+          const doc = get().entities[documentId];
+          if (!doc) throw new Error("Document not found");
+
+          set({ isSaving: true });
+          try {
+            // Restore document and all children
+            const childIds = get().findAllChildDocumentIds(documentId);
+            const allIds = [documentId, ...childIds];
+
+            get().updateMany(
+              allIds.map((id) => ({
+                id,
+                changes: {
+                  archivedAt: null,
+                  subspaceId,
+                  lastModifiedById: options.user?.id || doc.lastModifiedById,
+                  updatedAt: new Date().toISOString(),
+                },
+              })),
+            );
+
+            // Add back to subspace structure if published
+            if (doc.publishedAt) {
+              useSubSpaceStore.getState().addDocument(subspaceId, doc);
+            }
+          } finally {
+            set({ isSaving: false });
+          }
+        },
+
+        delete: async (documentId, options = { permanent: false }) => {
+          const doc = get().entities[documentId];
+          if (!doc) throw new Error("Document not found");
+
+          set({ isSaving: true });
+          try {
+            if (options.permanent) {
+              // Remove from subspace structure
+              if (doc.subspaceId) {
+                useSubSpaceStore.getState().removeDocument(doc.subspaceId, documentId);
+              }
+
+              // Remove from store
+              get().removeOne(documentId);
+            } else {
+              // Soft delete
+              get().updateOne({
+                id: documentId,
+                changes: {
+                  deletedAt: new Date().toISOString(),
+                  lastModifiedById: options.user?.id || doc.lastModifiedById,
+                  updatedAt: new Date().toISOString(),
+                },
+              });
+            }
+          } finally {
+            set({ isSaving: false });
+          }
+        },
+
+        //navigation and structure methods
+        toNavigationNode: (documentId) => {
+          const doc = get().entities[documentId];
+          if (!doc) return undefined;
+
+          const children = get()
+            .findChildDocuments(documentId)
+            .map((child) => get().toNavigationNode(child.id))
+            .filter(Boolean) as NavigationNode[];
+
+          return {
+            id: doc.id,
+            title: doc.title,
+            type: NavigationNodeType.Document,
+            url: `/${doc.id}`,
+            children,
+            parent: null,
+          };
+        },
+
+        addToSubspaceStructure: (documentId, subspaceId, index = 0) => {
+          const doc = get().entities[documentId];
+          if (!doc) return;
+
+          useSubSpaceStore.getState().addDocument(subspaceId, doc);
+        },
+
+        removeFromSubspaceStructure: (documentId, subspaceId) => {
+          useSubSpaceStore.getState().removeDocument(subspaceId, documentId);
+        },
+
+        updateInSubspaceStructure: (documentId, subspaceId, updates) => {
+          useSubSpaceStore.getState().updateDocument(subspaceId, documentId, updates);
+        },
+
+        //child management
+        findAllChildDocumentIds: (documentId) => {
+          const allDocs = documentSelectors.selectAll(get());
+          const result: string[] = [];
+
+          const findChildren = (parentId: string) => {
+            const children = allDocs.filter((doc) => doc.parentId === parentId);
+            children.forEach((child) => {
+              result.push(child.id);
+              findChildren(child.id);
+            });
+          };
+
+          findChildren(documentId);
+          return result;
+        },
+
+        findChildDocuments: (documentId) => {
+          return documentSelectors.selectAll(get()).filter((doc) => doc.parentId === documentId);
+        },
+
+        findDescendants: (documentId) => {
+          const allDocs = documentSelectors.selectAll(get());
+          const result: DocumentEntity[] = [];
+
+          const findChildren = (parentId: string) => {
+            const children = allDocs.filter((doc) => doc.parentId === parentId);
+            children.forEach((child) => {
+              result.push(child);
+              findChildren(child.id);
+            });
+          };
+
+          findChildren(documentId);
+          return result;
+        },
+
+        // Enhanced move method withlogic
+        move: async ({ id, subspaceId, parentId, index }) => {
+          set({ movingDocumentId: id, isSaving: true });
+          try {
+            // Call API
+            const res = await documentApi.moveDocument({
+              id,
+              subspaceId,
+              parentId,
+              index,
+            });
+
+            if (res.data) {
+              get().upsertMany(res.data);
+            }
+
+            if (res.permissions) {
+              usePermissionStore.getState().setPermissions(res.permissions);
+            }
+          } finally {
+            set({ movingDocumentId: null, isSaving: false });
+          }
+        },
+
+        fetchChildren: async ({ parentId, subspaceId, options = {} }) => {
           if (!options.force) {
             const existingDocs = documentSelectors.selectAll(get());
             const hasChildren = existingDocs.some((doc) => doc.parentId === parentId);
@@ -185,18 +430,14 @@ const useDocumentStore = create<StoreState>()(
 
           set({ isFetching: true });
           try {
-            const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
-            if (!workspaceId) throw new Error("No active workspace");
-
             const response = await documentApi.list({
               parentId,
               page: 1,
               limit: 100,
-              sortBy: "index",
+              sortBy: "updatedAt",
               sortOrder: "asc",
+              subspaceId,
               archivedAt: null,
-              workspaceId,
-              subspaceId: null,
               type: DocTypeSchema.enum.NOTE,
             });
 
@@ -204,10 +445,6 @@ const useDocumentStore = create<StoreState>()(
               // Transform the response data to match DocumentEntity type
               const documents = response.data.map((doc) => ({
                 ...doc,
-                content: "",
-                type: "NOTE",
-                visibility: "WORKSPACE",
-                workspaceId,
               })) as unknown as DocumentEntity[];
               get().upsertMany(documents);
             }
@@ -284,29 +521,11 @@ const useDocumentStore = create<StoreState>()(
           }
         },
 
-        updateDocument: (document: DocumentEntity) => {
+        updateDocument: (document) => {
           get().upsertOne(document);
         },
 
-        move: async ({ id, subspaceId, parentId, index }) => {
-          set({ isSaving: true });
-          try {
-            const safeIndex = typeof index === "string" && index.length > 0 ? index : "z";
-            const { permissions } = await documentApi.moveDocument({
-              id,
-              subspaceId,
-              parentId,
-              index: safeIndex,
-            });
-          } catch (error) {
-            console.error("Failed to move document:", error);
-            throw error;
-          } finally {
-            set({ isSaving: false });
-          }
-        },
-
-        handleDocumentUpdate: async (documentId: string, updatedAt?: string) => {
+        handleDocumentUpdate: async (documentId, updatedAt) => {
           const existing = get().entities[documentId];
 
           if (existing && updatedAt && existing.updatedAt === updatedAt) {
@@ -332,16 +551,6 @@ const useDocumentStore = create<StoreState>()(
                   console.log(`Document ${documentId} moved between my-docs and subspace`);
                 }
               } else {
-                // log all my docs
-                console.log(
-                  "my docs",
-                  get()
-                    .getMyDocsRootDocuments()
-                    .map((doc) => ({
-                      title: doc.title,
-                      index: doc.index,
-                    })),
-                );
                 // my doc order changed
                 console.log(`Document ${documentId} order changed in my-docs`);
                 get().upsertOne(updatedDocument);
@@ -365,7 +574,7 @@ const useDocumentStore = create<StoreState>()(
           }
         },
 
-        handleDocumentRemove: (documentId: string) => {
+        handleDocumentRemove: (documentId) => {
           const document = get().entities[documentId];
           if (document?.subspaceId) {
             useSubSpaceStore.getState().removeDocument(document.subspaceId, documentId);
@@ -373,7 +582,7 @@ const useDocumentStore = create<StoreState>()(
           get().removeOne(documentId);
         },
 
-        needsUpdate: (id: string, updatedAt: Date) => {
+        needsUpdate: (id, updatedAt) => {
           const existing = get().entities[id];
           if (!existing) return true;
 
@@ -398,7 +607,7 @@ const useDocumentStore = create<StoreState>()(
           }
         },
 
-        unStar: async (documentId: string) => {
+        unStar: async (documentId) => {
           try {
             const star = useStarStore.getState().getStarByTarget(documentId);
             if (star) {
@@ -410,35 +619,12 @@ const useDocumentStore = create<StoreState>()(
           }
         },
 
-        // my-docs
-        getMyDocsRootDocuments: (): NavigationNode[] => {
-          const allDocs = documentSelectors.selectAll(get());
-          const orderedDocs = allDocs
-            .filter((doc) => !doc.subspaceId && !doc.parentId)
-            .sort((a, b) => {
-              // Sort by fractional index, fallback to creation date
-              if (a.index && b.index) {
-                return a.index.localeCompare(b.index);
-              }
-              if (a.index && !b.index) return -1;
-              if (!a.index && b.index) return 1;
-              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            })
-            .map((doc) => get().getDocumentAsNavigationNode(doc.id))
-            .filter((node): node is NavigationNode => node !== undefined);
-
-          console.log(
-            "my orderedDocs",
-            orderedDocs.map((doc) => ({
-              title: doc.title,
-              index: doc.index,
-            })),
-          );
-
-          return orderedDocs;
+        getPersonalRootDocuments: () => {
+          const personalSubspace = getPersonalSubspace(useSubSpaceStore.getState());
+          return personalSubspace?.navigationTree || [];
         },
 
-        getPathToDocumentInMyDocs: (documentId: string): NavigationNode[] => {
+        getPathToDocumentInMyDocs: (documentId) => {
           const allDocs = documentSelectors.selectAll(get());
           const myDocs = allDocs.filter((doc) => !doc.subspaceId);
 
@@ -469,7 +655,6 @@ const useDocumentStore = create<StoreState>()(
             return false;
           };
 
-          // 从根文档开始查找
           const rootDocs = myDocs.filter((doc) => !doc.parentId);
           for (const root of rootDocs) {
             if (findPath(root.id)) {
@@ -480,32 +665,36 @@ const useDocumentStore = create<StoreState>()(
           return path;
         },
 
-        fetchMyDocsChildren: async (parentId: string | null) => {
-          return get().fetchChildren(parentId, { force: false });
+        fetchMyDocsChildren: async (parentId) => {
+          // No-op: navigationTree is already loaded with subspace
         },
 
-        createMyDocsDocument: async (options: {
-          title: string;
-          parentId?: string | null;
-        }) => {
+        createMyDocsDocument: async ({ title, parentId = null }) => {
+          const personalSubspace = getPersonalSubspace(useSubSpaceStore.getState());
+          if (!personalSubspace) throw new Error("No my-docs subspace found");
           const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
           if (!workspaceId) throw new Error("No active workspace");
-
-          return get().createDocument({
-            title: options.title,
-            parentId: options.parentId || null,
-            subspaceId: null,
-            workspaceId,
+          const wsId = workspaceId!;
+          const response = await documentApi.create({
+            title,
+            content: "",
+            parentId,
+            subspaceId: personalSubspace.id,
+            workspaceId: wsId,
+            type: DocTypeSchema.enum.NOTE,
+            visibility: DocVisibilitySchema.enum.PRIVATE,
           });
+          return response.id;
         },
 
-        moveToMyDocs: async (documentId: string, parentId?: string | null, index?: string) => {
-          const safeIndex = typeof index === "string" && index.length > 0 ? index : "z";
-          return get().move({
+        moveToMyDocs: async (documentId, parentId, index) => {
+          const personalSubspace = getPersonalSubspace(useSubSpaceStore.getState());
+          if (!personalSubspace) throw new Error("No my-docs subspace found");
+          await documentApi.moveDocument({
             id: documentId,
-            subspaceId: null,
-            parentId: parentId || null,
-            index: safeIndex,
+            subspaceId: personalSubspace.id,
+            parentId: parentId ?? null,
+            index,
           });
         },
       })),

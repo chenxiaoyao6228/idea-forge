@@ -59,4 +59,7 @@ export const subspaceApi = {
   removeGroupPermission: async (id: string, groupId: string) => request.delete<void, { success: boolean }>(`/api/subspaces/${id}/group-permissions/${groupId}`),
 
   listGroupPermissions: async (id: string) => request.get<void, SubspaceGroupPermissionResponse>(`/api/subspaces/${id}/group-permissions`),
+
+  // Fetch all subspaces (including virtual/my-docs) for the user in the workspace
+  getUserSubspacesIncludingVirtual: async (workspaceId: string) => request.get<void, Subspace[]>(`/api/subspaces/user/${workspaceId}`),
 };

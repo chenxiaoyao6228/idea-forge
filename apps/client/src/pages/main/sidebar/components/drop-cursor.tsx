@@ -14,9 +14,9 @@ function DropCursor({ isActiveDrop, innerRef, position = "bottom", className = "
     <div
       ref={innerRef}
       className={cn(
-        "absolute w-full h-[14px] bg-transparent z-10 transition-opacity duration-150",
+        "absolute w-full h-[14px] bg-transparent z-20 transition-all duration-200",
         position === "top" ? "-top-[7px]" : "-bottom-[7px]",
-        "after:content-[''] after:absolute after:top-[6px] after:h-[2px] after:w-full after:bg-slate-700 after:rounded-[2px]",
+        "after:content-[''] after:absolute after:top-[6px] after:h-[3px] after:w-full after:bg-primary after:rounded-[2px] after:shadow-lg after:animate-pulse",
         className,
       )}
     />

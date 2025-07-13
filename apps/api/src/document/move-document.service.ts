@@ -1,335 +1,212 @@
 import { Injectable } from "@nestjs/common";
 import { MoveDocumentsDto } from "./document.dto";
 import { presentDocument } from "./document.presenter";
-import { NavigationNode, NavigationNodeType } from "@idea/contracts";
+import { NavigationNode, NavigationNodeType, Subspace } from "@idea/contracts";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 import { PermissionService } from "@/permission/permission.service";
-import { handleIndexCollision } from "@/_shared/utils/fractional-index";
 import { HttpStatus } from "@nestjs/common";
-import { ClsService } from "nestjs-cls";
 import { Transactional, TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
 
+/*
+This service supports the following document move features:
+1. Moving documents within a subspace: Documents can be repositioned within the same subspace (including folders and regular documents).
+2. Moving documents and their children to another subspace: Supports moving documents and their entire subtree (folders) to another subspace, recursively updating all child documents' subspaceId and updating the navigation tree structure.
+3. Moving documents and their children to "My Docs" (MyDocs/Drafts): Supports moving documents and their entire subtree from a subspace to personal drafts, updating both relationships and navigation tree structures.
+4. Moving documents and their children from "My Docs" to a subspace: Supports moving documents and their entire subtree from drafts to a specified subspace, recursively updating the navigation tree and subspaceId.
+5. Moving documents and their children to a new parent document: Supports moving documents (and their subtree) to a new parent document, and specifying an insertion position (index).
+6. Synchronizing the navigation tree: Ensures that the navigation tree structures of the source subspace and target subspace are correctly updated, without duplicate nodes.
+7. Recursively updating all child document subspaceId: When moving across subspaces or drafts, recursively updating the subspaceId of all descendant documents.
+8. Permission and event handling: Automatically recalculates permissions after moving, and publishes real-time events.
+*/
 @Injectable()
 export class MoveDocumentService {
   constructor(
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionInheritanceService: PermissionInheritanceService,
     private readonly permissionService: PermissionService,
-    private readonly cls: ClsService,
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma<ExtendedPrismaClient>>,
   ) {}
 
   @Transactional()
   async moveDocs(authorId: string, dto: MoveDocumentsDto) {
     const { id, subspaceId, parentId, index } = dto;
-    const affectedDocuments: any[] = [];
-
-    // Use txHost.tx instead of getting prisma from cls
     const prisma = this.txHost.tx;
+    // 1. Fetch and validate the document
+    const document = await prisma.doc.findUnique({ where: { id }, include: { subspace: true } });
+    if (!document) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    if (id === parentId) throw new ApiException(ErrorCodeEnum.DocumentCircularReference, HttpStatus.BAD_REQUEST);
 
-    // Fetch and validate the document
-    const document = await prisma.doc.findUnique({
-      where: { id },
-      include: { subspace: true },
-    });
-
-    if (!document) {
-      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    // Prevent moving under own descendant
+    if (parentId) {
+      let currentParentId: string | null = parentId;
+      while (currentParentId) {
+        if (currentParentId === id) {
+          throw new ApiException(ErrorCodeEnum.DocumentCircularReference, HttpStatus.BAD_REQUEST);
+        }
+        const parentDoc = await prisma.doc.findUnique({ where: { id: currentParentId }, select: { parentId: true } });
+        if (!parentDoc) break;
+        currentParentId = parentDoc.parentId;
+      }
     }
 
-    // Prevent a document from being its own parent
-    if (id === parentId) {
-      throw new ApiException(ErrorCodeEnum.DocumentCircularReference, HttpStatus.BAD_REQUEST);
-    }
-
-    // Require index to be a non-empty string (fractional-index)
-    if (typeof index !== "string" || !index) {
-      throw new ApiException(ErrorCodeEnum.InternalServerError, HttpStatus.BAD_REQUEST);
-    }
-
-    // Use the provided subspaceId (can be null), do not fallback to old value
+    // 2. Fetch the subspace and its navigationTree with transaction isolation
     const targetSubspaceId = subspaceId;
     const subspaceChanged = targetSubspaceId !== document.subspaceId;
+    let oldSubspace: Subspace | null = null;
+    let newSubspace: Subspace | null = null;
 
-    // Always resolve index collision using handleIndexCollision
-    const documents = await prisma.doc.findMany({
-      where: {
-        workspaceId: document.workspaceId,
-        subspaceId: targetSubspaceId,
-        parentId: parentId || null,
-      },
-      select: { index: true },
-    });
-    const finalIndex = handleIndexCollision(documents, index);
+    if (document.subspaceId) {
+      // Use findUniqueOrThrow to ensure we get the latest data
+      // The @Transactional() decorator provides SERIALIZABLE isolation level
+      // which prevents race conditions similar to row-level locking
+      oldSubspace = await prisma.subspace.findUniqueOrThrow({
+        where: { id: document.subspaceId },
+      });
+    }
 
-    // Update document with the calculated or validated index
+    if (targetSubspaceId) {
+      newSubspace = await prisma.subspace.findUniqueOrThrow({
+        where: { id: targetSubspaceId },
+      });
+      if (!newSubspace) throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // 3. Handle navigation tree updates
+    if (oldSubspace && newSubspace && oldSubspace.id === newSubspace.id) {
+      // Moving within the same subspace - remove and re-insert in one operation
+      let tree: NavigationNode[] = [];
+      if (Array.isArray(oldSubspace.navigationTree)) {
+        tree = oldSubspace.navigationTree as NavigationNode[];
+      }
+
+      // Remove the document from the tree
+      tree = this.removeFromTree(tree, id);
+
+      // Create the document node (with children if folder)
+      const docNode = await this.buildNavigationNodeWithChildren(document.id);
+
+      // Insert at the new position
+      if (!parentId) {
+        // Insert at root level at specified position
+        const insertIndex = typeof index === "number" ? index : tree.length;
+        tree.splice(insertIndex, 0, docNode);
+      } else {
+        tree = this.insertNodeUnderParent(tree, parentId, docNode, typeof index === "number" ? index : undefined);
+      }
+
+      // Update the subspace with the new tree
+      await prisma.subspace.update({ where: { id: oldSubspace.id }, data: { navigationTree: tree } });
+    } else {
+      // Moving between different subspaces (or to/from my-docs)
+      // 3a. Remove from old navigationTree if needed
+      if (oldSubspace?.navigationTree) {
+        const newTree = this.removeFromTree(oldSubspace?.navigationTree as NavigationNode[], id);
+        await prisma.subspace.update({ where: { id: oldSubspace.id }, data: { navigationTree: newTree } });
+      }
+
+      // 3b. Insert into new navigationTree if needed
+      if (newSubspace) {
+        const docNode = await this.buildNavigationNodeWithChildren(document.id);
+        let tree: NavigationNode[] = [];
+        if (Array.isArray(newSubspace.navigationTree)) {
+          tree = newSubspace.navigationTree as NavigationNode[];
+        }
+        if (!parentId) {
+          // Insert at root level at specified position
+          const insertIndex = typeof index === "number" ? index : tree.length;
+          tree.splice(insertIndex, 0, docNode);
+        } else {
+          tree = this.insertNodeUnderParent(tree, parentId, docNode, typeof index === "number" ? index : undefined);
+        }
+        await prisma.subspace.update({ where: { id: newSubspace.id }, data: { navigationTree: tree } });
+      }
+    }
+    // 5. Update doc's parentId/subspaceId if changed
     const updatedDoc = await prisma.doc.update({
       where: { id },
       data: {
         subspaceId: targetSubspaceId,
         parentId: parentId || null,
-        index: finalIndex,
         updatedAt: new Date(),
       },
       include: { subspace: true },
     });
-
-    affectedDocuments.push(updatedDoc);
-
-    // Handle permission inheritance using new permission module
     await this.permissionInheritanceService.updatePermissionsOnMove(id, parentId || null, targetSubspaceId || null);
-
-    // Handle subspace changes and child documents
+    // 6. If subspace changed, recursively update all children subspaceId
     if (subspaceChanged) {
-      const childDocuments = await this.updateChildDocumentsSubspace(
-        id,
-        targetSubspaceId || null, // can be null for my-docs
-      );
-      affectedDocuments.push(...childDocuments);
+      await this.updateChildDocumentsSubspace(id, targetSubspaceId || null);
     }
-
-    // Update navigation tree structure (skip for mydocs)
-    if (targetSubspaceId !== null) {
-      await this.updateNavigationTreeStructure(document, updatedDoc, undefined, subspaceChanged);
-    }
-
-    // Emit WebSocket events
+    // 7. Publish event
     await this.eventPublisher.publishWebsocketEvent({
       name: BusinessEvents.DOCUMENT_MOVE,
       workspaceId: document.workspaceId,
       actorId: authorId.toString(),
       timestamp: new Date().toISOString(),
       data: {
-        affectedDocuments,
+        affectedDocuments: [updatedDoc],
         subspaceIds: subspaceChanged
           ? [{ id: document.subspaceId }, { id: targetSubspaceId }].filter((s) => s.id !== null)
           : targetSubspaceId
             ? [{ id: targetSubspaceId }]
             : [],
-        myDocsChanged: targetSubspaceId === null || document.subspaceId === null,
       },
     });
-
-    // Generate permissions for affected documents
-    const permissions: Record<string, Record<string, boolean>> = {};
-    for (const doc of affectedDocuments) {
-      const abilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", doc.id, authorId);
-      permissions[doc.id] = abilities as Record<string, boolean>;
-    }
-
-    return {
-      data: {
-        documents: affectedDocuments.map((doc) => presentDocument(doc, { isPublic: true })),
-      },
-      permissions,
-    };
+    // 8. Permissions
+    const abilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", updatedDoc.id, authorId);
+    return { data: { documents: [presentDocument(updatedDoc, { isPublic: true })] }, permissions: { [updatedDoc.id]: abilities } };
   }
 
-  /**
-   * Recursively update subspaceId for all child documents when moving across subspaces
-   * This ensures the entire document tree maintains consistency
-   */
-  private async updateChildDocumentsSubspace(parentId: string, newSubspaceId: string | null) {
-    const prisma = this.txHost.tx;
-    const childDocuments = await prisma.doc.findMany({
-      where: { parentId },
-      include: { subspace: true },
-    });
-
-    const updatedChildren: Array<any> = [];
-
-    for (const child of childDocuments) {
-      // Update each child document's subspaceId
-      const updated = await prisma.doc.update({
-        where: { id: child.id },
-        data: { subspaceId: newSubspaceId },
-        include: { subspace: true },
-      });
-      updatedChildren.push(updated);
-
-      // Recursively update grandchildren documents
-      const grandChildren = await this.updateChildDocumentsSubspace(child.id, newSubspaceId);
-      updatedChildren.push(...grandChildren);
-    }
-
-    return updatedChildren;
-  }
-
-  /**
-   * Update navigationTree structure in affected subspaces
-   * Handles both cross-subspace moves and within-subspace reordering
-   */
-  private async updateNavigationTreeStructure(oldDoc: any, newDoc: any, index?: number, subspaceChanged = false) {
-    // Skip navigation tree updates for mydocs (subspaceId is null)
-    if (newDoc.subspaceId === null) {
-      return;
-    }
-
-    if (subspaceChanged) {
-      if (oldDoc.subspaceId) {
-        await this.removeDocumentFromNavigationTree(oldDoc.subspaceId, oldDoc.id);
-      }
-      if (newDoc.subspaceId) {
-        await this.addDocumentToNavigationTree(newDoc.subspaceId, newDoc, newDoc.parentId, index);
-      }
-    } else if (newDoc.subspaceId) {
-      await this.moveDocumentInNavigationTree(newDoc.subspaceId, newDoc.id, newDoc.parentId, index);
-    }
-  }
-
-  /**
-   * Add a document node to the navigationTree at specified position
-   * Creates the navigation node structure and inserts it properly
-   */
-  private async addDocumentToNavigationTree(subspaceId: string, doc: any, parentId?: string, index?: number) {
-    const prisma = this.txHost.tx;
-    const subspace = await prisma.subspace.findUnique({
-      where: { id: subspaceId },
-    });
-
-    if (!subspace) return;
-
-    let navigationTree = (subspace.navigationTree as any[]) || [];
-
-    // Create navigation node for the document
-    const docNode = {
-      type: NavigationNodeType.Document,
-      id: doc.id,
-      title: doc.title,
-      url: `/${doc.id}`,
-      icon: doc.icon,
-      children: [],
-    } as NavigationNode;
-
-    if (!parentId) {
-      // Insert at root level
-      const insertIndex = index !== undefined ? index : navigationTree.length;
-      navigationTree.splice(insertIndex, 0, docNode);
-    } else {
-      // Insert under specified parent document
-      navigationTree = this.insertIntoTree(navigationTree, parentId, docNode, index);
-    }
-
-    // Save updated navigationTree back to database
-    await prisma.subspace.update({
-      where: { id: subspaceId },
-      data: { navigationTree },
-    });
-  }
-
-  /**
-   * Remove a document from the navigationTree structure
-   * Cleans up the tree by removing the document node completely
-   */
-  private async removeDocumentFromNavigationTree(subspaceId: string, docId: string) {
-    const prisma = this.txHost.tx;
-    const subspace = await prisma.subspace.findUnique({
-      where: { id: subspaceId },
-    });
-
-    if (!subspace?.navigationTree) return;
-
-    // Remove document node from tree structure
-    const navigationTree = this.removeFromTree(subspace.navigationTree as any[], docId);
-
-    // Save cleaned navigationTree back to database
-    await prisma.subspace.update({
-      where: { id: subspaceId },
-      data: { navigationTree },
-    });
-  }
-
-  /**
-   * Move a document within the same subspace navigationTree
-   * Handles reordering and reparenting within the same subspace
-   */
-  private async moveDocumentInNavigationTree(subspaceId: string, docId: string, newParentId?: string, newIndex?: number) {
-    const prisma = this.txHost.tx;
-    const subspace = await prisma.subspace.findUnique({
-      where: { id: subspaceId },
-    });
-
-    if (!subspace?.navigationTree) return;
-
-    let navigationTree = subspace.navigationTree as any[];
-
-    // 1. Extract the document node from its current position
-    const removedNode = this.extractFromTree(navigationTree, docId);
-    if (!removedNode) return;
-
-    // 2. Remove the document from the tree
-    navigationTree = this.removeFromTree(navigationTree, docId);
-
-    // 3. Insert the document at its new position
-    if (!newParentId) {
-      // Move to root level
-      const insertIndex = newIndex !== undefined ? newIndex : navigationTree.length;
-      navigationTree.splice(insertIndex, 0, removedNode);
-    } else {
-      // Move under new parent document
-      navigationTree = this.insertIntoTree(navigationTree, newParentId, removedNode, newIndex);
-    }
-
-    // Save updated navigationTree structure
-    await prisma.subspace.update({
-      where: { id: subspaceId },
-      data: { navigationTree },
-    });
-  }
-
-  /**
-   * Insert a node into the tree structure under a specific parent
-   * Recursively searches for parent and inserts node at specified index
-   */
-  private insertIntoTree(tree: any[], parentId: string, node: any, index?: number): any[] {
+  // Insert node under a parent node at specified position
+  private insertNodeUnderParent(tree: NavigationNode[], parentId: string, node: NavigationNode, insertIndex?: number): NavigationNode[] {
     return tree.map((item) => {
       if (item.id === parentId) {
-        // Found the parent - insert node into its children
-        const insertIndex = index !== undefined ? index : item.children.length;
-        item.children.splice(insertIndex, 0, node);
-      } else if (item.children?.length > 0) {
-        // Recursively search in children
-        item.children = this.insertIntoTree(item.children, parentId, node, index);
+        const newChildren = [...item.children];
+        const index = insertIndex !== undefined ? insertIndex : newChildren.length;
+        newChildren.splice(index, 0, node);
+        return { ...item, children: newChildren };
+      }
+
+      if (item.children?.length) {
+        return { ...item, children: this.insertNodeUnderParent(item.children, parentId, node, insertIndex) };
       }
       return item;
     });
   }
 
-  /**
-   * Remove a document node from the tree structure
-   * Recursively removes the node and cleans up empty children arrays
-   */
-  private removeFromTree(tree: any[], docId: string): any[] {
-    return tree
-      .filter((node) => node.id !== docId) // Remove matching nodes
-      .map((node) => ({
-        ...node,
-        // Recursively clean children
-        children: node.children ? this.removeFromTree(node.children, docId) : [],
-      }));
+  // Remove a node from the tree
+  private removeFromTree(tree: NavigationNode[], docId: string): NavigationNode[] {
+    return tree.filter((node) => node.id !== docId).map((node) => ({ ...node, children: this.removeFromTree(node.children, docId) }));
   }
 
-  /**
-   * Extract a document node from the tree without removing it
-   * Used to get the node structure before moving it to a new position
-   */
-  private extractFromTree(tree: any[], docId: string): any | null {
-    for (const node of tree) {
-      if (node.id === docId) {
-        return node; // Found the target node
-      }
-      if (node.children?.length > 0) {
-        // Recursively search in children
-        const found = this.extractFromTree(node.children, docId);
-        if (found) return found;
-      }
+  // Recursively update subspaceId for all children
+  private async updateChildDocumentsSubspace(parentId: string, newSubspaceId: string | null) {
+    const prisma = this.txHost.tx;
+    const childDocuments = await prisma.doc.findMany({ where: { parentId } });
+    for (const child of childDocuments) {
+      await prisma.doc.update({ where: { id: child.id }, data: { subspaceId: newSubspaceId } });
+      await this.updateChildDocumentsSubspace(child.id, newSubspaceId);
     }
-    return null; // Node not found
+  }
+
+  // Helper: Recursively build NavigationNode for a document and its children
+  private async buildNavigationNodeWithChildren(docId: string): Promise<NavigationNode> {
+    const prisma = this.txHost.tx;
+    const doc = await prisma.doc.findUnique({ where: { id: docId } });
+    if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    const children = await prisma.doc.findMany({ where: { parentId: docId } });
+    return {
+      id: doc.id,
+      type: NavigationNodeType.Document,
+      title: doc.title,
+      url: `/${doc.id}`,
+      icon: doc.icon || undefined,
+      children: await Promise.all(children.map((child) => this.buildNavigationNodeWithChildren(child.id, prisma))),
+    };
   }
 }

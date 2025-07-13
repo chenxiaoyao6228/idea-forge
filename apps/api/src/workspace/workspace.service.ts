@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
-import { WorkspaceListResponse } from "@idea/contracts";
+import { SubspaceRole, SubspaceType } from "@idea/contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
@@ -53,6 +53,26 @@ export class WorkspaceService {
 
     // Propagate permissions to all child resources (subspaces and documents)
     await this.inheritanceService.propagatePermissions(ResourceType.WORKSPACE, workspace.id, permission);
+
+    // --- Create personal subspace for the owner ---
+    const personalSubspace = await this.prismaService.subspace.create({
+      data: {
+        name: "My Docs",
+        description: "Personal documents for this workspace member",
+        type: SubspaceType.PERSONAL,
+        workspaceId: workspace.id,
+        navigationTree: [],
+        members: {
+          create: {
+            userId: userId,
+            role: SubspaceRole.ADMIN,
+          },
+        },
+      },
+    });
+
+    // Assign OWNER permission for the personal subspace
+    await this.permissionService.assignSubspacePermissions(userId, personalSubspace.id, "ADMIN", userId);
 
     return presentWorkspace(workspace);
   }
@@ -296,6 +316,26 @@ export class WorkspaceService {
     // 3. Propagate permissions to all child subspaces and documents
     await this.inheritanceService.propagatePermissions(ResourceType.WORKSPACE, workspaceId, permission);
 
+    // --- Create my-docs subspace for the new member if not exists ---
+    const existingMyDocs = await this.prismaService.subspace.findFirst({
+      where: {
+        workspaceId,
+        type: "PERSONAL",
+      },
+    });
+    if (!existingMyDocs) {
+      const myDocsSubspace = await this.prismaService.subspace.create({
+        data: {
+          name: "My Docs",
+          description: "Personal documents for this workspace member",
+          type: "PERSONAL",
+          workspaceId: workspaceId,
+          navigationTree: [],
+        },
+      });
+      await this.permissionService.assignSubspacePermissions(userId, myDocsSubspace.id, "ADMIN", adminId);
+    }
+
     return member;
   }
 
@@ -327,6 +367,14 @@ export class WorkspaceService {
     // 1. Remove membership
     await this.prismaService.workspaceMember.delete({
       where: { workspaceId_userId: { workspaceId, userId } },
+    });
+
+    // --- Remove the user's my-docs subspace in this workspace, if it exists ---
+    await this.prismaService.subspace.deleteMany({
+      where: {
+        workspaceId,
+        type: "PERSONAL",
+      },
     });
 
     // 2. Clean up all related permissions across workspace hierarchy

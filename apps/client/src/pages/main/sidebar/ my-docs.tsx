@@ -4,21 +4,24 @@ import { ChevronRight, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { MyDocsLink } from "./components/my-doc-link";
 import useDocumentStore from "@/stores/document";
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
+import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
+import { DraggableDocumentContainer } from "./components/draggable-document-container";
 
 export default function MyDocsArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const { getMyDocsRootDocuments, fetchMyDocsChildren, createMyDocsDocument } = useDocumentStore();
+  const createMyDocsDocument = useDocumentStore((state) => state.createMyDocsDocument);
+  const personalSubspace = useSubSpaceStore(getPersonalSubspace);
+  const navigationTree = personalSubspace?.navigationTree || [];
 
   const handleCreateDocument = async () => {
     setIsCreating(true);
     try {
-      await createMyDocsDocument({ title: "New Document" + Math.random().toString().substring(2, 5) });
+      await createMyDocsDocument({ title: "Doc" + Math.random().toString().substring(2, 5) });
     } catch (error) {
       console.error("Failed to create document:", error);
     } finally {
@@ -31,9 +34,8 @@ export default function MyDocsArea() {
     data: {
       accept: ["document"],
       dropType: "top",
-      subspaceId: null,
+      subspaceId: personalSubspace?.id,
       parentId: null,
-      index: null,
     },
   });
 
@@ -62,7 +64,16 @@ export default function MyDocsArea() {
             <div ref={setTopDropRef} className="h-[1px]">
               <DropCursor isActiveDrop={isTopDropOver} innerRef={null} position="top" />
             </div>
-            <MyDocsLink />
+            {navigationTree.map((node, index) => (
+              <DraggableDocumentContainer
+                key={node.id}
+                node={node}
+                parentId={node.parentId ?? null}
+                subspaceId={node.subspaceId ?? null}
+                depth={0}
+                index={index}
+              />
+            ))}
           </div>
         </CollapsibleContent>
       </Collapsible>

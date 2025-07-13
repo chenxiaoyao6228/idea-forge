@@ -1,0 +1,674 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# NestJS API Code Style Guide for Idea Forge
+
+This document serves as the definitive guide for code style, patterns, and conventions used in the Idea Forge NestJS API. This guide should be used as context for all future code generation and development work.
+
+## Table of Contents
+
+- [Project Overview](mdc:#project-overview)
+- [General TypeScript Guidelines](mdc:#general-typescript-guidelines)
+- [File and Directory Structure](mdc:#file-and-directory-structure)
+- [Module Architecture](mdc:#module-architecture)
+- [Controllers](mdc:#controllers)
+- [Services](mdc:#services)
+- [DTOs and Validation](mdc:#dtos-and-validation)
+- [Prisma Integration](mdc:#prisma-integration)
+- [Authentication and Authorization](mdc:#authentication-and-authorization)
+- [Exception Handling](mdc:#exception-handling)
+- [API Documentation](mdc:#api-documentation)
+- [Configuration and Environment](mdc:#configuration-and-environment)
+- [Testing Patterns](mdc:#testing-patterns)
+- [Code Quality and Linting](mdc:#code-quality-and-linting)
+
+## Project Overview
+
+This is a modern NestJS API built with:
+- **NestJS 10.x** - Progressive Node.js framework
+- **TypeScript 5.x** - Strict type checking enabled
+- **Prisma 6.x** - Database ORM with PostgreSQL
+- **Zod** - Schema validation and type inference
+- **JWT Authentication** - JSON Web Token based auth with multiple strategies
+- **Swagger/OpenAPI** - API documentation
+- **Socket.io** - Real-time collaboration
+- **Yjs** - Collaborative editing
+- **Hocuspocus** - WebSocket server for Yjs
+- **CASL** - Authorization with Prisma integration
+- **BullMQ** - Job queue management
+- **Vitest** - Testing framework
+- **Biome** - Code formatting and linting
+
+## General TypeScript Guidelines
+
+### Basic Principles
+
+- Use English for all code and documentation
+- Always declare types for variables and functions (avoid `any`)
+- Use strict TypeScript configuration
+- One export per file when possible
+- Use descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`)
+- Use functional programming patterns where appropriate
+
+### Naming Conventions
+
+```typescript
+// PascalCase for classes, interfaces, types
+export class UserService {}
+export interface CreateUserDto {}
+export type UserRole = 'admin' | 'user';
+
+// camelCase for variables, functions, methods
+const userName = 'john';
+async function createUser() {}
+
+// kebab-case for files and directories
+user.service.ts
+create-user.dto.ts
+user-settings.entity.ts
+
+// UPPERCASE for constants and environment variables
+const MAX_RETRY_ATTEMPTS = 3;
+process.env.DATABASE_URL
+
+// Use verbs for boolean variables
+const isLoading = true;
+const hasError = false;
+const canDelete = user.role === 'admin';
+```
+
+### Import Organization
+
+```typescript
+// 1. Node modules (external dependencies)
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '@/_shared/database/prisma/prisma.service';
+
+// 2. Internal imports with absolute paths
+import { validateHash } from '@/_shared/utils/hash.util';
+import type { UserRole } from '@/types/user.types';
+import { UserNotFoundException } from '@/exceptions/user-not-found.exception';
+
+// 3. Relative imports
+import type { UserEntity } from './user.entity';
+import { UserService } from './user.service';
+```
+
+### TypeScript Conventions
+
+```typescript
+// Use type imports for types only
+import type { UserRole } from '@/types/user.types';
+import type { CreateUserDto } from './dto/create-user.dto';
+
+// Use interfaces for object shapes
+interface UserCreateInput {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+// Use type aliases for unions and complex types
+type UserStatus = 'active' | 'inactive' | 'pending';
+type ApiResponse<T> = { data: T; message: string };
+
+// Use definite assignment assertion for decorated properties
+@Column({ unique: true })
+email!: string;
+
+// Use optional properties appropriately
+phone?: string;
+```
+
+## File and Directory Structure
+
+### Project Structure
+
+```
+apps/api/src/
+├── main.ts                    # Application bootstrap
+├── app.module.ts             # Root module
+├── app.controller.ts         # Root controller
+├── app.service.ts            # Root service
+├── _shared/                  # Shared utilities and modules
+│   ├── config/               # Configuration modules
+│   ├── database/             # Database configuration
+│   │   ├── prisma/           # Prisma service and module
+│   │   └── redis/            # Redis configuration
+│   ├── email/                # Email services
+│   ├── utils/                # Utility functions
+│   ├── middlewares/          # Custom middlewares
+│   ├── interceptors/         # Request/response interceptors
+│   ├── filters/              # Exception filters
+│   ├── pipes/                # Custom pipes
+│   ├── guards/               # Authentication/authorization guards
+│   ├── casl/                 # CASL authorization
+│   ├── socket/               # Socket.io configuration
+│   ├── queues/               # BullMQ configuration
+│   ├── events/               # Event emitters
+│   └── i18next/              # Internationalization
+├── auth/                     # Authentication module
+├── user/                     # User management module
+├── document/                 # Document management module
+├── workspace/                # Workspace management module
+├── subspace/                 # Subspace management module
+├── collaboration/            # Real-time collaboration
+├── file-store/               # File storage module
+├── ai/                       # AI integration module
+├── star/                     # Star/favorite module
+├── doc-share/                # Document sharing module
+├── group/                    # Group management module
+├── permission/               # Permission management module
+└── health/                   # Health check module
+```
+
+### Module Structure
+
+Each feature module follows this structure:
+
+```
+modules/feature-name/
+├── dto/                      # Data Transfer Objects
+│   ├── create-feature.dto.ts
+│   ├── update-feature.dto.ts
+│   └── feature-response.dto.ts
+├── guards/                   # Module-specific guards
+├── decorators/               # Module-specific decorators
+├── feature.controller.ts     # REST API controller
+├── feature.service.ts        # Business logic service
+├── feature.module.ts         # Module definition
+└── feature.types.ts          # Module-specific types
+```
+
+### File Naming Conventions
+
+- Use kebab-case: `user-login.dto.ts`
+- Include type in filename: `.controller.ts`, `.service.ts`, `.dto.ts`, `.module.ts`
+- Use singular names for entities: `user.service.ts` not `users.service.ts`
+- Use descriptive names: `create-user.dto.ts`, `user-not-found.exception.ts`
+
+## Module Architecture
+
+### Module Definition Pattern
+
+```typescript
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt/dist/jwt.module';
+
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { UserService } from '../user/user.service';
+import { LocalStrategy } from './strategies/strategy.local';
+import { jwtConfig } from '@/_shared/config/configs';
+import { JwtStrategy } from './strategies/strategy.jwt';
+import { RefreshTokenStrategy } from './strategies/strategy.refresh-token';
+import { GoogleStrategy } from './strategies/strategy.google';
+import { GithubStrategy } from './strategies/strategy.github';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { MailService } from '@/_shared/email/mail.service';
+import { VerificationService } from './verification.service';
+import { JwtService } from '@nestjs/jwt';
+import { FileService } from '@/file-store/file-store.service';
+import { FileStoreModule } from '../file-store/file-store.module';
+import { CollaborationModule } from '@/collaboration/collaboration.module';
+import { LoggerModule } from '@/_shared/utils/logger.module';
+import { SystemDocumentService } from '@/document/system-document.service';
+import { WsJwtStrategy } from './strategies/strategy.ws-jwt';
+import { DocumentModule } from '@/document/document.module';
+
+@Module({
+  imports: [
+    JwtModule.registerAsync(jwtConfig.asProvider()),
+    FileStoreModule,
+    CollaborationModule,
+    LoggerModule,
+    DocumentModule,
+  ],
+  providers: [
+    WsJwtStrategy,
+    LocalStrategy,
+    JwtStrategy,
+    GoogleStrategy,
+    RefreshTokenStrategy,
+    GithubStrategy,
+    VerificationService,
+    AuthService,
+    MailService,
+    UserService,
+    JwtService,
+    SystemDocumentService,
+    FileService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
+  controllers: [AuthController],
+  exports: [AuthService, JwtService, VerificationService],
+})
+export class AuthModule {}
+```
+
+## DTOs and Validation
+
+**Pattern: Import Zod schemas from contracts and use `nestjs-zod` for DTOs.**
+
+```typescript
+// apps/api/src/document/document.dto.ts
+import { createZodDto } from "nestjs-zod";
+import {
+  createDocumentSchema,
+  searchDocumentSchema,
+  updateDocumentSchema,
+  moveDocumentsSchema,
+  listDocumentSchema,
+  shareDocumentSchema,
+} from "@idea/contracts";
+
+export class DocumentPagerDto extends createZodDto(listDocumentSchema) {}
+export class SearchDocumentDto extends createZodDto(searchDocumentSchema) {}
+export class CreateDocumentDto extends createZodDto(createDocumentSchema) {}
+export class UpdateDocumentDto extends createZodDto(updateDocumentSchema) {}
+export class MoveDocumentsDto extends createZodDto(moveDocumentsSchema) {}
+export class ShareDocumentDto extends createZodDto(shareDocumentSchema) {}
+```
+
+**Best Practices:**
+- Always import Zod schemas from the contracts package for consistency.
+- Use `createZodDto` to generate DTOs with validation and type inference.
+- Separate DTOs for create, update, search, etc.
+- Use `.partial()` or `.pick()` on Zod schemas for update/patch DTOs.
+
+---
+
+## Controller
+
+**Pattern: Use DTOs, inject services**
+
+```typescript
+// apps/api/src/document/document.controller.ts
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from "@nestjs/common";
+import { CreateDocumentDto, UpdateDocumentDto, MoveDocumentsDto, ShareDocumentDto, SearchDocumentDto } from "./document.dto";
+import { GetUser } from "@/auth/decorators/get-user.decorator";
+import { DocumentService } from "./document.service";
+import { PolicyGuard } from "@/_shared/casl/policy.guard";
+
+@ApiTags("document")
+@UseGuards(PolicyGuard)
+@Controller("/api/documents")
+export class DocumentController {
+  constructor(private readonly documentService: DocumentService) {}
+
+  @Post()
+  create(@GetUser("id") userId: string, @Body() dto: CreateDocumentDto) {
+    return this.documentService.create(userId, dto);
+  }
+
+  @Get(":id")
+  findOne(@GetUser("id") userId: string, @Param("id") id: string) {
+    return this.documentService.findOne(id, userId);
+  }
+
+  @Patch(":id")
+  update(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: UpdateDocumentDto) {
+    return this.documentService.update(id, userId, dto);
+  }
+
+  // ...other endpoints (move, search, share, etc.) using corresponding DTOs
+}
+```
+
+**Best Practices:**
+- Use `@UseGuards` for authentication/authorization.
+- Inject services via constructor.
+- Use DTOs for request validation.
+- Return service results directly; use presenters for response shaping if needed.
+- Handle errors with global exception filters.
+
+---
+
+## Service
+
+**Pattern: Inject Prisma, validate input, use Zod DTOs, keep methods focused.**
+
+```typescript
+// apps/api/src/document/document.service.ts
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { CreateDocumentDto, UpdateDocumentDto } from "./document.dto";
+import { ApiException } from "@/_shared/exceptions/api.exception";
+import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+
+@Injectable()
+export class DocumentService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(authorId: string, dto: CreateDocumentDto) {
+    // Early validation and error handling
+    // Business logic here
+    const doc = await this.prisma.doc.create({
+      data: {
+        ...dto,
+        authorId,
+        createdById: authorId,
+        lastModifiedById: authorId,
+        publishedAt: new Date(),
+      },
+    });
+    // ...additional logic (permissions, events, etc.)
+    return doc;
+  }
+
+  async findOne(id: string, userId: string) {
+    const doc = await this.prisma.doc.findUnique({ where: { id } });
+    if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    // ...permission checks, etc.
+    return doc;
+  }
+
+  async update(id: string, userId: string, dto: UpdateDocumentDto) {
+    // ...permission checks, etc.
+    return this.prisma.doc.update({ where: { id }, data: { ...dto, lastModifiedById: userId } });
+  }
+}
+```
+
+**Best Practices:**
+- Use dependency injection for Prisma and other services.
+- Validate input at the start of each method.
+- Use early returns for error/guard clauses.
+- Keep methods focused and small.
+- Use Zod schemas for validation (see DTOs).
+- Handle exceptions with custom exceptions or global filters.
+- Document complex logic with comments.
+
+---
+
+## Summary Table
+
+| Layer       | Pattern/Example                                                                 | Best Practices                                                                                 |
+|-------------|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Controller  | Use decorators, inject service, use DTOs, document with Swagger                | Use guards, return service results, handle errors globally                                    |
+| Service     | Inject Prisma, validate input, use Zod, keep methods small                     | Early returns, custom exceptions, document complex logic                                      |
+| DTO/Schema  | Use Zod, import from contracts, use `nestjs-zod` for DTOs                      | Separate create/update, meaningful errors, exclude sensitive fields, use interfaces for output |
+
+---
+
+**This is the recommended pattern for all new modules and when refactoring existing ones.**  
+If you want, I can generate a similar example for another module or help automate DTO generation from your contracts!
+
+## Prisma Integration
+
+### Prisma Service Usage
+
+```typescript
+
+```
+
+### Prisma Best Practices
+
+
+## Authentication and Authorization
+
+### JWT Strategy Pattern
+
+```typescript
+
+```
+
+### Auth Guard Usage
+
+```typescript
+                            
+```
+
+### CASL Authorization
+
+```typescript
+
+```
+
+## Exception Handling
+
+### Custom Exception Pattern
+
+```typescript
+
+```
+
+### Global Exception Filter
+
+```typescript
+
+```
+
+## Configuration and Environment
+
+### Environment Variables Pattern
+
+```typescript
+// Use UPPERCASE for environment variables
+DATABASE_URL=postgresql://user:pass@localhost:5432/idea_forge
+JWT_SECRET=your-secret-key
+REDIS_URL=redis://localhost:6379
+AWS_S3_BUCKET=idea-forge-files
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+
+// Access in code via ConfigService
+@Injectable()
+export class AppConfigService {
+  constructor(private configService: ConfigService) {}
+
+  get databaseUrl(): string {
+    return this.configService.get<string>('DATABASE_URL');
+  }
+
+  get jwtSecret(): string {
+    return this.configService.get<string>('JWT_SECRET');
+  }
+
+  get isDevelopment(): boolean {
+    return this.configService.get<string>('NODE_ENV') === 'development';
+  }
+}
+```
+
+### Configuration Module Pattern
+
+```typescript
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
+    }),
+  ],
+  providers: [AppConfigService],
+  exports: [AppConfigService],
+})
+export class ConfigsModule {}
+```
+
+## Testing Patterns
+
+### Unit Test Pattern
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { PrismaService } from '@/_shared/database/prisma/prisma.service';
+import { UserService } from './user.service';
+import { CreateUserDto } from './dto/create-user.dto';
+
+describe('UserService', () => {
+  let service: UserService;
+  let prisma: PrismaService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: PrismaService,
+          useValue: {
+            user: {
+              create: jest.fn(),
+              findUnique: jest.fn(),
+              findMany: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<UserService>(UserService);
+    prisma = module.get<PrismaService>(PrismaService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('createUser', () => {
+    it('should create a new user', async () => {
+      const createUserDto: CreateUserDto = {
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const mockUser = {
+        id: '1',
+        ...createUserDto,
+        password: 'hashedPassword',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.user, 'create').mockResolvedValue(mockUser);
+
+      const result = await service.createUser(createUserDto);
+
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          email: createUserDto.email,
+          firstName: createUserDto.firstName,
+          lastName: createUserDto.lastName,
+        }),
+      });
+      expect(result).toEqual(expect.objectContaining({
+        id: mockUser.id,
+        email: mockUser.email,
+      }));
+    });
+  });
+});
+```
+
+### Integration Test Pattern
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import * as request from 'supertest';
+import { AppModule } from '../src/app.module';
+import { PrismaService } from '@/_shared/database/prisma/prisma.service';
+
+describe('UserController (e2e)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+
+  beforeEach(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    prisma = moduleFixture.get<PrismaService>(PrismaService);
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await prisma.user.deleteMany();
+    await app.close();
+  });
+
+  it('/users (POST)', () => {
+    return request(app.getHttpServer())
+      .post('/users')
+      .send({
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'John',
+        lastName: 'Doe',
+      })
+      .expect(201)
+      .expect((res) => {
+        expect(res.body).toHaveProperty('id');
+        expect(res.body.email).toBe('test@example.com');
+      });
+  });
+});
+```
+
+## Code Quality and Linting
+
+### Biome Configuration
+
+The project uses Biome for code formatting and linting with the following key rules:
+
+```json
+{
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 160
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always"
+    }
+  }
+}
+```
+
+### Code Quality Best Practices
+
+1. **Use Biome for formatting and linting**
+2. **Follow the established import organization**
+3. **Use proper TypeScript types throughout**
+4. **Write comprehensive tests for all business logic**
+5. **Use meaningful variable and function names**
+6. **Keep functions small and focused**
+7. **Use proper error handling**
+8. **Document complex business logic**
+9. **Use consistent naming conventions**
+10. **Follow the established module structure**
+
+## Summary
+
+This NestJS API follows modern TypeScript and NestJS best practices with:
+
+- **Strict typing** throughout the codebase
+- **Modular architecture** with clear separation of concerns
+- **Prisma ORM** for type-safe database operations
+- **Zod validation** for request/response validation
+- **JWT-based authentication** with multiple strategies
+- **CASL authorization** with Prisma integration
+- **Swagger documentation** auto-generated from decorators
+- **Real-time collaboration** with Socket.io and Yjs
+- **Comprehensive testing** setup with Vitest
+- **Code quality** enforced by Biome
+
+Use this guide as the definitive reference for all code generation and development work on this project.

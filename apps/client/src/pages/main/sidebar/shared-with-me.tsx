@@ -18,7 +18,7 @@ export default function SharedWithMe() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const { userInfo } = useUserStore();
-  const { upsertMany, fetchDetail, fetchChildren } = useDocumentStore();
+  const { upsertMany, fetchDetail } = useDocumentStore();
   const { setPermissions } = usePermissionStore();
   const [isLoading, setIsLoading] = useState(true);
   const [sharedDocuments, setSharedDocuments] = useState<DocumentEntity[]>([]);

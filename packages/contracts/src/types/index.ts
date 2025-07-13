@@ -15,5 +15,4 @@ export type NavigationNode = {
   parentId?: string | null;
   parent?: NavigationNode | null;
   depth?: number;
-  index?: string | null;
 };

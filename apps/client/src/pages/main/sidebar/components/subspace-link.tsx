@@ -21,9 +21,10 @@ interface SubspaceLinkProps {
   depth?: number;
   isDragging?: boolean; // subspace being dragged
   isActiveDrop?: boolean; // subspace is the active drop target
+  isDraggingOverlay?: boolean; // is dragging overlay
 }
 
-export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActiveDrop = false }: SubspaceLinkProps) {
+export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActiveDrop = false, isDraggingOverlay = false }: SubspaceLinkProps) {
   const { t } = useTranslation();
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  // Only load navigation tree once when first expanded, but the tree can be forced refreshed by websocket
+  const [isNavigationTreeFirstLoaded, setIsNavigationTreeFirstLoaded] = useState(false);
 
   const editableTitleRef = React.useRef<{ setIsEditing: (editing: boolean) => void }>(null);
 
@@ -47,7 +50,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     if (!activeDocumentId || !subspace?.navigationTree) return false;
 
     const path = getPathToDocument(subspaceId, activeDocumentId);
-    return path.length > 0; // 如果路径存在，说明活动文档在此 subspace 中
+    return path.length > 0; // if path exists, the active document is in this subspace
   }, [activeDocumentId, subspaceId, getPathToDocument, subspace?.navigationTree]);
 
   useEffect(() => {
@@ -57,8 +60,13 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   }, [shouldExpand]);
 
   useEffect(() => {
-    fetchNavigationTree(subspaceId);
-  }, [fetchNavigationTree, subspaceId]);
+    if (isExpanded) {
+      if (!isNavigationTreeFirstLoaded) {
+        fetchNavigationTree(subspaceId);
+        setIsNavigationTreeFirstLoaded(true);
+      }
+    }
+  }, [fetchNavigationTree, subspaceId, isExpanded]);
 
   const handleDisclosureClick = useCallback(
     (ev?: React.MouseEvent<HTMLButtonElement>) => {
@@ -78,7 +86,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
         setIsCreating(true);
         const newDocId = await createDocument({
           // FIXME:
-          title: "New Document" + Math.floor(Math.random() * 1000),
+          title: "Doc" + Math.floor(Math.random() * 1000),
           parentId: null,
           subspaceId,
         });
@@ -220,7 +228,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
         />
       </div>
 
-      {hasDocuments && isExpanded && (
+      {hasDocuments && isExpanded && !isDraggingOverlay && (
         <div className="ml-4">
           {subspace.navigationTree.map((node, index) => (
             <DraggableDocumentContainer key={node.id} node={node} parentId={null} subspaceId={subspaceId} depth={depth + 1} index={index} />

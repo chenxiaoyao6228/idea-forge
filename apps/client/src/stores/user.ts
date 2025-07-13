@@ -18,8 +18,8 @@ const useUserStore = create<UserStoreState>()((set) => ({
   logout: async () => {
     set({ loading: true });
     await authApi.logout();
-    set({ userInfo: null });
-    set({ loading: false });
+    localStorage.clear();
+    set({ userInfo: null, loading: false });
   },
 }));
 

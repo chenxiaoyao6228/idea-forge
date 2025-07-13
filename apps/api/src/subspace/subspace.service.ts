@@ -302,22 +302,16 @@ export class SubspaceService {
 
   // ==== navigationTree ====
   async getSubspaceNavigationTree(subspaceId: string, userId: string) {
-    // 1. Check if user has access permission
+    // 1. Fetch subspace with ownerId and isVirtual
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id: subspaceId },
       include: {
         members: {
-          where: {
-            userId,
-          },
+          where: { userId },
         },
         workspace: {
           include: {
-            members: {
-              where: {
-                userId,
-              },
-            },
+            members: { where: { userId } },
           },
         },
       },
@@ -327,7 +321,15 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
     }
 
-    // 2. Permission check - similar to authorize(user, "readDocument", collection)
+    if (subspace.type === SubspaceType.PERSONAL) {
+      const isOwner = subspace.members.some((m) => m.userId === userId);
+      if (!isOwner) {
+        throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
+      }
+      return subspace.navigationTree || [];
+    }
+
+    // 3. Regular subspace: permission check
     const isWorkspaceMember = subspace.workspace.members.length > 0;
     const isSubspaceMember = subspace.members.length > 0;
     const isPublicSubspace = subspace.type === "PUBLIC";
@@ -336,7 +338,7 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
     }
 
-    // 3. Return document structure
+    // 4. Return document structure
     return subspace.navigationTree || [];
   }
 
@@ -882,5 +884,18 @@ export class SubspaceService {
     return {
       data: permissions,
     };
+  }
+
+  async getUserSubspacesIncludingVirtual(userId: string, workspaceId: string) {
+    // Fetch all subspaces in the workspace, including my-docs (type: PERSONAL)
+    const subspaces = await this.prismaService.subspace.findMany({
+      where: {
+        workspaceId,
+        // If you want only my-docs for the user:
+        // type: 'PERSONAL'
+      },
+      orderBy: { index: "asc" },
+    });
+    return subspaces.map(presentSubspace);
   }
 }

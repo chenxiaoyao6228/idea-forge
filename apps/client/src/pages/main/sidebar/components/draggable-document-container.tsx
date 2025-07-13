@@ -1,6 +1,5 @@
 import { DragOverlay, useDraggable, useDroppable } from "@dnd-kit/core";
 import { NavigationNode } from "@idea/contracts";
-import { useCallback, useState } from "react";
 import { DocumentLink } from "./document-link";
 import DropCursor from "./drop-cursor";
 
@@ -8,13 +7,12 @@ interface DraggableDocumentContainerProps {
   node: NavigationNode;
   subspaceId: string | null;
   parentId: string | null;
-  depth: number;
+  depth: number; // for ui space indent
   index: number;
+  getPathToDocument?: (documentId: string, subspaceId: string | null) => NavigationNode[];
 }
 
 export function DraggableDocumentContainer({ node, subspaceId, depth, index, parentId }: DraggableDocumentContainerProps) {
-  const [dropPosition, setDropPosition] = useState<"top" | "bottom">("bottom");
-
   // ====== drag ===========
   const {
     isDragging,
@@ -34,33 +32,36 @@ export function DraggableDocumentContainer({ node, subspaceId, depth, index, par
 
   // ========= drop ==========
 
-  // Reorder - drop zone
-  const { isOver: isReorderOver, setNodeRef: setReorderDropRef } = useDroppable({
-    id: `document-reorder-${node.id}`,
-    data: {
-      documentId: node.id,
-      title: node.title, // for visual display on development
-      subspaceId,
-      parentId,
-      accept: ["document"],
-      dropType: "reorder",
-      dropPosition,
-    },
-  });
-
   // Move to top drop zone (only for first element)
   const { isOver: isReorderTopOver, setNodeRef: setReorderTopDropRef } = useDroppable({
-    id: `document-top-${node.id}`,
+    id: `document-reorder-top-${node.id}`,
     data: {
       documentId: node.id,
       title: node.title, // for visual display on development
       subspaceId,
       parentId,
       accept: ["document"],
-      dropType: "top",
+      dropType: "reorder-top",
+      index: 0,
     },
     disabled: index > 0,
   });
+
+  // Reorder Bottom Drop Zone
+  const { isOver: isReorderBottomOver, setNodeRef: setReorderBottomDropRef } = useDroppable({
+    id: `document-reorder-bottom-${node.id}`,
+    data: {
+      documentId: node.id,
+      title: node.title, // for visual display on development
+      subspaceId,
+      parentId,
+      accept: ["document"],
+      dropType: "reorder-bottom",
+      index: index,
+    },
+  });
+
+  console.log(" isReorderBottomOver, isReorderTopOver", isReorderBottomOver, isReorderTopOver);
 
   // Reparent - drop zone
   const { isOver: isReparentOver, setNodeRef: setReparentDropRef } = useDroppable({
@@ -72,48 +73,49 @@ export function DraggableDocumentContainer({ node, subspaceId, depth, index, par
       parentId: node.id,
       accept: ["document"],
       dropType: "reparent",
-      index: 0,
     },
   });
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isReorderOver) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const mouseY = e.clientY;
-      const threshold = rect.top + rect.height / 2;
-      setDropPosition(mouseY < threshold ? "top" : "bottom");
-    },
-    [isReorderOver],
-  );
-
   return (
-    <div className="relative">
-      {/* Reorder top dropCursor */}
-      {index === 0 && (isReorderOver || isReorderTopOver) && (
-        // TODO: if possible, remove the 8'px
-        <div ref={setReorderTopDropRef} className="relative h-[8px]">
+    <div className="relative" style={{ minHeight: 36 }}>
+      {/* Reorder Top Drop Zone */}
+      {index === 0 && (
+        <div ref={setReorderTopDropRef} className="absolute left-0 right-0 top-0 h-3 z-30" style={{ pointerEvents: "auto", opacity: isReorderTopOver ? 1 : 0 }}>
           <DropCursor isActiveDrop={isReorderTopOver} innerRef={null} position="top" />
         </div>
       )}
 
-      <div ref={setDragNodeRef} {...attributes} {...listeners}>
-        <div ref={setReorderDropRef} onMouseMove={handleMouseMove}>
-          <div ref={setReparentDropRef} className="relative">
-            <DocumentLink
-              node={node}
-              subspaceId={subspaceId}
-              depth={depth}
-              index={index}
-              parentId={parentId}
-              isDragging={isDragging}
-              isActiveDrop={isReorderOver || isReparentOver}
-            />
-            {/* Reorder DropCursor */}
-            <DropCursor isActiveDrop={isReorderOver} innerRef={null} position={dropPosition} />
-          </div>
+      {/* Reparent Drop Zone (main area) */}
+      <div
+        ref={setDragNodeRef}
+        {...attributes}
+        {...listeners}
+        style={{
+          opacity: isDragging ? 0.5 : 1,
+        }}
+      >
+        <div ref={setReparentDropRef} className={"relative z-10"} style={{ minHeight: 36 }}>
+          <DocumentLink
+            node={node}
+            subspaceId={subspaceId}
+            depth={depth}
+            index={index}
+            parentId={parentId}
+            isDragging={isDragging}
+            isActiveDrop={isReparentOver}
+          />
         </div>
       </div>
+
+      {
+        <div
+          ref={setReorderBottomDropRef}
+          className="absolute left-0 right-0 bottom-0 h-3 z-30"
+          style={{ pointerEvents: "auto", opacity: isReorderBottomOver ? 1 : 0 }}
+        >
+          {isReorderBottomOver && <DropCursor isActiveDrop={isReorderBottomOver} innerRef={null} position="bottom" />}
+        </div>
+      }
 
       {isDragging && (
         <DragOverlay>

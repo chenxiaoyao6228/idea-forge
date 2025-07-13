@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 import { NavigationNode } from "@idea/contracts";
 import useDocumentStore from "@/stores/document";
 import { SidebarLink } from "./sidebar-link";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
 import useStarStore from "@/stores/star";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
 import { documentApi } from "@/apis/document";
+import { DraggableDocumentContainer } from "./draggable-document-container";
 
 export interface DocumentLinkProps {
   node: NavigationNode;
-  depth: number;
+  depth: number; // for ui space indent
   index: number;
   activeDocumentId?: string;
   subspaceId: string | null;
@@ -26,16 +26,42 @@ export interface DocumentLinkProps {
 }
 
 export function DocumentLink(props: DocumentLinkProps) {
-  const { node, subspaceId, depth, index, parentId } = props;
+  const { node, subspaceId, depth, index, parentId, isDragging, isActiveDrop } = props;
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
 
   const createDocument = useDocumentStore((state) => state.createDocument);
+  const fetchChildren = useDocumentStore((state) => state.fetchChildren);
+  const fetchNavigationTree = useSubSpaceStore((state) => state.fetchNavigationTree);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const isActiveDocument = activeDocumentId === node.id;
   const hasChildren = node.children && node.children.length > 0;
+
+  // Load children details when document is active and has children in navigation tree
+  // This ensures that child documents are fetched from the API and the navigation tree is updated
+  // Similar to Outline's implementation where children are loaded on expand
+  useEffect(() => {
+    if (isActiveDocument && hasChildren) {
+      const fetchData = async () => {
+        try {
+          // Check if children are already loaded to avoid unnecessary API calls
+          const existingDocs = useDocumentStore.getState().entities;
+          const hasLoadedChildren = Object.values(existingDocs).some((doc) => doc.parentId === node.id);
+
+          if (!hasLoadedChildren) {
+            // Fetch children documents
+            await fetchChildren({ parentId: node.id, subspaceId: subspaceId || null });
+          }
+        } catch (error) {
+          console.error("Failed to fetch children or refresh navigation tree:", error);
+        }
+      };
+
+      void fetchData();
+    }
+  }, [fetchChildren, fetchNavigationTree, node.id, hasChildren, isActiveDocument, subspaceId]);
 
   // auto expand state sync
   const getPathToDocument = useSubSpaceStore((state) => state.getPathToDocument);
@@ -44,18 +70,23 @@ export function DocumentLink(props: DocumentLinkProps) {
   const showChildren = useMemo(() => {
     if (!hasChildren || !activeDocumentId) return false;
 
-    // 如果是 mydocs（没有 subspaceId），使用传入的路径查找函数
-    if (!subspaceId && props.getPathToDocument) {
-      const path = props.getPathToDocument(activeDocumentId, subspaceId);
+    // Get the subspace entity
+    const subspace = subspaceId ? useSubSpaceStore.getState().entities[subspaceId] : undefined;
+    const isPersonal = subspace?.type === "PERSONAL";
+
+    if (isPersonal && props.getPathToDocument) {
+      // For my-docs (PERSONAL subspace), use the my-docs path finder
+      const path = props.getPathToDocument(activeDocumentId, null);
       const pathIds = path.map((entry) => entry.id);
       return pathIds.includes(node.id) || isActiveDocument;
     }
-    if (subspaceId && props.getPathToDocument) {
-      // 否则使用原有的 subspace 路径查找逻辑
-      const path = pathFinder(subspaceId, activeDocumentId);
+    if (!isPersonal && props.getPathToDocument && subspaceId) {
+      // For other subspaces, use the subspace path finder
+      const path = props.getPathToDocument(subspaceId, activeDocumentId);
       const pathIds = path.map((entry) => entry.id);
       return pathIds.includes(node.id) || isActiveDocument;
     }
+    return isActiveDocument;
   }, [hasChildren, activeDocumentId, node.id, isActiveDocument, pathFinder, subspaceId, props.getPathToDocument]);
 
   // auto expand state sync
@@ -154,17 +185,20 @@ export function DocumentLink(props: DocumentLinkProps) {
     </>
   );
 
+  const isExpandedAndNotDragging = isExpanded && !isDragging;
+
   return (
     <>
       <SidebarLink
         to={`/${node.id}`}
         icon={icon}
-        expanded={hasChildren ? isExpanded : undefined}
+        expanded={hasChildren ? isExpandedAndNotDragging : undefined}
         onDisclosureClick={hasChildren ? handleDisclosureClick : undefined}
         depth={depth}
         active={isActiveDocument}
         menu={menu}
         showActions={isActiveDocument}
+        isActiveDrop={isActiveDrop}
         label={
           <EditableTitle
             title={node.title}
@@ -177,11 +211,19 @@ export function DocumentLink(props: DocumentLinkProps) {
           />
         }
       />
-
-      {hasChildren && isExpanded && (
+      {/* Children */}
+      {hasChildren && isExpandedAndNotDragging && (
         <div>
           {node.children?.map((child, childIndex) => (
-            <DraggableDocumentContainer key={child.id} node={child} subspaceId={subspaceId || null} depth={depth + 1} index={childIndex} parentId={node.id} />
+            <DraggableDocumentContainer
+              key={child.id}
+              node={child}
+              subspaceId={subspaceId}
+              depth={depth + 1}
+              index={childIndex}
+              parentId={node.id}
+              getPathToDocument={props.getPathToDocument}
+            />
           ))}
         </div>
       )}

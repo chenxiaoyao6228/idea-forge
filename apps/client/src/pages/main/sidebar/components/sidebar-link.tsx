@@ -55,7 +55,7 @@ export function SidebarLink({
         "group relative flex w-full items-center gap-2 rounded-lg px-3 py-1 text-sm transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
         active && "bg-accent text-accent-foreground",
-        // isActiveDrop && "bg-accent text-accent-foreground",
+        isActiveDrop && "bg-accent text-accent-foreground border border-foreground",
         disabled && "pointer-events-none opacity-50",
         isDraft && "border border-dashed border-muted-foreground/50",
         className,
@@ -68,8 +68,7 @@ export function SidebarLink({
         </Button>
       )}
 
-      {icon && <div className="flex-shrink-0">{icon}</div>}
-
+      {icon && <div className="flex-shrink-0 p-2 -m-2 cursor-pointer hover:bg-accent/40 rounded transition-colors">{icon}</div>}
       <div className="flex-1 truncate">{label}</div>
 
       {menu && (

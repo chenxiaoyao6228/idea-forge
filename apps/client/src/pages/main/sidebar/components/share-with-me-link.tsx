@@ -93,7 +93,7 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
 
     setIsLoadingChildren(true);
     try {
-      await fetchChildren(document.id);
+      await fetchChildren({ parentId: document.id, subspaceId: document.subspaceId || null });
       setChildrenLoaded(true);
     } catch (error) {
       console.warn(`Failed to load children for document ${document.id}:`, error);

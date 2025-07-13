@@ -8,7 +8,6 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { DocShareService } from "../doc-share/doc-share.service";
 import { PermissionService } from "@/permission/permission.service";
-import { generateFractionalIndex, handleIndexCollision } from "@/_shared/utils/fractional-index";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
@@ -21,31 +20,6 @@ export class DocumentService {
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
-    // Get the first document's index to generate new index
-    const firstDocument = await this.prismaService.doc.findFirst({
-      where: {
-        workspaceId: dto.workspaceId,
-        subspaceId: dto.subspaceId,
-        parentId: dto.parentId,
-        index: { not: null }, // Only include documents with index set
-      },
-      orderBy: {
-        index: "asc", // This will sort lexicographically which works for fractional indices
-      },
-    });
-
-    // Generate new index and handle collisions using shared utilities
-    const newIndex = generateFractionalIndex(null, firstDocument?.index ?? null);
-    const documents = await this.prismaService.doc.findMany({
-      where: {
-        workspaceId: dto.workspaceId,
-        subspaceId: dto.subspaceId,
-        parentId: dto.parentId,
-      },
-      select: { index: true },
-    });
-    const finalIndex = handleIndexCollision(documents, newIndex);
-
     const doc = await this.prismaService.doc.create({
       data: {
         ...dto,
@@ -53,7 +27,6 @@ export class DocumentService {
         createdById: authorId,
         lastModifiedById: authorId,
         publishedAt: new Date(),
-        index: finalIndex, // Set the calculated fractional index
       },
     });
 
@@ -144,10 +117,13 @@ export class DocumentService {
       ],
     };
 
+    const validSortFields = ["archivedAt", "publishedAt", "deletedAt", "updatedAt", "createdAt"];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
+
     const [items, total] = await Promise.all([
       this.prismaService.doc.findMany({
         where,
-        orderBy: { [sortBy || "createdAt"]: sortOrder || "desc" },
+        orderBy: { [sortField]: sortOrder || "desc" },
         skip: (page - 1) * limit,
         take: limit,
         include: {
@@ -180,7 +156,6 @@ export class DocumentService {
     const data = items.map((doc) => ({
       id: doc.id,
       title: doc.title || "",
-      index: doc.index || null,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
       isArchived: !!doc.archivedAt,
@@ -307,10 +282,9 @@ export class DocumentService {
           select: {
             id: true,
             title: true,
-            index: true,
           },
           orderBy: {
-            index: "asc",
+            createdAt: "asc",
           },
         },
         coverImage: true,
@@ -370,7 +344,7 @@ export class DocumentService {
             archivedAt: null,
           },
           orderBy: {
-            index: "asc",
+            createdAt: "asc",
           },
         },
       },
@@ -660,10 +634,9 @@ export class DocumentService {
         authorId: userId,
         archivedAt: null,
       },
-      orderBy: { index: "desc" },
+      orderBy: { createdAt: "asc" },
       take: 1,
     });
-    const newIndex = generateFractionalIndex(null, siblings[0]?.index ?? null);
     // Create duplicate document
     const duplicatedDoc = await this.prismaService.doc.create({
       data: {
@@ -676,8 +649,6 @@ export class DocumentService {
         lastModifiedById: userId,
         workspaceId: originalDoc.workspaceId,
         parentId: originalDoc.parentId,
-        index: newIndex,
-        icon: originalDoc.icon,
         archivedAt: null,
       },
     });
@@ -713,8 +684,6 @@ export class DocumentService {
           contentBinary: child.contentBinary,
           authorId: userId,
           parentId: newParentId,
-          index: child.index,
-          icon: child.icon,
           archivedAt: null,
           createdById: userId,
           lastModifiedById: userId,

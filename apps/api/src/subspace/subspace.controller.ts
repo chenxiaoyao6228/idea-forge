@@ -83,4 +83,9 @@ export class SubspaceController {
   async getSubspaceMembers(@Param("id") id: string, @GetUser("id") userId: string): Promise<SubspaceMemberListResponse> {
     return this.subspaceService.getSubspaceMembers(id, userId);
   }
+
+  @Get("user/:workspaceId")
+  async getUserSubspacesIncludingVirtual(@Param("workspaceId") workspaceId: string, @GetUser("id") userId: string) {
+    return this.subspaceService.getUserSubspacesIncludingVirtual(userId, workspaceId);
+  }
 }

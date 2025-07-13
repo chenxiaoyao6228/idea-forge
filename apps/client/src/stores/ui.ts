@@ -22,8 +22,8 @@ const useUIStore = createStore<State & Action, ComputedState>(
   (set) => ({
     ...defaultState,
     reset: () => set(defaultState),
-    setIsSidebarCollapsed: (isCollapsed: boolean) => set({ isSidebarCollapsed: isCollapsed }),
-    setActiveDocumentId: (id: string) => set({ activeDocumentId: id }),
+    setIsSidebarCollapsed: (isCollapsed) => set({ isSidebarCollapsed: isCollapsed }),
+    setActiveDocumentId: (id) => set({ activeDocumentId: id }),
   }),
   (state) => ({}),
   {
