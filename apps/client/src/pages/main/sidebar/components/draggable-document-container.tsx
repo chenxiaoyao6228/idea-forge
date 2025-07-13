@@ -61,8 +61,6 @@ export function DraggableDocumentContainer({ node, subspaceId, depth, index, par
     },
   });
 
-  console.log(" isReorderBottomOver, isReorderTopOver", isReorderBottomOver, isReorderTopOver);
-
   // Reparent - drop zone
   const { isOver: isReparentOver, setNodeRef: setReparentDropRef } = useDroppable({
     id: `document-reparent-${node.id}`,

@@ -1,31 +1,17 @@
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useDroppable } from "@dnd-kit/core";
-import DropCursor from "./components/drop-cursor";
-import { StarLink } from "./components/star-link";
-import useStarStore, { starEntitySelectors } from "@/stores/star";
+import useStarStore from "@/stores/star";
 import { useDragAndDropContext } from "./hooks/use-dnd";
+import { DraggableStarContainer } from "./components/draggable-star-container";
 
 export default function StarsArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const { fetchList, orderedStars } = useStarStore();
-  const stars = useStarStore(starEntitySelectors.selectAll);
-  console.log(stars, "stars");
   const { activeId } = useDragAndDropContext();
-
-  // drag target for drop to top
-  const { isOver: isTopDropOver, setNodeRef: setTopDropRef } = useDroppable({
-    id: "star-drop-top",
-    data: {
-      accept: ["star"],
-      dropType: "top",
-    },
-  });
 
   useEffect(() => {
     fetchList();
@@ -43,14 +29,9 @@ export default function StarsArea() {
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent>
-          <div className="relative">
-            <div ref={setTopDropRef} className="h-[1px]">
-              <DropCursor isActiveDrop={isTopDropOver} innerRef={null} position="top" />
-            </div>
-            {orderedStars.map((star) => (
-              <StarLink key={star.id} star={star} isDragging={activeId === star.id} />
-            ))}
-          </div>
+          {orderedStars.map((star, index) => (
+            <DraggableStarContainer key={star.id} index={index} star={star} isDragging={activeId === star.id} />
+          ))}
         </CollapsibleContent>
       </Collapsible>
     </SidebarGroup>

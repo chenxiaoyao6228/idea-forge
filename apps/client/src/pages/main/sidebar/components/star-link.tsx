@@ -7,9 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDroppable } from "@dnd-kit/core";
-import DropCursor from "./drop-cursor";
-import useStarStore, { starEntitySelectors } from "@/stores/star";
+import useStarStore from "@/stores/star";
 import useDocumentStore from "@/stores/document";
 import useSubSpaceStore from "@/stores/subspace";
 import { StarEntity } from "@/stores/star";
@@ -18,10 +16,10 @@ import { DocumentLink } from "./document-link";
 interface StarLinkProps {
   star: StarEntity;
   isDragging?: boolean;
+  isDraggingOverlay?: boolean;
 }
 
-// TODO: support dnd with draggable-star-link-container
-export function StarLink({ star, isDragging = false }: StarLinkProps) {
+export function StarLink({ star, isDragging = false, isDraggingOverlay = false }: StarLinkProps) {
   const { t } = useTranslation();
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
@@ -67,16 +65,6 @@ export function StarLink({ star, isDragging = false }: StarLinkProps) {
     }
   }, [removeStar, star.id]);
 
-  // drag target for reordering
-  const { isOver: isReorderOver, setNodeRef: setReorderRef } = useDroppable({
-    id: `star-reorder-${star.id}`,
-    data: {
-      accept: ["star"],
-      dropType: "reorder",
-      starId: star.id,
-    },
-  });
-
   if (!document && !subspace) {
     return null;
   }
@@ -108,22 +96,20 @@ export function StarLink({ star, isDragging = false }: StarLinkProps) {
 
   return (
     <>
-      <div className="star-link" ref={setReorderRef}>
-        <SidebarLink
-          to={document ? `/${document.id}` : `/${subspace?.id}`}
-          icon={icon}
-          label={title}
-          expanded={hasDocuments ? isExpanded : undefined}
-          onDisclosureClick={handleDisclosureClick}
-          depth={0}
-          menu={menu}
-          showActions={isExpanded}
-          isActiveDrop={isReorderOver}
-          style={dragStyle}
-        />
-      </div>
+      <SidebarLink
+        to={document ? `/${document.id}` : `/${subspace?.id}`}
+        icon={icon}
+        label={title}
+        expanded={hasDocuments ? isExpanded : undefined}
+        onDisclosureClick={handleDisclosureClick}
+        depth={0}
+        menu={menu}
+        showActions={isExpanded}
+        isActiveDrop={false}
+        style={dragStyle}
+      />
 
-      {hasDocuments && isExpanded && (
+      {hasDocuments && isExpanded && !isDraggingOverlay && (
         <div className="ml-4">
           {document?.children?.map((node, index) => (
             <DocumentLink key={node.id} node={node} depth={1} index={index} parentId={star.docId || null} subspaceId={document.subspaceId || null} />
@@ -133,8 +119,6 @@ export function StarLink({ star, isDragging = false }: StarLinkProps) {
           ))}
         </div>
       )}
-
-      <DropCursor isActiveDrop={isReorderOver} innerRef={null} position="bottom" />
     </>
   );
 }
