@@ -11,6 +11,8 @@ import { ClientEnv } from "@/_shared/config/config-validation";
 import { UserResponseData } from "@idea/contracts";
 import { CollaborationService } from "@/collaboration/collaboration.service";
 
+const REDIRECTED = Symbol("REDIRECTED");
+
 interface Manifest {
   preload: string | null;
   css: string | null;
@@ -85,6 +87,7 @@ export class FallbackMiddleware implements NestMiddleware {
     }
 
     const userInfo = needAuth ? await this.getUserInfo(req, res) : null;
+    if (userInfo === REDIRECTED) return;
 
     const createDevHTML = () => {
       return {
@@ -247,12 +250,12 @@ export class FallbackMiddleware implements NestMiddleware {
     return html;
   }
 
-  private async getUserInfo(req: Request, res: Response): Promise<UserResponseData | null> {
+  private async getUserInfo(req: Request, res: Response): Promise<UserResponseData | typeof REDIRECTED | null> {
     const { accessToken, refreshToken } = req.cookies;
 
     if (!accessToken || !refreshToken) {
       this.redirectToLoginOrMarketing(req, res, false);
-      return null;
+      return REDIRECTED;
     }
 
     try {
@@ -263,10 +266,9 @@ export class FallbackMiddleware implements NestMiddleware {
 
       const user = await this.userService.getUserById(payload.sub);
 
-      // Although wired, but just redirect to login page
       if (!user) {
         this.redirectToLoginOrMarketing(req, res, true);
-        return null;
+        return REDIRECTED;
       }
 
       return {
@@ -301,11 +303,13 @@ export class FallbackMiddleware implements NestMiddleware {
         } catch (refreshError) {
           console.log("Failed to refresh token:", refreshError);
           this.redirectToLoginOrMarketing(req, res, true);
+          return REDIRECTED;
         }
       }
 
-      if ((error as any).message.includes("invalid signature")) {
+      if ((error as any).message?.includes("invalid signature")) {
         this.redirectToLoginOrMarketing(req, res, true);
+        return REDIRECTED;
       }
     }
     return null;

@@ -20,7 +20,12 @@ export class PermissionController {
   @Post("users")
   @CheckPolicy(Action.ManagePermissions, "UnifiedPermission")
   async addUserPermission(@Body() dto: AddUserPermissionDto, @GetUser("id") adminId: string) {
-    return await this.permissionService.assignDocumentPermission(dto.userId, dto.resourceId, dto.permission, adminId);
+    return await this.permissionService.assignUserPermission(dto.userId, dto.resourceType, dto.resourceId, dto.permission, adminId);
+  }
+
+  @Get("users")
+  async getUserPermissions(@Query() query: PermissionListRequestDto, @GetUser("id") adminId: string) {
+    return await this.permissionService.getUserPermissions(adminId, query);
   }
 
   @Post("groups")
@@ -29,9 +34,9 @@ export class PermissionController {
     return await this.permissionService.assignGroupPermissions(dto.groupId, dto.resourceType, dto.resourceId, dto.permission, adminId);
   }
 
-  @Get("shared-with-me")
-  async getSharedWithMe(@GetUser("id") userId: string, @Query() query: PermissionListRequestDto) {
-    return this.permissionService.getSharedWithMe(userId, query);
+  @Get("groups")
+  async getGroupPermissions(@Query() query: PermissionListRequestDto, @GetUser("id") adminId: string) {
+    return await this.permissionService.getGroupPermissions(adminId, query);
   }
 
   /*
@@ -54,7 +59,7 @@ export class PermissionController {
     @GetUser("id") adminId: string,
   ) {
     if (dto.userId) {
-      return await this.permissionService.assignDocumentPermission(dto.userId, resourceId, dto.permission, adminId);
+      return await this.permissionService.assignUserPermission(dto.userId, resourceType, resourceId, dto.permission, adminId);
     }
     if (dto.groupId) {
       return await this.permissionService.assignGroupPermissions(dto.groupId, resourceType, resourceId, dto.permission, adminId);

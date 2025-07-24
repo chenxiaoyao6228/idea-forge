@@ -58,14 +58,14 @@ export type CreateDocumentDto = z.infer<typeof createDocumentSchema>;
 export interface CreateDocumentResponse extends CommonDocumentResponse {}
 
 // list doc
-export const listDocumentSchema = basePagerSchema.merge(
-  DocSchema.pick({
-    parentId: true,
-    subspaceId: true,
-    archivedAt: true,
-    type: true,
-  }),
-);
+export const listDocumentSchema = basePagerSchema.extend({
+  parentId: z.string().cuid(),
+  archivedAt: z.boolean().optional(),
+  subspaceId: z.string().cuid().optional(),
+  // for document sharing
+  sharedDocumentId: z.string().cuid().optional(),
+  includeSharedChildren: z.boolean().optional(),
+});
 export type ListDocumentDto = z.infer<typeof listDocumentSchema>;
 
 export type ListDocumentResponse = BasePageResult<CommonDocumentResponse>;
@@ -138,30 +138,27 @@ export const moveDocumentsSchema = z.object({
 
 export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;
 
-// share doc
+// share doc with permission
+export const shareDocumentSchema = z.object({
+  targetUserIds: z.array(z.string()).optional(),
+  targetGroupIds: z.array(z.string()).optional(),
+  permission: z.enum(["READ", "EDIT"]),
+  includeChildDocuments: z.boolean().optional(),
+});
+
+export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
+
+// public share doc
 export const docShareUserSchema = z.object({
   id: z.string(),
   email: z.string(),
   displayName: z.string().nullable(),
   permission: z.object({
-    level: z.enum(["READ", "WRITE"]),
+    level: z.enum(["READ", "EDIT"]),
   }),
 });
 
 export type DocShareUser = z.infer<typeof docShareUserSchema>;
-
-export const shareDocumentSchema = z.object({
-  email: z.string().email(),
-  permission: z.object({
-    level: z.enum(["READ", "WRITE"]),
-  }),
-  docId: z.string().cuid(),
-  published: z.boolean().optional(),
-  urlId: z.string().optional(),
-  includeChildDocuments: z.boolean().optional(),
-});
-
-export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
 
 // update doc
 export const updateSharePermissionSchema = z.object({
@@ -176,6 +173,8 @@ export const removeShareSchema = z.object({
 });
 
 export type RemoveShareDto = z.infer<typeof removeShareSchema>;
+
+// ============== others ================
 
 export const updateCoverSchema = z.object({
   url: z.string().optional(),

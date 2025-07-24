@@ -4,7 +4,6 @@ import type {
   CreateDocumentDto,
   UpdateDocumentDto,
   MoveDocumentsDto,
-  CommonSharedDocumentResponse,
   DocSharesResponse,
   UpdateSharePermissionDto,
   ShareDocumentDto,
@@ -16,19 +15,22 @@ import type {
   DuplicateDocumentResponse,
   ListDocumentResponse,
   ListDocumentDto,
+  PermissionListRequest,
+  SharedWithMeResponse,
 } from "@idea/contracts";
 
 export const documentApi = {
   list: async (data: ListDocumentDto) => {
     return request.post<ListDocumentDto, ListDocumentResponse>(`/api/documents/list`, data);
   },
-  // ================
-  getSharedDocuments: async () => {
-    const url = `/api/share-documents/shared-docs`;
-    return request<null, CommonSharedDocumentResponse[]>(url);
+  // ================ share doc ========================
+  shareDocument: (id: string, data: ShareDocumentDto) => request.post<ShareDocumentDto, DocSharesResponse>(`/api/documents/${id}/share`, data),
+  getSharedWithMe: async (query) => {
+    return request.get<null, SharedWithMeResponse>(`/api/documents/shared-with-me`, { params: query });
   },
-  shareDocument: (data: ShareDocumentDto) => request.post<ShareDocumentDto, DocSharesResponse>(`/api/share-documents`, data),
-  getDocShares: (id: string) => request.get<null, DocSharesResponse>(`/api/share-documents/${id}`),
+
+  // ================ others ========================
+
   removeShare: (id: string, data: RemoveShareDto) => request.delete<DocSharesResponse>(`/api/share-documents/${id}`, { data }),
   updateSharePermission: (id: string, data: UpdateSharePermissionDto) =>
     request.patch<UpdateSharePermissionDto, DocSharesResponse>(`/api/share-documents/${id}`, data),

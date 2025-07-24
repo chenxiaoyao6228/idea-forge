@@ -525,6 +525,9 @@ export class SubspaceService {
       },
     });
 
+    // Only assign subspace-level permission
+    await this.permissionService.assignSubspacePermissions(dto.userId, subspaceId, dto.role, adminId);
+
     return {
       member: {
         ...member,

@@ -6,16 +6,14 @@ import { websocketService } from "@/lib/websocket";
 import useUIStore from "@/stores/ui";
 import useWorkspaceStore, { workspaceSelectors } from "@/stores/workspace";
 import SidebarContainer from "./sidebar";
+import { useCurrentDocumentId } from "@/hooks/use-current-document";
 
 export default function Main() {
-  const { docId } = useParams();
-  const setActiveDocumentId = useUIStore((state) => state.setActiveDocumentId);
+  const activeDocumentId = useUIStore((state) => state.activeDocumentId);
   const fetchWorkspaces = useWorkspaceStore((state) => state.fetchList);
   const workspaces = useWorkspaceStore((state) => workspaceSelectors.selectAll(state));
 
-  useEffect(() => {
-    setActiveDocumentId(docId || "");
-  }, [docId, setActiveDocumentId]);
+  useCurrentDocumentId();
 
   useEffect(() => {
     fetchWorkspaces();
@@ -33,7 +31,7 @@ export default function Main() {
   }
 
   let content = <></>;
-  if (docId) {
+  if (activeDocumentId) {
     content = <Doc />;
   }
 

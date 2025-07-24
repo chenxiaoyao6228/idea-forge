@@ -33,6 +33,10 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.SUBSPACE_MOVE:
           await this.handleSubspaceMoveEvent(event, server);
           break;
+
+        case BusinessEvents.DOCUMENT_CREATE:
+          await this.handleDocumentCreateEvent(event, server);
+          break;
         case BusinessEvents.DOCUMENT_MOVE:
           await this.handleDocumentMoveEvent(event, server);
           break;
@@ -65,6 +69,61 @@ export class WebsocketEventProcessor extends WorkerHost {
       console.error(`Error processing websocket event: ${event.name}`, error);
       throw error;
     }
+  }
+
+  private async handleDocumentCreateEvent(event: WebsocketEvent<any>, server: any) {
+    const { documentId, subspaceId, updatedAt } = event.data;
+    // 查找所有有权限的用户
+    const permissions = await this.prismaService.unifiedPermission.findMany({
+      where: {
+        resourceType: "DOCUMENT",
+        resourceId: documentId,
+      },
+      select: { userId: true },
+    });
+    // 去重
+    const userIds = Array.from(new Set(permissions.map((p) => p.userId).filter(Boolean)));
+
+    // 推送到所有有权限的用户频道
+    for (const userId of userIds) {
+      server.to(`user:${userId}`).emit(BusinessEvents.ENTITIES, {
+        event: BusinessEvents.DOCUMENT_CREATE,
+        fetchIfMissing: true,
+        documentIds: [
+          {
+            id: documentId,
+            updatedAt,
+          },
+        ],
+        subspaceIds: subspaceId
+          ? [
+              {
+                id: subspaceId,
+                updatedAt,
+              },
+            ]
+          : [],
+      });
+    }
+    // 推送到workspace频道
+    server.to(`workspace:${event.workspaceId}`).emit(BusinessEvents.ENTITIES, {
+      event: BusinessEvents.DOCUMENT_CREATE,
+      fetchIfMissing: true,
+      documentIds: [
+        {
+          id: documentId,
+          updatedAt,
+        },
+      ],
+      subspaceIds: subspaceId
+        ? [
+            {
+              id: subspaceId,
+              updatedAt,
+            },
+          ]
+        : [],
+    });
   }
 
   // Handle document move events

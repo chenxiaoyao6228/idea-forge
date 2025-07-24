@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useTitle } from "react-use";
 import DocumentHeader from "./components/doc-header";
 import BackToTop from "@/components/ui/back-to-top";
-import { useCurrentDocument } from "@/hooks/use-current-document";
+import { useCurrentDocument, useCurrentDocumentId } from "@/hooks/use-current-document";
 import { getEnvVariable } from "@/lib/env";
 import { Toolbar } from "./toolbar";
 import TiptapEditor from "@/editor";
@@ -17,7 +17,7 @@ import useUIStore from "@/stores/ui";
 export default function Doc() {
   const { t } = useTranslation();
   const userId = useUserStore((s) => s.userInfo?.id);
-  const activeDocumentId = useUIStore((state) => state.activeDocumentId);
+  const activeDocumentId = useCurrentDocumentId();
   const collabToken = useUserStore((s) => s.userInfo?.collabToken);
   const currentDocument = useCurrentDocument();
   const isCurrentDocLoading = useDocumentStore((state) => state.isFetching);
@@ -42,7 +42,7 @@ export default function Doc() {
     return <DocHome />;
   }
 
-  if (!currentDocument) {
+  if (!activeDocumentId) {
     return null;
   }
 

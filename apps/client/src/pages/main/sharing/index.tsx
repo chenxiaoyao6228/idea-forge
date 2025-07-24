@@ -17,9 +17,11 @@ import { groupApi } from "@/apis/group";
 import React from "react";
 import { userApi } from "@/apis/user";
 import { permissionApi } from "@/apis/permission";
+import { PermissionLevel } from "@idea/contracts";
+import { documentApi } from "@/apis/document";
 
 type PendingId = {
-  id: number | string;
+  id: string;
   type: "user" | "group";
 };
 
@@ -37,7 +39,7 @@ export function ShareButton({ documentId }: ShareButtonProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useBoolean(false);
   const [pendingIds, setPendingIds] = React.useState<PendingId[]>([]);
-  const [permission, setPermission] = React.useState<"READ" | "EDIT">("READ");
+  const [permission, setPermission] = React.useState<PermissionLevel>(PermissionLevel.READ);
 
   const form = useForm<ShareFormValues>({
     resolver: zodResolver(shareSchema as any),
@@ -58,7 +60,7 @@ export function ShareButton({ documentId }: ShareButtonProps) {
     enabled: form.watch("query").length > 0,
   });
 
-  const { data: groups } = useQuery({
+  const { data: groupsRes } = useQuery({
     queryKey: ["groups", form.watch("query")],
     queryFn: () =>
       groupApi.list({
@@ -70,45 +72,22 @@ export function ShareButton({ documentId }: ShareButtonProps) {
     enabled: form.watch("query").length > 0,
   });
 
-  const handleAddPendingId = (id: number | string, type: "user" | "group") => {
-    setPendingIds((prev) => [...prev, { id, type }]);
+  const handleAddPendingId = (id: string, type: "user" | "group") => {
+    setPendingIds((prev) => (prev.some((item) => item.id === id && item.type === type) ? prev : [...prev, { id, type }]));
   };
 
-  const handleRemovePendingId = (id: number | string) => {
+  const handleRemovePendingId = (id: string) => {
     setPendingIds((prev) => prev.filter((item) => item.id !== id));
   };
 
   const handleShare = async () => {
     try {
-      await Promise.all(
-        pendingIds.map(async ({ id, type }) => {
-          if (type === "user") {
-            const user = usersRes?.data.find((u) => u.id === id);
-            if (user) {
-              // Use unified permission API
-              await permissionApi.addUserPermission({
-                userId: user.id,
-                resourceType: "DOCUMENT",
-                resourceId: documentId,
-                permission,
-              });
-              toast.success(t("Added {{name}} to the document", { name: user.displayName }));
-            }
-          } else {
-            const group = groups?.data.find((g) => g.id === id);
-            if (group) {
-              // Use unified permission API
-              await permissionApi.addGroupPermission({
-                groupId: id as string,
-                resourceType: "DOCUMENT",
-                resourceId: documentId,
-                permission,
-              });
-              toast.success(t("Added {{name}} to the document", { name: group.name }));
-            }
-          }
-        }),
-      );
+      await documentApi.shareDocument(documentId, {
+        targetUserIds: pendingIds.filter(({ type }) => type === "user").map(({ id }) => id),
+        targetGroupIds: pendingIds.filter(({ type }) => type === "group").map(({ id }) => id),
+        permission: permission as "READ" | "EDIT",
+        includeChildDocuments: true,
+      });
 
       setPendingIds([]);
       form.reset();
@@ -148,7 +127,7 @@ export function ShareButton({ documentId }: ShareButtonProps) {
                         </div>
                       </div>
                     ))}
-                    {groups?.data.map((group) => (
+                    {groupsRes?.data.map((group) => (
                       <div
                         key={group.id}
                         className="flex items-center justify-between p-2 hover:bg-accent rounded-md cursor-pointer"
@@ -176,10 +155,10 @@ export function ShareButton({ documentId }: ShareButtonProps) {
                 <div className="flex flex-wrap gap-2">
                   {pendingIds.map(({ id, type }) => {
                     const user = type === "user" ? usersRes?.data.find((u) => u.id === id) : undefined;
-                    const group = type === "group" ? groups?.data.find((g) => g.id === id) : undefined;
+                    const group = type === "group" ? groupsRes?.data.find((g) => g.id === id) : undefined;
                     return (
                       <Badge key={id} variant="secondary" className="flex items-center gap-1">
-                        {user ? user.displayName : group?.name}
+                        {user ? user.displayName || user.email : group?.name}
                         <button type="button" onClick={() => handleRemovePendingId(id)} className="ml-1 hover:text-destructive">
                           ×
                         </button>

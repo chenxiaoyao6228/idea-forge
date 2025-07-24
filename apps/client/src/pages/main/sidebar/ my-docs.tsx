@@ -60,7 +60,7 @@ export default function MyDocsArea() {
           </div>
         </div>
         <CollapsibleContent>
-          <div className="relative">
+          <div className="relative pl-2">
             <div ref={setTopDropRef} className="h-[1px]">
               <DropCursor isActiveDrop={isTopDropOver} innerRef={null} position="top" />
             </div>

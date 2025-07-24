@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Param, Put, Query } from "@nestjs/common";
 import { UserService } from "./user.service";
-import { UpdateUserDto } from "./user.dto";
-import { UserListRequestDto } from "@idea/contracts";
+import { UpdateUserDto, UserListRequestDto } from "./user.dto";
 
 @Controller("/api/users")
 export class UserController {

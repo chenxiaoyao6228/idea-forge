@@ -1,7 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { MoveDocumentService } from "./move-document.service";
 import { EventPublisherService } from "../_shared/events/event-publisher.service";
-import { PermissionInheritanceService } from "../permission/permission-inheritance.service";
 import { PermissionService } from "../permission/permission.service";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
@@ -166,14 +165,12 @@ describe("MoveDocumentService (integration)", () => {
   let mockData: Awaited<ReturnType<typeof createComplexMockData>>;
   let prisma: PrismaService;
   let eventPublisherMock: { publishWebsocketEvent: any };
-  let permissionInheritanceMock: { updatePermissionsOnMove: any };
   let permissionMock: { getResourcePermissionAbilities: any };
   let realtimeGatewayMock: { sendToUser: any };
 
   beforeEach(async () => {
     console.log("beforeEach in move-document.service.int.test.ts");
     eventPublisherMock = { publishWebsocketEvent: vi.fn().mockResolvedValue(undefined) };
-    permissionInheritanceMock = { updatePermissionsOnMove: vi.fn().mockResolvedValue(undefined) };
     permissionMock = { getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }) };
     realtimeGatewayMock = { sendToUser: vi.fn() };
 
@@ -182,7 +179,6 @@ describe("MoveDocumentService (integration)", () => {
       providers: [
         MoveDocumentService,
         { provide: EventPublisherService, useValue: eventPublisherMock },
-        { provide: PermissionInheritanceService, useValue: permissionInheritanceMock },
         { provide: PermissionService, useValue: permissionMock },
       ],
     }).compile();
@@ -446,7 +442,6 @@ describe("MoveDocumentService (integration)", () => {
       index: 1, // a different position to ensure move happens
     });
 
-    expect(permissionInheritanceMock.updatePermissionsOnMove).toHaveBeenCalled();
     expect(eventPublisherMock.publishWebsocketEvent).toHaveBeenCalled();
   });
 
@@ -1023,6 +1018,127 @@ describe("MoveDocumentService (integration)", () => {
       });
       const updatedDoc = await prisma.doc.findUnique({ where: { id: docId } });
       expect(updatedDoc?.title).toBe(newTitle);
+    });
+  });
+
+  describe("MoveDocumentService (edge cases)", () => {
+    let service: MoveDocumentService;
+    let prisma: PrismaService;
+    let mockData: Awaited<ReturnType<typeof createComplexMockData>>;
+
+    beforeEach(async () => {
+      const module = await Test.createTestingModule({
+        imports: [ConfigsModule, ClsModule, PrismaModule],
+        providers: [
+          MoveDocumentService,
+          { provide: EventPublisherService, useValue: { publishWebsocketEvent: vi.fn() } },
+          { provide: PermissionService, useValue: { getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }) } },
+        ],
+      }).compile();
+      service = module.get(MoveDocumentService);
+      prisma = module.get(PrismaService);
+      mockData = await createComplexMockData(prisma);
+    });
+
+    it("should handle navigation tree with missing nodes (corrupted tree)", async () => {
+      // Create a doc and add to subspace, but not in navigation tree
+      const subspace = mockData.subspaces[0];
+      const orphanDoc = await prisma.doc.create({
+        data: {
+          id: uuidv4(),
+          title: "Orphan Doc",
+          workspaceId: subspace.workspaceId,
+          authorId: mockData.user.id,
+          createdById: mockData.user.id,
+          lastModifiedById: mockData.user.id,
+          subspaceId: subspace.id,
+          parentId: null,
+        },
+      });
+      // Remove all nodes from navigation tree (simulate corruption)
+      await prisma.subspace.update({
+        where: { id: subspace.id },
+        data: { navigationTree: [] },
+      });
+      // Try to move the orphan doc to another subspace
+      const targetSubspace = mockData.subspaces[1];
+      await expect(
+        service.moveDocs(mockData.user.id, {
+          id: orphanDoc.id,
+          subspaceId: targetSubspace.id,
+          parentId: null,
+          index: 0,
+        }),
+      ).resolves.toBeDefined();
+      // Should not throw, and doc should be in target subspace
+      const updated = await prisma.doc.findUnique({ where: { id: orphanDoc.id } });
+      expect(updated?.subspaceId).toBe(targetSubspace.id);
+    });
+
+    it("should not create duplicate nodes in navigation tree after repeated moves", async () => {
+      const subspace = mockData.subspaces[0];
+      const doc = await prisma.doc.create({
+        data: {
+          id: uuidv4(),
+          title: "Dup Doc",
+          workspaceId: subspace.workspaceId,
+          authorId: mockData.user.id,
+          createdById: mockData.user.id,
+          lastModifiedById: mockData.user.id,
+          subspaceId: subspace.id,
+          parentId: null,
+        },
+      });
+      // Add to navigation tree
+      await prisma.subspace.update({
+        where: { id: subspace.id },
+        data: { navigationTree: [{ id: doc.id, type: "document", title: doc.title, url: `/${doc.id}`, children: [] }] },
+      });
+      // Move doc to same subspace multiple times
+      for (let i = 0; i < 3; i++) {
+        await service.moveDocs(mockData.user.id, {
+          id: doc.id,
+          subspaceId: subspace.id,
+          parentId: null,
+          index: 0,
+        });
+      }
+      // Check navigation tree for duplicates
+      const updatedSubspace = await prisma.subspace.findUnique({ where: { id: subspace.id } });
+      const tree = updatedSubspace?.navigationTree as any[];
+      const docIds = tree.map((node) => node.id);
+      const uniqueDocIds = [...new Set(docIds)];
+      expect(docIds.length).toBe(uniqueDocIds.length);
+    });
+
+    it("should handle orphan documents (no parent, not in navigation tree)", async () => {
+      const subspace = mockData.subspaces[0];
+      const orphanDoc = await prisma.doc.create({
+        data: {
+          id: uuidv4(),
+          title: "Orphan Doc 2",
+          workspaceId: subspace.workspaceId,
+          authorId: mockData.user.id,
+          createdById: mockData.user.id,
+          lastModifiedById: mockData.user.id,
+          subspaceId: subspace.id,
+          parentId: null,
+        },
+      });
+      // Not in navigation tree
+      // Try to move it under a valid parent
+      const parentDoc = mockData.subspaceDocuments[subspace.id][0];
+      await expect(
+        service.moveDocs(mockData.user.id, {
+          id: orphanDoc.id,
+          subspaceId: subspace.id,
+          parentId: parentDoc.id,
+          index: 0,
+        }),
+      ).resolves.toBeDefined();
+      // Should now have parentId set
+      const updated = await prisma.doc.findUnique({ where: { id: orphanDoc.id } });
+      expect(updated?.parentId).toBe(parentDoc.id);
     });
   });
 });

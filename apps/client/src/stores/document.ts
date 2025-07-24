@@ -53,7 +53,12 @@ interface State {
 interface Action {
   // Existing API actions
   fetchDetail: (id: string, options?: FetchOptions) => Promise<FetchDetailResult>;
-  fetchChildren: ({ parentId, subspaceId, options }: { parentId: string | null; subspaceId: string | null; options?: { force?: boolean } }) => Promise<void>;
+  fetchChildren: ({
+    parentId,
+    subspaceId,
+    sharedDocumentId,
+    options,
+  }: { parentId: string; subspaceId: string | null; sharedDocumentId?: string; options?: { force?: boolean } }) => Promise<void>;
   createDocument: (options: {
     title: string;
     parentId: string | null;
@@ -421,7 +426,7 @@ const useDocumentStore = create<StoreState>()(
           }
         },
 
-        fetchChildren: async ({ parentId, subspaceId, options = {} }) => {
+        fetchChildren: async ({ parentId, subspaceId, sharedDocumentId, options = {} }) => {
           if (!options.force) {
             const existingDocs = documentSelectors.selectAll(get());
             const hasChildren = existingDocs.some((doc) => doc.parentId === parentId);
@@ -431,14 +436,14 @@ const useDocumentStore = create<StoreState>()(
           set({ isFetching: true });
           try {
             const response = await documentApi.list({
-              parentId,
+              parentId: parentId,
               page: 1,
               limit: 100,
               sortBy: "updatedAt",
               sortOrder: "asc",
-              subspaceId,
-              archivedAt: null,
-              type: DocTypeSchema.enum.NOTE,
+              subspaceId: subspaceId || undefined,
+              archivedAt: undefined,
+              sharedDocumentId,
             });
 
             if (response.data) {

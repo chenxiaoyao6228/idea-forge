@@ -6,19 +6,17 @@ import { MoveDocumentService } from "./move-document.service";
 import { Action } from "@/_shared/casl/ability.class";
 import { CheckPolicy } from "@/_shared/casl/policy.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
-import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 import { SearchDocumentService } from "./search-document.service";
 import { DocumentTrashService } from "./trash-document.service";
 import { UpdateCoverDto } from "@idea/contracts";
+import { PermissionListRequestDto } from "@/permission/permission.dto";
 
 @UseGuards(PolicyGuard)
 @Controller("/api/documents")
 export class DocumentController {
   constructor(
     private readonly documentService: DocumentService,
-
     private readonly moveDocumentService: MoveDocumentService,
-    private readonly permissionInheritanceService: PermissionInheritanceService,
     private readonly searchDocumentService: SearchDocumentService,
     private readonly documentTrashService: DocumentTrashService,
   ) {}
@@ -28,6 +26,12 @@ export class DocumentController {
     return this.documentService.create(userId, dto);
   }
 
+  @Get("shared-with-me")
+  async getSharedWithMe(@GetUser("id") userId: string, @Query() query: PermissionListRequestDto) {
+    return this.documentService.getSharedRootDocsWithMe(userId, query);
+  }
+
+  // FIXME: change to get method
   @Post("list")
   async list(@GetUser("id") userId: string, @Body() dto: any) {
     return this.documentService.list(userId, dto);
@@ -78,17 +82,16 @@ export class DocumentController {
     return this.documentService.duplicate(userId, id);
   }
 
-  // ============== doc share ==========================================
+  // ============== internal doc share ==========================================
 
   @Post(":id/share")
   async shareDocument(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: ShareDocumentDto) {
     return this.documentService.shareDocument(userId, id, dto);
   }
 
-  @Get(":id/shares")
-  async listDocShares(@GetUser("id") userId: string, @Param("id") id: string) {
-    return this.documentService.listDocShares(id);
-  }
+  // ============== public doc share ==========================================
+  // TODO:
+  // @Post(":id/share-public")
 
   //   // ============== cover =======================
   @Patch(":id/cover")

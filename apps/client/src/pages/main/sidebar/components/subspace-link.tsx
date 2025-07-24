@@ -1,16 +1,14 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { PlusIcon, MoreHorizontal, EditIcon, StarIcon } from "lucide-react";
+import { PlusIcon, MoreHorizontal, EditIcon, StarIcon, Layers } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
 import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
 import useStarStore from "@/stores/star";
 import { SidebarLink } from "./sidebar-link";
-import { DocumentLink } from "./document-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
@@ -157,16 +155,6 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
 
   const hasDocuments = subspace.navigationTree && subspace.navigationTree.length > 0;
 
-  const icon = (
-    <Avatar className="h-5 w-5">
-      {subspace.avatar ? (
-        <AvatarImage src={subspace.avatar} alt={subspace.name} />
-      ) : (
-        <AvatarFallback className="text-xs">{subspace.name.charAt(0).toUpperCase()}</AvatarFallback>
-      )}
-    </Avatar>
-  );
-
   const menu = (
     <div className="flex items-center gap-1">
       {/* TODO: add this back if needed  */}
@@ -206,7 +194,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
       <div className="subspace-link">
         <SidebarLink
           to={""}
-          icon={icon}
+          icon={<Layers className="h-4 w-4" />}
           label={
             <EditableTitle
               title={subspace.name}

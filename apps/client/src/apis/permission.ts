@@ -4,9 +4,6 @@ export const permissionApi = {
   getResourcePermissions: async (resourceType: string, resourceId: string) => {
     return request.get<Record<string, boolean>>(`/api/permissions/resources/${resourceType}/${resourceId}`);
   },
-  getSharedWithMe: async (query: any) => {
-    return request.get(`/api/permissions/shared-with-me`, { params: query });
-  },
 
   addUserPermission: async (data: {
     userId: string;
@@ -20,6 +17,15 @@ export const permissionApi = {
     });
   },
 
+  getUserPermissions: async (data: {
+    resourceType: string;
+    resourceId: string;
+    page: number;
+    limit: number;
+  }) => {
+    return request.get(`/api/permissions/users`, { params: data });
+  },
+
   addGroupPermission: async (data: {
     groupId: string;
     resourceType: string;
@@ -30,5 +36,12 @@ export const permissionApi = {
       groupId: data.groupId,
       permission: data.permission,
     });
+  },
+
+  getGroupPermissions: async (data: {
+    resourceType: string;
+    resourceId: string;
+  }) => {
+    return request.get(`/api/permissions/groups`, { params: data });
   },
 };

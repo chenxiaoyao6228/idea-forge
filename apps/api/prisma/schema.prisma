@@ -43,9 +43,14 @@ model UnifiedPermission {
   resourceType ResourceType // DOCUMENT, SUBSPACE, WORKSPACE
   resourceId   String // DOCUMENT_ID, SUBSPACE_ID, WORKSPACE_ID, etc
   permission   PermissionLevel // NONE, READ, COMMENT, EDIT, MANAGE, OWNER
-  sourceType   SourceType // DIRECT, GROUP, SUBSPACE_ADMIN, SUBSPACE_MEMBER, WORKSPACE_ADMIN, WORKSPACE_MEMBER, GUEST
   sourceId     String?
-  priority     Int // 1-7, 1 is the highest priority
+  /**
+   * when resolve permission, only need to sort by priority, sourceType indirectly takes effect (through priority).
+   * sourceType is used to mark the source of the permission, determine the priority, trace the permission, manage the permission, and ensure uniqueness.
+   * you can think of sourceType as the "identity tag" of this permission, and priority as the "weight" used for sorting, and only care about the sorting result when resolving.
+   */
+  sourceType   SourceType // DIRECT, GROUP, SUBSPACE_ADMIN, SUBSPACE_MEMBER, WORKSPACE_ADMIN, WORKSPACE_MEMBER, GUEST
+  priority     Int // 1-7, 1 is the highest priority, matched with SourceType
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   createdById  String
@@ -53,6 +58,7 @@ model UnifiedPermission {
   // Optional for guest permissions    
   guestId String?
 
+  // Permission inheritance
   source   UnifiedPermission?  @relation("PermissionInheritance", fields: [sourceId], references: [id])
   children UnifiedPermission[] @relation("PermissionInheritance")
 

@@ -6,7 +6,6 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
 import { presentWorkspace } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
-import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 import { PermissionService } from "@/permission/permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ResourceType, WorkspaceRole, WorkspaceMember } from "@idea/contracts";
@@ -17,7 +16,6 @@ export class WorkspaceService {
     private readonly prismaService: PrismaService,
     private readonly subspaceService: SubspaceService,
     private readonly permissionService: PermissionService,
-    private readonly inheritanceService: PermissionInheritanceService,
   ) {}
 
   /**
@@ -52,7 +50,7 @@ export class WorkspaceService {
     const permission = await this.permissionService.assignWorkspacePermissions(userId, workspace.id, WorkspaceRole.OWNER, userId);
 
     // Propagate permissions to all child resources (subspaces and documents)
-    await this.inheritanceService.propagatePermissions(ResourceType.WORKSPACE, workspace.id, permission);
+    // TODO:
 
     // --- Create personal subspace for the owner ---
     const personalSubspace = await this.prismaService.subspace.create({
@@ -314,7 +312,7 @@ export class WorkspaceService {
     const permission = await this.permissionService.assignWorkspacePermissions(userId, workspaceId, role, adminId);
 
     // 3. Propagate permissions to all child subspaces and documents
-    await this.inheritanceService.propagatePermissions(ResourceType.WORKSPACE, workspaceId, permission);
+    // TODO:
 
     // --- Create my-docs subspace for the new member if not exists ---
     const existingMyDocs = await this.prismaService.subspace.findFirst({
@@ -497,7 +495,7 @@ export class WorkspaceService {
     const permission = await this.permissionService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
 
     // 3. Propagate permission changes to all child resources
-    await this.inheritanceService.propagatePermissions(ResourceType.WORKSPACE, workspaceId, permission);
+    // TODO:
 
     return updatedMember;
   }

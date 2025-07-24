@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FileText, Folder, Loader2 } from "lucide-react";
+import { FileIcon, FolderIcon, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -12,10 +12,9 @@ import type { DocumentEntity } from "@/stores/document";
 interface ShareWithMeLinkProps {
   document: DocumentEntity;
   depth?: number;
-  loadingParents?: Set<string>;
 }
 
-export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingParents = new Set() }: ShareWithMeLinkProps) {
+export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareWithMeLinkProps) {
   const { t } = useTranslation();
   const activeDocumentId = useUIStore((state) => state.activeDocumentId);
   const { fetchDetail, fetchChildren, getDocumentAsNavigationNode } = useDocumentStore();
@@ -24,9 +23,7 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
   const [document, setDocument] = useState<DocumentEntity>(initialDocument);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [childrenLoaded, setChildrenLoaded] = useState(false);
-
-  // Check if this document is currently being loaded as a parent
-  const isLoadingAsParent = loadingParents.has(document.id);
+  const [userToggled, setUserToggled] = useState(false);
 
   // Auto-expand if contains active document or is in path to active document
   /**
@@ -64,7 +61,6 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
 
   const childDocuments = useMemo(() => node?.children || [], [node?.children]);
   const hasChildDocuments = childDocuments.length > 0;
-  const isFolder = document?.type === "folder";
 
   // Load document details if not fully loaded
   useEffect(() => {
@@ -79,10 +75,10 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
 
   // Auto-expand when active or in path to active
   useEffect(() => {
-    if (shouldExpand && !isExpanded) {
+    if (shouldExpand && !isExpanded && !userToggled) {
       setIsExpanded(true);
     }
-  }, [shouldExpand, isExpanded]);
+  }, [shouldExpand, isExpanded, userToggled]);
 
   /**
    * Load child documents with permission filtering
@@ -93,7 +89,7 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
 
     setIsLoadingChildren(true);
     try {
-      await fetchChildren({ parentId: document.id, subspaceId: document.subspaceId || null });
+      await fetchChildren({ parentId: document.id, subspaceId: document.subspaceId || null, sharedDocumentId: document.id, options: { force: true } });
       setChildrenLoaded(true);
     } catch (error) {
       console.warn(`Failed to load children for document ${document.id}:`, error);
@@ -107,41 +103,35 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
    * This implements lazy loading for better performance with large document trees
    */
   useEffect(() => {
-    if (isExpanded && document?.id && !childrenLoaded && !isLoadingChildren) {
+    if (document?.id && document.id === activeDocumentId && !childrenLoaded && !isLoadingChildren) {
       loadChildDocuments();
     }
-  }, [isExpanded, document?.id, childrenLoaded, isLoadingChildren, loadChildDocuments]);
+  }, [document?.id, activeDocumentId, childrenLoaded, isLoadingChildren, loadChildDocuments]);
 
   const handleDisclosureClick = useCallback(
     (ev?: React.MouseEvent<HTMLButtonElement>) => {
       ev?.preventDefault();
       ev?.stopPropagation();
       setIsExpanded(!isExpanded);
+      setUserToggled(true);
     },
-    [isExpanded],
+    [isExpanded, setUserToggled],
   );
 
   // Check read permission
-  const canRead = hasPermission(document?.id, "read");
-  if (!canRead) return null;
+  // FIXME: add permission check
+  // const canRead = hasPermission(document?.id, "read");
+  // if (!canRead) return null;
 
-  const icon = isFolder ? <Folder className="h-4 w-4" /> : <FileText className="h-4 w-4" />;
+  // const icon = hasChildDocuments ? <FolderIcon className="h-4 w-4" /> : <FileIcon className="h-4 w-4" />;
   const docTitle = document?.title || "Untitled";
-
-  // Show loading indicator for parent loading
-  const loadingIcon = isLoadingAsParent ? <Loader2 className="h-4 w-4 animate-spin" /> : icon;
 
   return (
     <>
       <SidebarLink
-        to={`/doc/${document?.id}`}
-        icon={loadingIcon}
-        label={
-          <span className="text-sm font-medium">
-            {docTitle}
-            {isLoadingAsParent && <span className="text-xs text-muted-foreground ml-1">({t("Loading parent...")})</span>}
-          </span>
-        }
+        to={`/${document?.id}`}
+        // icon={icon}
+        label={<span className="text-sm">{docTitle}</span>}
         expanded={hasChildDocuments ? isExpanded : undefined}
         onDisclosureClick={hasChildDocuments ? handleDisclosureClick : undefined}
         depth={depth}
@@ -158,7 +148,7 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0, loadingP
             </div>
           ) : (
             childDocuments.map((childDoc, index) => (
-              <DocumentLink key={childDoc.id} node={childDoc} depth={depth + 1} index={index} parentId={document.id} subspaceId={null} />
+              <DocumentLink key={childDoc.id} node={childDoc} depth={depth + 1} index={index} parentId={document.id} subspaceId={document.subspaceId || null} />
             ))
           )}
         </div>

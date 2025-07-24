@@ -56,8 +56,8 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
           {/* docs */}
           <SidebarContent className="custom-scrollbar">
             <StarsArea />
-            <SharedWithMe />
             <SubspacesArea />
+            <SharedWithMe />
             <MyDocsArea />
           </SidebarContent>
           <SidebarFooter>

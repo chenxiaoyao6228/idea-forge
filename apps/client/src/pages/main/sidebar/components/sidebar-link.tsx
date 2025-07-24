@@ -41,18 +41,10 @@ export function SidebarLink({
   style,
   ...rest
 }: SidebarLinkProps) {
-  const computedStyle = useMemo(
-    () => ({
-      paddingLeft: `${depth * 16 + 12}px`,
-      ...style,
-    }),
-    [depth, style],
-  );
-
   const linkContent = (
     <div
       className={cn(
-        "group relative flex w-full items-center gap-2 rounded-lg px-3 py-1 text-sm transition-colors",
+        "group relative flex w-full items-center gap-2 rounded-lg pl-6 pr-3 py-1 text-sm transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
         active && "bg-accent text-accent-foreground",
         isActiveDrop && "bg-accent text-accent-foreground border border-foreground",
@@ -60,10 +52,10 @@ export function SidebarLink({
         isDraft && "border border-dashed border-muted-foreground/50",
         className,
       )}
-      style={computedStyle}
+      // style={computedStyle}
     >
       {expanded !== undefined && (
-        <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={onDisclosureClick}>
+        <Button variant="ghost" size="sm" className="absolute left-0 top-0 bottom-0 my-auto h-5 w-5 p-0 hover:bg-transparent" onClick={onDisclosureClick}>
           <ChevronRight className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")} />
         </Button>
       )}

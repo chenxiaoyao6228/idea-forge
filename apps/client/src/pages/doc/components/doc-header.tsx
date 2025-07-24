@@ -18,6 +18,7 @@ import useUIStore from "@/stores/ui";
 import { ShareButton } from "@/pages/main/sharing";
 
 export default function DocumentHeader() {
+  const { activeDocumentId } = useUIStore();
   const { t } = useTranslation();
 
   const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
@@ -27,8 +28,6 @@ export default function DocumentHeader() {
   }, []);
 
   const scrolled = useScrollTop(10, scrollContainer || undefined);
-
-  const { activeDocumentId } = useUIStore();
 
   return (
     <header

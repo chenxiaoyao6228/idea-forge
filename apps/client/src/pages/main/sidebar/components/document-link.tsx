@@ -43,7 +43,7 @@ export function DocumentLink(props: DocumentLinkProps) {
   // This ensures that child documents are fetched from the API and the navigation tree is updated
   // Similar to Outline's implementation where children are loaded on expand
   useEffect(() => {
-    if (isActiveDocument && hasChildren) {
+    if (isActiveDocument) {
       const fetchData = async () => {
         try {
           // Check if children are already loaded to avoid unnecessary API calls
@@ -168,7 +168,7 @@ export function DocumentLink(props: DocumentLinkProps) {
     [isStarred, node.id, node.title, star, unStar],
   );
 
-  const icon = hasChildren ? <FolderIcon className="h-4 w-4" /> : <FileIcon className="h-4 w-4" />;
+  // const icon = hasChildren ? <FolderIcon className="h-4 w-4" /> : <FileIcon className="h-4 w-4" />;
 
   const menu = (
     <>
@@ -191,7 +191,7 @@ export function DocumentLink(props: DocumentLinkProps) {
     <>
       <SidebarLink
         to={`/${node.id}`}
-        icon={icon}
+        // icon={<FolderIcon className="h-4 w-4" />}
         expanded={hasChildren ? isExpandedAndNotDragging : undefined}
         onDisclosureClick={hasChildren ? handleDisclosureClick : undefined}
         depth={depth}
@@ -213,7 +213,7 @@ export function DocumentLink(props: DocumentLinkProps) {
       />
       {/* Children */}
       {hasChildren && isExpandedAndNotDragging && (
-        <div>
+        <div className="pl-4">
           {node.children?.map((child, childIndex) => (
             <DraggableDocumentContainer
               key={child.id}

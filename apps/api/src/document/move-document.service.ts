@@ -6,7 +6,6 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { PermissionInheritanceService } from "@/permission/permission-inheritance.service";
 import { PermissionService } from "@/permission/permission.service";
 import { HttpStatus } from "@nestjs/common";
 import { Transactional, TransactionHost } from "@nestjs-cls/transactional";
@@ -28,7 +27,6 @@ This service supports the following document move features:
 export class MoveDocumentService {
   constructor(
     private readonly eventPublisher: EventPublisherService,
-    private readonly permissionInheritanceService: PermissionInheritanceService,
     private readonly permissionService: PermissionService,
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma<ExtendedPrismaClient>>,
   ) {}
@@ -137,7 +135,9 @@ export class MoveDocumentService {
       },
       include: { subspace: true },
     });
-    await this.permissionInheritanceService.updatePermissionsOnMove(id, parentId || null, targetSubspaceId || null);
+
+    // TODO: update permissions
+
     // 6. If subspace changed, recursively update all children subspaceId
     if (subspaceChanged) {
       await this.updateChildDocumentsSubspace(id, targetSubspaceId || null);
@@ -206,7 +206,7 @@ export class MoveDocumentService {
       title: doc.title,
       url: `/${doc.id}`,
       icon: doc.icon || undefined,
-      children: await Promise.all(children.map((child) => this.buildNavigationNodeWithChildren(child.id, prisma))),
+      children: await Promise.all(children.map((child) => this.buildNavigationNodeWithChildren(child.id))),
     };
   }
 }
