@@ -30,43 +30,34 @@ export class GroupService {
   }
 
   async listGroups(userId: string, dto: GroupListRequestDto) {
+    const { page = 1, limit = 10, query, workspaceId, sortBy = "createdAt", sortOrder = "desc" } = dto;
     const where: Prisma.MemberGroupWhereInput = {
-      ...(dto.workspaceId ? { workspaceId: dto.workspaceId } : {}),
-      ...(dto.query
+      ...(workspaceId ? { workspaceId } : {}),
+      ...(query
         ? {
-            OR: [
-              { name: { contains: dto.query, mode: Prisma.QueryMode.insensitive } },
-              { description: { contains: dto.query, mode: Prisma.QueryMode.insensitive } },
-            ],
+            OR: [{ name: { contains: query, mode: Prisma.QueryMode.insensitive } }, { description: { contains: query, mode: Prisma.QueryMode.insensitive } }],
           }
         : {}),
     };
 
-    const page = dto.page ?? 1;
-    const limit = dto.limit ?? 10;
-
-    const [groups, total] = await Promise.all([
-      this.prismaService.memberGroup.findMany({
-        where,
-        include: {
-          members: {
-            include: {
-              user: true,
-            },
+    const { data, pagination } = await (this.prismaService.memberGroup as any).paginateWithApiFormat({
+      where,
+      include: {
+        members: {
+          include: {
+            user: true,
           },
         },
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      this.prismaService.memberGroup.count({ where }),
-    ]);
-
-    return {
-      data: groups.map(presentGroup),
-      total,
+      },
+      orderBy: [{ [sortBy]: sortOrder }, { name: "asc" }],
       page,
       limit,
+    });
+
+    return {
+      pagination,
+      data: data.map(presentGroup),
+      policies: {},
     };
   }
 
@@ -113,6 +104,12 @@ export class GroupService {
   }
 
   async deleteGroup(userId: string, dto: { id: string }) {
+    // First, delete all group members
+    await this.prismaService.memberGroupUser.deleteMany({
+      where: { groupId: dto.id },
+    });
+
+    // Then, delete the group itself
     await this.prismaService.memberGroup.delete({
       where: { id: dto.id },
     });
@@ -121,6 +118,31 @@ export class GroupService {
   }
 
   async addUserToGroup(userId: string, dto: AddGroupUserDto) {
+    // Check if user is already a member
+    const existing = await this.prismaService.memberGroupUser.findUnique({
+      where: {
+        groupId_userId: {
+          groupId: dto.id,
+          userId: dto.userId,
+        },
+      },
+    });
+
+    if (existing) {
+      const group = await this.prismaService.memberGroup.findUnique({
+        where: { id: dto.id },
+        include: {
+          members: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+      return presentGroup(group!);
+    }
+
+    // Add user if not already a member
     const group = await this.prismaService.memberGroup.update({
       where: { id: dto.id },
       data: {
@@ -167,56 +189,5 @@ export class GroupService {
     }
 
     return presentGroup(group);
-  }
-
-  async searchGroupsForSharing(userId: string, id: string, query?: string) {
-    // FIXME:
-    // // Get all groups that already have access to the document
-    // const existingGroupIds = await this.prismaService.unifiedPermission
-    //   .findMany({
-    //     where: { resourceType: ResourceType.GROUP, resourceId: dto.id },
-    //     select: { id: true },
-    //   })
-    //   .then((permissions) => permissions.map((p) => p.id));
-    // // Get all groups the user has access to
-    // const userGroups = await this.prismaService.memberGroupUser
-    //   .findMany({
-    //     where: { userId },
-    //     select: { groupId: true },
-    //   })
-    //   .then((memberships) => memberships.map((m) => m.groupId));
-    // // Search groups
-    // const groups = await this.prismaService.memberGroup.findMany({
-    //   where: {
-    //     AND: [
-    //       {
-    //         OR: [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }],
-    //       },
-    //       {
-    //         id: {
-    //           in: userGroups, // Only show groups user has access to
-    //           notIn: existingGroupIds, // Exclude groups that already have access
-    //         },
-    //       },
-    //     ],
-    //   },
-    //   select: {
-    //     id: true,
-    //     name: true,
-    //     description: true,
-    //     _count: {
-    //       select: {
-    //         members: true, // Get member count
-    //       },
-    //     },
-    //   },
-    //   take: 10, // Limit results
-    // });
-    // return {
-    //   data: groups.map((group) => ({
-    //     ...group,
-    //     memberCount: group._count.members,
-    //   })),
-    // };
   }
 }

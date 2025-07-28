@@ -55,8 +55,14 @@ export const WorkspaceDetailResponseSchema = WorkspaceSchema.extend({
 
 export type WorkspaceDetailResponse = z.infer<typeof WorkspaceDetailResponseSchema>;
 
-export const WorkspaceMemberListResponseSchema = z.object({
-  members: z.array(WorkspaceMemberSchema),
-  total: z.number(),
-});
+export const WorkspaceMemberListResponseSchema = z.array(
+  WorkspaceMemberSchema.extend({
+    user: z.object({
+      id: z.string(),
+      email: z.string(),
+      displayName: z.string().nullable(),
+      imageUrl: z.string().nullable(),
+    }),
+  }),
+);
 export type WorkspaceMemberListResponse = z.infer<typeof WorkspaceMemberListResponseSchema>;

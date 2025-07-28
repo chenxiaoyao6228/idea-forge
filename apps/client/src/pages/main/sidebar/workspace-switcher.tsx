@@ -75,8 +75,25 @@ export default function WorkspaceSwitcher() {
             </div>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-72 px-2 py-2 rounded-xl shadow-lg border bg-white">
-          <div className="flex-shrink-0 text-sm text-muted-foreground truncate h-9 leading-9 px-2">{userInfo?.displayName || userInfo?.email}</div>
+        <DropdownMenuContent align="start" className="w-72 py-2 rounded-xl shadow-lg border bg-white">
+          <div className="flex items-center justify-between px-3 py-2">
+            <div className="flex items-center space-x-2">
+              <Avatar className="h-8 w-8">
+                {userInfo?.imageUrl ? (
+                  <AvatarImage src={userInfo.imageUrl} alt={userInfo.displayName || userInfo.email} />
+                ) : (
+                  <AvatarFallback style={{ backgroundColor: "#FFB6C1" }}>{getWorkspaceInitial(userInfo?.displayName || "")}</AvatarFallback>
+                )}
+              </Avatar>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{userInfo?.displayName || userInfo?.email}</span>
+                <span className="text-xs text-muted-foreground">已加入{workspaces.length}个空间</span>
+              </div>
+            </div>
+            {/* <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+              <span className="text-xs">⋯</span>
+            </Button> */}
+          </div>
           <Separator />
           <ScrollArea className="max-h-60 overflow-y-auto pb-1">
             <SortableList
@@ -87,21 +104,28 @@ export default function WorkspaceSwitcher() {
               renderItem={(workspace) => (
                 <DropdownMenuItem
                   key={workspace.id}
-                  className={cn(
-                    "flex flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors group cursor-pointer",
-                    currentWorkspace?.id === workspace.id ? "bg-primary/10" : "hover:bg-accent",
-                  )}
+                  className={cn("flex flex-1 items-center gap-3 px-2 py-2 transition-colors group cursor-pointer")}
                   onClick={() => switchWorkspace(workspace.id)}
                 >
                   <div className="flex items-center gap-3 w-full">
-                    <Avatar className="h-5 w-5 shadow">
-                      {workspace.avatar ? (
-                        <AvatarImage src={workspace.avatar} alt={workspace.name} />
-                      ) : (
-                        <AvatarFallback style={{ backgroundColor: getWorkspaceColor() }}>{getWorkspaceInitial(workspace.name)}</AvatarFallback>
-                      )}
-                    </Avatar>
-                    <span className="text-sm truncate">{workspace.name}</span>
+                    {/* <div className="flex items-center justify-center h-5 w-5 rounded bg-red-500 text-white text-xs font-medium">
+                      {getWorkspaceInitial(workspace.name)}
+                    </div> */}
+                    <div className="flex flex-col flex-1">
+                      <span className="text-sm truncate">{workspace.name}</span>
+                      {/* <span className="text-xs text-muted-foreground">个人免费版空间</span> */}
+                    </div>
+                    {currentWorkspace?.id === workspace.id && (
+                      <div className="flex items-center justify-center h-4 w-4 rounded-full bg-gray-200">
+                        <svg className="h-3 w-3 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                 </DropdownMenuItem>
               )}

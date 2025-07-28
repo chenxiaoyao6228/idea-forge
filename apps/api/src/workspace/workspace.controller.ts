@@ -34,12 +34,6 @@ export class WorkspaceController {
     return this.workspaceService.addWorkspaceMember(workspaceId, dto.userId, dto.role, adminId);
   }
 
-  @Post(":id/members/invite")
-  @CheckPolicy(Action.ManageMembers, "Workspace")
-  async inviteWorkspaceMember(@Param("id") workspaceId: string, @Body() dto: { userId: string; role: WorkspaceRole }, @GetUser("id") adminId: string) {
-    // return this.workspaceService.inviteWorkspaceMember(workspaceId, dto.userId, dto.role, adminId);
-  }
-
   @Delete(":id/members/:userId")
   @CheckPolicy(Action.ManageMembers, "Workspace")
   async removeWorkspaceMember(@Param("id") workspaceId: string, @Param("userId") userId: string, @GetUser("id") adminId: string) {

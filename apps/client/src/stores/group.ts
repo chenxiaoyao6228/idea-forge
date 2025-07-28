@@ -3,11 +3,18 @@ import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
 import { groupApi } from "@/apis/group";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
+import useWorkspaceStore from "./workspace";
+
+export interface GroupMember {
+  userId: string;
+  user: any;
+}
 
 export interface GroupEntity {
   id: string;
   name: string;
-  description?: string;
+  description: string | null;
+  members: GroupMember[];
 }
 
 interface FetchOptions {
@@ -22,13 +29,12 @@ interface State {
 }
 
 interface Action {
-  // API actions
   fetch: (options?: FetchOptions) => Promise<GroupEntity[]>;
   create: (data: { name: string; description?: string }) => Promise<GroupEntity>;
   update: (id: string, data: { name?: string; description?: string }) => Promise<GroupEntity>;
   delete: (id: string) => Promise<void>;
-
-  // Helper methods
+  addUser: (groupId: string, userId: string) => Promise<GroupEntity>;
+  removeUser: (groupId: string, userId: string) => Promise<GroupEntity>;
 }
 
 const defaultState: State = {
@@ -63,9 +69,11 @@ const useGroupStore = create<StoreState>()(
               sortBy: "name",
               sortOrder: "asc",
             });
-            const groups = response.data.map((group) => ({
+            const groups = response.data.map((group: any) => ({
               id: group.id,
               name: group.name,
+              description: typeof group.description === "string" ? group.description : null,
+              members: Array.isArray(group.members) ? group.members : [],
             }));
             get().setAll(groups);
             return groups;
@@ -79,12 +87,14 @@ const useGroupStore = create<StoreState>()(
           try {
             const response = await groupApi.create({
               ...data,
-              workspaceId: "default", // TODO: Get from workspace context
-              description: data.description || null,
+              workspaceId: useWorkspaceStore.getState().currentWorkspace?.id || "",
+              description: typeof data.description === "string" ? data.description : null,
             });
-            const group = {
+            const group: GroupEntity = {
               id: response.data.id,
               name: response.data.name,
+              description: typeof response.data.description === "string" ? response.data.description : null,
+              members: Array.isArray(response.data.members) ? response.data.members : [],
             };
             get().addOne(group);
             return group;
@@ -99,12 +109,14 @@ const useGroupStore = create<StoreState>()(
             const response = await groupApi.update(id, {
               id,
               name: data.name || "",
-              description: data.description || null,
+              description: typeof data.description === "string" ? data.description : null,
               validUntil: null,
             });
-            const group = {
+            const group: GroupEntity = {
               id: response.data.id,
               name: response.data.name,
+              description: typeof response.data.description === "string" ? response.data.description : null,
+              members: Array.isArray(response.data.members) ? response.data.members : [],
             };
             get().updateOne({ id, changes: group });
             return group;
@@ -118,6 +130,40 @@ const useGroupStore = create<StoreState>()(
           try {
             await groupApi.delete(id);
             get().removeOne(id);
+          } finally {
+            set({ isSaving: false });
+          }
+        },
+
+        addUser: async (groupId, userId) => {
+          set({ isSaving: true });
+          try {
+            const response = await groupApi.addUser(groupId, { id: groupId, userId });
+            const group: GroupEntity = {
+              id: response.data.id,
+              name: response.data.name,
+              description: typeof response.data.description === "string" ? response.data.description : null,
+              members: Array.isArray(response.data.members) ? response.data.members : [],
+            };
+            get().updateOne({ id: groupId, changes: group });
+            return group;
+          } finally {
+            set({ isSaving: false });
+          }
+        },
+
+        removeUser: async (groupId, userId) => {
+          set({ isSaving: true });
+          try {
+            const response = await groupApi.removeUser(groupId, userId);
+            const group: GroupEntity = {
+              id: response.data.id,
+              name: response.data.name,
+              description: typeof response.data.description === "string" ? response.data.description : null,
+              members: Array.isArray(response.data.members) ? response.data.members : [],
+            };
+            get().updateOne({ id: groupId, changes: group });
+            return group;
           } finally {
             set({ isSaving: false });
           }

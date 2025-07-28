@@ -367,13 +367,30 @@ export class WorkspaceService {
       where: { workspaceId_userId: { workspaceId, userId } },
     });
 
-    // --- Remove the user's my-docs subspace in this workspace, if it exists ---
-    await this.prismaService.subspace.deleteMany({
+    // --- Remove the user's personal subspace and its members in this workspace, if it exists ---
+    // 1. Find all personal subspaces in this workspace
+    const personalSubspaces = await this.prismaService.subspace.findMany({
       where: {
         workspaceId,
         type: "PERSONAL",
       },
+      select: { id: true },
     });
+    const personalSubspaceIds = personalSubspaces.map((s) => s.id);
+    if (personalSubspaceIds.length > 0) {
+      // 2. Delete all subspace members for these subspaces
+      await this.prismaService.subspaceMember.deleteMany({
+        where: {
+          subspaceId: { in: personalSubspaceIds },
+        },
+      });
+      // 3. Delete the subspaces themselves
+      await this.prismaService.subspace.deleteMany({
+        where: {
+          id: { in: personalSubspaceIds },
+        },
+      });
+    }
 
     // 2. Clean up all related permissions across workspace hierarchy
     await this.prismaService.unifiedPermission.deleteMany({

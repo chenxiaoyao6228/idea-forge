@@ -33,7 +33,7 @@ export const workspaceApi = {
     request.post<AddWorkspaceMemberRequest, { member: any }>(`/api/workspaces/${workspaceId}/members`, data),
 
   updateWorkspaceMember: async (workspaceId: string, memberId: string, data: UpdateWorkspaceMemberRequest) =>
-    request.put<UpdateWorkspaceMemberRequest, { member: any }>(`/api/workspaces/${workspaceId}/members/${memberId}`, data),
+    request.patch<UpdateWorkspaceMemberRequest, { member: any }>(`/api/workspaces/${workspaceId}/members/${memberId}/role`, data),
 
   removeWorkspaceMember: async (workspaceId: string, memberId: string) =>
     request.delete<void, { success: boolean }>(`/api/workspaces/${workspaceId}/members/${memberId}`),

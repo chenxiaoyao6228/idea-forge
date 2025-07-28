@@ -19,9 +19,9 @@ import { SearchDocDialog } from "./search-doc-dialog";
 import StarsArea from "./stars";
 import SharedWithMe from "./shared-with-me";
 import SubspacesArea from "./subspaces";
-import UserSettings from "./setting";
 import MyDocsArea from "./ my-docs";
 import React from "react";
+import { SettingDialog } from "../settings/setting-dialog";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   console.log("SidebarContainer render");
@@ -35,6 +35,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
           <SidebarHeader>
             {/* WorkspaceSwitcher */}
             <WorkspaceSwitcher />
+
             {/* Quick start */}
             <SidebarGroup className="group-data-[collapsible=icon]:hidden">
               <SidebarMenu>
@@ -46,8 +47,8 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    {/* trash */}
-                    <TrashDialog />
+                    {/* setting */}
+                    <SettingDialog />
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -61,7 +62,8 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
             <MyDocsArea />
           </SidebarContent>
           <SidebarFooter>
-            <UserSettings />
+            {/* trash */}
+            <TrashDialog />
           </SidebarFooter>
           <SidebarRail />
         </Sidebar>
