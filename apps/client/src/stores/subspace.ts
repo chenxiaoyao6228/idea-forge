@@ -39,7 +39,7 @@ interface State {
 
 interface Action {
   // Existing API actions
-  fetchList: (workspaceId?: string) => Promise<SubspaceEntity[]>;
+  fetchList: (workspaceId: string) => Promise<SubspaceEntity[]>;
   create: (payload: CreateSubspaceRequest) => Promise<SubspaceEntity>;
   move: (subspaceId: string, index: string) => Promise<void>;
   update: (subspaceId: string, updates: Partial<SubspaceEntity>) => Promise<void>;
@@ -476,11 +476,9 @@ const useSubSpaceStore = create<StoreState>()(
           set({ isLoading: true });
           try {
             let subspaces: any[] = [];
-            if (workspaceId) {
-              subspaces = await subspaceApi.getUserSubspacesIncludingVirtual(workspaceId);
-            } else {
-              subspaces = await subspaceApi.getSubspaces();
-            }
+
+            subspaces = await subspaceApi.getUserSubspacesIncludingVirtual(workspaceId);
+
             subspaces = subspaces.map((subspace) => ({
               ...subspace,
               index: subspace.index || 0,

@@ -19,6 +19,7 @@ import { userApi } from "@/apis/user";
 import { permissionApi } from "@/apis/permission";
 import { PermissionLevel } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
+import useWorkspaceStore from "@/stores/workspace";
 
 type PendingId = {
   id: string;
@@ -40,6 +41,8 @@ export function ShareButton({ documentId }: ShareButtonProps) {
   const [open, setOpen] = useBoolean(false);
   const [pendingIds, setPendingIds] = React.useState<PendingId[]>([]);
   const [permission, setPermission] = React.useState<PermissionLevel>(PermissionLevel.READ);
+  const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
+  const workspaceId = currentWorkspace?.id;
 
   const form = useForm<ShareFormValues>({
     resolver: zodResolver(shareSchema as any),
@@ -82,12 +85,15 @@ export function ShareButton({ documentId }: ShareButtonProps) {
 
   const handleShare = async () => {
     try {
-      await documentApi.shareDocument(documentId, {
-        targetUserIds: pendingIds.filter(({ type }) => type === "user").map(({ id }) => id),
-        targetGroupIds: pendingIds.filter(({ type }) => type === "group").map(({ id }) => id),
-        permission: permission as "READ" | "EDIT",
-        includeChildDocuments: true,
-      });
+      if (workspaceId) {
+        await documentApi.shareDocument(documentId, {
+          targetUserIds: pendingIds.filter(({ type }) => type === "user").map(({ id }) => id),
+          targetGroupIds: pendingIds.filter(({ type }) => type === "group").map(({ id }) => id),
+          permission: permission as "READ" | "EDIT",
+          includeChildDocuments: true,
+          workspaceId,
+        });
+      }
 
       setPendingIds([]);
       form.reset();

@@ -25,6 +25,7 @@ export const permissionListRequestSchema = basePagerSchema.extend({
   resourceType: ResourceTypeSchema.optional(),
   resourceId: z.string().optional(),
   userId: z.string().optional(),
+  workspaceId: z.string(),
 });
 
 // Response schemas

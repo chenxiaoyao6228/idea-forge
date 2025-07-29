@@ -39,6 +39,10 @@ export default function MyDocsArea() {
     },
   });
 
+  // if (!personalSubspace) {
+  //   throw new Error("Personal subspace not found");
+  // }
+
   return (
     <SidebarGroup>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>

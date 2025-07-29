@@ -21,7 +21,8 @@ export const subspaceApi = {
 
   getSubspace: async (id: string) => request.get<void, SubspaceDetailResponse>(`/api/subspaces/${id}`),
 
-  getSubspaces: async (workspaceId?: string) => request.get<any, Subspace[]>(`/api/subspaces${workspaceId ? `?workspaceId=${workspaceId}` : ""}`),
+  // Fetch all subspaces (including virtual/my-docs) for the user in the workspace
+  getUserSubspacesIncludingVirtual: async (workspaceId: string) => request.get<void, Subspace[]>(`/api/subspaces/user/${workspaceId}`),
 
   updateSubspace: async (id: string, data: UpdateSubspaceRequest) => request.put<UpdateSubspaceRequest, SubspaceDetailResponse>(`/api/subspaces/${id}`, data),
 
@@ -59,7 +60,4 @@ export const subspaceApi = {
   removeGroupPermission: async (id: string, groupId: string) => request.delete<void, { success: boolean }>(`/api/subspaces/${id}/group-permissions/${groupId}`),
 
   listGroupPermissions: async (id: string) => request.get<void, SubspaceGroupPermissionResponse>(`/api/subspaces/${id}/group-permissions`),
-
-  // Fetch all subspaces (including virtual/my-docs) for the user in the workspace
-  getUserSubspacesIncludingVirtual: async (workspaceId: string) => request.get<void, Subspace[]>(`/api/subspaces/user/${workspaceId}`),
 };

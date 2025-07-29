@@ -140,6 +140,7 @@ export type MoveDocumentsDto = z.infer<typeof moveDocumentsSchema>;
 
 // share doc with permission
 export const shareDocumentSchema = z.object({
+  workspaceId: z.string(),
   targetUserIds: z.array(z.string()).optional(),
   targetGroupIds: z.array(z.string()).optional(),
   permission: z.enum(["READ", "EDIT"]),

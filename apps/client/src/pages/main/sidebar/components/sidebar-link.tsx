@@ -71,24 +71,15 @@ export function SidebarLink({
     </div>
   );
 
-  if (to) {
-    return (
-      <>
-        <NavLink to={to} className="block" {...rest}>
-          {linkContent}
-        </NavLink>
-        {expanded !== undefined && children && (
-          <Collapsible open={expanded}>
-            <CollapsibleContent className="pl-4">{children}</CollapsibleContent>
-          </Collapsible>
-        )}
-      </>
-    );
-  }
-
   return (
     <>
-      {linkContent}
+      {to ? (
+        <NavLink to={to} className="block rounded-lg" {...rest}>
+          {linkContent}
+        </NavLink>
+      ) : (
+        linkContent
+      )}
       {expanded !== undefined && children && (
         <Collapsible open={expanded}>
           <CollapsibleContent className="pl-4">{children}</CollapsibleContent>

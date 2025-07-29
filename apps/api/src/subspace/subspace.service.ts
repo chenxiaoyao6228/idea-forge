@@ -33,6 +33,83 @@ export class SubspaceService {
     );
   }
 
+  async createPersonalSubspace(userId: string, workspaceId: string) {
+    // Check if personal subspace already exists for this user
+    const existingPersonalSubspace = await this.prismaService.subspace.findFirst({
+      where: {
+        workspaceId,
+        type: SubspaceType.PERSONAL,
+        members: {
+          some: {
+            userId,
+          },
+        },
+      },
+    });
+
+    if (existingPersonalSubspace) {
+      return existingPersonalSubspace;
+    }
+
+    // Create personal subspace
+    const personalSubspace = await this.prismaService.subspace.create({
+      data: {
+        name: "My Docs",
+        description: "Personal documents for this workspace member",
+        type: SubspaceType.PERSONAL,
+        workspaceId,
+        navigationTree: [],
+        members: {
+          create: {
+            userId,
+            role: "ADMIN",
+          },
+        },
+      },
+    });
+
+    // Assign permissions
+    await this.permissionService.assignSubspacePermissions(userId, personalSubspace.id, "ADMIN", userId);
+
+    return personalSubspace;
+  }
+
+  async removePersonalSubspacesForUser(userId: string, workspaceId: string) {
+    // Find all personal subspaces in this workspace that belong to the user
+    const personalSubspaces = await this.prismaService.subspace.findMany({
+      where: {
+        workspaceId,
+        type: SubspaceType.PERSONAL,
+        members: {
+          some: {
+            userId,
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    if (personalSubspaces.length === 0) {
+      return;
+    }
+
+    const personalSubspaceIds = personalSubspaces.map((s) => s.id);
+
+    // Delete all subspace members for these subspaces
+    await this.prismaService.subspaceMember.deleteMany({
+      where: {
+        subspaceId: { in: personalSubspaceIds },
+      },
+    });
+
+    // Delete the subspaces themselves
+    await this.prismaService.subspace.deleteMany({
+      where: {
+        id: { in: personalSubspaceIds },
+      },
+    });
+  }
+
   async createSubspace(dto: CreateSubspaceDto, creatorId: string) {
     // Check if user is a member of the workspace
     const workspaceMember = await this.prismaService.workspaceMember.findUnique({
@@ -199,6 +276,43 @@ export class SubspaceService {
     });
 
     return presentSubspaces(workspaces.flatMap((workspaceMember) => workspaceMember.workspace.subspaces));
+  }
+
+  async getUserSubspacesIncludingVirtual(userId: string, workspaceId: string) {
+    const all = await this.prismaService.subspace.findMany({
+      include: {
+        members: true, // Include all members
+      },
+    });
+
+    // Fetch all subspaces in the workspace, but filter personal subspaces to only include those owned by the user
+    const subspaces = await this.prismaService.subspace.findMany({
+      where: {
+        workspaceId,
+        OR: [
+          // Include all non-personal subspaces
+          { type: { not: SubspaceType.PERSONAL } },
+          // Include personal subspaces only if the user is a member
+          {
+            type: SubspaceType.PERSONAL,
+            members: {
+              some: {
+                userId: userId,
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        members: {
+          where: {
+            userId: userId,
+          },
+        },
+      },
+      orderBy: { index: "asc" },
+    });
+    return subspaces.map(presentSubspace);
   }
 
   async getSubspace(id: string, userId: string) {
@@ -887,18 +1001,5 @@ export class SubspaceService {
     return {
       data: permissions,
     };
-  }
-
-  async getUserSubspacesIncludingVirtual(userId: string, workspaceId: string) {
-    // Fetch all subspaces in the workspace, including my-docs (type: PERSONAL)
-    const subspaces = await this.prismaService.subspace.findMany({
-      where: {
-        workspaceId,
-        // If you want only my-docs for the user:
-        // type: 'PERSONAL'
-      },
-      orderBy: { index: "asc" },
-    });
-    return subspaces.map(presentSubspace);
   }
 }

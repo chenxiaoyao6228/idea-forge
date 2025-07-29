@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
-import { SubspaceRole, SubspaceType } from "@idea/contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
@@ -49,28 +48,13 @@ export class WorkspaceService {
     // Assign workspace permissions to creator with full ownership
     const permission = await this.permissionService.assignWorkspacePermissions(userId, workspace.id, WorkspaceRole.OWNER, userId);
 
+    // TODO: add some default subspaces
+
     // Propagate permissions to all child resources (subspaces and documents)
     // TODO:
 
     // --- Create personal subspace for the owner ---
-    const personalSubspace = await this.prismaService.subspace.create({
-      data: {
-        name: "My Docs",
-        description: "Personal documents for this workspace member",
-        type: SubspaceType.PERSONAL,
-        workspaceId: workspace.id,
-        navigationTree: [],
-        members: {
-          create: {
-            userId: userId,
-            role: SubspaceRole.ADMIN,
-          },
-        },
-      },
-    });
-
-    // Assign OWNER permission for the personal subspace
-    await this.permissionService.assignSubspacePermissions(userId, personalSubspace.id, "ADMIN", userId);
+    await this.subspaceService.createPersonalSubspace(userId, workspace.id);
 
     return presentWorkspace(workspace);
   }
@@ -120,8 +104,15 @@ export class WorkspaceService {
     }
 
     if (user.workspaceMembers.length === 0) {
-      const workspace = await this.CreateDefaultWorkspace(currentUserId);
-      return [presentWorkspace(workspace)];
+      try {
+        // Create default workspace for new users
+        const workspace = await this.CreateDefaultWorkspace(currentUserId);
+        return [presentWorkspace(workspace)];
+      } catch (error) {
+        console.error("Failed to create default workspace for user:", currentUserId, error);
+        // Return empty array if workspace creation fails
+        return [];
+      }
     }
 
     const workspaces = user.workspaceMembers.map((member) => member.workspace);
@@ -280,6 +271,15 @@ export class WorkspaceService {
    * Automatically propagates permissions to all child resources
    */
   async addWorkspaceMember(workspaceId: string, userId: string, role: WorkspaceRole, adminId: string) {
+    // Verify workspace exists
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
     // Verify user is not already a member
     const existingMember = await this.prismaService.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
@@ -314,25 +314,8 @@ export class WorkspaceService {
     // 3. Propagate permissions to all child subspaces and documents
     // TODO:
 
-    // --- Create my-docs subspace for the new member if not exists ---
-    const existingMyDocs = await this.prismaService.subspace.findFirst({
-      where: {
-        workspaceId,
-        type: "PERSONAL",
-      },
-    });
-    if (!existingMyDocs) {
-      const myDocsSubspace = await this.prismaService.subspace.create({
-        data: {
-          name: "My Docs",
-          description: "Personal documents for this workspace member",
-          type: "PERSONAL",
-          workspaceId: workspaceId,
-          navigationTree: [],
-        },
-      });
-      await this.permissionService.assignSubspacePermissions(userId, myDocsSubspace.id, "ADMIN", adminId);
-    }
+    // --- Create personal subspace for the new member ---
+    await this.subspaceService.createPersonalSubspace(userId, workspaceId);
 
     return member;
   }
@@ -342,6 +325,15 @@ export class WorkspaceService {
    * Cleans up all associated permissions across the workspace hierarchy
    */
   async removeWorkspaceMember(workspaceId: string, userId: string, adminId: string) {
+    // Verify workspace exists
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
     // Verify member exists
     const member = await this.prismaService.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
@@ -367,30 +359,8 @@ export class WorkspaceService {
       where: { workspaceId_userId: { workspaceId, userId } },
     });
 
-    // --- Remove the user's personal subspace and its members in this workspace, if it exists ---
-    // 1. Find all personal subspaces in this workspace
-    const personalSubspaces = await this.prismaService.subspace.findMany({
-      where: {
-        workspaceId,
-        type: "PERSONAL",
-      },
-      select: { id: true },
-    });
-    const personalSubspaceIds = personalSubspaces.map((s) => s.id);
-    if (personalSubspaceIds.length > 0) {
-      // 2. Delete all subspace members for these subspaces
-      await this.prismaService.subspaceMember.deleteMany({
-        where: {
-          subspaceId: { in: personalSubspaceIds },
-        },
-      });
-      // 3. Delete the subspaces themselves
-      await this.prismaService.subspace.deleteMany({
-        where: {
-          id: { in: personalSubspaceIds },
-        },
-      });
-    }
+    // --- Remove the user's personal subspaces in this workspace ---
+    await this.subspaceService.removePersonalSubspacesForUser(userId, workspaceId);
 
     // 2. Clean up all related permissions across workspace hierarchy
     await this.prismaService.unifiedPermission.deleteMany({
@@ -412,6 +382,16 @@ export class WorkspaceService {
    * Used for basic access validation
    */
   async hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
+    // First check if workspace exists
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      return false;
+    }
+
+    // Then check if user is a member
     const workspaceMember = await this.prismaService.workspaceMember.findUnique({
       where: {
         workspaceId_userId: {
@@ -429,11 +409,11 @@ export class WorkspaceService {
    * Maintains stable ordering without conflicts
    */
   async reorderWorkspaces(workspaceIds: string[], userId: string) {
-    // Verify user has access to all workspaces
+    // Verify all workspaces exist and user has access to them
     for (const workspaceId of workspaceIds) {
       const hasAccess = await this.hasWorkspaceAccess(userId, workspaceId);
       if (!hasAccess) {
-        throw new ApiException(ErrorCodeEnum.AuthenticationFailed);
+        throw new ApiException(ErrorCodeEnum.PermissionDenied);
       }
     }
 
@@ -477,6 +457,15 @@ export class WorkspaceService {
    * Automatically updates unified permissions based on new role
    */
   async updateWorkspaceMemberRole(workspaceId: string, userId: string, newRole: WorkspaceRole, adminId: string) {
+    // Verify workspace exists
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
     // Verify member exists
     const member = await this.prismaService.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },

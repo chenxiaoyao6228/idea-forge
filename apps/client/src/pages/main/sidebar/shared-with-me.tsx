@@ -12,6 +12,7 @@ import { ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { documentApi } from "@/apis/document";
+import useWorkspaceStore from "@/stores/workspace";
 
 const SKELETON_KEYS = ["skeleton-1", "skeleton-2", "skeleton-3"] as const;
 const PAGE_SIZE = 20;
@@ -23,6 +24,7 @@ export default function SharedWithMe() {
   const { userInfo } = useUserStore();
   const upsertMany = useDocumentStore((state) => state.upsertMany);
   const setPermissions = usePermissionStore((state) => state.setPermissions);
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
     queryKey: ["shared-with-me", userInfo?.id],
@@ -30,6 +32,7 @@ export default function SharedWithMe() {
       const res = await documentApi.getSharedWithMe({
         page: pageParam,
         limit: PAGE_SIZE,
+        workspaceId: currentWorkspace?.id,
       });
       return { ...res, page: pageParam };
     },

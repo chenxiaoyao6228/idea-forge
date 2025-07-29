@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
-import { CoverImage, DocTypeSchema, DocVisibilitySchema } from "@idea/contracts";
+import { CoverImage, DocTypeSchema, DocVisibilitySchema, SubspaceTypeSchema } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useSubSpaceStore, { getPersonalSubspace } from "./subspace";
@@ -506,10 +506,12 @@ const useDocumentStore = create<StoreState>()(
             const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
             if (!workspaceId) throw new Error("No active workspace");
 
+            const isPrivateSubspace = subspaceId ? useSubSpaceStore.getState().entities[subspaceId]?.type === SubspaceTypeSchema.enum.PERSONAL : false;
+
             const response = (await documentApi.create({
               workspaceId,
               subspaceId: subspaceId || null,
-              visibility: subspaceId ? DocVisibilitySchema.enum.WORKSPACE : DocVisibilitySchema.enum.PRIVATE,
+              visibility: isPrivateSubspace ? DocVisibilitySchema.enum.PRIVATE : DocVisibilitySchema.enum.WORKSPACE,
               parentId: parentId || null,
               type: DocTypeSchema.enum.NOTE,
               title,

@@ -1,6 +1,7 @@
 import { authApi } from "@/apis/auth";
 import { create } from "zustand";
 import { UserResponseData } from "@idea/contracts";
+import useWorkspaceStore from "./workspace";
 
 export interface UserInfo extends UserResponseData {}
 
@@ -19,6 +20,10 @@ const useUserStore = create<UserStoreState>()((set) => ({
     set({ loading: true });
     await authApi.logout();
     localStorage.clear();
+
+    // clear persist storage
+    // FIXME: better/unified way to clear all stores
+    useWorkspaceStore.persist.clearStorage();
     set({ userInfo: null, loading: false });
   },
 }));

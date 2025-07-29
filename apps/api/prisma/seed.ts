@@ -17,35 +17,35 @@ async function seed() {
   const passwordHash = await hash("Aa111111");
 
   // Create users
-  const user1 = await prisma.user.upsert({
-    where: { email: "1@qq.com" },
-    update: {},
-    create: {
-      email: "1@qq.com",
-      displayName: "User 1",
-      password: {
-        create: {
-          hash: passwordHash,
-        },
-      },
-      status: "ACTIVE",
-    },
-  });
+  // const user1 = await prisma.user.upsert({
+  //   where: { email: "1@qq.com" },
+  //   update: {},
+  //   create: {
+  //     email: "1@qq.com",
+  //     displayName: "User 1",
+  //     password: {
+  //       create: {
+  //         hash: passwordHash,
+  //       },
+  //     },
+  //     status: "ACTIVE",
+  //   },
+  // });
 
-  const user2 = await prisma.user.upsert({
-    where: { email: "2@qq.com" },
-    update: {},
-    create: {
-      email: "2@qq.com",
-      displayName: "User 2",
-      password: {
-        create: {
-          hash: passwordHash,
-        },
-      },
-      status: "ACTIVE",
-    },
-  });
+  // const user2 = await prisma.user.upsert({
+  //   where: { email: "2@qq.com" },
+  //   update: {},
+  //   create: {
+  //     email: "2@qq.com",
+  //     displayName: "User 2",
+  //     password: {
+  //       create: {
+  //         hash: passwordHash,
+  //       },
+  //     },
+  //     status: "ACTIVE",
+  //   },
+  // });
 
   // Create Test Workspace
   // const workspace = await prisma.workspace.create({

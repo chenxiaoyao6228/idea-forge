@@ -18,6 +18,7 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PermissionService } from "@/permission/permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { PermissionListRequestDto } from "@/permission/permission.dto";
 
 @Injectable()
 export class DocumentService {
@@ -457,16 +458,25 @@ export class DocumentService {
     // 5. 批量为群组授权
     if (dto.targetGroupIds && dto.targetGroupIds.length > 0) {
       for (const targetGroupId of dto.targetGroupIds) {
-        const perm = await this.prismaService.unifiedPermission.create({
-          data: {
-            ...permissionBase,
-            groupId: targetGroupId,
-            sourceType: "GROUP",
-            priority: 2,
-            sourceId: null,
-          },
+        // Get all members of the group
+        const groupMembers = await this.prismaService.memberGroupUser.findMany({
+          where: { groupId: targetGroupId },
+          include: { user: true },
         });
-        parentPermissions.push({ id: perm.id, groupId: targetGroupId });
+
+        // Create permissions for each group member
+        for (const member of groupMembers) {
+          const perm = await this.prismaService.unifiedPermission.create({
+            data: {
+              ...permissionBase,
+              userId: member.userId,
+              sourceType: "GROUP",
+              priority: 2,
+              sourceId: null,
+            },
+          });
+          parentPermissions.push({ id: perm.id, userId: member.userId, groupId: targetGroupId });
+        }
       }
     }
 
@@ -482,7 +492,6 @@ export class DocumentService {
               ...permissionBase,
               resourceId: child.id,
               userId: parentPerm.userId,
-              groupId: parentPerm.groupId,
               sourceType: parentPerm.groupId ? "GROUP" : "DIRECT",
               priority: parentPerm.groupId ? 2 : 1,
               sourceId: parentPerm.id,
@@ -494,24 +503,46 @@ export class DocumentService {
     return { success: true };
   }
 
-  async getSharedRootDocsWithMe(userId: string, query: PermissionListRequest): Promise<SharedWithMeResponse> {
-    const { page = 1, limit = 10 } = query;
+  async getSharedRootDocsWithMe(userId: string, query: PermissionListRequestDto): Promise<SharedWithMeResponse> {
+    const { page = 1, limit = 10, workspaceId } = query;
 
-    // 1. Paginate DIRECT permissions (excluding user's own docs)
-    const { data: directPermissions, pagination } = await (this.prismaService.unifiedPermission as any).paginateWithApiFormat({
+    // 1. Get all DIRECT permissions for documents (excluding user's own docs)
+    const directPermissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         userId,
         resourceType: ResourceType.DOCUMENT,
-        sourceType: SourceType.DIRECT,
+        sourceType: { in: [SourceType.DIRECT, SourceType.GROUP] },
         sourceId: null,
         createdById: { not: userId },
       },
       orderBy: [{ resourceId: "asc" }, { priority: "asc" }],
-      page,
-      limit,
     });
 
-    // 2. For page 1, fetch all GROUP permissions (not paginated)
+    // 2. Get document IDs from permissions
+    const docIds = directPermissions.map((perm) => perm.resourceId);
+
+    // 3. Filter documents by workspace if specified
+    let filteredDocIds = docIds;
+    if (workspaceId && docIds.length > 0) {
+      const docsInWorkspace = await this.prismaService.doc.findMany({
+        where: {
+          id: { in: docIds },
+          workspaceId,
+        },
+        select: { id: true },
+      });
+      filteredDocIds = docsInWorkspace.map((doc) => doc.id);
+    }
+
+    // 4. Apply pagination to filtered document IDs
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedDocIds = filteredDocIds.slice(startIndex, endIndex);
+
+    // 5. Get permissions for paginated documents
+    const paginatedPermissions = directPermissions.filter((perm) => paginatedDocIds.includes(perm.resourceId));
+
+    // 6. For page 1, fetch all GROUP permissions (not paginated)
     let groupPermissions: UnifiedPermission[] = [];
     if (page === 1) {
       groupPermissions = await this.prismaService.unifiedPermission.findMany({
@@ -520,13 +551,14 @@ export class DocumentService {
           resourceType: ResourceType.DOCUMENT,
           sourceType: SourceType.GROUP,
           createdById: { not: userId },
+          resourceId: { in: filteredDocIds },
         },
         orderBy: [{ resourceId: "asc" }, { priority: "asc" }],
       });
     }
 
-    // 3. Merge permissions, deduplicate by resourceId, keep highest priority
-    const allPermissions = [...directPermissions, ...groupPermissions];
+    // 7. Merge permissions, deduplicate by resourceId, keep highest priority
+    const allPermissions = [...paginatedPermissions, ...groupPermissions];
     const resolvedPermissions = new Map<string, UnifiedPermission>();
     for (const perm of allPermissions) {
       const existing = resolvedPermissions.get(perm.resourceId);
@@ -535,21 +567,30 @@ export class DocumentService {
       }
     }
 
-    const docIds = Array.from(resolvedPermissions.keys());
+    const finalDocIds = Array.from(resolvedPermissions.keys());
 
-    // 4. Fetch document details
+    // 8. Fetch document details
     const documents = await this.prismaService.doc.findMany({
-      where: { id: { in: docIds } },
+      where: { id: { in: finalDocIds } },
     });
 
-    // 5. Build permissions object
+    // 9. Build permissions object
     const permissionsObj: Record<string, any> = {};
-    for (const docId of docIds) {
+    for (const docId of finalDocIds) {
       const perm = resolvedPermissions.get(docId);
       if (perm) {
         permissionsObj[docId] = this.permissionService.mapDocPermissionLevelToAbilities(perm.permission);
       }
     }
+
+    // 10. Create pagination object
+    const total = filteredDocIds.length;
+    const pagination = {
+      page,
+      limit,
+      total,
+      pageCount: Math.ceil(total / limit),
+    };
 
     return {
       pagination,
