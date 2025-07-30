@@ -8,7 +8,7 @@ import useSubSpaceStore, { getPersonalSubspace } from "./subspace";
 import useStarStore from "./star";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import useWorkspaceStore from "./workspace";
-import usePermissionStore from "./permission";
+import useAbilityStore from "./ability";
 interface FetchOptions {
   force?: boolean;
   prefetch?: boolean;
@@ -419,7 +419,7 @@ const useDocumentStore = create<StoreState>()(
             }
 
             if (res.permissions) {
-              usePermissionStore.getState().setPermissions(res.permissions);
+              useAbilityStore.getState().setAbilities(res.permissions);
             }
           } finally {
             set({ movingDocumentId: null, isSaving: false });
@@ -455,7 +455,7 @@ const useDocumentStore = create<StoreState>()(
             }
 
             if (response.permissions) {
-              usePermissionStore.getState().setPermissions(response.permissions);
+              useAbilityStore.getState().setAbilities(response.permissions);
             }
           } catch (error) {
             console.error("Failed to fetch children:", error);

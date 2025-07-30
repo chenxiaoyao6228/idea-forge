@@ -279,29 +279,6 @@ export class DocumentService {
     };
   }
 
-  // FIXME: remove ?
-  private async getSharedTree(documentId: string): Promise<NavigationNode[]> {
-    const document = await this.prismaService.doc.findUnique({
-      where: { id: documentId },
-      include: {
-        children: {
-          where: {
-            archivedAt: null,
-          },
-          orderBy: {
-            createdAt: "asc",
-          },
-        },
-      },
-    });
-
-    if (!document) {
-      return [];
-    }
-
-    return document.children.map((child) => this.docToNavigationNode(child));
-  }
-
   private presentPoliciesPlaceholder(userId: string, document: any) {
     // Placeholder for permissions
     return {
@@ -424,11 +401,11 @@ export class DocumentService {
 
   // ================ internal share with permission ========================
   async shareDocument(userId: string, docId: string, dto: ShareDocumentDto) {
-    // 1. 校验文档存在
+    // 1. Verify document exists
     const doc = await this.prismaService.doc.findUnique({ where: { id: docId } });
     if (!doc) throw new BadRequestException("Document not found");
 
-    // 2. 权限数据模板
+    // 2. Base permission template
     const permissionBase: any = {
       resourceType: "DOCUMENT",
       resourceId: docId,
@@ -436,10 +413,10 @@ export class DocumentService {
       createdById: userId,
     };
 
-    // 3. 记录所有创建的父权限，便于子文档继承
-    const parentPermissions: { id: string; userId?: string; groupId?: string }[] = [];
+    // 3. Track all created permissions with full data
+    const createdPermissions: UnifiedPermission[] = [];
 
-    // 4. 批量为用户授权
+    // 4. Batch grant permissions to users
     if (dto.targetUserIds && dto.targetUserIds.length > 0) {
       for (const targetUserId of dto.targetUserIds) {
         const perm = await this.prismaService.unifiedPermission.create({
@@ -451,11 +428,11 @@ export class DocumentService {
             sourceId: null,
           },
         });
-        parentPermissions.push({ id: perm.id, userId: targetUserId });
+        createdPermissions.push(perm);
       }
     }
 
-    // 5. 批量为群组授权
+    // 5. Batch grant permissions to groups
     if (dto.targetGroupIds && dto.targetGroupIds.length > 0) {
       for (const targetGroupId of dto.targetGroupIds) {
         // Get all members of the group
@@ -475,38 +452,67 @@ export class DocumentService {
               sourceId: null,
             },
           });
-          parentPermissions.push({ id: perm.id, userId: member.userId, groupId: targetGroupId });
+          createdPermissions.push(perm);
         }
       }
     }
 
-    // 6. 子文档继承
+    // 6. Child document inheritance
     if (dto.includeChildDocuments) {
-      // 递归查找所有子文档
       const allChildren = await this.findAllDescendantDocuments(docId);
       for (const child of allChildren) {
-        // 为每个 parentPermission 创建继承权限
-        for (const parentPerm of parentPermissions) {
-          await this.prismaService.unifiedPermission.create({
+        for (const parentPerm of createdPermissions) {
+          const childPerm = await this.prismaService.unifiedPermission.create({
             data: {
               ...permissionBase,
               resourceId: child.id,
               userId: parentPerm.userId,
-              sourceType: parentPerm.groupId ? "GROUP" : "DIRECT",
-              priority: parentPerm.groupId ? 2 : 1,
+              sourceType: parentPerm.sourceType,
+              priority: parentPerm.priority,
               sourceId: parentPerm.id,
             },
           });
+          createdPermissions.push(childPerm);
         }
       }
     }
+
+    // 7. Publish websocket event
+    // Collect all affected user IDs
+    const affectedUserIds = new Set<string>();
+    for (const permission of createdPermissions) {
+      if (permission.userId) {
+        affectedUserIds.add(permission.userId);
+      }
+    }
+
+    // For each affected user, publish a websocket event with their new abilities for this document
+    for (const affectedUserId of affectedUserIds) {
+      // Get abilities for the shared document for this user
+      const userAbilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", docId, affectedUserId);
+
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.DOCUMENT_ADD_USER,
+        workspaceId: doc.workspaceId,
+        actorId: userId,
+        data: {
+          userId: affectedUserId,
+          documentId: docId,
+          document: doc,
+          abilities: userAbilities,
+          includeChildDocuments: dto.includeChildDocuments || false,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     return { success: true };
   }
 
   async getSharedRootDocsWithMe(userId: string, query: PermissionListRequestDto): Promise<SharedWithMeResponse> {
     const { page = 1, limit = 10, workspaceId } = query;
 
-    // 1. Get all DIRECT permissions for documents (excluding user's own docs)
+    // Get all direct permissions for documents (excluding user's own docs)
     const directPermissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         userId,
@@ -518,10 +524,10 @@ export class DocumentService {
       orderBy: [{ resourceId: "asc" }, { priority: "asc" }],
     });
 
-    // 2. Get document IDs from permissions
+    // Get document IDs from permissions
     const docIds = directPermissions.map((perm) => perm.resourceId);
 
-    // 3. Filter documents by workspace if specified
+    // Filter documents by workspace if specified
     let filteredDocIds = docIds;
     if (workspaceId && docIds.length > 0) {
       const docsInWorkspace = await this.prismaService.doc.findMany({
@@ -534,15 +540,15 @@ export class DocumentService {
       filteredDocIds = docsInWorkspace.map((doc) => doc.id);
     }
 
-    // 4. Apply pagination to filtered document IDs
+    // Apply pagination to filtered document IDs
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const paginatedDocIds = filteredDocIds.slice(startIndex, endIndex);
 
-    // 5. Get permissions for paginated documents
+    // Get permissions for paginated documents
     const paginatedPermissions = directPermissions.filter((perm) => paginatedDocIds.includes(perm.resourceId));
 
-    // 6. For page 1, fetch all GROUP permissions (not paginated)
+    // For page 1, fetch all GROUP permissions (not paginated)
     let groupPermissions: UnifiedPermission[] = [];
     if (page === 1) {
       groupPermissions = await this.prismaService.unifiedPermission.findMany({
@@ -557,7 +563,7 @@ export class DocumentService {
       });
     }
 
-    // 7. Merge permissions, deduplicate by resourceId, keep highest priority
+    // Merge permissions, deduplicate by resourceId, keep highest priority
     const allPermissions = [...paginatedPermissions, ...groupPermissions];
     const resolvedPermissions = new Map<string, UnifiedPermission>();
     for (const perm of allPermissions) {
@@ -569,21 +575,21 @@ export class DocumentService {
 
     const finalDocIds = Array.from(resolvedPermissions.keys());
 
-    // 8. Fetch document details
+    // Fetch document details
     const documents = await this.prismaService.doc.findMany({
       where: { id: { in: finalDocIds } },
     });
 
-    // 9. Build permissions object
-    const permissionsObj: Record<string, any> = {};
+    // Build permissions object
+    const abilitiesObj: Record<string, any> = {};
     for (const docId of finalDocIds) {
-      const perm = resolvedPermissions.get(docId);
-      if (perm) {
-        permissionsObj[docId] = this.permissionService.mapDocPermissionLevelToAbilities(perm.permission);
+      const ability = resolvedPermissions.get(docId);
+      if (ability) {
+        abilitiesObj[docId] = this.permissionService.mapDocPermissionLevelToAbilities(ability.permission);
       }
     }
 
-    // 10. Create pagination object
+    // Create pagination object
     const total = filteredDocIds.length;
     const pagination = {
       page,
@@ -595,11 +601,11 @@ export class DocumentService {
     return {
       pagination,
       data: { documents },
-      permissions: permissionsObj,
+      abilities: abilitiesObj,
     };
   }
 
-  // 递归查找所有子/孙文档
+  // Recursively find all child/descendant documents
   private async findAllDescendantDocuments(parentId: string): Promise<any[]> {
     const children = await this.prismaService.doc.findMany({ where: { parentId } });
     let all: any[] = [];
@@ -612,7 +618,7 @@ export class DocumentService {
   }
 
   private async copyUnifiedPermissionsFromAncestors(documentId: string, parentDocumentId: string) {
-    // 1. 查出所有祖先ID
+    // Find all ancestor IDs
     const ancestorIds: string[] = [];
     let currentId: string | null = parentDocumentId;
     while (currentId) {
@@ -621,7 +627,7 @@ export class DocumentService {
       currentId = parent?.parentId;
     }
 
-    // 2. 一次性查出所有直接权限
+    // Get all direct permissions in one query
     const parentPermissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         resourceType: "DOCUMENT",
@@ -630,7 +636,7 @@ export class DocumentService {
       },
     });
 
-    // 3. 批量插入
+    // Bulk insert permissions
     await this.prismaService.unifiedPermission.createMany({
       data: parentPermissions.map((permission) => ({
         userId: permission.userId,

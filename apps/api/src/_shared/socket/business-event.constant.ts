@@ -26,12 +26,17 @@ export enum BusinessEvents {
   USER_OFFLINE = "user.offline",
   USER_KICK = "user.kick",
 
+  // Permission events
+  PERMISSION_ADD_USER = "permission.addUser",
+  PERMISSION_REMOVE_USER = "permission.removeUser",
+
   // Document collaboration events
   DOCUMENT_CREATE = "document.create",
   DOCUMENT_UPDATE = "document.update",
   DOCUMENT_MOVE = "document.move",
   DOCUMENT_ARCHIVE = "document.archive",
   DOCUMENT_DELETE = "document.delete",
+  DOCUMENT_ADD_USER = "document.addUser",
 
   // Entities events
   ENTITIES = "entities",

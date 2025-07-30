@@ -114,7 +114,7 @@ export function DocumentLink(props: DocumentLinkProps) {
         setIsCreating(true);
         const newDocId = await createDocument({
           // FIXME: remove the random number
-          title: "New Document" + Math.floor(Math.random() * 1000),
+          title: "New Doc-" + Math.floor(Math.random() * 1000),
           parentId: node.id,
           subspaceId: subspaceId || null,
         });

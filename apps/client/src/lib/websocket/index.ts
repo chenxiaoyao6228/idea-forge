@@ -5,6 +5,10 @@ import useDocumentStore from "@/stores/document";
 import useStarStore, { StarEntity } from "@/stores/star";
 import { PartialExcept } from "@/types";
 import type { Star } from "@idea/contracts";
+import { toast } from "sonner";
+import useUserStore from "@/stores/user";
+import useAbilityStore from "@/stores/ability";
+import useSharedWithMeStore from "@/stores/shared-with-me";
 
 type SocketWithAuthentication = Socket & {
   authenticated?: boolean;
@@ -62,6 +66,8 @@ enum SocketEvents {
   STAR_CREATE = "stars.create",
   STAR_UPDATE = "stars.update",
   STAR_DELETE = "stars.delete",
+
+  DOCUMENT_ADD_USER = "document.addUser",
 }
 
 // Interface for gateway message structure
@@ -153,6 +159,12 @@ class WebsocketService {
         clearTimeout(timeout);
         this.reconnectAttempts = 0;
         console.log("[websocket]: Socket.IO connected");
+
+        // Handle websocket reconnection
+        useSharedWithMeStore.getState().handleWebsocketReconnect();
+
+        // Emit reconnection event for backward compatibility
+        window.dispatchEvent(new CustomEvent("websocket:reconnected"));
       });
 
       this.socket.on("connect_error", (error) => {
@@ -447,6 +459,24 @@ class WebsocketService {
       if (!roomId) return;
       console.error(`[websocket]: Failed to join room: ${roomId}`, error);
       this.joinedRooms.delete(roomId);
+    });
+
+    // Handle document add user events (when user gains access to a document)
+    this.socket.on(SocketEvents.DOCUMENT_ADD_USER, (message: GatewayMessage) => {
+      const { userId, documentId, document, abilities, includeChildDocuments } = message;
+
+      // Check if the current user is the one who gained access
+      const currentUserId = useUserStore.getState().userInfo?.id;
+      if (userId === currentUserId) {
+        // Update abilities store with the new document permissions
+        useAbilityStore.getState().updateAbility(documentId, abilities);
+
+        // Refresh shared-with-me documents since we have new access
+        useSharedWithMeStore.getState().handleWebsocketDocumentShare(document);
+
+        // Show a toast notification to inform the user
+        toast.success(`You now have access to a new document${includeChildDocuments ? " and its child documents" : ""}`);
+      }
     });
   }
 

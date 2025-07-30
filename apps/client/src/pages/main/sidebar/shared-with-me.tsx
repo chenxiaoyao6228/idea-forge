@@ -1,100 +1,62 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShareWithMeLink } from "./components/share-with-me-link";
-import useDocumentStore from "@/stores/document";
+import useSharedWithMeStore from "@/stores/shared-with-me";
 import useUserStore from "@/stores/user";
-import usePermissionStore from "@/stores/permission";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { documentApi } from "@/apis/document";
-import useWorkspaceStore from "@/stores/workspace";
 
 const SKELETON_KEYS = ["skeleton-1", "skeleton-2", "skeleton-3"] as const;
-const PAGE_SIZE = 20;
 
 export default function SharedWithMe() {
   const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-  const [userToggled, setUserToggled] = useState(false);
   const { userInfo } = useUserStore();
-  const upsertMany = useDocumentStore((state) => state.upsertMany);
-  const setPermissions = usePermissionStore((state) => state.setPermissions);
-  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useInfiniteQuery({
-    queryKey: ["shared-with-me", userInfo?.id],
-    queryFn: async ({ pageParam = 1 }) => {
-      const res = await documentApi.getSharedWithMe({
-        page: pageParam,
-        limit: PAGE_SIZE,
-        workspaceId: currentWorkspace?.id,
-      });
-      return { ...res, page: pageParam };
-    },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      const { pagination } = lastPage;
-      if (!pagination) return undefined;
-      const { page, limit, total } = pagination;
-      const loaded = page * limit;
-      return loaded < total ? page + 1 : undefined;
-    },
-    enabled: !!userInfo?.id,
-    retry: false,
-  });
+  // Use the new Zustand store instead of react-query
+  const {
+    documents: sharedDocuments,
+    isLoading,
+    isLoadingMore,
+    hasNextPage,
+    error,
+    isOpen,
+    userToggled,
+    hasDocuments,
+    isVisible,
+    fetchSharedDocuments,
+    fetchNextPage,
+    setOpen,
+    setUserToggled,
+  } = useSharedWithMeStore();
 
-  // Flatten all loaded documents and permissions
-  const sharedDocuments = data?.pages.flatMap((page) => page.data.documents) || [];
-  const allPermissions =
-    data?.pages.reduce(
-      (acc, page) => {
-        Object.assign(acc, page.permissions);
-        return acc;
-      },
-      {} as Record<string, any>,
-    ) || {};
-
-  // Store documents and permissions in zustand
-  const lastSynced = useRef<{ docIds: string[]; permKeys: string[] }>({ docIds: [], permKeys: [] });
+  // Initial data fetch
   useEffect(() => {
-    const docIds = sharedDocuments.map((d) => d.id).sort();
-    const permKeys = Object.keys(allPermissions).sort();
-
-    // Only update if data actually changed
-    const isSameDocs = docIds.join(",") === lastSynced.current.docIds.join(",");
-    const isSamePerms = permKeys.join(",") === lastSynced.current.permKeys.join(",");
-
-    if (sharedDocuments.length > 0 && (!isSameDocs || !isSamePerms)) {
-      upsertMany(sharedDocuments);
-      setPermissions(allPermissions);
-      lastSynced.current = { docIds, permKeys };
+    if (userInfo?.id) {
+      fetchSharedDocuments();
     }
-  }, [sharedDocuments, allPermissions, upsertMany, setPermissions]);
+  }, [userInfo?.id, fetchSharedDocuments]);
 
-  // 用户手动操作时设置 userToggled
+  console.log("sharedDocuments.length", sharedDocuments.length);
+
+  // Handle manual toggle
   const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
+    setOpen(open);
     setUserToggled(true);
   };
 
-  // 只在未手动操作时自动展开
+  // Handle error state
   useEffect(() => {
-    if (sharedDocuments.length > 0 && !isOpen && !userToggled) {
-      setIsOpen(true);
+    if (error) {
+      toast.error(t("Failed to load shared documents"));
     }
-  }, [sharedDocuments, isOpen, userToggled]);
+  }, [error, t]);
 
-  if (isError) {
-    toast.error(t("Failed to load shared documents"));
-    return null;
-  }
-
-  if (!sharedDocuments.length && !isLoading) {
+  // Don't render if no documents and not loading (use computed state)
+  if (!isVisible) {
     return null;
   }
 
@@ -108,7 +70,9 @@ export default function SharedWithMe() {
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent>
-          <ScrollArea className="max-h-[300px]">
+          {/* FIXME: */}
+          {/* <ScrollArea className="max-h-[300px]"> */}
+          <ScrollArea className="max-h-[3000px]">
             <div className="space-y-1 p-2">
               {isLoading && !sharedDocuments.length
                 ? SKELETON_KEYS.map((key) => <Skeleton key={key} className="h-8 w-full" />)
@@ -117,9 +81,9 @@ export default function SharedWithMe() {
                 <button
                   className="w-full py-2 text-xs text-center text-muted-foreground hover:underline"
                   onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
+                  disabled={isLoadingMore}
                 >
-                  {isFetchingNextPage ? t("Loading...") : t("Load more")}
+                  {isLoadingMore ? t("Loading...") : t("Load more")}
                 </button>
               )}
             </div>

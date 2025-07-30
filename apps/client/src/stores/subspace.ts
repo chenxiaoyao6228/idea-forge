@@ -683,7 +683,7 @@ const useSubSpaceStore = create<StoreState>()(
           const { isLoading, entities } = get();
           const subspace = entities[subspaceId];
 
-          if (subspace.navigationTree[subspaceId] && !options?.force) return;
+          if (subspace.navigationTree?.[subspaceId] && !options?.force) return;
 
           set({ isLoading: true });
           try {

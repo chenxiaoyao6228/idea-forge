@@ -64,6 +64,10 @@ export class WebsocketEventProcessor extends WorkerHost {
           });
           break;
         }
+
+        case BusinessEvents.DOCUMENT_ADD_USER:
+          await this.handleDocumentAddUserEvent(event, server);
+          break;
       }
     } catch (error) {
       console.error(`Error processing websocket event: ${event.name}`, error);
@@ -71,9 +75,25 @@ export class WebsocketEventProcessor extends WorkerHost {
     }
   }
 
+  private async handleDocumentAddUserEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId, actorId } = event;
+    const { userId, documentId, document, abilities, includeChildDocuments } = data;
+
+    if (userId) {
+      // Notify the affected user with their new abilities and document access
+      server.to(`user:${userId}`).emit(BusinessEvents.DOCUMENT_ADD_USER, {
+        userId,
+        documentId,
+        document,
+        abilities,
+        includeChildDocuments,
+      });
+    }
+  }
+
   private async handleDocumentCreateEvent(event: WebsocketEvent<any>, server: any) {
     const { documentId, subspaceId, updatedAt } = event.data;
-    // 查找所有有权限的用户
+    // Find all users who have permissions for this document
     const permissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         resourceType: "DOCUMENT",
@@ -81,10 +101,10 @@ export class WebsocketEventProcessor extends WorkerHost {
       },
       select: { userId: true },
     });
-    // 去重
+    // Deduplicate user IDs
     const userIds = Array.from(new Set(permissions.map((p) => p.userId).filter(Boolean)));
 
-    // 推送到所有有权限的用户频道
+    // Emit to all users who have permissions
     for (const userId of userIds) {
       server.to(`user:${userId}`).emit(BusinessEvents.ENTITIES, {
         event: BusinessEvents.DOCUMENT_CREATE,
@@ -105,7 +125,7 @@ export class WebsocketEventProcessor extends WorkerHost {
           : [],
       });
     }
-    // 推送到workspace频道
+    // Emit to workspace channel
     server.to(`workspace:${event.workspaceId}`).emit(BusinessEvents.ENTITIES, {
       event: BusinessEvents.DOCUMENT_CREATE,
       fetchIfMissing: true,
@@ -241,7 +261,7 @@ export class WebsocketEventProcessor extends WorkerHost {
   }
 
   // Determine target channels for document events based on visibility and permissions
-  private getDocumentEventChannels(event: WebsocketEvent<any>, document: any): string[] {
+  private async getDocumentEventChannels(event: WebsocketEvent<any>, document: any): Promise<string[]> {
     const channels: string[] = [];
 
     if (event.actorId) {
@@ -257,6 +277,22 @@ export class WebsocketEventProcessor extends WorkerHost {
     } else {
       // Public documents sent to workspace room
       channels.push(`workspace:${event.workspaceId}`);
+    }
+
+    const permissions = await this.prismaService.unifiedPermission.findMany({
+      where: {
+        resourceType: "DOCUMENT",
+        resourceId: document.id,
+      },
+    });
+
+    // Handle DIRECT and GROUP permissions
+    for (const permission of permissions) {
+      if (permission.sourceType === "DIRECT") {
+        channels.push(`user:${permission.userId}`);
+      } else if (permission.sourceType === "GROUP") {
+        channels.push(`group:${permission.sourceId}`);
+      }
     }
 
     return channels;

@@ -4,7 +4,11 @@ import { createComputed } from "zustand-computed";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import { permissionApi } from "@/apis/permission";
 
-export interface PermissionEntity {
+/*
+ * we don't need the UnifiedPermission Entity on the client
+ * but the converted abilities
+ */
+export interface AbilityEntity {
   id: string; // resourceId (document, workspace, etc.)
   abilities: Record<string, boolean>;
   resourceType?: string; // DOCUMENT, WORKSPACE, SUBSPACE
@@ -16,13 +20,14 @@ interface State {
 
 interface Action {
   // API actions
-  fetchResourcePermissions: (resourceType: string, resourceId: string) => Promise<void>;
+  fetchResourceAbilities: (resourceType: string, resourceId: string) => Promise<void>;
 
   // Helper methods
-  setPermissions: (permissions: Record<string, Record<string, boolean>>) => void;
-  updatePermission: (id: string, abilities: Record<string, boolean>) => void;
+  setAbilities: (permissions: Record<string, Record<string, boolean>>) => void;
+  updateAbility: (id: string, abilities: Record<string, boolean>) => void;
+  addMany: (permissions: any[]) => void;
   getAbilities: (id: string) => Record<string, boolean>;
-  hasPermission: (id: string, action: string) => boolean;
+  hasAbility: (id: string, action: string) => boolean;
   clear: () => void;
 }
 
@@ -38,32 +43,32 @@ const defaultAbilities = Object.freeze({
   comment: false,
 } as Record<string, boolean>);
 
-const permissionEntitySlice = createEntitySlice<PermissionEntity>();
-export const permissionSelectors = permissionEntitySlice.selectors;
+const abilityEntitySlice = createEntitySlice<AbilityEntity>();
+export const abilitySelectors = abilityEntitySlice.selectors;
 
-type StoreState = State & Action & EntityState<PermissionEntity> & EntityActions<PermissionEntity>;
+type StoreState = State & Action & EntityState<AbilityEntity> & EntityActions<AbilityEntity>;
 
-const usePermissionStore = create<StoreState>()(
+const useAbilityStore = create<StoreState>()(
   subscribeWithSelector(
     devtools(
       createComputed((state: StoreState) => ({
-        allPermissions: permissionSelectors.selectAll(state),
+        allPermissions: abilitySelectors.selectAll(state),
       }))((set, get) => ({
         ...defaultState,
-        ...permissionEntitySlice.initialState,
-        ...permissionEntitySlice.createActions(set),
+        ...abilityEntitySlice.initialState,
+        ...abilityEntitySlice.createActions(set),
 
-        fetchResourcePermissions: async (resourceType, resourceId) => {
+        fetchResourceAbilities: async (resourceType, resourceId) => {
           set({ isFetching: true });
           try {
             const response = await permissionApi.getResourcePermissions(resourceType, resourceId);
-            get().updatePermission(resourceId, response.data);
+            get().updateAbility(resourceId, response.data);
           } finally {
             set({ isFetching: false });
           }
         },
 
-        setPermissions: (permissions) => {
+        setAbilities: (permissions) => {
           const entities = Object.entries(permissions).map(([id, abilities]) => ({
             id,
             abilities: { ...defaultAbilities, ...abilities },
@@ -71,11 +76,21 @@ const usePermissionStore = create<StoreState>()(
           get().setAll(entities);
         },
 
-        updatePermission: (id, abilities) => {
+        updateAbility: (id, abilities) => {
           get().upsertOne({
             id,
             abilities: { ...defaultAbilities, ...abilities },
           });
+        },
+
+        addMany: (permissions) => {
+          // Convert permissions array to abilities entities
+          const entities = permissions.map((permission) => ({
+            id: permission.resourceId,
+            abilities: { ...defaultAbilities, ...permission.abilities },
+            resourceType: permission.resourceType,
+          }));
+          get().upsertMany(entities);
         },
 
         getAbilities: (id) => {
@@ -83,7 +98,7 @@ const usePermissionStore = create<StoreState>()(
           return permission ? permission.abilities : defaultAbilities;
         },
 
-        hasPermission: (id, action) => {
+        hasAbility: (id, action) => {
           const abilities = get().getAbilities(id);
           return abilities[action] || false;
         },
@@ -99,4 +114,4 @@ const usePermissionStore = create<StoreState>()(
   ),
 );
 
-export default usePermissionStore;
+export default useAbilityStore;

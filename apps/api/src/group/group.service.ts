@@ -57,7 +57,7 @@ export class GroupService {
     return {
       pagination,
       data: data.map(presentGroup),
-      policies: {},
+      abilities: {},
     };
   }
 

@@ -59,7 +59,7 @@ export const sharedWithMeResponseSchema = z.object({
   data: z.object({
     documents: z.array(z.any()), // DocSchema 替换为 any 或本地定义
   }),
-  permissions: z.record(
+  abilities: z.record(
     z.object({
       read: z.boolean(),
       update: z.boolean(),

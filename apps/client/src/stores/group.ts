@@ -63,13 +63,13 @@ const useGroupStore = create<StoreState>()(
           }
 
           try {
-            const response = await groupApi.list({
+            const { data, pagination, abilities } = await groupApi.list({
               limit: 100,
               page: 1,
               sortBy: "name",
               sortOrder: "asc",
             });
-            const groups = response.data.map((group: any) => ({
+            const groups = data.map((group: any) => ({
               id: group.id,
               name: group.name,
               description: typeof group.description === "string" ? group.description : null,
@@ -85,16 +85,17 @@ const useGroupStore = create<StoreState>()(
         create: async (data) => {
           set({ isSaving: true });
           try {
-            const response = await groupApi.create({
+            // FIXME: remove any type
+            const response = (await groupApi.create({
               ...data,
               workspaceId: useWorkspaceStore.getState().currentWorkspace?.id || "",
               description: typeof data.description === "string" ? data.description : null,
-            });
+            })) as any;
             const group: GroupEntity = {
-              id: response.data.id,
-              name: response.data.name,
-              description: typeof response.data.description === "string" ? response.data.description : null,
-              members: Array.isArray(response.data.members) ? response.data.members : [],
+              id: response.id,
+              name: response.name,
+              description: typeof response.description === "string" ? response.description : null,
+              members: Array.isArray(response.members) ? response.members : [],
             };
             get().addOne(group);
             return group;
@@ -106,17 +107,17 @@ const useGroupStore = create<StoreState>()(
         update: async (id, data) => {
           set({ isSaving: true });
           try {
-            const response = await groupApi.update(id, {
+            const response = (await groupApi.update(id, {
               id,
               name: data.name || "",
               description: typeof data.description === "string" ? data.description : null,
               validUntil: null,
-            });
+            })) as any;
             const group: GroupEntity = {
-              id: response.data.id,
-              name: response.data.name,
-              description: typeof response.data.description === "string" ? response.data.description : null,
-              members: Array.isArray(response.data.members) ? response.data.members : [],
+              id: response.id,
+              name: response.name,
+              description: typeof response.description === "string" ? response.description : null,
+              members: Array.isArray(response.members) ? response.members : [],
             };
             get().updateOne({ id, changes: group });
             return group;
@@ -138,12 +139,12 @@ const useGroupStore = create<StoreState>()(
         addUser: async (groupId, userId) => {
           set({ isSaving: true });
           try {
-            const response = await groupApi.addUser(groupId, { id: groupId, userId });
+            const response = (await groupApi.addUser(groupId, { id: groupId, userId })) as any;
             const group: GroupEntity = {
-              id: response.data.id,
-              name: response.data.name,
-              description: typeof response.data.description === "string" ? response.data.description : null,
-              members: Array.isArray(response.data.members) ? response.data.members : [],
+              id: response.id,
+              name: response.name,
+              description: typeof response.description === "string" ? response.description : null,
+              members: Array.isArray(response.members) ? response.members : [],
             };
             get().updateOne({ id: groupId, changes: group });
             return group;
@@ -155,12 +156,12 @@ const useGroupStore = create<StoreState>()(
         removeUser: async (groupId, userId) => {
           set({ isSaving: true });
           try {
-            const response = await groupApi.removeUser(groupId, userId);
+            const response = (await groupApi.removeUser(groupId, userId)) as any;
             const group: GroupEntity = {
-              id: response.data.id,
-              name: response.data.name,
-              description: typeof response.data.description === "string" ? response.data.description : null,
-              members: Array.isArray(response.data.members) ? response.data.members : [],
+              id: response.id,
+              name: response.name,
+              description: typeof response.description === "string" ? response.description : null,
+              members: Array.isArray(response.members) ? response.members : [],
             };
             get().updateOne({ id: groupId, changes: group });
             return group;

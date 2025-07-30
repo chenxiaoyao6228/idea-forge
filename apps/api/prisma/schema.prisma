@@ -39,7 +39,7 @@ generator zod {
 
 model UnifiedPermission {
   id           String          @id @default(cuid())
-  userId       String? // Make nullable for guest scenarios  
+  userId       String? // User who owns the permission record. Make nullable for guest scenarios  
   resourceType ResourceType // DOCUMENT, SUBSPACE, WORKSPACE
   resourceId   String // DOCUMENT_ID, SUBSPACE_ID, WORKSPACE_ID, etc
   permission   PermissionLevel // NONE, READ, COMMENT, EDIT, MANAGE, OWNER
