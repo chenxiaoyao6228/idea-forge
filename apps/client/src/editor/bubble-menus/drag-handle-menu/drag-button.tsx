@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { GripVertical, RemoveFormatting, Clipboard, Copy, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { IButtonProps } from "./type";
 import copy from "copy-to-clipboard";
 import { useTranslation } from "react-i18next";
@@ -32,7 +32,6 @@ function ClearFormattingButton({ editor, currentNode, currentNodePos }: IButtonP
 
 // Copy button
 function CopyButton({ editor, currentNodePos }: IButtonProps) {
-  const { toast } = useToast();
   const { t } = useTranslation();
 
   const copyNodeToClipboard = useCallback(() => {
@@ -41,10 +40,7 @@ function CopyButton({ editor, currentNodePos }: IButtonProps) {
     const content = editor.state.selection.content().toJSON();
     copy(JSON.stringify(content));
     editor.commands.focus(currentNodePos);
-    toast({
-      title: t("Success"),
-      description: t("Copied to clipboard"),
-    });
+    toast.success(t("Copied to clipboard"));
   }, [editor, currentNodePos, toast, t]);
 
   return (

@@ -6,7 +6,7 @@ import { GoogleAuthGuard } from "./guards/google-auth.guard";
 import { GithubAuthGuard } from "./guards/github-auth.guard";
 import type { Response } from "express";
 import { Public } from "./decorators/public.decorator";
-import { EmailVerifyDto, ForgotPasswordDto, CodeValidateDto, ResetPasswordDto, RegisterDto } from "./auth.dto";
+import { EmailVerifyDto, ForgotPasswordDto, CodeValidateDto, ResetPasswordDto, RegisterDto, SetPasswordDto } from "./auth.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
@@ -66,6 +66,17 @@ export class AuthController {
   @Post("/reset-password")
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return await this.authService.resetUserPassword(dto);
+  }
+
+  @Public()
+  @Post("/set-password")
+  async setPassword(@Body() dto: SetPasswordDto) {
+    return await this.authService.setPassword(dto);
+  }
+
+  @Get("/password-status")
+  async getPasswordStatus(@Req() req: any) {
+    return await this.userService.checkPasswordStatus(req.user.id);
   }
 
   @Public()

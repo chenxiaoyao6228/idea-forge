@@ -22,7 +22,6 @@ import SubspacesArea from "./subspaces";
 import MyDocsArea from "./ my-docs";
 import React from "react";
 import { SettingDialog } from "../settings/setting-dialog";
-import { SignOutButton } from "../settings/signout-button";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   console.log("SidebarContainer render");
@@ -50,12 +49,6 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                   <SidebarMenuButton asChild>
                     {/* setting */}
                     <SettingDialog />
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    {/* setting */}
-                    <SignOutButton />
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

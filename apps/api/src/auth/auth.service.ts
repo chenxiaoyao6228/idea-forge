@@ -7,7 +7,7 @@ import type { ConfigType } from "@nestjs/config";
 import { RedisService } from "@/_shared/database/redis/redis.service";
 import { MailService } from "@/_shared/email/mail.service";
 import { VerificationService } from "./verification.service";
-import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto } from "./auth.dto";
+import { ResetPasswordDto, RegisterDto, CreateOAuthUserDto, SetPasswordDto } from "./auth.dto";
 import { AuthResponse, LoginResponseData, UserResponseData } from "@idea/contracts";
 import { jwtConfig, refreshJwtConfig } from "@/_shared/config/configs";
 import { CollaborationService } from "@/collaboration/collaboration.service";
@@ -134,15 +134,67 @@ export class AuthService {
     return {};
   }
 
+  async setPassword(data: SetPasswordDto) {
+    const { email: rawEmail, password } = data;
+    const email = rawEmail.toLowerCase();
+    await this.userService.updateUserPassword(email, password);
+    return {};
+  }
+
   async resetUserPassword(data: ResetPasswordDto) {
-    const email = data.email.toLowerCase();
+    const { email: rawEmail, currentPassword, newPassword } = data;
+    const email = rawEmail.toLowerCase();
 
     const user = await this.userService.getUserByEmail(email);
     if (!user) throw new ApiException(ErrorCodeEnum.UserNotFound);
     if (user.status !== UserStatus.ACTIVE) throw new ApiException(ErrorCodeEnum.UserNotActive);
 
-    await this.userService.updateUserPassword(email, data.password);
-    return {};
+    // If currentPassword is provided, validate it (for password change)
+    if (currentPassword) {
+      const userWithPassword = await this.userService.getUserWithPassword(email);
+
+      if (!userWithPassword?.password) {
+        throw new ApiException(ErrorCodeEnum.PasswordNotSet);
+      }
+
+      const isCurrentPasswordValid = await verify(userWithPassword.password.hash, currentPassword);
+      if (!isCurrentPasswordValid) {
+        throw new ApiException(ErrorCodeEnum.CurrentPasswordIncorrect);
+      }
+
+      // Check if new password is same as current password
+      const isSamePassword = await verify(userWithPassword.password.hash, newPassword);
+      if (isSamePassword) {
+        throw new ApiException(ErrorCodeEnum.SamePasswordNotAllowed);
+      }
+    }
+
+    await this.userService.updateUserPassword(email, newPassword);
+
+    // For user-initiated password changes, invalidate other sessions but keep current one
+    if (currentPassword) {
+      await this.invalidateUserRefreshTokens(user.id);
+    }
+
+    return {
+      message: "Password updated successfully. Other sessions have been logged out for security.",
+    };
+  }
+
+  /**
+   * Invalidate all refresh tokens for a user (logs out all sessions)
+   * Used when password is changed for security
+   */
+  private async invalidateUserRefreshTokens(userId: string) {
+    try {
+      // Clear all refresh tokens from database
+      await this.userService.updateHashedRefreshToken(userId, "");
+
+      this.logger.info(`Invalidated all refresh tokens for user ${userId} due to password change`);
+    } catch (error) {
+      this.logger.error(`Failed to invalidate refresh tokens for user ${userId}:`, error);
+      // Don't throw error as password change was successful
+    }
   }
 
   async sendRegistrationVerificationCode(email: string) {

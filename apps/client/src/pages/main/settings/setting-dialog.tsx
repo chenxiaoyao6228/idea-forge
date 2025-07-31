@@ -2,12 +2,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogTrigger } from "@/components/ui/dialog";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { User, SettingsIcon } from "lucide-react";
+import { User, SettingsIcon, Users, Building2, Layers } from "lucide-react";
 import { Account } from "./account";
 import { Members } from "./members";
 import { Subspace } from "./subspace";
 import { Workspace } from "./workspace";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 export const SettingDialog = () => {
   const { t } = useTranslation();
@@ -16,30 +17,30 @@ export const SettingDialog = () => {
   const tabList = useMemo(() => {
     return [
       {
-        key: "members",
-        name: t("Members"),
-        Icon: User,
-      },
-      {
         key: "profile",
         name: t("Account"),
         Icon: User,
       },
       {
+        key: "members",
+        name: t("Members"),
+        Icon: Users,
+      },
+      {
         key: "workspace",
         name: t("Workspace"),
-        Icon: User,
+        Icon: Building2,
       },
       {
         key: "subspace",
         name: t("Subspace"),
-        Icon: User,
+        Icon: Layers,
       },
     ];
   }, [t]);
 
   const content = (
-    <Tabs defaultValue="members" className="flex h-full gap-4 overflow-hidden">
+    <Tabs defaultValue="profile" className="flex h-full gap-4 overflow-hidden">
       <TabsList className="grid gap-2 bg-inherit text-left">
         {tabList.map(({ key, name, Icon }) => {
           return (
@@ -51,16 +52,28 @@ export const SettingDialog = () => {
         })}
       </TabsList>
       <TabsContent tabIndex={-1} value="profile" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-        <Account />
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">{t("Account")}</h3>
+          <Separator />
+          <Account />
+        </div>
       </TabsContent>
       <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
         <Members />
       </TabsContent>
       <TabsContent tabIndex={-1} value="subspace" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-        <Subspace />
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">{t("Subspace")}</h3>
+          <Separator />
+          <Subspace />
+        </div>
       </TabsContent>
       <TabsContent tabIndex={-1} value="workspace" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-        <Workspace />
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">{t("Workspace")}</h3>
+          <Separator />
+          <Workspace />
+        </div>
       </TabsContent>
     </Tabs>
   );

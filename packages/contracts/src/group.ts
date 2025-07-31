@@ -29,6 +29,12 @@ export type GroupInfoResponse = z.infer<typeof groupInfoResponseSchema>;
 
 export const groupListResponseSchema = z.object({
   data: z.array(MemberGroupSchema),
+  pagination: basePagerSchema,
+  abilities: z.object({
+    canCreate: z.boolean(),
+    canUpdate: z.boolean(),
+    canDelete: z.boolean(),
+  }),
 });
 export type GroupListResponse = z.infer<typeof groupListResponseSchema>;
 

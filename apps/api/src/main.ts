@@ -47,7 +47,7 @@ async function bootstrap() {
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "http://localhost:5173", "http://localhost:3000"],
             styleSrc: ["'self'", "'unsafe-inline'", "http://localhost:5173"],
             imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
-            connectSrc: ["'self'", "http://localhost:5173", "ws://localhost:5173"],
+            connectSrc: ["'self'", "http://localhost:5173", "ws://localhost:5173", "http://localhost:9000", "https://localhost:9000"],
             fontSrc: ["'self'", "data:", "http:", "https:"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],

@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, MoreVertical } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreVertical, X } from "lucide-react";
 import { groupApi } from "@/apis/group";
 import { userApi } from "@/apis/user";
 import type { User } from "@idea/contracts";
@@ -226,14 +226,14 @@ const GroupManagementPanel = () => {
                           }}
                           aria-label={t("Remove")}
                         >
-                          ×
+                          <X size={14} />
                         </Button>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground p-2 text-center" onClick={() => setManageGroupId(group.id)}>
-                    {t("No members, click to add")}
+                  <div className="text-xs text-muted-foreground p-2 text-center cursor-pointer" onClick={() => setManageGroupId(group.id)}>
+                    {t("No members, click here to add")}
                   </div>
                 )}
               </CardContent>

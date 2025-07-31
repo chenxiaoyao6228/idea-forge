@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { LogOut } from "lucide-react";
 import { confirmModal } from "@/components/ui/confirm-modal";
 import useUserStore from "@/stores/user";
+import { Button } from "@/components/ui/button";
 
 export function SignOutButton() {
   const { t } = useTranslation();
@@ -25,8 +26,10 @@ export function SignOutButton() {
 
   return (
     <div className="flex items-center gap-2 px-1 py-0 text-left text-sm" onClick={handleSignOut}>
-      <LogOut className="h-4 w-4" />
-      <span className="ml-2">{t("Sign Out")}</span>
+      <Button variant="destructive" size="sm">
+        <LogOut className="h-4 w-4" />
+        <span className="ml-2">{t("Sign Out")}</span>
+      </Button>
     </div>
   );
 }

@@ -29,6 +29,7 @@ interface Action {
 
   // Helper methods
   setCurrentWorkspace: (workspace?: WorkspaceEntity) => void;
+  clear: () => void;
 }
 
 const defaultState: State = {
@@ -104,6 +105,10 @@ const useWorkspaceStore = create<StoreState>()(
           // Helper methods
           setCurrentWorkspace: (workspace) => {
             set({ currentWorkspace: workspace });
+          },
+
+          clear: () => {
+            set(defaultState);
           },
         })),
         {

@@ -1,65 +1,17 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ErrorList, Field } from "@/components/forms";
-import { StatusButton } from "@/components/ui/status-button";
-import { useState } from "react";
-import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/logo";
-import { authApi } from "@/apis/auth";
+import { ResetPwdForm } from "@/components/reset-pwd-form";
 import { useTranslation } from "react-i18next";
-import { TFunction } from "i18next";
-
-const createPasswordAndConfirmPasswordSchema = (t: TFunction) =>
-  z
-    .object({
-      password: z.string().min(1, t("Password is required")),
-      confirmPassword: z.string().min(1, t("Confirm password is required")),
-    })
-    .refine(({ confirmPassword, password }) => confirmPassword === password, {
-      message: t("The passwords must match"),
-      path: ["confirmPassword"],
-    });
 
 function ResetPasswordPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm({
-    resolver: zodResolver(createPasswordAndConfirmPasswordSchema(t) as any),
-    defaultValues: {
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  const onSubmit = async (data: { password: string; confirmPassword: string }) => {
-    if (!email) {
-      setError(t("Email is required"));
-      return;
-    }
-
-    setIsPending(true);
-    try {
-      await authApi.resetPassword({
-        email,
-        password: data.password,
-      });
-      navigate("/login");
-    } catch (err: any) {
-      setError(err.message || t("Password reset failed"));
-    } finally {
-      setIsPending(false);
-    }
+  const handleSuccess = () => {
+    navigate("/login");
   };
 
   if (!email) {
@@ -84,41 +36,7 @@ function ResetPasswordPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-              <Field
-                labelProps={{
-                  htmlFor: "password",
-                  children: t("New Password"),
-                  className: "font-medium",
-                }}
-                inputProps={{
-                  ...register("password"),
-                  type: "password",
-                  autoComplete: "new-password",
-                  autoFocus: true,
-                }}
-                errors={errors.password?.message ? [errors.password.message] : []}
-              />
-              <Field
-                labelProps={{
-                  htmlFor: "confirmPassword",
-                  children: t("Confirm Password"),
-                  className: "font-medium",
-                }}
-                inputProps={{
-                  ...register("confirmPassword"),
-                  type: "password",
-                  autoComplete: "new-password",
-                }}
-                errors={errors.confirmPassword?.message ? [errors.confirmPassword.message] : []}
-              />
-
-              <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
-
-              <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
-                {t("Reset password")}
-              </StatusButton>
-            </form>
+            <ResetPwdForm email={email} mode="set" onSuccess={handleSuccess} submitButtonText={t("Reset password")} />
           </CardContent>
         </Card>
       </div>

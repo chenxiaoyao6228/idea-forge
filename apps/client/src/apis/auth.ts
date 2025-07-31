@@ -1,5 +1,14 @@
 import request from "@/lib/request";
-import { CodeValidateRequest, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, LoginResponseData } from "@idea/contracts";
+import {
+  CodeValidateRequest,
+  ForgotPasswordRequest,
+  LoginRequest,
+  RegisterRequest,
+  ResetPasswordRequest,
+  LoginResponseData,
+  PasswordStatusResponse,
+  SetPasswordRequest,
+} from "@idea/contracts";
 
 export const authApi = {
   register: async (data: RegisterRequest) => request.post<RegisterRequest, void>("/api/auth/register", data),
@@ -8,4 +17,6 @@ export const authApi = {
   logout: async () => request.post<void>("/api/auth/logout"),
   forgotPassword: async (data: ForgotPasswordRequest) => request.post<ForgotPasswordRequest, void>("/api/auth/forgot-password", data),
   resetPassword: async (data: ResetPasswordRequest) => request.post<ResetPasswordRequest, void>("/api/auth/reset-password", data),
+  setPassword: async (data: SetPasswordRequest) => request.post<SetPasswordRequest, void>("/api/auth/set-password", data),
+  getPasswordStatus: async () => request.get<void, PasswordStatusResponse>("/api/auth/password-status"),
 };

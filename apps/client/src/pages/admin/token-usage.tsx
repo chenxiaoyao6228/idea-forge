@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { aiApi } from "@/apis/ai";
 import { TokenUsageResponse } from "@idea/contracts";
 import { useTranslation } from "react-i18next";
@@ -15,15 +15,10 @@ export default function TokenUsage() {
   const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState<TokenUsageResponse | null>(null);
   const { t } = useTranslation();
-  const { toast } = useToast();
 
   async function handleLookup() {
     if (!email) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Please enter an email address"),
-      });
+      toast.error(t("Please enter an email address"));
       return;
     }
 
@@ -35,9 +30,7 @@ export default function TokenUsage() {
       setTokenLimit(response.monthlyLimit.toString());
       setTokenUsed(response.monthlyUsed.toString());
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
+      toast.error(t("Error"), {
         description: error.message,
       });
     } finally {
@@ -47,9 +40,7 @@ export default function TokenUsage() {
 
   async function handleUpdateLimit() {
     if (!email || !tokenLimit || !tokenUsed) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
+      toast.error(t("Error"), {
         description: t("Please fill in all fields"),
       });
       return;
@@ -63,17 +54,12 @@ export default function TokenUsage() {
         monthlyUsed: Number.parseInt(tokenUsed),
       });
 
-      toast({
-        title: t("Success"),
-        description: t("Token settings updated successfully"),
-      });
+      toast.success(t("Token settings updated successfully"));
 
       // Refresh user data
       await handleLookup();
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
+      toast.error(t("Error"), {
         description: error.message,
       });
     } finally {

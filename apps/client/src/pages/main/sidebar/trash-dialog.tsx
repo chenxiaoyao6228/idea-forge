@@ -8,7 +8,7 @@ import { documentApi } from "@/apis/document";
 import { type TrashDocumentResponse } from "@idea/contracts";
 import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
 import { formatDistanceToNow } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { confirmModal } from "../../../components/ui/confirm-modal";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -22,7 +22,6 @@ export const TrashDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<TrashDocumentResponse[]>([]);
   const [keyword, setKeyword] = useState("");
-  const { toast } = useToast();
   //   const fetchSharedWithMe = useShareStore((state) => state.fetchSharedWithMe);
 
   // Load trash documents when dialog opens
@@ -38,11 +37,7 @@ export const TrashDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
       const docs = await documentApi.getTrash();
       setDocuments(docs);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Failed to load trash documents"),
-      });
+      toast.error(t("Failed to load trash documents"));
     } finally {
       setLoading(false);
     }
@@ -58,15 +53,9 @@ export const TrashDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
         // loadSharedDocuments(),
         // loadNestedTree(null),
       ]);
-      toast({
-        description: t("Document restored successfully"),
-      });
+      toast.success(t("Document restored successfully"));
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Failed to restore document"),
-      });
+      toast.error(t("Failed to restore document"));
     }
   }
 
@@ -82,16 +71,16 @@ export const TrashDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
         try {
           await documentApi.permanentDelete(id);
           await loadTrashDocuments();
-          toast({ description: t("Document deleted permanently") });
+          toast.success(t("Document deleted permanently"));
           return true;
         } catch (error: any) {
           if (error?.code === ErrorCodeEnum.DocumentNotFound) {
             // refresh trash documents
-            toast({ description: t("Document not found in trash") });
+            toast.error(t("Document not found in trash"));
             await loadTrashDocuments();
             return false;
           }
-          toast({ variant: "destructive", description: t("Failed to delete document") });
+          toast.error(t("Failed to delete document"));
           return false;
         }
       },

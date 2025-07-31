@@ -1,4 +1,5 @@
 import { TypeFile } from "get-real-file-type";
+import { useCallback } from "react";
 
 export async function getFileInfo(file: File) {
   const { name, size } = file;
@@ -51,4 +52,16 @@ export function dataURItoBlob(dataURI: string): Blob {
   }
 
   return new Blob([ab], { type: mimeString });
+}
+
+export function dataURLtoFile(dataurl: string, filename: string): File {
+  const arr = dataurl.split(",");
+  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
 }

@@ -268,8 +268,6 @@ export class DocumentService {
     const data = {
       document: serializedDocument,
       workspace: document.workspace,
-      // Include shared tree if document is shared
-      sharedTree: document.docShare?.some((share) => share.includeChildDocuments) ? await this.getSharedTree(document.id) : null,
     };
 
     return {

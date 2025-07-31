@@ -4,7 +4,6 @@ import { MailService } from "@/_shared/email/mail.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { UserService } from "@/user/user.service";
-import { DocumentService } from "@/document/document.service";
 import { VerificationCodeType } from "@idea/contracts";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
@@ -29,7 +28,6 @@ export class VerificationService {
     private readonly redis: RedisService,
     private readonly mailService: MailService,
     private readonly userService: UserService,
-    private readonly documentService: DocumentService,
   ) {}
 
   async generateAndSendCode(email: string, type: VerificationCodeType) {

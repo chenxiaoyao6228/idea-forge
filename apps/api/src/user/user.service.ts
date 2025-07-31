@@ -114,6 +114,19 @@ export class UserService {
     });
   }
 
+  async checkPasswordStatus(userId: string): Promise<{ hasPassword: boolean }> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      include: { password: true },
+    });
+
+    if (!user) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    return { hasPassword: !!user.password };
+  }
+
   async searchUser(dto: UserListRequestDto) {
     const { page = 1, limit = 10, query, sortBy = "createdAt", sortOrder = "desc" } = dto;
     const where: Prisma.UserWhereInput = {

@@ -2,7 +2,7 @@ import type React from "react";
 import type { Editor } from "@tiptap/react";
 import { findParentNode } from "@tiptap/core";
 import copy from "copy-to-clipboard";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +11,6 @@ interface CopyCodeButtonProps {
 }
 
 const CopyCodeButton: React.FC<CopyCodeButtonProps> = ({ editor }) => {
-  const toast = useToast();
   const { t } = useTranslation();
   const handleCopy = () => {
     const { state } = editor;
@@ -21,9 +20,7 @@ const CopyCodeButton: React.FC<CopyCodeButtonProps> = ({ editor }) => {
     if (codeBlock) {
       copy(codeBlock.node.textContent);
       editor.chain().focus().run();
-      toast.toast({
-        title: t("Code copied"),
-      });
+      toast.success(t("Code copied"));
       return;
     }
   };

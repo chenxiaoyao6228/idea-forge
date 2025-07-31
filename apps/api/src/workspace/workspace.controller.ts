@@ -70,7 +70,7 @@ export class WorkspaceController {
   }
 
   @Get(":id/members")
-  @CheckPolicy(Action.ViewMembers, "Workspace")
+  // @CheckPolicy(Action.ViewMembers, "Workspace")
   async getWorkspaceMembers(@Param("id") workspaceId: string, @GetUser("id") userId: string) {
     return this.workspaceService.getWorkspaceMembers(workspaceId, userId);
   }
@@ -78,7 +78,7 @@ export class WorkspaceController {
   // === Guest Collaborators ===
   // FIXME: add all the guest features and test
   @Post(":id/guests")
-  @CheckPolicy(Action.ManageMembers, "Workspace")
+  // @CheckPolicy(Action.ManageMembers, "Workspace")
   async inviteGuestCollaborator(
     @Param("id") workspaceId: string,
     @Body() dto: { email: string; documentId: string; permission: string },

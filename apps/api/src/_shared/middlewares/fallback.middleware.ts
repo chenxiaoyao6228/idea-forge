@@ -300,6 +300,10 @@ export class FallbackMiddleware implements NestMiddleware {
               imageUrl: user.imageUrl || "",
             };
           }
+
+          // some how the user is not exist, redirect to login page
+          this.redirectToLoginOrMarketing(req, res, true);
+          return REDIRECTED;
         } catch (refreshError) {
           console.log("Failed to refresh token:", refreshError);
           this.redirectToLoginOrMarketing(req, res, true);

@@ -21,9 +21,8 @@ const useUserStore = create<UserStoreState>()((set) => ({
     await authApi.logout();
     localStorage.clear();
 
-    // clear persist storage
     // FIXME: better/unified way to clear all stores
-    useWorkspaceStore.persist.clearStorage();
+    useWorkspaceStore.getState().clear();
     set({ userInfo: null, loading: false });
   },
 }));

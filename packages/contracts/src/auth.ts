@@ -105,9 +105,18 @@ export type CodeValidateRequest = z.infer<typeof CodeValidateRequestSchema>;
 // reset password
 export const ResetPasswordRequestSchema = z.object({
   email: EmailSchema,
-  password: PwdSchema,
+  currentPassword: PwdSchema,
+  newPassword: PwdSchema,
 });
 export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
+
+//  ==============================================================
+//  set password
+export const SetPasswordRequestSchema = z.object({
+  email: EmailSchema,
+  password: PwdSchema,
+});
+export type SetPasswordRequest = z.infer<typeof SetPasswordRequestSchema>;
 
 // ==============================================================
 // create user
@@ -139,3 +148,8 @@ export const AuthUserSchema = z.object({
 });
 
 export type AuthUser = z.infer<typeof AuthUserSchema>;
+
+export const PasswordStatusResponseSchema = z.object({
+  hasPassword: z.boolean(),
+});
+export type PasswordStatusResponse = z.infer<typeof PasswordStatusResponseSchema>;

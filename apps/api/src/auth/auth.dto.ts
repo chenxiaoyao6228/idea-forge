@@ -10,6 +10,7 @@ import {
   LoginRequestSchema,
   RegisterRequestSchema,
   ResetPasswordRequestSchema,
+  SetPasswordRequestSchema,
   UpdateUserRequestSchema,
 } from "@idea/contracts";
 
@@ -32,6 +33,9 @@ export class CodeValidateDto extends createZodDto(CodeValidateRequestSchema) {}
 
 // Reset Password DTO
 export class ResetPasswordDto extends createZodDto(ResetPasswordRequestSchema) {}
+
+// Set Password DTO
+export class SetPasswordDto extends createZodDto(SetPasswordRequestSchema) {}
 
 // Login DTO
 export class LoginDto extends createZodDto(LoginRequestSchema) {}

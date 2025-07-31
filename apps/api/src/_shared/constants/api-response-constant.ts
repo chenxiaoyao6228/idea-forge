@@ -13,6 +13,11 @@ export enum ErrorCodeEnum {
   PermissionDenied = "permission_denied",
   InvalidRefreshToken = "invalid_refresh_token",
 
+  // Password related errors
+  CurrentPasswordIncorrect = "current_password_incorrect",
+  PasswordTooWeak = "password_too_weak",
+  SamePasswordNotAllowed = "same_password_not_allowed",
+
   // OAuth related
   InvalidTempId = "invalid_temp_id",
   UsernameAlreadyExists = "username_already_exists",
