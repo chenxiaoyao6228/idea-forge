@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, BadRequestException } from "@nestjs/common";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
@@ -11,11 +11,99 @@ import { ResourceType, WorkspaceRole, WorkspaceMember } from "@idea/contracts";
 
 @Injectable()
 export class WorkspaceService {
+  // Workspace-specific timezone options
+  private readonly VALID_WORKSPACE_TIMEZONES = [
+    "UTC",
+    "America/New_York",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "Europe/London",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Asia/Tokyo",
+    "Asia/Shanghai",
+    "Asia/Kolkata",
+    "Australia/Sydney",
+  ];
+
+  // Workspace-specific date format options
+  private readonly VALID_WORKSPACE_DATE_FORMATS = ["YYYY/MM/DD", "MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "DD-MM-YYYY", "MM-DD-YYYY"] as const;
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly subspaceService: SubspaceService,
     private readonly permissionService: PermissionService,
   ) {}
+
+  /**
+   * Validates workspace settings
+   * Throws BadRequestException if validation fails
+   */
+  private validateWorkspaceSettings(settings: any): void {
+    if (!settings) return; // Settings are optional
+
+    const { timezone, dateFormat } = settings;
+
+    if (timezone && !this.VALID_WORKSPACE_TIMEZONES.includes(timezone)) {
+      throw new BadRequestException(`Invalid timezone: ${timezone}. Valid options: ${this.VALID_WORKSPACE_TIMEZONES.join(", ")}`);
+    }
+
+    if (dateFormat && !this.VALID_WORKSPACE_DATE_FORMATS.includes(dateFormat)) {
+      throw new BadRequestException(`Invalid date format: ${dateFormat}. Valid options: ${this.VALID_WORKSPACE_DATE_FORMATS.join(", ")}`);
+    }
+  }
+
+  /**
+   * Gets default workspace settings
+   */
+  private getDefaultWorkspaceSettings() {
+    return {
+      timezone: "UTC",
+      dateFormat: "YYYY/MM/DD",
+    };
+  }
+
+  /**
+   * Formats a date according to workspace settings
+   * Useful for consistent date formatting across the workspace
+   */
+  formatDateForWorkspace(date: Date, workspaceSettings?: any): string {
+    const settings = workspaceSettings || this.getDefaultWorkspaceSettings();
+    const dateFormat = settings.dateFormat || "YYYY/MM/DD";
+    const timezone = settings.timezone || "UTC";
+
+    // Convert date to the specified timezone
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const parts = formatter.formatToParts(date);
+    const year = parts.find((p) => p.type === "year")?.value;
+    const month = parts.find((p) => p.type === "month")?.value;
+    const day = parts.find((p) => p.type === "day")?.value;
+
+    // Format according to the specified format
+    switch (dateFormat) {
+      case "YYYY/MM/DD":
+        return `${year}/${month}/${day}`;
+      case "MM/DD/YYYY":
+        return `${month}/${day}/${year}`;
+      case "DD/MM/YYYY":
+        return `${day}/${month}/${year}`;
+      case "YYYY-MM-DD":
+        return `${year}-${month}-${day}`;
+      case "DD-MM-YYYY":
+        return `${day}-${month}-${year}`;
+      case "MM-DD-YYYY":
+        return `${month}-${day}-${year}`;
+      default:
+        return `${year}/${month}/${day}`;
+    }
+  }
 
   /**
    * Initialize a new workspace with default global subspace
@@ -32,10 +120,15 @@ export class WorkspaceService {
    * Automatically assigns workspace permissions and propagates to child resources
    */
   async createWorkspace(dto: CreateWorkspaceDto, userId: string) {
+    // Initialize workspace with default settings
+    const defaultSettings = this.getDefaultWorkspaceSettings();
+
     const workspace = await this.prismaService.workspace.create({
       data: {
         name: dto.name,
         description: dto.description,
+        avatar: dto.avatar,
+        settings: defaultSettings as any,
         members: {
           create: {
             userId: userId,
@@ -213,6 +306,11 @@ export class WorkspaceService {
     const hasAccess = await this.hasWorkspaceAccess(userId, id);
     if (!hasAccess) {
       throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    // Validate settings if provided
+    if (dto.settings) {
+      this.validateWorkspaceSettings(dto.settings);
     }
 
     const workspace = await this.prismaService.workspace.update({
@@ -504,6 +602,98 @@ export class WorkspaceService {
     // TODO:
 
     return updatedMember;
+  }
+
+  /**
+   * Get workspace settings for a specific workspace
+   * Useful for frontend to know current settings
+   */
+  async getWorkspaceSettings(workspaceId: string, userId: string) {
+    // Validate user access
+    const hasAccess = await this.hasWorkspaceAccess(userId, workspaceId);
+    if (!hasAccess) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { settings: true },
+    });
+
+    if (!workspace) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
+    return workspace.settings || this.getDefaultWorkspaceSettings();
+  }
+
+  /**
+   * Get available workspace settings options
+   * Useful for frontend dropdowns and validation
+   */
+  getWorkspaceSettingsOptions() {
+    return {
+      timezones: this.VALID_WORKSPACE_TIMEZONES.map((tz) => ({
+        value: tz,
+        label: this.getTimezoneLabel(tz),
+      })),
+      dateFormats: this.VALID_WORKSPACE_DATE_FORMATS.map((format) => ({
+        value: format,
+        label: this.getDateFormatExample(format),
+        description: this.getDateFormatDescription(format),
+      })),
+    };
+  }
+
+  /**
+   * Get human-readable timezone labels
+   */
+  private getTimezoneLabel(timezone: string): string {
+    const labels: Record<string, string> = {
+      UTC: "UTC (Coordinated Universal Time)",
+      "America/New_York": "Eastern Time (US & Canada)",
+      "America/Chicago": "Central Time (US & Canada)",
+      "America/Denver": "Mountain Time (US & Canada)",
+      "America/Los_Angeles": "Pacific Time (US & Canada)",
+      "Europe/London": "London (GMT/BST)",
+      "Europe/Paris": "Paris (CET/CEST)",
+      "Europe/Berlin": "Berlin (CET/CEST)",
+      "Asia/Tokyo": "Tokyo (JST)",
+      "Asia/Shanghai": "Shanghai (CST)",
+      "Asia/Kolkata": "India (IST)",
+      "Australia/Sydney": "Sydney (AEST/AEDT)",
+    };
+    return labels[timezone] || timezone;
+  }
+
+  /**
+   * Get date format examples
+   */
+  private getDateFormatExample(format: string): string {
+    const examples: Record<string, string> = {
+      "YYYY/MM/DD": "2025/01/15",
+      "MM/DD/YYYY": "01/15/2025",
+      "DD/MM/YYYY": "15/01/2025",
+      "YYYY-MM-DD": "2025-01-15",
+      "DD-MM-YYYY": "15-01-2025",
+      "MM-DD-YYYY": "01-15-2025",
+    };
+    return examples[format] || format;
+  }
+
+  /**
+   * Get date format descriptions
+   */
+  private getDateFormatDescription(format: string): string {
+    const descriptions: Record<string, string> = {
+      "YYYY/MM/DD": "Year/Month/Day",
+      "MM/DD/YYYY": "Month/Day/Year (US)",
+      "DD/MM/YYYY": "Day/Month/Year (EU)",
+      "YYYY-MM-DD": "ISO format",
+      "DD-MM-YYYY": "Day-Month-Year",
+      "MM-DD-YYYY": "Month-Day-Year",
+    };
+    return descriptions[format] || format;
   }
 
   // /**

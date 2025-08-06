@@ -69,6 +69,17 @@ export class WorkspaceController {
     return this.workspaceService.getWorkspace(id, userId);
   }
 
+  @Get(":id/settings")
+  @CheckPolicy(Action.Read, "Workspace")
+  async getWorkspaceSettings(@Param("id") id: string, @GetUser("id") userId: string) {
+    return this.workspaceService.getWorkspaceSettings(id, userId);
+  }
+
+  @Get("settings/options")
+  async getWorkspaceSettingsOptions() {
+    return this.workspaceService.getWorkspaceSettingsOptions();
+  }
+
   @Get(":id/members")
   // @CheckPolicy(Action.ViewMembers, "Workspace")
   async getWorkspaceMembers(@Param("id") workspaceId: string, @GetUser("id") userId: string) {

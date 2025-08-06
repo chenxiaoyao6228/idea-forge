@@ -2,6 +2,20 @@ import { z } from "zod";
 
 import { WorkspaceMemberSchema, WorkspaceRoleSchema, WorkspaceSchema } from "./prisma-type-generated";
 
+// Workspace Settings Schema - scalable structure for future settings
+export const WorkspaceSettingsSchema = z.object({
+  // Appearance settings
+  timezone: z.string().optional(), // IANA timezone string e.g., "America/New_York"
+  dateFormat: z.enum(["YYYY/MM/DD", "MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "DD-MM-YYYY", "MM-DD-YYYY"]).optional(),
+
+  // Future settings can be added here without breaking changes
+  // e.g., theme: z.string().optional(),
+  // language: z.string().optional(),
+  // notifications: z.object({}).optional(),
+  // collaboration: z.object({}).optional(),
+});
+export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>;
+
 // Create workspace
 export const CreateWorkspaceRequestSchema = WorkspaceSchema.pick({
   name: true,
@@ -10,12 +24,13 @@ export const CreateWorkspaceRequestSchema = WorkspaceSchema.pick({
 });
 export type CreateWorkspaceRequest = z.infer<typeof CreateWorkspaceRequestSchema>;
 
-// Update workspace
+// Update workspace - now with proper settings validation
 export const UpdateWorkspaceRequestSchema = WorkspaceSchema.pick({
   name: true,
   description: true,
   avatar: true,
-  settings: true,
+}).extend({
+  settings: WorkspaceSettingsSchema.optional(),
 });
 export type UpdateWorkspaceRequest = z.infer<typeof UpdateWorkspaceRequestSchema>;
 
@@ -66,3 +81,24 @@ export const WorkspaceMemberListResponseSchema = z.array(
   }),
 );
 export type WorkspaceMemberListResponse = z.infer<typeof WorkspaceMemberListResponseSchema>;
+
+// Workspace Settings API responses
+export const WorkspaceSettingsResponseSchema = WorkspaceSettingsSchema;
+export type WorkspaceSettingsResponse = z.infer<typeof WorkspaceSettingsResponseSchema>;
+
+export const TimezoneOptionSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+});
+
+export const DateFormatOptionSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+  description: z.string(),
+});
+
+export const WorkspaceSettingsOptionsResponseSchema = z.object({
+  timezones: z.array(TimezoneOptionSchema),
+  dateFormats: z.array(DateFormatOptionSchema),
+});
+export type WorkspaceSettingsOptionsResponse = z.infer<typeof WorkspaceSettingsOptionsResponseSchema>;

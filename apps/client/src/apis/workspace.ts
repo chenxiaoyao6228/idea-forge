@@ -19,7 +19,7 @@ export const workspaceApi = {
   getWorkspaces: async () => request.get<void, WorkspaceListResponse>("/api/workspaces"),
 
   updateWorkspace: async (id: string, data: UpdateWorkspaceRequest) =>
-    request.put<UpdateWorkspaceRequest, WorkspaceDetailResponse>(`/api/workspaces/${id}`, data),
+    request.patch<UpdateWorkspaceRequest, WorkspaceDetailResponse>(`/api/workspaces/${id}`, data),
 
   deleteWorkspace: async (id: string) => request.delete<void, { success: boolean }>(`/api/workspaces/${id}`),
 

@@ -17,6 +17,7 @@ import { dataURLtoFile } from "@/lib/file";
 import { toast } from "sonner";
 import { authApi } from "@/apis/auth";
 import { SignOutButton } from "../signout-button";
+import Loading from "@/components/ui/loading";
 
 const AddPasswordDialog: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t } = useTranslation();
@@ -210,12 +211,7 @@ export const Account = () => {
   };
 
   if (!userInfo) {
-    return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">{t("Account")}</h3>
-        <div className="text-center text-muted-foreground">{t("Loading...")}</div>
-      </div>
-    );
+    <Loading />;
   }
 
   const avatarComponent = (
@@ -272,8 +268,8 @@ export const Account = () => {
           </Tooltip>
         </TooltipProvider>
 
-        <div className="ml-4 flex-1 pt-3">
-          <Input className="w-full" defaultValue={userInfo.displayName || ""} onBlur={handleNameUpdate} placeholder={t("Enter your display name")} />
+        <div className="ml-4 flex-1">
+          <Input className="w-full" defaultValue={userInfo?.displayName || ""} onBlur={handleNameUpdate} placeholder={t("Enter your display name")} />
           <Label className="text-xs text-muted-foreground">{t("This is your display name that others will see")}</Label>
         </div>
       </div>
@@ -297,7 +293,7 @@ export const Account = () => {
           <div className="flex items-center justify-between">
             <div>
               <Label>{t("Email")}</Label>
-              <div className="text-xs text-muted-foreground">{userInfo.email}</div>
+              <div className="text-xs text-muted-foreground">{userInfo?.email}</div>
             </div>
           </div>
 
@@ -326,7 +322,7 @@ export const Account = () => {
           <div className="flex items-center justify-between">
             <div>
               <Label>{t("User ID")}</Label>
-              <div className="text-xs text-muted-foreground font-mono">{userInfo.id}</div>
+              <div className="text-xs text-muted-foreground font-mono">{userInfo?.id}</div>
             </div>
           </div>
         </div>
