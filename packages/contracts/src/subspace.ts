@@ -100,3 +100,16 @@ export const subspaceGroupPermissionResponseSchema = z.object({
   ),
 });
 export type SubspaceGroupPermissionResponse = z.infer<typeof subspaceGroupPermissionResponseSchema>;
+
+// Batch set workspace-wide subspaces
+export const BatchSetWorkspaceWideRequestSchema = z.object({
+  subspaceIds: z.array(z.string()),
+});
+export type BatchSetWorkspaceWideRequest = z.infer<typeof BatchSetWorkspaceWideRequestSchema>;
+
+export const BatchSetWorkspaceWideResponseSchema = z.object({
+  success: z.boolean(),
+  updatedCount: z.number(),
+  subspaces: z.array(SubspaceSchema),
+});
+export type BatchSetWorkspaceWideResponse = z.infer<typeof BatchSetWorkspaceWideResponseSchema>;

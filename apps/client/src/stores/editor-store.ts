@@ -3,6 +3,8 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import { TableOfContentDataItem } from "@tiptap/extension-table-of-contents";
 import { Editor } from "@tiptap/react";
 
+const STORE_NAME = "editorStore";
+
 export type DocumentStatus =
   | "loading" // Initial state
   | "connecting" // Connecting to server

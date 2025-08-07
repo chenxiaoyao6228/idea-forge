@@ -283,7 +283,9 @@ export const Workspace = () => {
   );
 
   return (
-    <>
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">{t("Workspace")}</h3>
+      <Separator />
       {/* Profile Section */}
       <div className="flex">
         <TooltipProvider>
@@ -370,6 +372,6 @@ export const Workspace = () => {
         setSelectedFile={setSelectedFile}
         onCropComplete={handleCroppedImage}
       />
-    </>
+    </div>
   );
 };

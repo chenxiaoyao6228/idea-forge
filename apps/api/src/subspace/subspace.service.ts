@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
-import { SubspaceTypeSchema } from "@idea/contracts";
+import { Subspace, SubspaceTypeSchema } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
@@ -1000,6 +1000,105 @@ export class SubspaceService {
 
     return {
       data: permissions,
+    };
+  }
+
+  async batchSetWorkspaceWide(subspaceIds: string[], userId: string) {
+    // Get the first subspace to check workspace and permissions
+    const firstSubspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceIds[0] },
+      include: { workspace: true },
+    });
+
+    if (!firstSubspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    const workspaceId = firstSubspace.workspaceId;
+
+    // Check if user is workspace admin
+    const workspaceMember = await this.prismaService.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId,
+        },
+      },
+    });
+
+    if (!workspaceMember || (workspaceMember.role !== "ADMIN" && workspaceMember.role !== "OWNER")) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    // Get all workspace members
+    const workspaceMembers = await this.prismaService.workspaceMember.findMany({
+      where: { workspaceId },
+      select: { userId: true },
+    });
+
+    const workspaceMemberIds = workspaceMembers.map((m) => m.userId);
+
+    // Update all subspaces to WORKSPACE_WIDE and add all workspace members
+    const updatedSubspaces = await this.prismaService.$transaction(async (tx) => {
+      const subspaces = await tx.subspace.findMany({
+        where: {
+          id: { in: subspaceIds },
+          workspaceId,
+        },
+      });
+
+      if (subspaces.length !== subspaceIds.length) {
+        throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+      }
+
+      const updatedSubspaces: Subspace[] = [];
+
+      for (const subspace of subspaces) {
+        // Update subspace type to WORKSPACE_WIDE
+        const updatedSubspace = await tx.subspace.update({
+          where: { id: subspace.id },
+          data: { type: "WORKSPACE_WIDE" },
+        });
+
+        // Add all workspace members to this subspace if they're not already members
+        for (const memberId of workspaceMemberIds) {
+          await tx.subspaceMember.upsert({
+            where: {
+              subspaceId_userId: {
+                subspaceId: subspace.id,
+                userId: memberId,
+              },
+            },
+            update: {},
+            create: {
+              subspaceId: subspace.id,
+              userId: memberId,
+              role: "MEMBER",
+            },
+          });
+        }
+
+        updatedSubspaces.push(updatedSubspace);
+      }
+
+      return updatedSubspaces;
+    });
+
+    // TODO: update document permissions
+
+    // Publish events for each updated subspace
+    // for (const subspace of updatedSubspaces) {
+    //   this.eventPublisher.publish(BusinessEvents.SUBSPACE_UPDATED, {
+    //     subspaceId: subspace.id,
+    //     workspaceId,
+    //     updatedBy: userId,
+    //   });
+    // }
+
+    return {
+      success: true,
+      updatedCount: updatedSubspaces.length,
+      subspaces: presentSubspaces(updatedSubspaces),
     };
   }
 }

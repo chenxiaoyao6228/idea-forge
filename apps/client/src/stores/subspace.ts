@@ -9,6 +9,8 @@ import useStarStore from "./star";
 import { EntityActions } from "./utils/entity-slice";
 import { DocumentEntity } from "./document";
 
+const STORE_NAME = "subspaceStore";
+
 export interface SubspaceEntity {
   id: string;
   name: string;
@@ -798,7 +800,7 @@ const useSubSpaceStore = create<StoreState>()(
         },
       })),
       {
-        name: "subspaceStore",
+        name: STORE_NAME,
       },
     ),
   ),

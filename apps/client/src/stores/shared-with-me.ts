@@ -8,6 +8,8 @@ import useAbilityStore from "./ability";
 import useUserStore from "./user";
 import useWorkspaceStore from "./workspace";
 
+const STORE_NAME = "sharedWithMeStore";
+
 interface SharedWithMeState {
   documents: DocumentEntity[];
   allAbilities: Record<string, Record<string, boolean>>;
@@ -178,7 +180,7 @@ const useSharedWithMeStore = create<StoreState>()(
         };
       }),
       {
-        name: "sharedWithMeStore",
+        name: STORE_NAME,
       },
     ),
   ),

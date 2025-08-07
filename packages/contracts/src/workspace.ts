@@ -7,12 +7,6 @@ export const WorkspaceSettingsSchema = z.object({
   // Appearance settings
   timezone: z.string().optional(), // IANA timezone string e.g., "America/New_York"
   dateFormat: z.enum(["YYYY/MM/DD", "MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "DD-MM-YYYY", "MM-DD-YYYY"]).optional(),
-
-  // Future settings can be added here without breaking changes
-  // e.g., theme: z.string().optional(),
-  // language: z.string().optional(),
-  // notifications: z.object({}).optional(),
-  // collaboration: z.object({}).optional(),
 });
 export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>;
 
@@ -29,6 +23,7 @@ export const UpdateWorkspaceRequestSchema = WorkspaceSchema.pick({
   name: true,
   description: true,
   avatar: true,
+  memberSubspaceCreate: true,
 }).extend({
   settings: WorkspaceSettingsSchema.optional(),
 });

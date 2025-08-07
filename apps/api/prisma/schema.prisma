@@ -163,13 +163,13 @@ enum UserStatus {
 
 model Workspace {
   id              String   @id @default(cuid())
-  allowPublicDocs Boolean  @default(false)
   name            String
   description     String?
   avatar          String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  memberSubspaceCreate Boolean  @default(false)
   settings Json?
 
   // relations

@@ -315,12 +315,7 @@ export class WorkspaceService {
 
     const workspace = await this.prismaService.workspace.update({
       where: { id },
-      data: {
-        name: dto.name,
-        description: dto.description,
-        avatar: dto.avatar,
-        ...(dto.settings !== undefined && { settings: dto.settings as any }),
-      },
+      data: dto,
     });
 
     return presentWorkspace(workspace);

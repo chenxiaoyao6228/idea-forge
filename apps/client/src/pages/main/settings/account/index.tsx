@@ -256,93 +256,97 @@ export const Account = () => {
   }, [userInfo?.id]);
 
   return (
-    <>
-      {/* Profile Section */}
-      <div className="flex">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>{avatarComponent}</TooltipTrigger>
-            <TooltipContent>
-              <p>{t("Click to upload and crop your photo")}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">{t("Account")}</h3>
+      <Separator />
+      <>
+        {/* Profile Section */}
+        <div className="flex">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>{avatarComponent}</TooltipTrigger>
+              <TooltipContent>
+                <p>{t("Click to upload and crop your photo")}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-        <div className="ml-4 flex-1">
-          <Input className="w-full" defaultValue={userInfo?.displayName || ""} onBlur={handleNameUpdate} placeholder={t("Enter your display name")} />
-          <Label className="text-xs text-muted-foreground">{t("This is your display name that others will see")}</Label>
-        </div>
-      </div>
-
-      {/* Security Section */}
-      <div>
-        <h3 className="text-base font-medium flex items-center justify-between">
-          {t("Security")}
-          {!hasPassword && (
-            <AddPasswordDialog>
-              <Button size="sm" variant="outline" className="ml-2">
-                {t("Add Password")}
-              </Button>
-            </AddPasswordDialog>
-          )}
-        </h3>
-        <Separator className="my-2" />
-
-        <div className="space-y-4">
-          {/* Email */}
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>{t("Email")}</Label>
-              <div className="text-xs text-muted-foreground">{userInfo?.email}</div>
-            </div>
+          <div className="ml-4 flex-1">
+            <Input className="w-full" defaultValue={userInfo?.displayName || ""} onBlur={handleNameUpdate} placeholder={t("Enter your display name")} />
+            <Label className="text-xs text-muted-foreground">{t("This is your display name that others will see")}</Label>
           </div>
+        </div>
 
-          {/* Password */}
-          {hasPassword && (
+        {/* Security Section */}
+        <div>
+          <h3 className="text-base font-medium flex items-center justify-between">
+            {t("Security")}
+            {!hasPassword && (
+              <AddPasswordDialog>
+                <Button size="sm" variant="outline" className="ml-2">
+                  {t("Add Password")}
+                </Button>
+              </AddPasswordDialog>
+            )}
+          </h3>
+          <Separator className="my-2" />
+
+          <div className="space-y-4">
+            {/* Email */}
             <div className="flex items-center justify-between">
               <div>
-                <Label>{t("Password")}</Label>
-                <div className="text-xs text-muted-foreground">{t("Keep your account secure with a strong password")}</div>
+                <Label>{t("Email")}</Label>
+                <div className="text-xs text-muted-foreground">{userInfo?.email}</div>
               </div>
-              <ChangePasswordDialog>
-                <Button size="sm" variant="outline">
-                  {t("Change Password")}
-                </Button>
-              </ChangePasswordDialog>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Account Info */}
-      <div>
-        <h3 className="text-base font-medium">{t("Account Information")}</h3>
-        <Separator className="my-2" />
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>{t("User ID")}</Label>
-              <div className="text-xs text-muted-foreground font-mono">{userInfo?.id}</div>
+            {/* Password */}
+            {hasPassword && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>{t("Password")}</Label>
+                  <div className="text-xs text-muted-foreground">{t("Keep your account secure with a strong password")}</div>
+                </div>
+                <ChangePasswordDialog>
+                  <Button size="sm" variant="outline">
+                    {t("Change Password")}
+                  </Button>
+                </ChangePasswordDialog>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Account Info */}
+        <div>
+          <h3 className="text-base font-medium">{t("Account Information")}</h3>
+          <Separator className="my-2" />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>{t("User ID")}</Label>
+                <div className="text-xs text-muted-foreground font-mono">{userInfo?.id}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <Separator className="my-2" />
-      <div className="flex justify-end">
-        <SignOutButton />
-      </div>
+        <Separator className="my-2" />
+        <div className="flex justify-end">
+          <SignOutButton />
+        </div>
 
-      {/* Image Cropper Dialog */}
-      {selectedFile && (
-        <ImageCropper
-          dialogOpen={cropperDialogOpen}
-          setDialogOpen={setCropperDialogOpen}
-          selectedFile={selectedFile}
-          setSelectedFile={setSelectedFile}
-          onCropComplete={handleCroppedImage}
-        />
-      )}
-    </>
+        {/* Image Cropper Dialog */}
+        {selectedFile && (
+          <ImageCropper
+            dialogOpen={cropperDialogOpen}
+            setDialogOpen={setCropperDialogOpen}
+            selectedFile={selectedFile}
+            setSelectedFile={setSelectedFile}
+            onCropComplete={handleCroppedImage}
+          />
+        )}
+      </>
+    </div>
   );
 };

@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { SubspaceService } from "./subspace.service";
 import { SubspaceMemberListResponse } from "@idea/contracts";
-import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, MoveSubspaceDto } from "./subspace.dto";
+import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, MoveSubspaceDto, BatchSetWorkspaceWideDto } from "./subspace.dto";
 import { Action } from "@/_shared/casl/ability.class";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { CheckPolicy } from "@/_shared/casl/policy.decorator";
@@ -80,5 +80,24 @@ export class SubspaceController {
   @CheckPolicy(Action.ViewMembers, "Subspace")
   async getSubspaceMembers(@Param("id") id: string, @GetUser("id") userId: string): Promise<SubspaceMemberListResponse> {
     return this.subspaceService.getSubspaceMembers(id, userId);
+  }
+
+  // ==== settings ====
+  // @Get(":id/settings")
+  // @CheckPolicy(Action.Update, "Subspace")
+  // async getSubspaceSettings(@Param("id") id: string, @GetUser("id") userId: string) {
+  //   return this.subspaceService.getSubspaceSettings(id, userId);
+  // }
+
+  // @Put(":id/settings")
+  // @CheckPolicy(Action.Update, "Subspace")
+  // async updateSubspaceSettings(@Param("id") id: string, @Body() dto: UpdateSubspaceSettingsDto, @GetUser("id") userId: string) {
+  //   return this.subspaceService.updateSubspaceSettings(id, dto, userId);
+  // }
+
+  // ==== batch operations ====
+  @Post("batch-set-workspace-wide")
+  async batchSetWorkspaceWide(@Body() dto: BatchSetWorkspaceWideDto, @GetUser("id") userId: string) {
+    return this.subspaceService.batchSetWorkspaceWide(dto.subspaceIds, userId);
   }
 }

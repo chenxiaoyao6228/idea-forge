@@ -9,6 +9,9 @@ import useStarStore from "./star";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import useWorkspaceStore from "./workspace";
 import useAbilityStore from "./ability";
+
+const STORE_NAME = "documentStore";
+
 interface FetchOptions {
   force?: boolean;
   prefetch?: boolean;
@@ -706,7 +709,7 @@ const useDocumentStore = create<StoreState>()(
         },
       })),
       {
-        name: "documentStore",
+        name: STORE_NAME,
       },
     ),
   ),

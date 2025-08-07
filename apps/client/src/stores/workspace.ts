@@ -2,8 +2,11 @@ import { create } from "zustand";
 import { devtools, subscribeWithSelector, persist } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
 import { workspaceApi } from "@/apis/workspace";
+import { subspaceApi } from "@/apis/subspace";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
+import { UpdateWorkspaceRequest, WorkspaceSettings } from "@idea/contracts";
 
+const STORE_NAME = "workspaceStore";
 export interface WorkspaceEntity {
   id: string;
   name: string;
@@ -12,7 +15,8 @@ export interface WorkspaceEntity {
   allowPublicDocs?: boolean;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  settings?: any;
+  settings?: WorkspaceSettings | null;
+  memberSubspaceCreate?: boolean;
 }
 
 interface State {
@@ -26,8 +30,9 @@ interface Action {
   fetchList: () => Promise<WorkspaceEntity[]>;
   switchWorkspace: (workspaceId: string) => Promise<void>;
   reorderWorkspaces: (workspaceIds: string[]) => Promise<void>;
-
-  // Helper methods
+  batchSetWorkspaceWide: (subspaceIds: string[]) => Promise<void>;
+  updateWorkspace: (workspaceId: string, workspace: Partial<UpdateWorkspaceRequest>) => Promise<void>;
+  updateWorkspaceSettings: (workspaceId: string, settings: Partial<WorkspaceSettings>) => Promise<void>;
   setCurrentWorkspace: (workspace?: WorkspaceEntity) => void;
   clear: () => void;
 }
@@ -60,12 +65,24 @@ const useWorkspaceStore = create<StoreState>()(
             try {
               const response = await workspaceApi.getWorkspaces();
               if (response && Array.isArray(response)) {
-                get().setAll(response);
+                // Convert API response to WorkspaceEntity format
+                const workspaceEntities: WorkspaceEntity[] = response.map((workspace) => ({
+                  id: workspace.id,
+                  name: workspace.name,
+                  description: workspace.description,
+                  avatar: workspace.avatar,
+                  createdAt: workspace.createdAt,
+                  updatedAt: workspace.updatedAt,
+                  memberSubspaceCreate: workspace.memberSubspaceCreate,
+                  settings: workspace.settings as WorkspaceSettings | null,
+                }));
+
+                get().setAll(workspaceEntities);
                 set({ isLoaded: true });
 
                 // If no current workspace, set the first one as the current workspace
                 if (!get().currentWorkspace) {
-                  const firstWorkspace = response[0];
+                  const firstWorkspace = workspaceEntities[0];
                   if (firstWorkspace) {
                     get().setCurrentWorkspace(firstWorkspace);
                   }
@@ -102,6 +119,79 @@ const useWorkspaceStore = create<StoreState>()(
             }
           },
 
+          // Subspace actions
+          batchSetWorkspaceWide: async (subspaceIds) => {
+            try {
+              await subspaceApi.batchSetWorkspaceWide({ subspaceIds });
+              // Refresh current workspace to get updated subspaces
+              if (get().currentWorkspace) {
+                await get().fetchList();
+              }
+            } catch (error) {
+              console.error("Failed to batch set workspace-wide:", error);
+              throw error;
+            }
+          },
+
+          updateWorkspace: async (workspaceId, workspace) => {
+            try {
+              const oldWorkspace = get().entities[workspaceId];
+              const updatedWorkspace = await workspaceApi.updateWorkspace(workspaceId, {
+                ...oldWorkspace,
+                ...workspace,
+              } as UpdateWorkspaceRequest);
+
+              // Convert the returned workspace to WorkspaceEntity format
+              const workspaceEntity: WorkspaceEntity = {
+                id: updatedWorkspace.id,
+                name: updatedWorkspace.name,
+                description: updatedWorkspace.description,
+                avatar: updatedWorkspace.avatar,
+                createdAt: updatedWorkspace.createdAt,
+                updatedAt: updatedWorkspace.updatedAt,
+                memberSubspaceCreate: updatedWorkspace.memberSubspaceCreate,
+                settings: updatedWorkspace.settings as WorkspaceSettings | null,
+              };
+
+              // Update the workspace in store with the converted data
+              get().updateOne({ id: workspaceId, changes: workspaceEntity });
+
+              // Update current workspace if it's the same
+              if (get().currentWorkspace?.id === workspaceId) {
+                get().setCurrentWorkspace(workspaceEntity);
+              }
+            } catch (error) {
+              console.error("Failed to update workspace:", error);
+              throw error;
+            }
+          },
+
+          // Settings actions - now properly based on updateWorkspace
+          updateWorkspaceSettings: async (workspaceId, settings) => {
+            try {
+              // Get current workspace data
+              const workspace = get().entities[workspaceId];
+              if (!workspace) {
+                throw new Error("Workspace not found");
+              }
+
+              // Prepare update data with current workspace info + new settings
+              const updateData: UpdateWorkspaceRequest = {
+                name: workspace.name,
+                description: workspace.description || null,
+                avatar: workspace.avatar || null,
+                memberSubspaceCreate: workspace.memberSubspaceCreate || false,
+                settings: { ...workspace.settings, ...settings },
+              };
+
+              // Use updateWorkspace which handles all the store updates
+              await get().updateWorkspace(workspaceId, updateData);
+            } catch (error) {
+              console.error("Failed to update workspace settings:", error);
+              throw error;
+            }
+          },
+
           // Helper methods
           setCurrentWorkspace: (workspace) => {
             set({ currentWorkspace: workspace });
@@ -112,11 +202,11 @@ const useWorkspaceStore = create<StoreState>()(
           },
         })),
         {
-          name: "workspaceStore",
+          name: STORE_NAME,
         },
       ),
       {
-        name: "workspace-storage",
+        name: STORE_NAME,
         partialize: (state) => ({
           currentWorkspace: state.currentWorkspace,
         }),

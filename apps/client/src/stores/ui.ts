@@ -1,5 +1,7 @@
 import { createStore } from "./utils/factory";
 
+const STORE_NAME = "uiStore";
+
 interface State {
   isSidebarCollapsed: boolean;
   activeDocumentId?: string;
@@ -28,7 +30,7 @@ const useUIStore = createStore<State & Action, ComputedState>(
   (state) => ({}),
   {
     devtoolOptions: {
-      name: "uiStore",
+      name: STORE_NAME,
     },
   },
 );

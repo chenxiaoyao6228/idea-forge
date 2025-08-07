@@ -8,11 +8,10 @@ import { Members } from "./members";
 import { Subspace } from "./subspace";
 import { Workspace } from "./workspace";
 import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
 
 export const SettingDialog = () => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const tabList = useMemo(() => {
     return [
@@ -40,7 +39,7 @@ export const SettingDialog = () => {
   }, [t]);
 
   const content = (
-    <Tabs defaultValue="profile" className="flex h-full gap-4 overflow-hidden">
+    <Tabs defaultValue="subspace" className="flex h-full gap-4 overflow-hidden">
       <TabsList className="grid gap-2 bg-inherit text-left">
         {tabList.map(({ key, name, Icon }) => {
           return (
@@ -52,28 +51,16 @@ export const SettingDialog = () => {
         })}
       </TabsList>
       <TabsContent tabIndex={-1} value="profile" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">{t("Account")}</h3>
-          <Separator />
-          <Account />
-        </div>
+        <Account />
       </TabsContent>
       <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
         <Members />
       </TabsContent>
       <TabsContent tabIndex={-1} value="subspace" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">{t("Subspace")}</h3>
-          <Separator />
-          <Subspace />
-        </div>
+        <Subspace />
       </TabsContent>
       <TabsContent tabIndex={-1} value="workspace" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">{t("Workspace")}</h3>
-          <Separator />
-          <Workspace />
-        </div>
+        <Workspace />
       </TabsContent>
     </Tabs>
   );

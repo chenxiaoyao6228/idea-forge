@@ -5,6 +5,8 @@ import { starApi } from "@/apis/star";
 import createEntitySlice, { EntityState, EntityActions, EntitySelectors } from "./utils/entity-slice";
 import useDocumentStore from "./document";
 
+const STORE_NAME = "starStore";
+
 export interface StarEntity {
   id: string;
   docId: string | null;
@@ -198,7 +200,7 @@ const useStarStore = create<StoreState>()(
         return store;
       }),
       {
-        name: "starStore",
+        name: STORE_NAME,
       },
     ),
   ),

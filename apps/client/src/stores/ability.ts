@@ -4,6 +4,8 @@ import { createComputed } from "zustand-computed";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import { permissionApi } from "@/apis/permission";
 
+const STORE_NAME = "abilityStore";
+
 /*
  * we don't need the UnifiedPermission Entity on the client
  * but the converted abilities
@@ -108,7 +110,7 @@ const useAbilityStore = create<StoreState>()(
         },
       })),
       {
-        name: "permissionStore",
+        name: STORE_NAME,
       },
     ),
   ),

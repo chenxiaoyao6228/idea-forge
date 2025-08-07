@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { UserResponseData } from "@idea/contracts";
 import useWorkspaceStore from "./workspace";
 
+const STORE_NAME = "workspaceStore";
+
 export interface UserInfo extends UserResponseData {}
 
 interface UserStoreState {
