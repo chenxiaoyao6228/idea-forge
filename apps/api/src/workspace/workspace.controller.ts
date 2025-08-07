@@ -34,6 +34,12 @@ export class WorkspaceController {
     return this.workspaceService.addWorkspaceMember(workspaceId, dto.userId, dto.role, adminId);
   }
 
+  @Get(":id/members")
+  // @CheckPolicy(Action.ViewMembers, "Workspace")
+  async getWorkspaceMembers(@Param("id") workspaceId: string, @GetUser("id") userId: string) {
+    return this.workspaceService.getWorkspaceMembers(workspaceId, userId);
+  }
+
   @Delete(":id/members/:userId")
   @CheckPolicy(Action.ManageMembers, "Workspace")
   async removeWorkspaceMember(@Param("id") workspaceId: string, @Param("userId") userId: string, @GetUser("id") adminId: string) {
@@ -78,12 +84,6 @@ export class WorkspaceController {
   @Get("settings/options")
   async getWorkspaceSettingsOptions() {
     return this.workspaceService.getWorkspaceSettingsOptions();
-  }
-
-  @Get(":id/members")
-  // @CheckPolicy(Action.ViewMembers, "Workspace")
-  async getWorkspaceMembers(@Param("id") workspaceId: string, @GetUser("id") userId: string) {
-    return this.workspaceService.getWorkspaceMembers(workspaceId, userId);
   }
 
   // === Guest Collaborators ===

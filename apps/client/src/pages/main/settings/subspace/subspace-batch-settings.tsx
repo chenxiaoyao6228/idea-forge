@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 import { X } from "lucide-react";
 import { Subspace, SubspaceType } from "@idea/contracts";
-import { subspaceApi } from "@/apis/subspace";
 import useWorkspaceStore from "@/stores/workspace";
+import useSubSpaceStore from "@/stores/subspace";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -15,28 +15,12 @@ interface SubspaceBatchSettingsProps {
 
 export function SubspaceBatchSettings({ workspaceId }: SubspaceBatchSettingsProps) {
   const [selectedSubspaces, setSelectedSubspaces] = useState<MultiSelectOption[]>([]);
-  const [subspaces, setSubspaces] = useState<Subspace[]>([]);
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
 
   const batchSetWorkspaceWide = useWorkspaceStore((state) => state.batchSetWorkspaceWide);
-
-  // Fetch subspaces
-  useEffect(() => {
-    const fetchSubspaces = async () => {
-      try {
-        const data = await subspaceApi.getUserSubspacesIncludingVirtual(workspaceId);
-        // Filter out WORKSPACE_WIDE subspaces as they're already set
-        const availableSubspaces = data.filter((subspace) => subspace.type !== SubspaceType.WORKSPACE_WIDE);
-        setSubspaces(availableSubspaces);
-      } catch (error) {
-        console.error("Failed to fetch subspaces:", error);
-        toast.error("Failed to load subspaces");
-      }
-    };
-
-    fetchSubspaces();
-  }, [workspaceId]);
+  const subspaces = useSubSpaceStore((state) => state.allSubspaces);
+  const fetchList = useSubSpaceStore((state) => state.fetchList);
 
   // Convert subspaces to MultiSelectOption format
   const subspaceOptions: MultiSelectOption[] = subspaces.map((subspace) => ({
@@ -57,10 +41,8 @@ export function SubspaceBatchSettings({ workspaceId }: SubspaceBatchSettingsProp
       toast.success(`Successfully set ${selectedSubspaces.length} subspace(s) as workspace-wide`);
       setSelectedSubspaces([]);
 
-      // Refresh subspaces list
-      const data = await subspaceApi.getUserSubspacesIncludingVirtual(workspaceId);
-      const availableSubspaces = data.filter((subspace) => subspace.type !== "WORKSPACE_WIDE");
-      setSubspaces(availableSubspaces);
+      // Refresh subspaces list from store
+      await fetchList(workspaceId);
     } catch (error) {
       console.error("Failed to batch set workspace-wide:", error);
       toast.error("Failed to set subspaces as workspace-wide");

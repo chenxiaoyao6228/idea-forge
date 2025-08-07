@@ -7,6 +7,7 @@ import { HelpCircle, Plus } from "lucide-react";
 import { SubspaceBatchSettings } from "./subspace-batch-settings";
 import { WorkspaceSubspaceSettings } from "./workspace-subspace-settings";
 import useWorkspaceStore from "@/stores/workspace";
+import { SubspaceTable } from "./subspace-table";
 
 export const Subspace = () => {
   const { t } = useTranslation();
@@ -46,25 +47,7 @@ export const Subspace = () => {
           <Separator />
 
           {/* Subspace Management */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{t("Manage subspaces")}</CardTitle>
-                  <CardDescription>{t("You can browse and manage subspaces here")}</CardDescription>
-                </div>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t("Create subspace")}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">{t("The subspace management function is under development...")}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <SubspaceTable workspaceId={currentWorkspace.id} />
         </div>
       </div>
     </div>

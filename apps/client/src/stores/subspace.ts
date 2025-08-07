@@ -2,12 +2,13 @@ import { create } from "zustand";
 import { subspaceApi } from "@/apis/subspace";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
-import { CreateSubspaceRequest, NavigationNode, NavigationNodeType } from "@idea/contracts";
+import { CreateSubspaceRequest, NavigationNode, NavigationNodeType, SubspaceMember } from "@idea/contracts";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
 import useStarStore from "./star";
 import { EntityActions } from "./utils/entity-slice";
 import { DocumentEntity } from "./document";
+import useUserStore from "./user";
 
 const STORE_NAME = "subspaceStore";
 
@@ -22,10 +23,21 @@ export interface SubspaceEntity {
   url?: string;
   updatedAt: Date;
   createdAt: Date;
-  //  fields
+  archivedAt?: Date | null;
+  //  field
   description?: string;
   isPrivate?: boolean;
   documentCount?: number;
+  members?: SubspaceMember &
+    {
+      userId: string;
+      user: {
+        id: string;
+        email: string;
+        displayName: string | null;
+        imageUrl: string | null;
+      };
+    }[];
   memberCount?: number;
 }
 
@@ -42,6 +54,7 @@ interface State {
 interface Action {
   // Existing API actions
   fetchList: (workspaceId: string) => Promise<SubspaceEntity[]>;
+  fetchSubspace: (subspaceId: string) => Promise<SubspaceEntity>;
   create: (payload: CreateSubspaceRequest) => Promise<SubspaceEntity>;
   move: (subspaceId: string, index: string) => Promise<void>;
   update: (subspaceId: string, updates: Partial<SubspaceEntity>) => Promise<void>;
@@ -114,6 +127,13 @@ const useSubSpaceStore = create<StoreState>()(
           .sort((a, b) => {
             return a.index < b.index ? -1 : 1;
           })
+          .filter((subspace) => subspace.type !== "PERSONAL"),
+        joinedSubspaces: subspaceSelectors
+          .selectAll(state)
+          .sort((a, b) => {
+            return a.index < b.index ? -1 : 1;
+          })
+          .filter((subspace) => subspace?.members?.some((member) => member?.userId === useUserStore.getState().userInfo?.id))
           .filter((subspace) => subspace.type !== "PERSONAL"),
         personalSubspace: subspaceSelectors.selectAll(state).find((subspace) => subspace.type === "PERSONAL"),
         allSubspacesAsNavigationNodes: subspaceSelectors.selectAll(state).map((subspace) => ({
@@ -479,7 +499,7 @@ const useSubSpaceStore = create<StoreState>()(
           try {
             let subspaces: any[] = [];
 
-            subspaces = await subspaceApi.getUserSubspacesIncludingVirtual(workspaceId);
+            subspaces = await subspaceApi.getUserSubspacesIncludingPersonal(workspaceId);
 
             subspaces = subspaces.map((subspace) => ({
               ...subspace,
@@ -494,6 +514,32 @@ const useSubSpaceStore = create<StoreState>()(
             return [];
           } finally {
             set({ isLoading: false });
+          }
+        },
+
+        fetchSubspace: async (subspaceId) => {
+          try {
+            // TODO: FIX type error
+            const response = (await subspaceApi.getSubspace(subspaceId)) as any;
+            const subspace: SubspaceEntity = {
+              ...response.subspace,
+              index: response.subspace.index || "0",
+              navigationTree: response.subspace.navigationTree as NavigationNode[],
+              members: response.subspace.members || [],
+              memberCount: response.subspace.memberCount || 0,
+              updatedAt: new Date(response.subspace.updatedAt),
+              createdAt: new Date(response.subspace.createdAt),
+            };
+
+            get().updateOne({
+              id: subspaceId,
+              changes: subspace,
+            });
+
+            return subspace;
+          } catch (error) {
+            console.error("Failed to fetch subspace:", error);
+            throw error;
           }
         },
 

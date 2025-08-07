@@ -271,9 +271,9 @@ model Subspace {
   type        SubspaceType @default(PUBLIC)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  archivedAt  DateTime?   
+  
   settings    Json?
-
-  isArchived Boolean @default(false)
 
   navigationTree Json?
   index          String?

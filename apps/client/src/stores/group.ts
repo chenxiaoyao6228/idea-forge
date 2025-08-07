@@ -35,6 +35,9 @@ interface Action {
   delete: (id: string) => Promise<void>;
   addUser: (groupId: string, userId: string) => Promise<GroupEntity>;
   removeUser: (groupId: string, userId: string) => Promise<GroupEntity>;
+
+  // Fetch groups for workspace
+  fetchWorkspaceGroups: (workspaceId: string) => Promise<GroupEntity[]>;
 }
 
 const defaultState: State = {
@@ -167,6 +170,28 @@ const useGroupStore = create<StoreState>()(
             return group;
           } finally {
             set({ isSaving: false });
+          }
+        },
+
+        fetchWorkspaceGroups: async (workspaceId: string) => {
+          try {
+            const { data } = await groupApi.list({
+              limit: 100,
+              page: 1,
+              sortBy: "name",
+              sortOrder: "asc",
+            });
+            const groups = data.map((group: any) => ({
+              id: group.id,
+              name: group.name,
+              description: typeof group.description === "string" ? group.description : null,
+              members: Array.isArray(group.members) ? group.members : [],
+            }));
+            get().setAll(groups);
+            return groups;
+          } catch (error) {
+            console.error("Failed to fetch workspace groups:", error);
+            return [];
           }
         },
       })),

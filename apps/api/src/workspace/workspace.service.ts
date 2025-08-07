@@ -7,7 +7,7 @@ import { presentWorkspace } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
 import { PermissionService } from "@/permission/permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { ResourceType, WorkspaceRole, WorkspaceMember } from "@idea/contracts";
+import { ResourceType, WorkspaceRole, WorkspaceMember, SubspaceType, SubspaceRole } from "@idea/contracts";
 
 @Injectable()
 export class WorkspaceService {
@@ -391,7 +391,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
     }
 
-    // 1. Create workspace membership
+    //  Create workspace membership
     const member = await this.prismaService.workspaceMember.create({
       data: { workspaceId, userId, role },
       include: {
@@ -401,10 +401,19 @@ export class WorkspaceService {
       },
     });
 
-    // 2. Assign workspace permissions based on role
-    const permission = await this.permissionService.assignWorkspacePermissions(userId, workspaceId, role, adminId);
+    //  Assign workspace permissions based on role
+    await this.permissionService.assignWorkspacePermissions(userId, workspaceId, role, adminId);
 
-    // 3. Propagate permissions to all child subspaces and documents
+    // Invite user to all workspace-wide subspaces
+    const workspaceWideSubspaces = await this.prismaService.subspace.findMany({
+      where: { workspaceId, type: SubspaceType.WORKSPACE_WIDE },
+    });
+
+    for (const subspace of workspaceWideSubspaces) {
+      await this.subspaceService.addSubspaceMember(subspace.id, { userId, role: SubspaceRole.MEMBER }, adminId);
+    }
+
+    //  Propagate permissions to all child subspaces and documents
     // TODO:
 
     // --- Create personal subspace for the new member ---

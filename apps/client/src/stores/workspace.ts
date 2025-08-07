@@ -35,6 +35,9 @@ interface Action {
   updateWorkspaceSettings: (workspaceId: string, settings: Partial<WorkspaceSettings>) => Promise<void>;
   setCurrentWorkspace: (workspace?: WorkspaceEntity) => void;
   clear: () => void;
+
+  // Workspace members
+  fetchWorkspaceMembers: (workspaceId: string) => Promise<any[]>;
 }
 
 const defaultState: State = {
@@ -199,6 +202,17 @@ const useWorkspaceStore = create<StoreState>()(
 
           clear: () => {
             set(defaultState);
+          },
+
+          // Workspace members
+          fetchWorkspaceMembers: async (workspaceId: string) => {
+            try {
+              const response = await workspaceApi.getWorkspaceMembers(workspaceId);
+              return response || [];
+            } catch (error) {
+              console.error("Failed to fetch workspace members:", error);
+              return [];
+            }
           },
         })),
         {

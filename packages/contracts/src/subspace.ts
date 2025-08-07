@@ -23,6 +23,33 @@ export const AddSubspaceMemberRequestSchema = z.object({
 });
 export type AddSubspaceMemberRequest = z.infer<typeof AddSubspaceMemberRequestSchema>;
 
+// Batch add subspace members (users and groups)
+export const BatchAddSubspaceMemberRequestSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(["user", "group"]),
+      role: SubspaceRoleSchema.default(SubspaceRoleSchema.enum.MEMBER),
+    }),
+  ),
+});
+export type BatchAddSubspaceMemberRequest = z.infer<typeof BatchAddSubspaceMemberRequestSchema>;
+
+export const BatchAddSubspaceMemberResponseSchema = z.object({
+  success: z.boolean(),
+  addedCount: z.number(),
+  errors: z
+    .array(
+      z.object({
+        id: z.string(),
+        type: z.string(),
+        error: z.string(),
+      }),
+    )
+    .optional(),
+});
+export type BatchAddSubspaceMemberResponse = z.infer<typeof BatchAddSubspaceMemberResponseSchema>;
+
 // Update subspace member
 export const UpdateSubspaceMemberRequestSchema = z.object({
   role: SubspaceRoleSchema,
@@ -38,7 +65,16 @@ export type SubspaceListResponse = z.infer<typeof SubspaceListResponseSchema>;
 // Subspace detail response
 export const SubspaceDetailResponseSchema = z.object({
   subspace: SubspaceSchema.extend({
-    members: z.array(SubspaceMemberSchema),
+    members: z.array(
+      SubspaceMemberSchema.extend({
+        user: z.object({
+          id: z.string(),
+          email: z.string(),
+          displayName: z.string().nullable(),
+        }),
+      }),
+    ),
+    memberCount: z.number(),
   }),
 });
 export type SubspaceDetailResponse = z.infer<typeof SubspaceDetailResponseSchema>;

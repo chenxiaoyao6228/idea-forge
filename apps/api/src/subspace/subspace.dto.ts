@@ -6,6 +6,7 @@ import {
   CreateSubspaceRequestSchema,
   UpdateSubspaceRequestSchema,
   BatchSetWorkspaceWideRequestSchema,
+  BatchAddSubspaceMemberRequestSchema,
 } from "@idea/contracts";
 
 export class CreateSubspaceDto extends createZodDto(CreateSubspaceRequestSchema) {}
@@ -19,3 +20,5 @@ export class AddSubspaceMemberDto extends createZodDto(AddSubspaceMemberRequestS
 export class UpdateSubspaceMemberDto extends createZodDto(UpdateSubspaceMemberRequestSchema) {}
 
 export class BatchSetWorkspaceWideDto extends createZodDto(BatchSetWorkspaceWideRequestSchema) {}
+
+export class BatchAddSubspaceMemberDto extends createZodDto(BatchAddSubspaceMemberRequestSchema) {}

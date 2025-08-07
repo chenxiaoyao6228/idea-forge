@@ -11,6 +11,7 @@ import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PermissionService } from "@/permission/permission.service";
 import { SourceType, ResourceType, SubspaceType, PermissionLevel } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { omit } from "lodash";
 
 @Injectable()
 export class SubspaceService {
@@ -256,35 +257,7 @@ export class SubspaceService {
     return fractionalIndex(index, nextIndex);
   }
 
-  async getUserSubWorkspaces(userId: string, workspaceId?: string) {
-    const workspaces = await this.prismaService.workspaceMember.findMany({
-      where: {
-        userId,
-        ...(workspaceId && { workspaceId }),
-      },
-      include: {
-        workspace: {
-          include: {
-            subspaces: {
-              orderBy: {
-                index: "asc",
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return presentSubspaces(workspaces.flatMap((workspaceMember) => workspaceMember.workspace.subspaces));
-  }
-
-  async getUserSubspacesIncludingVirtual(userId: string, workspaceId: string) {
-    const all = await this.prismaService.subspace.findMany({
-      include: {
-        members: true, // Include all members
-      },
-    });
-
+  async getUserJoinedSubspacesIncludingPersonal(userId: string, workspaceId: string) {
     // Fetch all subspaces in the workspace, but filter personal subspaces to only include those owned by the user
     const subspaces = await this.prismaService.subspace.findMany({
       where: {
@@ -305,21 +278,42 @@ export class SubspaceService {
       },
       include: {
         members: {
-          where: {
-            userId: userId,
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                displayName: true,
+                imageUrl: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            members: true,
           },
         },
       },
       orderBy: { index: "asc" },
     });
-    return subspaces.map(presentSubspace);
+    return subspaces.map((s) => ({
+      ...s,
+      memberCount: s._count.members,
+    }));
   }
 
   async getSubspace(id: string, userId: string) {
     const subspace = await this.prismaService.subspace.findUnique({
       where: { id },
       include: {
-        members: true,
+        members: {
+          include: {
+            user: true,
+          },
+        },
         workspace: {
           include: {
             members: {
@@ -354,6 +348,7 @@ export class SubspaceService {
           ...member,
           createdAt: member.createdAt,
         })),
+        memberCount: subspace.members.length,
       },
     };
   }
@@ -648,6 +643,113 @@ export class SubspaceService {
         createdAt: member.createdAt.toISOString(),
       },
     };
+  }
+
+  async batchAddSubspaceMembers(subspaceId: string, dto: any, adminId: string) {
+    // Check if the current user is an admin of the subspace
+    const currentUserMember = await this.prismaService.subspaceMember.findFirst({
+      where: {
+        subspaceId,
+        userId: adminId,
+        role: "ADMIN",
+      },
+    });
+
+    if (!currentUserMember) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
+    }
+
+    // Get subspace workspace ID
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      select: { workspaceId: true },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    const results = {
+      success: true,
+      addedCount: 0,
+      errors: [] as Array<{ id: string; type: string; error: string }>,
+    };
+
+    // Process each item
+    for (const item of dto.items) {
+      try {
+        if (item.type === "user") {
+          // Check if user is in workspace
+          const workspaceMember = await this.prismaService.workspaceMember.findUnique({
+            where: {
+              workspaceId_userId: {
+                workspaceId: subspace.workspaceId,
+                userId: item.id,
+              },
+            },
+          });
+
+          if (!workspaceMember) {
+            results.errors.push({
+              id: item.id,
+              type: "user",
+              error: "User not in workspace",
+            });
+            continue;
+          }
+
+          // Check if user is already a member
+          const existingMember = await this.prismaService.subspaceMember.findFirst({
+            where: {
+              subspaceId,
+              userId: item.id,
+            },
+          });
+
+          if (existingMember) {
+            results.errors.push({
+              id: item.id,
+              type: "user",
+              error: "User already in subspace",
+            });
+            continue;
+          }
+
+          // Add user to subspace
+          await this.prismaService.subspaceMember.create({
+            data: {
+              subspaceId,
+              userId: item.id,
+              role: item.role,
+            },
+          });
+
+          // Assign permissions
+          await this.permissionService.assignSubspacePermissions(item.id, subspaceId, item.role, adminId);
+          results.addedCount++;
+        } else if (item.type === "group") {
+          // TODO: Implement group member addition
+          // For now, just add an error
+          results.errors.push({
+            id: item.id,
+            type: "group",
+            error: "Group support not implemented yet",
+          });
+        }
+      } catch (error) {
+        results.errors.push({
+          id: item.id,
+          type: item.type,
+          error: (error as Error).message || "Unknown error",
+        });
+      }
+    }
+
+    if (results.addedCount === 0 && results.errors.length > 0) {
+      results.success = false;
+    }
+
+    return results;
   }
 
   async updateSubspaceMember(subspaceId: string, memberId: string, dto: UpdateSubspaceMemberDto, currentUserId: string) {

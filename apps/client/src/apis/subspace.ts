@@ -15,6 +15,8 @@ import {
   Subspace,
   BatchSetWorkspaceWideRequest,
   BatchSetWorkspaceWideResponse,
+  BatchAddSubspaceMemberRequest,
+  BatchAddSubspaceMemberResponse,
 } from "@idea/contracts";
 
 export const subspaceApi = {
@@ -23,8 +25,8 @@ export const subspaceApi = {
 
   getSubspace: async (id: string) => request.get<void, SubspaceDetailResponse>(`/api/subspaces/${id}`),
 
-  // Fetch all subspaces (including virtual/my-docs) for the user in the workspace
-  getUserSubspacesIncludingVirtual: async (workspaceId: string) => request.get<void, Subspace[]>(`/api/subspaces/user/${workspaceId}`),
+  // Fetch all subspaces (including my-docs) for the user in the workspace
+  getUserSubspacesIncludingPersonal: async (workspaceId: string) => request.get<void, Subspace[]>(`/api/subspaces/user/${workspaceId}`),
 
   updateSubspace: async (id: string, data: UpdateSubspaceRequest) => request.put<UpdateSubspaceRequest, SubspaceDetailResponse>(`/api/subspaces/${id}`, data),
 
@@ -41,6 +43,9 @@ export const subspaceApi = {
 
   addSubspaceMember: async (subspaceId: string, data: AddSubspaceMemberRequest) =>
     request.post<AddSubspaceMemberRequest, { member: any }>(`/api/subspaces/${subspaceId}/members`, data),
+
+  batchAddSubspaceMembers: async (subspaceId: string, data: BatchAddSubspaceMemberRequest) =>
+    request.post<BatchAddSubspaceMemberRequest, BatchAddSubspaceMemberResponse>(`/api/subspaces/${subspaceId}/members/batch`, data),
 
   updateSubspaceMember: async (subspaceId: string, memberId: string, data: UpdateSubspaceMemberRequest) =>
     request.put<UpdateSubspaceMemberRequest, { member: any }>(`/api/subspaces/${subspaceId}/members/${memberId}`, data),

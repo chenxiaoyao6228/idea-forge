@@ -1,7 +1,15 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { SubspaceService } from "./subspace.service";
 import { SubspaceMemberListResponse } from "@idea/contracts";
-import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, MoveSubspaceDto, BatchSetWorkspaceWideDto } from "./subspace.dto";
+import {
+  CreateSubspaceDto,
+  UpdateSubspaceDto,
+  AddSubspaceMemberDto,
+  UpdateSubspaceMemberDto,
+  MoveSubspaceDto,
+  BatchSetWorkspaceWideDto,
+  BatchAddSubspaceMemberDto,
+} from "./subspace.dto";
 import { Action } from "@/_shared/casl/ability.class";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { CheckPolicy } from "@/_shared/casl/policy.decorator";
@@ -18,12 +26,12 @@ export class SubspaceController {
   }
 
   @Get("user/:workspaceId")
-  async getUserSubspacesIncludingVirtual(@Param("workspaceId") workspaceId: string, @GetUser("id") userId: string) {
-    return this.subspaceService.getUserSubspacesIncludingVirtual(userId, workspaceId);
+  async getUserJoinedSubspacesIncludingPersonal(@Param("workspaceId") workspaceId: string, @GetUser("id") userId: string) {
+    return this.subspaceService.getUserJoinedSubspacesIncludingPersonal(userId, workspaceId);
   }
 
   @Get(":id")
-  @CheckPolicy(Action.Read, "Subspace")
+  // @CheckPolicy(Action.Read, "Subspace")
   async getSubspace(@Param("id") id: string, @GetUser("id") userId: string) {
     return this.subspaceService.getSubspace(id, userId);
   }
@@ -57,6 +65,12 @@ export class SubspaceController {
   @CheckPolicy(Action.ManageMembers, "Subspace")
   async addSubspaceMember(@Param("id") id: string, @Body() dto: AddSubspaceMemberDto, @GetUser("id") adminId: string) {
     return this.subspaceService.addSubspaceMember(id, dto, adminId);
+  }
+
+  @Post(":id/members/batch")
+  @CheckPolicy(Action.ManageMembers, "Subspace")
+  async batchAddSubspaceMembers(@Param("id") id: string, @Body() dto: BatchAddSubspaceMemberDto, @GetUser("id") adminId: string) {
+    return this.subspaceService.batchAddSubspaceMembers(id, dto, adminId);
   }
 
   @Patch(":id/members/:memberId")

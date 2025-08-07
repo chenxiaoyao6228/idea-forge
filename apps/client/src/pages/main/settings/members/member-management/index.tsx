@@ -1,14 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { workspaceApi } from "@/apis/workspace";
 import { userApi } from "@/apis/user";
 import useWorkspaceStore from "@/stores/workspace";
-import type { WorkspaceMember, WorkspaceMemberListResponse, WorkspaceMemberListResponseSchema } from "@idea/contracts";
+import type { WorkspaceMember, WorkspaceMemberListResponse } from "@idea/contracts";
 import type { User } from "@idea/contracts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";

@@ -9,12 +9,15 @@ import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
 import { useSubspaceOperations } from "@/hooks/use-subspace-operations";
 import useWorkspaceStore from "@/stores/workspace";
+import useSubSpaceStore from "@/stores/subspace";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
-  const { isCreating, subspaces, handleSubspaceCreate, fetchList } = useSubspaceOperations();
+
+  const { isCreating, handleSubspaceCreate, fetchList } = useSubspaceOperations();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  const joinedSubspaces = useSubSpaceStore((state) => state.joinedSubspaces);
 
   // drag target for drop to top
   const { isOver: isTopDropOver, setNodeRef: setTopDropRef } = useDroppable({
@@ -31,7 +34,7 @@ export default function SubspacesArea() {
     }
   }, [fetchList, currentWorkspace]);
 
-  if (!subspaces) return null;
+  if (!joinedSubspaces) return null;
 
   return (
     <SidebarGroup>
@@ -58,7 +61,7 @@ export default function SubspacesArea() {
             <div ref={setTopDropRef} className="h-[1px]">
               <DropCursor isActiveDrop={isTopDropOver} innerRef={null} position="top" />
             </div>
-            {subspaces.map((subspace) => (
+            {joinedSubspaces.map((subspace) => (
               <DraggableSubspaceContainer key={subspace.id} subspace={subspace} />
             ))}
           </div>
