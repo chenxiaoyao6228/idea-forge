@@ -63,6 +63,9 @@ interface Action {
   duplicate: (subspaceId: string, newName?: string) => Promise<SubspaceEntity>;
   export: (subspaceId: string, format?: "markdown" | "html" | "pdf") => Promise<void>;
 
+  // Member management actions
+  batchAddSubspaceMembers: (subspaceId: string, items: Array<{ id: string; type: "user" | "group"; role: "MEMBER" | "ADMIN" }>) => Promise<any>;
+
   //  document structure management
   addDocumentToStructure: (subspaceId: string, document: DocumentEntity, index?: number) => void;
   removeDocumentFromStructure: (subspaceId: string, documentId: string) => void;
@@ -878,6 +881,20 @@ const useSubSpaceStore = create<StoreState>()(
             });
           } catch (error) {
             console.error("Failed to refresh subspace members:", error);
+          }
+        },
+
+        batchAddSubspaceMembers: async (subspaceId: string, items: Array<{ id: string; type: "user" | "group"; role: "MEMBER" | "ADMIN" }>) => {
+          try {
+            const response = await subspaceApi.batchAddSubspaceMembers(subspaceId, { items });
+
+            // Refresh subspace members after adding new ones
+            await get().refreshSubspaceMembers(subspaceId);
+
+            return response;
+          } catch (error) {
+            console.error("Failed to batch add subspace members:", error);
+            throw error;
           }
         },
       })),

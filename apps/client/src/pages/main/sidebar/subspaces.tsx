@@ -7,17 +7,18 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DraggableSubspaceContainer } from "./components/draggable-subspace-container";
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
-import { useSubspaceOperations } from "@/hooks/use-subspace-operations";
 import useWorkspaceStore from "@/stores/workspace";
 import useSubSpaceStore from "@/stores/subspace";
+import { CreateSubspaceDialog } from "../settings/subspace/create-subspace-dialog";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
-  const { isCreating, handleSubspaceCreate, fetchList } = useSubspaceOperations();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const joinedSubspaces = useSubSpaceStore((state) => state.joinedSubspaces);
+  const fetchList = useSubSpaceStore((state) => state.fetchList);
+  const isCreating = useSubSpaceStore((state) => state.isCreating);
 
   // drag target for drop to top
   const { isOver: isTopDropOver, setNodeRef: setTopDropRef } = useDroppable({
@@ -44,17 +45,13 @@ export default function SubspacesArea() {
             <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
             <SidebarGroupLabel>{t("Subspaces")}</SidebarGroupLabel>
           </CollapsibleTrigger>
-          <div className="flex items-center gap-1 invisible group-hover/label:visible">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25"
-              onClick={handleSubspaceCreate}
-              disabled={isCreating}
-            >
-              <PlusIcon className="h-4 w-4" />
-            </Button>
-          </div>
+          <CreateSubspaceDialog workspaceId={currentWorkspace?.id!}>
+            <div className="flex items-center gap-1 invisible group-hover/label:visible">
+              <Button variant="ghost" size="icon" className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25" disabled={isCreating}>
+                <PlusIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          </CreateSubspaceDialog>
         </div>
         <CollapsibleContent>
           <div className="relative">

@@ -8,6 +8,7 @@ import { SubspaceBatchSettings } from "./subspace-batch-settings";
 import { WorkspaceSubspaceSettings } from "./workspace-subspace-settings";
 import useWorkspaceStore from "@/stores/workspace";
 import { SubspaceTable } from "./subspace-table";
+import { MoreAboutSubspaceTip } from "./more-about-subspace-tip";
 
 export const Subspace = () => {
   const { t } = useTranslation();
@@ -31,10 +32,7 @@ export const Subspace = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between pr-2">
         <h3 className="text-lg font-medium vertical-center">{t("Subspace")}</h3>
-        <Button variant="ghost" size="sm" className="flex items-center gap-2">
-          <HelpCircle className="h-4 w-4" />
-          {t("Learn about subspaces")}
-        </Button>
+        <MoreAboutSubspaceTip />
       </div>
       <Separator />
       <div className="container mx-auto p-2">

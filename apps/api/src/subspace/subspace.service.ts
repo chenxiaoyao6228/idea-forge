@@ -163,6 +163,31 @@ export class SubspaceService {
       },
     });
 
+    // If subspace is WORKSPACE_WIDE, add all workspace members automatically
+    if (dto.type === SubspaceType.WORKSPACE_WIDE) {
+      const workspaceMembers = await this.prismaService.workspaceMember.findMany({
+        where: { workspaceId: dto.workspaceId },
+        select: { userId: true },
+      });
+
+      // Create subspace member records for all workspace members
+      await this.prismaService.subspaceMember.createMany({
+        data: workspaceMembers.map(({ userId }) => ({
+          subspaceId: subspace.id,
+          userId,
+          role: "MEMBER",
+        })),
+        skipDuplicates: true, // Avoid duplicate for creator who is already ADMIN
+      });
+
+      // Assign subspace permissions for each member (keep creator as ADMIN)
+      await Promise.all(
+        workspaceMembers.map(({ userId }) =>
+          this.permissionService.assignSubspacePermissions(userId, subspace.id, userId === creatorId ? "ADMIN" : "MEMBER", creatorId),
+        ),
+      );
+    }
+
     // Assign subspace type permissions
     // FIXME: ts type optimization
     await this.permissionService.assignSubspaceTypePermissions(subspace.id, dto.type as SubspaceType, dto.workspaceId, creatorId);
