@@ -13,6 +13,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           url: databaseUrl,
         },
       },
+      log: [
+        {
+          emit: "event",
+          level: "query",
+        },
+      ],
+    });
+
+    // Log SQL queries
+    // @ts-ignore
+    this.$on("query", (e: any) => {
+      console.log("Query: " + e.query);
+      // console.log("Params: " + e.params);
+      // console.log("Duration: " + e.duration + "ms");
     });
   }
 

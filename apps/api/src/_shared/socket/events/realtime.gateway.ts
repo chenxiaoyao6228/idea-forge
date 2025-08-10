@@ -47,7 +47,7 @@ export class RealtimeGateway extends AuthGateway implements OnGatewayConnection,
       }
 
       // Join user's subspace rooms
-      const subspaces = await this.subspaceService.getUserSubWorkspaces(user.id);
+      const subspaces = await this.subspaceService.getUserJoinedSubspacesIncludingPersonal(user.id, client.data.workspaceId);
       for (const subspace of subspaces) {
         await this.handleJoinRoom(client, `subspace:${subspace.id}`);
       }

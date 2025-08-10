@@ -1,4 +1,4 @@
-import { Subspace } from "@idea/contracts";
+import { Subspace, SubspaceMember } from "@idea/contracts";
 
 export function presentSubspace(subspace: Subspace) {
   return {
@@ -8,4 +8,10 @@ export function presentSubspace(subspace: Subspace) {
 
 export function presentSubspaces(subspaces: Subspace[]) {
   return subspaces.map(presentSubspace);
+}
+
+export function presentSubspaceMember(member: SubspaceMember) {
+  return {
+    ...member,
+  };
 }

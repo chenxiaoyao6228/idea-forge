@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 export const SettingDialog = () => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const tabList = useMemo(() => {
     return [

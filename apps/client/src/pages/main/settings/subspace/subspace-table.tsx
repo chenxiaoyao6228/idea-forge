@@ -35,7 +35,7 @@ export function SubspaceTable({ workspaceId }: SubspaceTableProps) {
     subspaces.forEach((subspace) => {
       if (subspace.members && subspace.members.length > 0) {
         subspace.members.forEach((admin) => {
-          uniqueAdmins.add(admin.user.displayName || admin.user.email);
+          uniqueAdmins.add(admin?.user?.displayName || admin?.user?.email || "");
         });
       }
     });

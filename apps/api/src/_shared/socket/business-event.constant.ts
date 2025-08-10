@@ -17,6 +17,10 @@ export enum BusinessEvents {
   SUBSPACE_CREATE = "subspace.create",
   SUBSPACE_UPDATE = "subspace.update",
   SUBSPACE_MOVE = "subspace.move",
+  SUBSPACE_MEMBER_LEFT = "subspace.member.left",
+  SUBSPACE_MEMBER_ADDED = "subspace.member.added",
+  SUBSPACE_MEMBERS_BATCH_ADDED = "subspace.members.batch.added",
+
   JOIN = "join",
   JOIN_SUCCESS = "join.success",
   JOIN_ERROR = "join.error",

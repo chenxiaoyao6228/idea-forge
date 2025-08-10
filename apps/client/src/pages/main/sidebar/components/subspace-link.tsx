@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
 import { subspaceApi } from "@/apis/subspace";
+import { AddSubspaceMemberDialog } from "../../settings/subspace/add-subspace-member-dialog";
 
 interface SubspaceLinkProps {
   subspace: SubspaceEntity;
@@ -42,6 +43,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   const star = useSubSpaceStore((state) => state.star);
   const unStar = useSubSpaceStore((state) => state.unStar);
   const isStarred = useStarStore((state) => state.isStarred(undefined, subspaceId));
+  const leaveSubspace = useSubSpaceStore((state) => state.leaveSubspace);
 
   // Auto-expand if contains active document
   const shouldExpand = useMemo(() => {
@@ -101,20 +103,14 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     [createDocument, subspaceId],
   );
 
-  const handleAddMembers = useCallback(() => {
-    // TODO: Implement add members functionality
-    console.log("Add members to subspace:", subspaceId);
-  }, [subspaceId]);
-
   const handleSubspaceSettings = useCallback(() => {
     // TODO: Implement subspace settings functionality
     console.log("Open subspace settings:", subspaceId);
   }, [subspaceId]);
 
   const handleLeaveSubspace = useCallback(() => {
-    // TODO: Implement leave subspace functionality
-    console.log("Leave subspace:", subspaceId);
-  }, [subspaceId]);
+    leaveSubspace(subspaceId);
+  }, [subspaceId, leaveSubspace]);
 
   const handleTitleChange = useCallback(
     async (value: string) => {
@@ -153,7 +149,9 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={handleAddMembers}>{t("Add members")}</DropdownMenuItem>
+          <AddSubspaceMemberDialog subspaceId={subspaceId} subspaceName={subspace.name} workspaceId={subspace.workspaceId} onSuccess={() => {}}>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>{t("Add members")}</DropdownMenuItem>
+          </AddSubspaceMemberDialog>
           <DropdownMenuItem onClick={handleSubspaceSettings}>{t("Subspace settings")}</DropdownMenuItem>
           <DropdownMenuItem onClick={handleLeaveSubspace} className="text-destructive focus:text-destructive">
             {t("Leave subspace")}

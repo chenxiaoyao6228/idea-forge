@@ -6,12 +6,11 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import fractionalIndex from "fractional-index";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
-import { presentSubspace, presentSubspaces } from "./subspace.presenter";
+import { presentSubspace, presentSubspaceMember, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PermissionService } from "@/permission/permission.service";
 import { SourceType, ResourceType, SubspaceType, PermissionLevel } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { omit } from "lodash";
 
 @Injectable()
 export class SubspaceService {
@@ -227,6 +226,84 @@ export class SubspaceService {
     return {
       index: updatedSubspace.index,
     };
+  }
+
+  async leaveSubspace(subspaceId: string, userId: string) {
+    // check if the subspace exists
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      select: {
+        id: true,
+        type: true,
+        members: {
+          where: { userId },
+          select: { id: true, role: true },
+        },
+        workspace: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // check if the user is a member of the subspace
+    const userMember = subspace.members[0];
+    if (!userMember) {
+      throw new ApiException(ErrorCodeEnum.UserNotInSubspace);
+    }
+
+    // check if the subspace is a personal subspace (personal subspaces cannot be left)
+    if (subspace.type === SubspaceType.PERSONAL) {
+      throw new ApiException(ErrorCodeEnum.CannotLeavePersonalSubspace);
+    }
+
+    // check if the user is the last admin
+    if (userMember.role === "ADMIN") {
+      const adminCount = await this.prismaService.subspaceMember.count({
+        where: {
+          subspaceId,
+          role: "ADMIN",
+        },
+      });
+
+      if (adminCount === 1) {
+        throw new ApiException(ErrorCodeEnum.CannotLeaveAsLastAdmin);
+      }
+    }
+
+    // Delete member record
+    await this.prismaService.subspaceMember.delete({
+      where: { id: userMember.id },
+    });
+
+    // Delete related permissions
+    await this.prismaService.unifiedPermission.deleteMany({
+      where: {
+        userId,
+        resourceType: ResourceType.SUBSPACE,
+        resourceId: subspaceId,
+      },
+    });
+
+    // Publish WebSocket event to notify other users
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_MEMBER_LEFT,
+      workspaceId: subspace.workspace.id,
+      actorId: userId,
+      data: {
+        subspaceId,
+        userId,
+        memberLeft: true,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    return { success: true };
   }
 
   private async removeIndexCollision(workspaceId: string, index: string): Promise<string> {
@@ -608,11 +685,38 @@ export class SubspaceService {
           userId: dto.userId,
         },
       },
+      select: {
+        id: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+      },
     });
 
     if (!workspaceMember) {
       throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
     }
+
+    //  Publish WebSocket event to notify about member addition
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_MEMBER_ADDED,
+      workspaceId: subspace.workspaceId,
+      actorId: adminId,
+      data: {
+        subspaceId,
+        userId: dto.userId,
+        role: dto.role,
+        member: workspaceMember,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     // Check if the user is already a member of the subspace
     const existingMember = await this.prismaService.subspaceMember.findFirst({
@@ -675,48 +779,16 @@ export class SubspaceService {
       errors: [] as Array<{ id: string; type: string; error: string }>,
     };
 
+    // Track successfully added users and groups for batch WebSocket notification
+    const addedUsers: Array<{ userId: string; role: string; member: any }> = [];
+    const addedGroups: Array<{ groupId: string; members: any[] }> = [];
+
     // Process each item
     for (const item of dto.items) {
       try {
         if (item.type === "user") {
-          // Check if user is in workspace
-          const workspaceMember = await this.prismaService.workspaceMember.findUnique({
-            where: {
-              workspaceId_userId: {
-                workspaceId: subspace.workspaceId,
-                userId: item.id,
-              },
-            },
-          });
-
-          if (!workspaceMember) {
-            results.errors.push({
-              id: item.id,
-              type: "user",
-              error: "User not in workspace",
-            });
-            continue;
-          }
-
-          // Check if user is already a member
-          const existingMember = await this.prismaService.subspaceMember.findFirst({
-            where: {
-              subspaceId,
-              userId: item.id,
-            },
-          });
-
-          if (existingMember) {
-            results.errors.push({
-              id: item.id,
-              type: "user",
-              error: "User already in subspace",
-            });
-            continue;
-          }
-
           // Add user to subspace
-          await this.prismaService.subspaceMember.create({
+          const member = await this.prismaService.subspaceMember.create({
             data: {
               subspaceId,
               userId: item.id,
@@ -726,15 +798,92 @@ export class SubspaceService {
 
           // Assign permissions
           await this.permissionService.assignSubspacePermissions(item.id, subspaceId, item.role, adminId);
+
+          // Track for batch notification
+          addedUsers.push({
+            userId: item.id,
+            role: item.role,
+            member: presentSubspaceMember(member),
+          });
+
           results.addedCount++;
         } else if (item.type === "group") {
-          // TODO: Implement group member addition
-          // For now, just add an error
-          results.errors.push({
-            id: item.id,
-            type: "group",
-            error: "Group support not implemented yet",
+          // Implement group member addition
+          const group = await this.prismaService.memberGroup.findUnique({
+            where: { id: item.id },
+            include: {
+              members: {
+                include: {
+                  user: true,
+                },
+              },
+            },
           });
+
+          if (!group) {
+            results.errors.push({
+              id: item.id,
+              type: "group",
+              error: "Group not found",
+            });
+            continue;
+          }
+
+          // Check if group is in the same workspace
+          if (group.workspaceId !== subspace.workspaceId) {
+            results.errors.push({
+              id: item.id,
+              type: "group",
+              error: "Group not in same workspace",
+            });
+            continue;
+          }
+
+          const groupAddedMembers: any[] = [];
+
+          // Add all group members to subspace
+          for (const groupMember of group.members) {
+            const userId = groupMember.user.id;
+
+            // Check if user is already a subspace member
+            const existingMember = await this.prismaService.subspaceMember.findFirst({
+              where: {
+                subspaceId,
+                userId,
+              },
+            });
+
+            if (!existingMember) {
+              const member = await this.prismaService.subspaceMember.create({
+                data: {
+                  subspaceId,
+                  userId,
+                  role: item.role || "MEMBER",
+                },
+              });
+
+              const memberWithUser = await this.prismaService.subspaceMember.findUnique({
+                where: { id: member.id },
+                include: {
+                  user: true,
+                },
+              });
+
+              // Assign permissions
+              await this.permissionService.assignSubspacePermissions(userId, subspaceId, item.role || "MEMBER", adminId);
+
+              groupAddedMembers.push(memberWithUser);
+
+              results.addedCount++;
+            }
+          }
+
+          if (groupAddedMembers.length > 0) {
+            addedGroups.push({
+              groupId: item.id,
+              members: groupAddedMembers,
+            });
+          }
         }
       } catch (error) {
         results.errors.push({
@@ -743,6 +892,22 @@ export class SubspaceService {
           error: (error as Error).message || "Unknown error",
         });
       }
+    }
+
+    // Send single batch WebSocket notification instead of individual ones
+    if (addedUsers.length > 0 || addedGroups.length > 0) {
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.SUBSPACE_MEMBERS_BATCH_ADDED,
+        workspaceId: subspace.workspaceId,
+        actorId: adminId,
+        data: {
+          subspaceId,
+          addedUsers,
+          addedGroups,
+          totalAdded: results.addedCount,
+        },
+        timestamp: new Date().toISOString(),
+      });
     }
 
     if (results.addedCount === 0 && results.errors.length > 0) {
@@ -828,6 +993,16 @@ export class SubspaceService {
 
     const members = await this.prismaService.subspaceMember.findMany({
       where: { subspaceId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            imageUrl: true,
+          },
+        },
+      },
     });
 
     return {

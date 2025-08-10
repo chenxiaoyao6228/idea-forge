@@ -34,6 +34,8 @@ export const subspaceApi = {
 
   moveSubspace: async (id: string, data: MoveSubspaceRequest) => request.post<MoveSubspaceRequest, { index: string }>(`/api/subspaces/${id}/move`, data),
 
+  leaveSubspace: async (id: string) => request.post<void, { success: boolean }>(`/api/subspaces/${id}/leave`),
+
   // Batch operations
   batchSetWorkspaceWide: async (data: BatchSetWorkspaceWideRequest) =>
     request.post<BatchSetWorkspaceWideRequest, BatchSetWorkspaceWideResponse>("/api/subspaces/batch-set-workspace-wide", data),

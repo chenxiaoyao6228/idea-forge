@@ -81,7 +81,16 @@ export type SubspaceDetailResponse = z.infer<typeof SubspaceDetailResponseSchema
 
 // Subspace member list response
 export const SubspaceMemberListResponseSchema = z.object({
-  members: z.array(SubspaceMemberSchema),
+  members: z.array(
+    SubspaceMemberSchema.extend({
+      user: z.object({
+        id: z.string(),
+        email: z.string(),
+        displayName: z.string().nullable(),
+        imageUrl: z.string().nullable(),
+      }),
+    }),
+  ),
 });
 export type SubspaceMemberListResponse = z.infer<typeof SubspaceMemberListResponseSchema>;
 

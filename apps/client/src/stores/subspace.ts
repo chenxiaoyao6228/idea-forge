@@ -28,8 +28,8 @@ export interface SubspaceEntity {
   description?: string;
   isPrivate?: boolean;
   documentCount?: number;
-  members?: SubspaceMember &
-    {
+  members?: Array<
+    SubspaceMember & {
       userId: string;
       user: {
         id: string;
@@ -37,7 +37,8 @@ export interface SubspaceEntity {
         displayName: string | null;
         imageUrl: string | null;
       };
-    }[];
+    }
+  >;
   memberCount?: number;
 }
 
@@ -102,6 +103,8 @@ interface Action {
   updateSubspace: (subspace: SubspaceEntity) => void;
   handleSubspaceUpdate: (subspaceId: string, updatedAt?: string) => Promise<void>;
   refreshNavigationTree: (subspaceId: string) => Promise<void>;
+  refreshSubspaceMembers: (subspaceId: string) => Promise<void>;
+  leaveSubspace: (subspaceId: string) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -842,6 +845,39 @@ const useSubSpaceStore = create<StoreState>()(
           } catch (error) {
             console.error("Failed to unStar subspace:", error);
             throw error;
+          }
+        },
+
+        leaveSubspace: async (subspaceId) => {
+          try {
+            await subspaceApi.leaveSubspace(subspaceId);
+          } catch (error) {
+            console.error("Failed to leave subspace:", error);
+            throw error;
+          }
+        },
+
+        refreshSubspaceMembers: async (subspaceId: string) => {
+          try {
+            // Fetch updated member list from API
+            const response = await subspaceApi.getSubspaceMembers(subspaceId);
+
+            // Update store with new member list
+            get().updateOne({
+              id: subspaceId,
+              changes: {
+                members: response.members.map((member) => ({
+                  ...member,
+                  user: {
+                    ...member.user,
+                    imageUrl: member.user.imageUrl || "",
+                  },
+                })),
+                memberCount: response.members.length,
+              },
+            });
+          } catch (error) {
+            console.error("Failed to refresh subspace members:", error);
           }
         },
       })),

@@ -19,7 +19,6 @@ import useSubSpaceStore from "@/stores/subspace";
 interface AddSubspaceMemberDialogProps {
   subspaceId: string;
   subspaceName: string;
-  subspaceType: string;
   workspaceId: string;
   children: React.ReactNode;
   onSuccess?: () => void;

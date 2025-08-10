@@ -54,6 +54,11 @@ export class SubspaceController {
     return this.subspaceService.moveSubspace(id, dto.index, userId);
   }
 
+  @Post(":id/leave")
+  async leaveSubspace(@Param("id") id: string, @GetUser("id") userId: string) {
+    return this.subspaceService.leaveSubspace(id, userId);
+  }
+
   @Get(":id/navigationTree")
   @CheckPolicy(Action.Read, "Subspace")
   async getSubspaceNavigationTree(@Param("id") id: string, @GetUser("id") userId: string) {
@@ -68,7 +73,7 @@ export class SubspaceController {
   }
 
   @Post(":id/members/batch")
-  @CheckPolicy(Action.ManageMembers, "Subspace")
+  // @CheckPolicy(Action.ManageMembers, "Subspace")
   async batchAddSubspaceMembers(@Param("id") id: string, @Body() dto: BatchAddSubspaceMemberDto, @GetUser("id") adminId: string) {
     return this.subspaceService.batchAddSubspaceMembers(id, dto, adminId);
   }

@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import { resolvablePromise } from "../async";
+import { resolvablePromise } from "./async";
 import useSubSpaceStore from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
 import useStarStore, { StarEntity } from "@/stores/star";
@@ -58,6 +58,11 @@ enum SocketEvents {
   SUBSPACE_CREATE = "subspace.create",
   SUBSPACE_UPDATE = "subspace.update",
   SUBSPACE_MOVE = "subspace.move",
+
+  SUBSPACE_MEMBER_ADDED = "subspace.member.added",
+  SUBSPACE_MEMBERS_BATCH_ADDED = "subspace.members.batch.added",
+  SUBSPACE_MEMBER_LEFT = "subspace.member.left",
+
   JOIN = "join",
   JOIN_SUCCESS = "join.success",
   JOIN_ERROR = "join.error",
@@ -352,6 +357,71 @@ class WebsocketService {
           updatedAt: new Date(updatedAt),
         },
       });
+    });
+
+    // Handle subspace member added events
+    this.socket.on(SocketEvents.SUBSPACE_MEMBER_ADDED, (message: GatewayMessage) => {
+      const { subspaceId, member, memberAdded } = message;
+      if (!subspaceId) return;
+
+      const subspaceStore = useSubSpaceStore.getState();
+      const userInfo = useUserStore.getState().userInfo;
+
+      // If the current user was added to the subspace
+      if (member?.userId === userInfo?.id) {
+        // Refresh user's subspace list to include the new subspace
+        subspaceStore.fetchSubspace(subspaceId);
+
+        // Join the subspace room for real-time updates
+        if (this.socket) {
+          this.joinRoom(`subspace:${subspaceId}`);
+        }
+
+        // Show notification
+        toast.success(`You've been added to a subspace`);
+      } else {
+        // Another user was added, refresh subspace member list
+        subspaceStore.refreshSubspaceMembers(subspaceId);
+      }
+    });
+
+    // Handle subspace members batch added events
+    this.socket.on(SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED, (message: GatewayMessage) => {
+      const { subspaceId, totalAdded, membersBatchAdded } = message;
+      if (!subspaceId) return;
+
+      const subspaceStore = useSubSpaceStore.getState();
+
+      // Single refresh for batch operation instead of multiple individual refreshes
+      if (membersBatchAdded) {
+        // Refresh subspace member list once for the entire batch
+        subspaceStore.refreshSubspaceMembers(subspaceId);
+
+        // Show single notification for batch operation
+        toast.success(`${totalAdded} members added to subspace`);
+      }
+    });
+
+    this.socket.on(SocketEvents.SUBSPACE_MEMBER_LEFT, (message: GatewayMessage) => {
+      const { subspaceId, userId } = message;
+      if (!subspaceId || !userId) return;
+
+      const subspaceStore = useSubSpaceStore.getState();
+      const userInfo = useUserStore.getState().userInfo;
+
+      // If the current user left the subspace, remove it from their local store
+      if (userId === userInfo?.id) {
+        subspaceStore.removeOne(subspaceId);
+
+        // Also leave the WebSocket room
+        if (this.socket) {
+          this.leaveRoom(`subspace:${subspaceId}`);
+        }
+      } else {
+        // If another user left, update the subspace member count or refresh data
+        // This could trigger a refresh of the subspace member list
+        subspaceStore.refreshSubspaceMembers(subspaceId);
+      }
     });
 
     // Handle subspace updates

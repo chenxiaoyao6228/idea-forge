@@ -34,6 +34,18 @@ export class WebsocketEventProcessor extends WorkerHost {
           await this.handleSubspaceMoveEvent(event, server);
           break;
 
+        case BusinessEvents.SUBSPACE_MEMBER_ADDED:
+          await this.handleSubspaceMemberAddedEvent(event, server);
+          break;
+
+        case BusinessEvents.SUBSPACE_MEMBERS_BATCH_ADDED:
+          await this.handleSubspaceMembersBatchAddedEvent(event, server);
+          break;
+
+        case BusinessEvents.SUBSPACE_MEMBER_LEFT:
+          await this.handleSubspaceMemberLeftEvent(event, server);
+          break;
+
         case BusinessEvents.DOCUMENT_CREATE:
           await this.handleDocumentCreateEvent(event, server);
           break;
@@ -258,6 +270,98 @@ export class WebsocketEventProcessor extends WorkerHost {
     const { data, name, workspaceId } = event;
     // Only emit to workspace room for movement events
     server.to(`workspace:${workspaceId}`).emit(name, data);
+  }
+
+  // Handle subspace member added events
+  private async handleSubspaceMemberAddedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { subspaceId, userId, member } = data;
+
+    /*
+     * option1: send to workspace room
+     * option2: send to subspace room + user room
+     */
+
+    // const channels = this.getSubspaceEventChannels(event, data);
+
+    // Notify the added user specifically
+    server.to(`user:${userId}`).emit(BusinessEvents.SUBSPACE_MEMBER_ADDED, {
+      subspaceId,
+      userId,
+      member,
+    });
+
+    // Notify workspace members about the new member(user already in the subspace)
+    server.to(`subspace:${subspaceId}`).emit(BusinessEvents.SUBSPACE_MEMBER_ADDED, {
+      subspaceId,
+      userId,
+      member,
+    });
+  }
+
+  private async handleSubspaceMembersBatchAddedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { subspaceId, addedUsers, addedGroups, totalAdded } = data;
+
+    // Notify each added user individually about their addition
+    for (const userInfo of addedUsers) {
+      server.to(`user:${userInfo.userId}`).emit(BusinessEvents.SUBSPACE_MEMBER_ADDED, {
+        subspaceId,
+        member: userInfo.member,
+        memberAdded: true,
+      });
+
+      // Tell the added user to join the subspace room
+      server.to(`user:${userInfo.userId}`).emit(BusinessEvents.JOIN, {
+        event: BusinessEvents.SUBSPACE_MEMBERS_BATCH_ADDED,
+        subspaceId,
+      });
+    }
+
+    // Handle group additions
+    for (const groupInfo of addedGroups) {
+      for (const memberInfo of groupInfo.members) {
+        server.to(`user:${memberInfo.userId}`).emit(BusinessEvents.SUBSPACE_MEMBER_ADDED, {
+          subspaceId,
+          member: memberInfo.member,
+          memberAdded: true,
+          addedViaGroup: groupInfo.groupId,
+        });
+
+        // Tell the added user to join the subspace room
+        server.to(`user:${memberInfo.userId}`).emit(BusinessEvents.JOIN, {
+          event: BusinessEvents.SUBSPACE_MEMBERS_BATCH_ADDED,
+          subspaceId,
+        });
+      }
+    }
+
+    // Send single batch notification to workspace members to avoid multiple refreshes
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.SUBSPACE_MEMBERS_BATCH_ADDED, {
+      subspaceId,
+      totalAdded,
+      membersBatchAdded: true,
+    });
+  }
+
+  // Handle subspace member left events
+  private async handleSubspaceMemberLeftEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { subspaceId, userId } = data;
+
+    // Notify all workspace members about the member leaving
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.SUBSPACE_MEMBER_LEFT, {
+      subspaceId,
+      userId,
+      memberLeft: true,
+    });
+
+    // Notify the subspace room (remaining members)
+    server.to(`subspace:${subspaceId}`).emit(BusinessEvents.SUBSPACE_MEMBER_LEFT, {
+      subspaceId,
+      userId,
+      memberLeft: true,
+    });
   }
 
   // Determine target channels for document events based on visibility and permissions

@@ -219,8 +219,8 @@ export const Account = () => {
       <UserAvatar
         className="size-14"
         user={{
-          displayName: userInfo.displayName || userInfo.email || "",
-          imageUrl: userInfo.imageUrl || "",
+          displayName: userInfo?.displayName || userInfo?.email || "",
+          imageUrl: userInfo?.imageUrl || "",
         }}
       />
       <div

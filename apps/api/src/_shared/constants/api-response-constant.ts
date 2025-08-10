@@ -64,6 +64,9 @@ export enum ErrorCodeEnum {
   SubspaceAdminRoleRequired = "subspace_admin_role_required",
   SubspaceAccessDenied = "subspace_access_denied",
   UserAlreadyInSubspace = "user_already_in_subspace",
+  UserNotInSubspace = "user_not_in_subspace",
+  CannotLeavePersonalSubspace = "cannot_leave_personal_subspace",
+  CannotLeaveAsLastAdmin = "cannot_leave_as_last_admin",
 
   // Group related errors
   GroupNotFound = "group_not_found",
