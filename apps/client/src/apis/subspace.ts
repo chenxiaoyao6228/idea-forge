@@ -25,8 +25,11 @@ export const subspaceApi = {
 
   getSubspace: async (id: string) => request.get<void, SubspaceDetailResponse>(`/api/subspaces/${id}`),
 
-  // Fetch all subspaces (including my-docs) for the user in the workspace
+  // Fetch all subspaces the user can see in the workspace (including personal if it's theirs)
   getUserSubspacesIncludingPersonal: async (workspaceId: string) => request.get<void, Subspace[]>(`/api/subspaces/user/${workspaceId}`),
+
+  // Fetch all subspaces in a workspace
+  getAllSubspacesInWorkspace: async (workspaceId: string) => request.get<void, Subspace[]>(`/api/subspaces?workspaceId=${workspaceId}`),
 
   updateSubspace: async (id: string, data: UpdateSubspaceRequest) => request.put<UpdateSubspaceRequest, SubspaceDetailResponse>(`/api/subspaces/${id}`, data),
 
@@ -35,6 +38,9 @@ export const subspaceApi = {
   moveSubspace: async (id: string, data: MoveSubspaceRequest) => request.post<MoveSubspaceRequest, { index: string }>(`/api/subspaces/${id}/move`, data),
 
   leaveSubspace: async (id: string) => request.post<void, { success: boolean }>(`/api/subspaces/${id}/leave`),
+
+  // Join a subspace (for PUBLIC/WORKSPACE_WIDE types)
+  joinSubspace: async (id: string) => request.post<void, { success: boolean }>(`/api/subspaces/${id}/join`),
 
   // Batch operations
   batchSetWorkspaceWide: async (data: BatchSetWorkspaceWideRequest) =>

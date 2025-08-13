@@ -20,6 +20,8 @@ export enum BusinessEvents {
   SUBSPACE_MEMBER_LEFT = "subspace.member.left",
   SUBSPACE_MEMBER_ADDED = "subspace.member.added",
   SUBSPACE_MEMBERS_BATCH_ADDED = "subspace.members.batch.added",
+  SUBSPACE_ARCHIVE = "subspace.archive",
+  SUBSPACE_RESTORE = "subspace.restore",
 
   JOIN = "join",
   JOIN_SUCCESS = "join.success",

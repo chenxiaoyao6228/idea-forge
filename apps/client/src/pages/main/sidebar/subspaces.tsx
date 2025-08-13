@@ -2,7 +2,7 @@ import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, ChevronRight } from "lucide-react";
+import { PlusIcon, ChevronRight, Layers } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DraggableSubspaceContainer } from "./components/draggable-subspace-container";
 import DropCursor from "./components/drop-cursor";
@@ -10,6 +10,7 @@ import { useDroppable } from "@dnd-kit/core";
 import useWorkspaceStore from "@/stores/workspace";
 import useSubSpaceStore from "@/stores/subspace";
 import { CreateSubspaceDialog } from "../settings/subspace/create-subspace-dialog";
+import { AllSubspaceSheet } from "../settings/subspace/all-subspace-sheet";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
@@ -45,13 +46,22 @@ export default function SubspacesArea() {
             <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
             <SidebarGroupLabel>{t("Subspaces")}</SidebarGroupLabel>
           </CollapsibleTrigger>
-          <CreateSubspaceDialog workspaceId={currentWorkspace?.id!}>
-            <div className="flex items-center gap-1 invisible group-hover/label:visible">
-              <Button variant="ghost" size="icon" className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25" disabled={isCreating}>
-                <PlusIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          </CreateSubspaceDialog>
+          <div className="flex items-center gap-1">
+            <AllSubspaceSheet>
+              <div className="flex items-center gap-1 invisible group-hover/label:visible">
+                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25" disabled={isCreating}>
+                  <Layers className="h-4 w-4" />
+                </Button>
+              </div>
+            </AllSubspaceSheet>
+            <CreateSubspaceDialog workspaceId={currentWorkspace?.id!}>
+              <div className="ml-1 flex items-center gap-1 invisible group-hover/label:visible">
+                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25" disabled={isCreating}>
+                  <PlusIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            </CreateSubspaceDialog>
+          </div>
         </div>
         <CollapsibleContent>
           <div className="relative">

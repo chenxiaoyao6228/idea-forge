@@ -20,6 +20,69 @@ export class SubspaceService {
     private readonly permissionService: PermissionService,
   ) {}
 
+  async joinSubspace(subspaceId: string, userId: string) {
+    // Validate subspace
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      select: {
+        id: true,
+        type: true,
+        workspaceId: true,
+        members: {
+          where: { userId },
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // Cannot join personal/private/invite-only via self-join
+    if (subspace.type === SubspaceType.PERSONAL || subspace.type === SubspaceType.PRIVATE || subspace.type === SubspaceType.INVITE_ONLY) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
+    }
+
+    // Must be a workspace member
+    const workspaceMember = await this.prismaService.workspaceMember.findFirst({
+      where: { workspaceId: subspace.workspaceId, userId },
+      select: { id: true },
+    });
+    if (!workspaceMember) {
+      throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
+    }
+
+    // Already a member
+    if (subspace.members.length > 0) {
+      return { success: true };
+    }
+
+    // Create membership
+    await this.prismaService.subspaceMember.create({
+      data: {
+        subspaceId,
+        userId,
+        role: "MEMBER",
+      },
+    });
+
+    // Emit event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_MEMBER_ADDED,
+      workspaceId: subspace.workspaceId,
+      actorId: userId,
+      data: {
+        subspaceId,
+        userId,
+        role: "MEMBER",
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    return { success: true };
+  }
+
   async createDefaultGlobalSubspace(userId: string, workspaceId: string) {
     return await this.createSubspace(
       {
@@ -331,6 +394,64 @@ export class SubspaceService {
     return { success: true };
   }
 
+  async archiveSubspace(id: string, userId: string) {
+    // Check admin permissions (similar to delete)
+    const subspaceMember = await this.prismaService.subspaceMember.findFirst({
+      where: { subspaceId: id, userId, role: "ADMIN" },
+    });
+
+    if (!subspaceMember) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
+    }
+
+    const archivedSubspace = await this.prismaService.subspace.update({
+      where: { id },
+      data: { archivedAt: new Date() },
+    });
+
+    // Emit archive event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_ARCHIVE,
+      workspaceId: archivedSubspace.workspaceId,
+      actorId: userId,
+      data: { subspaceId: id, archivedAt: archivedSubspace.archivedAt },
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      subspace: presentSubspace(archivedSubspace),
+    };
+  }
+
+  async restoreSubspace(id: string, userId: string) {
+    // Check admin permissions (similar to delete)
+    const subspaceMember = await this.prismaService.subspaceMember.findFirst({
+      where: { subspaceId: id, userId, role: "ADMIN" },
+    });
+
+    if (!subspaceMember) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
+    }
+
+    const restoredSubspace = await this.prismaService.subspace.update({
+      where: { id },
+      data: { archivedAt: null },
+    });
+
+    // Emit restore event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_RESTORE,
+      workspaceId: restoredSubspace.workspaceId,
+      actorId: userId,
+      data: { subspaceId: id, archivedAt: null },
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      subspace: presentSubspace(restoredSubspace),
+    };
+  }
+
   private async removeIndexCollision(workspaceId: string, index: string): Promise<string> {
     const existingSubspace = await this.prismaService.subspace.findFirst({
       where: {
@@ -364,6 +485,7 @@ export class SubspaceService {
     const subspaces = await this.prismaService.subspace.findMany({
       where: {
         workspaceId,
+        archivedAt: null, // Only include non-archived subspaces
         OR: [
           // Include all non-personal subspaces
           { type: { not: SubspaceType.PERSONAL } },
@@ -377,6 +499,49 @@ export class SubspaceService {
             },
           },
         ],
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                displayName: true,
+                imageUrl: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+      },
+      orderBy: { index: "asc" },
+    });
+    return subspaces.map((s) => ({
+      ...s,
+      memberCount: s._count.members,
+    }));
+  }
+
+  async getAllSubspacesInWorkspace(workspaceId: string, userId: string) {
+    // check if the user is a member of the workspace
+    const isWorkspaceMember = await this.prismaService.workspaceMember.findFirst({
+      where: { workspaceId, userId },
+    });
+
+    if (!isWorkspaceMember) {
+      throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
+    }
+
+    const subspaces = await this.prismaService.subspace.findMany({
+      where: {
+        workspaceId,
       },
       include: {
         members: {

@@ -4,6 +4,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, UserPlus, Settings, Copy, LogOut, Archive } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AddSubspaceMemberDialog } from "./add-subspace-member-dialog";
+import useSubspaceStore from "@/stores/subspace";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SubspaceMenuProps {
   subspaceId: string;
@@ -14,6 +16,7 @@ interface SubspaceMenuProps {
 
 export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspaceId }: SubspaceMenuProps) {
   const { t } = useTranslation();
+  const leaveSubspace = useSubspaceStore((state) => state.leaveSubspace);
 
   const handleSubspaceSettings = () => {
     // TODO: Implement subspace settings
@@ -26,8 +29,7 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
   };
 
   const handleLeaveSubspace = () => {
-    // TODO: Implement leave subspace
-    console.log("Leave subspace clicked");
+    leaveSubspace(subspaceId);
   };
 
   const handleArchiveSubspace = () => {
@@ -54,18 +56,26 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
           <Settings className="mr-2 h-4 w-4" />
           {t("Subspace settings...")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleCopySubspace}>
+        {/* <DropdownMenuItem onClick={handleCopySubspace}>
           <Copy className="mr-2 h-4 w-4" />
           {t("Copy subspace")}
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuItem onClick={handleLeaveSubspace}>
           <LogOut className="mr-2 h-4 w-4" />
           {t("Leave subspace")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleArchiveSubspace}>
-          <Archive className="mr-2 h-4 w-4" />
-          {t("Archive subspace")}
-        </DropdownMenuItem>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem onClick={handleArchiveSubspace}>
+                <Archive className="mr-2 h-4 w-4" />
+                {t("Archive subspace")}
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right">{t("Archive this subspace. Settings and pages will become read-only.")}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </DropdownMenuContent>
     </DropdownMenu>
   );

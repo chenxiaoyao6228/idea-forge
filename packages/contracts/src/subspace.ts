@@ -158,3 +158,9 @@ export const BatchSetWorkspaceWideResponseSchema = z.object({
   subspaces: z.array(SubspaceSchema),
 });
 export type BatchSetWorkspaceWideResponse = z.infer<typeof BatchSetWorkspaceWideResponseSchema>;
+
+// Join subspace response
+export const JoinSubspaceResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type JoinSubspaceResponse = z.infer<typeof JoinSubspaceResponseSchema>;

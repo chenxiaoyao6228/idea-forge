@@ -108,6 +108,7 @@ interface Action {
   refreshNavigationTree: (subspaceId: string) => Promise<void>;
   refreshSubspaceMembers: (subspaceId: string) => Promise<void>;
   leaveSubspace: (subspaceId: string) => Promise<void>;
+  joinSubspace: (subspaceId: string) => Promise<void>;
 }
 
 const defaultState: State = {
@@ -641,6 +642,15 @@ const useSubSpaceStore = create<StoreState>()(
                 createdAt: new Date(subspace.createdAt),
               },
             });
+          }
+        },
+
+        joinSubspace: async (subspaceId) => {
+          try {
+            await subspaceApi.joinSubspace(subspaceId);
+          } catch (error) {
+            console.error("Failed to join subspace:", error);
+            throw error;
           }
         },
 

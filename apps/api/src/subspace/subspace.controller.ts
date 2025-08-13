@@ -25,6 +25,11 @@ export class SubspaceController {
     return this.subspaceService.createSubspace(dto, userId);
   }
 
+  @Get()
+  async getAllSubspacesInWorkspace(@Query("workspaceId") workspaceId: string, @GetUser("id") userId: string) {
+    return this.subspaceService.getAllSubspacesInWorkspace(workspaceId, userId);
+  }
+
   @Get("user/:workspaceId")
   async getUserJoinedSubspacesIncludingPersonal(@Param("workspaceId") workspaceId: string, @GetUser("id") userId: string) {
     return this.subspaceService.getUserJoinedSubspacesIncludingPersonal(userId, workspaceId);
@@ -57,6 +62,23 @@ export class SubspaceController {
   @Post(":id/leave")
   async leaveSubspace(@Param("id") id: string, @GetUser("id") userId: string) {
     return this.subspaceService.leaveSubspace(id, userId);
+  }
+
+  @Post(":id/join")
+  async joinSubspace(@Param("id") id: string, @GetUser("id") userId: string) {
+    return this.subspaceService.joinSubspace(id, userId);
+  }
+
+  @Patch(":id/archive")
+  @CheckPolicy(Action.Update, "Subspace")
+  async archiveSubspace(@Param("id") id: string, @GetUser("id") userId: string) {
+    return this.subspaceService.archiveSubspace(id, userId);
+  }
+
+  @Patch(":id/restore")
+  @CheckPolicy(Action.Update, "Subspace")
+  async restoreSubspace(@Param("id") id: string, @GetUser("id") userId: string) {
+    return this.subspaceService.restoreSubspace(id, userId);
   }
 
   @Get(":id/navigationTree")
