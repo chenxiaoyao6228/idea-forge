@@ -1,0 +1,154 @@
+let prisma: any;
+let redis: any;
+
+async function getPrismaClient() {
+  if (!prisma) {
+    // Lazy load Prisma client from the API directory
+    const { PrismaClient } = require('../../apps/api/node_modules/@prisma/client');
+    
+    // Use the same database URL as the API
+    const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:123456@localhost:5432/ideaforge';
+    
+    console.log('Initializing Prisma client with URL:', databaseUrl);
+    
+    prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: databaseUrl,
+        },
+      },
+      log: ['query', 'info', 'warn', 'error'], // Enable all logging for debugging
+    });
+    
+    await prisma.$connect();
+    console.log('Prisma client connected successfully');
+  }
+  return prisma;
+}
+
+async function getRedisClient() {
+  if (!redis) {
+    // Lazy load Redis client
+    const Redis = require('ioredis');
+    redis = new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+    });
+  }
+  return redis;
+}
+
+export async function setupDatabase() {
+  const prismaClient = await getPrismaClient();
+  const redisClient = await getRedisClient();
+  return { prisma: prismaClient, redis: redisClient };
+}
+
+export async function cleanupDatabase() {
+  if (prisma) {
+    try {
+      // Clear all tables except migrations
+      const tableNames = await prisma.$queryRaw<Array<{ tablename: string }>>`
+        SELECT tablename FROM pg_tables WHERE schemaname='public'
+      `;
+      const tables = tableNames
+        .map((t) => `"${t.tablename}"`)
+        .filter((t) => t !== '"_prisma_migrations"')
+        .join(', ');
+      
+      if (tables) {
+        await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} CASCADE;`);
+      }
+    } catch (error) {
+      console.warn('Error cleaning up database:', error);
+    } finally {
+      await prisma.$disconnect();
+      prisma = null;
+    }
+  }
+
+  if (redis) {
+    try {
+      await redis.quit();
+    } catch (error) {
+      console.warn('Error disconnecting Redis:', error);
+    } finally {
+      redis = null;
+    }
+  }
+}
+
+export async function getPrisma() {
+  return await getPrismaClient();
+}
+
+export async function getRedis() {
+  return await getRedisClient();
+}
+
+// Helper function to create a test user
+export async function createTestUser(email: string, password?: string) {
+  const prisma = await getPrisma();
+  
+  // First, try to delete any existing user with this email
+  try {
+    await prisma.user.delete({
+      where: { email },
+    });
+    console.log(`Deleted existing user: ${email}`);
+  } catch (error) {
+    // User doesn't exist, that's fine
+    console.log(`No existing user to delete: ${email}`);
+  }
+  
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email,
+        displayName: 'Test User',
+        status: 'PENDING',
+        password: password ? {
+          create: {
+            hash: password,
+          },
+        } : undefined,
+      },
+    });
+    
+    console.log(`Created user: ${email} with ID: ${user.id}`);
+    return user;
+  } catch (error) {
+    console.error(`Failed to create user ${email}:`, error);
+    throw error;
+  }
+}
+
+// Helper function to verify a user's email (bypass email verification)
+export async function verifyUserEmail(email: string) {
+  const prisma = await getPrisma();
+  
+  // First check if user exists
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+  
+  if (!user) {
+    throw new Error(`User with email ${email} not found`);
+  }
+  
+  await prisma.user.update({
+    where: { email },
+    data: {
+      emailVerified: new Date(),
+      status: 'ACTIVE',
+    },
+  });
+}
+
+// Helper function to set verification code in Redis (for testing email verification)
+export async function setVerificationCode(email: string, code: string, type: string = 'register') {
+  const redis = await getRedis();
+  const codeKey = `email:code:${email}:${type}`;
+  
+  await redis.setex(codeKey, 300, code); // 5 minutes expiry
+}
