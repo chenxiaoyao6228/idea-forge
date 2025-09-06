@@ -26,6 +26,7 @@
     },
     "dev": {
       "dependsOn": [
+        "^dev",
         "^build"
       ],
       "cache": false,
