@@ -4,7 +4,7 @@ let redis: any;
 async function getPrismaClient() {
   if (!prisma) {
     // Lazy load Prisma client from the API directory
-    const { PrismaClient } = require('../../apps/api/node_modules/@prisma/client');
+    const { PrismaClient } = require('../../../apps/api/node_modules/@prisma/client');
     
     // Use the same database URL as the API
     const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:123456@localhost:5432/ideaforge';
@@ -145,10 +145,3 @@ export async function verifyUserEmail(email: string) {
   });
 }
 
-// Helper function to set verification code in Redis (for testing email verification)
-export async function setVerificationCode(email: string, code: string, type: string = 'register') {
-  const redis = await getRedis();
-  const codeKey = `email:code:${email}:${type}`;
-  
-  await redis.setex(codeKey, 300, code); // 5 minutes expiry
-}

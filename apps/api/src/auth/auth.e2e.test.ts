@@ -11,9 +11,9 @@ describe("AuthController (e2e)", () => {
   let prisma: any;
 
   const mockMailService = {
-    sendMail: vi.fn().mockResolvedValue({ messageId: "test-message-id" }),
-    sendRegistrationEmail: vi.fn().mockResolvedValue({ messageId: "test-message-id" }),
-    sendPasswordResetEmail: vi.fn().mockResolvedValue({ messageId: "test-message-id" }),
+    sendEmail: vi.fn().mockResolvedValue({}),
+    sendRegistrationEmail: vi.fn().mockResolvedValue({}),
+    sendPasswordResetEmail: vi.fn().mockResolvedValue({}),
   };
 
   beforeAll(async () => {

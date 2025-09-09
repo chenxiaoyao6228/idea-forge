@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env.test for testing
+dotenv.config({ path: '.env' });
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -9,11 +13,11 @@ export default defineConfig({
   reporter: 'html',
   
   // Global setup and teardown
-  globalSetup: require.resolve('./tests/setup/global-setup'),
-  globalTeardown: require.resolve('./tests/setup/global-teardown'),
+  globalSetup: require.resolve('./tests/e2e/setup/global-setup'),
+  globalTeardown: require.resolve('./tests/e2e/setup/global-teardown'),
   
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL,
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

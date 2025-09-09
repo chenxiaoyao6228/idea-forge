@@ -38,7 +38,7 @@ export class AIController {
         response.write(
           `event: error\ndata: ${JSON.stringify({
             code: ErrorCodeEnum.AITokenLimitExceeded,
-            message: `Token usage limit exceeded. Please contact ${this.configService.get("EMAIL_TO")} to get more`,
+            message: `Token usage limit exceeded. Please contact ${this.configService.get("SUPER_ADMIN_EMAIL")} to get more`,
           })}\n\n`,
         );
         response.end();

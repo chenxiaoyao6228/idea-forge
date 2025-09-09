@@ -43,7 +43,8 @@ export function Field({
   className?: string;
 }) {
   const fallbackId = useId();
-  const id = inputProps.id ?? fallbackId;
+  // Use the id from inputProps if provided, otherwise use the htmlFor from labelProps, otherwise use fallback
+  const id = inputProps.id ?? labelProps.htmlFor ?? fallbackId;
   const errorId = errors?.length ? `${id}-error` : undefined;
   return (
     <div className={className}>

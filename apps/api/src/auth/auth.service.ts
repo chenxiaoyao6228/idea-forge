@@ -48,11 +48,11 @@ export class AuthService {
     if (user) {
       if (user.status === UserStatus.ACTIVE) throw new ApiException(ErrorCodeEnum.UserAlreadyExists);
 
-      await this.userService.updateUserStatus(data.email, UserStatus.SUSPENDED);
+      await this.userService.updateUserStatus(data.email, UserStatus.PENDING);
     } else {
       user = await this.userService.createUser({
         ...data,
-        status: UserStatus.SUSPENDED,
+        status: UserStatus.PENDING,
       });
     }
 

@@ -11,12 +11,11 @@ export const envSchema = z.object({
   /* DATABASE CONFIG */
   DATABASE_URL: z.string().min(1),
 
-  /* EMAIL CONFIG */
-  EMAIL_HOST: z.string().min(1),
-  EMAIL_PORT: z.string().min(1).regex(/^\d+$/),
-  EMAIL_USER: z.string().min(1),
-  EMAIL_PASSWORD: z.string().min(1),
-  EMAIL_TO: z.string().email(),
+  /* RESEND EMAIL CONFIG */
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string(),
+
+  // OTHERS EMAIL CONFIG
   SUPER_ADMIN_EMAIL: z.string().email(),
 
   /* REDIS CONFIG */
@@ -40,7 +39,6 @@ export const envSchema = z.object({
   GITHUB_CALLBACK_URL: z.string().url(),
 
   /* OPTIONAL CONFIG */
-  RESEND_API_KEY: z.string().optional(),
   COLLAB_SECRET_KEY: z.string().min(1),
 
   /* COS CONFIG */

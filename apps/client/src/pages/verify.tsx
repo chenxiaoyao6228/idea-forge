@@ -10,6 +10,7 @@ import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
 import { CodeValidateRequest, VerificationCodeTypeSchema } from "@idea/contracts";
 import { z } from "zod";
+import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
 
 // Define query parameter names
 export const emailQueryParam = "email";
@@ -34,13 +35,66 @@ function VerifyPage() {
   const redirectTo = searchParams.get(redirectToQueryParam) || "";
   const { t } = useTranslation();
 
+  // Validate email format
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   if (!type || !email) {
-    return <div>Invalid verification type or email or code</div>;
+    return (
+      <div className="flex min-h-full flex-col justify-center py-8">
+        <div className="mx-auto w-full max-w-md">
+          <Card>
+            <CardHeader>
+              <span className="flex items-center gap-2 mb-4 self-center text-2xl font-bold">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                  <Logo />
+                </div>
+                {t("Idea Forge")}
+              </span>
+              <CardTitle className="text-xl">{t("Error")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <p className="text-destructive">{!email ? t("Email is required") : t("Invalid verification type or email or code")}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isValidEmail(email)) {
+    return (
+      <div className="flex min-h-full flex-col justify-center py-8">
+        <div className="mx-auto w-full max-w-md">
+          <Card>
+            <CardHeader>
+              <span className="flex items-center gap-2 mb-4 self-center text-2xl font-bold">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                  <Logo />
+                </div>
+                {t("Idea Forge")}
+              </span>
+              <CardTitle className="text-xl">{t("Error")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <p className="text-destructive">{t("Invalid email address")}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
     setValue,
   } = useForm<CodeValidateRequest>({
@@ -98,6 +152,12 @@ function VerifyPage() {
           break;
       }
     } catch (err: any) {
+      console.log("Verification error:", err); // Debug log
+      const code = err.code || err.message;
+      if (code === ErrorCodeEnum.VerificationCodeInvalid || code === "verification_code_invalid") {
+        setError(t("Invalid verification code"));
+        return;
+      }
       setError(err.message || "Verification failed");
     } finally {
       setIsPending(false);
@@ -139,7 +199,12 @@ function VerifyPage() {
 
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
 
-              <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
+              <StatusButton
+                className="w-full"
+                status={isPending ? "pending" : "idle"}
+                type="submit"
+                disabled={isPending || isSubmitting || watch("code")?.length !== 6}
+              >
                 {t("Submit")}
               </StatusButton>
             </form>

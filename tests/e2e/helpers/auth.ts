@@ -1,5 +1,5 @@
 import { Page } from '@playwright/test';
-import { createTestUser, verifyUserEmail, getPrisma } from '../../setup/database';
+import {createTestUser, verifyUserEmail, getPrisma} from './database';
 // Note: argon2 will be available at runtime when the API is running
 const { hash } = require('argon2');
 

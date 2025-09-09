@@ -1,9 +1,3 @@
----
-description:
-globs:
-alwaysApply: false
----
-
 Please create a product brief based on the description that the user provides. Your goal is to capture the business and functional requirements of the product and to provide solid context for others working on the product. You should include:
 
 1. Project overview / description

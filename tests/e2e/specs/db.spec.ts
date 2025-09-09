@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { setupDatabase, cleanupDatabase, createTestUser, verifyUserEmail, getPrisma } from '../setup/database';
+import { setupDatabase, cleanupDatabase, createTestUser, verifyUserEmail, getPrisma } from '../helpers/database';
 
 test.describe.serial('Database Connection', () => {
   test.beforeEach(async () => {

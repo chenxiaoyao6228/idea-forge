@@ -1,0 +1,227 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+# E2E Test Generator Rule
+
+## Overview
+
+This rule provides guidelines for automatically generating E2E tests based on page files from the service-cockpit frontend project. When you provide a page file, the AI will generate comprehensive E2E tests following the established testing patterns and guidelines.
+
+## Test Generation Process
+
+### 1. Page Analysis
+
+When a page file is provided, analyze:
+
+- **Component Structure**: Identify main UI components and their hierarchy
+- **User Interactions**: Map out clickable elements, forms, navigation flows
+- **Data Display**: Identify tables, lists, charts, and other data presentation elements
+- **State Management**: Understand loading states, error handling, and success scenarios
+
+### 2. Test Structure Template
+
+Generate tests following this structure:
+
+```typescript
+import { test, expect } from "@playwright/test";
+
+test.describe("PageName - Feature Description", () => {
+  test.beforeEach(async ({ page }) => {
+    // Navigate to the page
+    await page.goto("/path/to/page");
+  });
+
+  test("should display page content correctly", async ({ page }) => {
+    await test.step("Verify page structure", async () => {
+      // Test page title, main content areas
+    });
+
+    await test.step("Verify key components", async () => {
+      // Test main UI components
+    });
+  });
+
+  test("should handle user interactions", async ({ page }) => {
+    await test.step("Perform user action", async () => {
+      // Test user interactions
+    });
+
+    await test.step("Verify expected outcome", async () => {
+      // Assert results
+    });
+  });
+});
+```
+
+### 3. Component Testing Patterns
+
+#### Navigation & Layout
+
+```typescript
+// Test page structure
+await expect(page.getByRole("main")).toMatchAriaSnapshot(`
+  - main:
+    - heading "Page Title" [level=1]
+    - navigation:
+      - list:
+        - listitem:
+          - link "Menu Item"
+`);
+```
+
+#### Form Interactions
+
+```typescript
+// Test form inputs
+await test.step("Fill form fields", async () => {
+  await page.getByRole("textbox", { name: "Field Label" }).fill("test value");
+  await page
+    .getByRole("combobox", { name: "Dropdown Label" })
+    .selectOption("option1");
+  await page.getByRole("checkbox", { name: "Checkbox Label" }).check();
+});
+
+await test.step("Submit form", async () => {
+  await page.getByRole("button", { name: "Submit" }).click();
+});
+```
+
+#### Data Display
+
+```typescript
+// Test table content
+await test.step("Verify table data", async () => {
+  const table = page.getByRole("table");
+  await expect(table).toBeVisible();
+  await expect(table.getByRole("row")).toHaveCount(expectedRowCount);
+});
+```
+
+### 4. Test Coverage Requirements
+
+#### Essential Tests
+
+- **Page Load**: Verify page renders correctly
+- **Component Visibility**: Test all major UI components are present
+- **User Interactions**: Test clickable elements, form submissions
+- **Navigation**: Test breadcrumbs, back buttons, menu navigation
+- **Responsiveness**: Test mobile/desktop layouts if applicable
+
+#### Advanced Tests
+
+- **Error Handling**: Test error states and messages
+- **Loading States**: Test loading spinners and skeleton screens
+- **Data Validation**: Test form validation and error messages
+- **Accessibility**: Test ARIA labels and keyboard navigation
+
+### 5. Locator Strategy Priority
+
+1. **Role-based**: `getByRole('button', { name: 'Submit' })`
+2. **Label-based**: `getByLabel('Email Address')`
+3. **Text-based**: `getByText('Save Changes')`
+4. **Test ID**: `getByTestId('submit-button')` (if available)
+
+### 6. Assertion Best Practices
+
+```typescript
+// Use auto-retrying assertions
+await expect(locator).toBeVisible();
+await expect(locator).toHaveText("Expected Text");
+await expect(locator).toHaveCount(5);
+
+// Test accessibility structure
+await expect(page.getByRole("main")).toMatchAriaSnapshot(`
+  // Expected accessibility tree
+`);
+```
+
+### 7. Test Organization
+
+#### File Naming
+
+- Use `<feature-name>.spec.ts` format
+- Place in `tests/e2e` directory
+- Group related tests under descriptive `test.describe()` blocks
+
+#### Test Naming
+
+- Use clear, descriptive test names
+- Follow pattern: `should <action> when <condition>`
+- Examples:
+  - `should display machine list when page loads`
+  - `should filter results when search is performed`
+  - `should show error message when invalid input is entered`
+
+### 8. Common Test Scenarios
+
+#### CRUD Operations
+
+```typescript
+test("should create new item", async ({ page }) => {
+  await test.step("Open create form", async () => {
+    await page.getByRole("button", { name: "Add New" }).click();
+  });
+
+  await test.step("Fill form and submit", async () => {
+    // Form interaction steps
+  });
+
+  await test.step("Verify success", async () => {
+    await expect(page.getByText("Item created successfully")).toBeVisible();
+  });
+});
+```
+
+#### Search & Filter
+
+```typescript
+test("should filter results by criteria", async ({ page }) => {
+  await test.step("Apply filter", async () => {
+    await page.getByRole("combobox", { name: "Status" }).selectOption("active");
+    await page.getByRole("button", { name: "Apply Filter" }).click();
+  });
+
+  await test.step("Verify filtered results", async () => {
+    // Assert filtered data
+  });
+});
+```
+
+### 9. Error Handling Tests
+
+```typescript
+test("should handle network errors gracefully", async ({ page }) => {
+  // Mock network failure or test error states
+  await test.step("Trigger error condition", async () => {
+    // Action that causes error
+  });
+
+  await test.step("Verify error message", async () => {
+    await expect(page.getByText("Connection failed")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  });
+});
+```
+
+### 10. Test Data Management
+
+- Use test fixtures for consistent data
+- Clean up test data after tests
+- Use unique identifiers to avoid conflicts
+- Mock external dependencies when necessary
+
+## Usage Instructions
+
+When you provide a page file from service-cockpit:
+
+1. **Analyze the page structure** and identify key components
+2. **Generate comprehensive test scenarios** covering all user interactions
+3. **Follow the established patterns** from existing test files
+4. **Include accessibility testing** using `toMatchAriaSnapshot`
+5. **Test both happy path and error scenarios**
+6. **Ensure tests are resilient** and follow Playwright best practices
+
+The generated tests should be ready to run and provide comprehensive coverage of the page functionality while maintaining consistency with the existing testing codebase.

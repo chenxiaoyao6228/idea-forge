@@ -9,9 +9,9 @@ pre-commit:
       glob: "{apps/client/src/**/*.{tsx,ts,jsx,js},apps/api/src/**/*.{tsx,ts,jsx,js},**/locales/en.json}"
       run: |
         echo "Running i18n process..."  
-        pnpm i18n:process  
-        echo "Adding translation files..."  
-        git add apps/api/locales/*.json && git add apps/api/public/locales/*.json
+        # pnpm i18n:process  
+        # echo "Adding translation files..."  
+        # git add apps/api/locales/*.json && git add apps/api/public/locales/*.json
     format:
       glob: "*.{js,ts,jsx,tsx,json}"
       run: |

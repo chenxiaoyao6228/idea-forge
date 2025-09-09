@@ -33,6 +33,7 @@ function Register() {
     formState: { errors, isSubmitting },
   } = useForm<z.infer<typeof RegisterRequestSchema>>({
     resolver: zodResolver(RegisterRequestSchema as any),
+    mode: "onBlur", // Validate on blur for better UX
     defaultValues: {
       email: "",
       password: "",
@@ -44,7 +45,9 @@ function Register() {
     try {
       await authApi.register(data);
 
-      navigate(`/verify?email=${encodeURIComponent(data.email)}&type=register`);
+      const _redirectTo = redirectTo || "/login";
+
+      navigate(`/verify?email=${encodeURIComponent(data.email)}&type=register&redirectTo=${encodeURIComponent(_redirectTo)}`);
     } catch (err: any) {
       const code = err.code;
       if (code === ErrorCodeEnum.UserAlreadyExists) {
@@ -105,7 +108,7 @@ function Register() {
 
               <div className="text-center text-sm">
                 {t("Already have an account?")}{" "}
-                <Link to={redirectTo ? `/login?${encodeURIComponent(redirectTo)}` : "/login"} className="underline underline-offset-4">
+                <Link to={redirectTo ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : "/login"} className="underline underline-offset-4">
                   {t("Sign in")}
                 </Link>
               </div>
