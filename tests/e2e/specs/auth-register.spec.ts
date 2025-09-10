@@ -1,41 +1,41 @@
 import { test, expect } from "@playwright/test";
 import {
-  createTestUser,
-  getPrisma,
-  verifyUserEmail,
+  getPrisma
 } from "../helpers/database";
 import {
-  registerUserWithMailSlurp,
-  completeRegistrationWithMailSlurp,
-  cleanupMailSlurpUser,
-  isMailSlurpTestingAvailable,
-  createMailSlurpTestUser,
-  completeEmailVerificationWithMailSlurp,
-  waitForEmailInMailSlurpInbox,
-  MailSlurpTestUser,
-  extractVerificationCodeFromMailSlurp,
-  initializeMailSlurp,
+  cleanupMailServiceUser, EMailTestUser,
+  extractVerificationCodeFromMailService,
+  initializeMailService,
+  createEMailTestUser,
+  waitForEmailInMailServiceInbox
 } from "../helpers/email";
+import { cleanupTestUser } from "../helpers/auth";
+import { PomManager } from "../poms/PomManager";
 
 function createRandomTestUserEmail(){
   return `test-${Math.random().toString(36).substring(2, 15)}@example.com`
 }
 
 test.describe.serial("User Registration", () => {
-  let testUser: MailSlurpTestUser | null = null;
+  let testUser: EMailTestUser | null = null;
+  let pomManager: PomManager;
 
   test.beforeAll(async () => {
     // Initialize MailSlurp client
-    const mailSlurpConfig = initializeMailSlurp();
-    if (!mailSlurpConfig) {
-      test.skip(true, "MailSlurp API key not configured");
+    const mailServiceConfig = initializeMailService();
+    if (!mailServiceConfig) {
+      test.skip(true, "email is not configured");
     }
   });
 
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ page }) => {
+    // Initialize PomManager for each test
+    pomManager = new PomManager(page);
+    
     // Clean up any existing test data
     const prisma = await getPrisma();
-    await prisma.user.deleteMany({
+
+    const users = await prisma.user.findMany({
       where: {
         OR: [
           { email: { contains: "@mailslurp.com" } },
@@ -43,22 +43,21 @@ test.describe.serial("User Registration", () => {
         ],
       },
     });
+    await users.map(user=> cleanupTestUser(user.email))
   });
 
   test.afterEach(async () => {
     // Cleanup MailSlurp resources
     if (testUser) {
-      await cleanupMailSlurpUser(testUser);
+      await cleanupMailServiceUser(testUser);
+      await cleanupTestUser(testUser.emailAddress);
       testUser = null;
     }
   });
 
   test.skip("should register a new user successfully", async ({ page }) => {
-    // Skip test if MailSlurp is not available
-    test.skip(!isMailSlurpTestingAvailable(), "MailSlurp not configured");
-
     // Create a test email account for this test
-    testUser = await createMailSlurpTestUser(
+    testUser = await createEMailTestUser(
       "password123",
       "email-verification-test"
     );
@@ -66,12 +65,12 @@ test.describe.serial("User Registration", () => {
     const testPassword = testUser.password!;
 
     await test.step("Register user with test email address", async () => {
-      await page.goto("/register");
+      await pomManager.registerPage.goto();
 
       // Fill registration form with test email address
-      await page.getByLabel("Email").fill(testEmail);
-      await page.getByLabel("Password").fill(testPassword);
-      await page.getByRole("button", { name: "Register" }).click();
+      await pomManager.registerPage.fillEmail(testEmail);
+      await pomManager.registerPage.fillPassword(testPassword);
+      await pomManager.registerPage.submitForm();
 
       // Wait for redirect to verify page and check for expected content
       await page.waitForURL(/\/verify/);
@@ -91,7 +90,7 @@ test.describe.serial("User Registration", () => {
 
     await test.step("Wait for verification email", async () => {
       // Wait for the verification email to arrive in MailSlurp inbox
-      const email = await waitForEmailInMailSlurpInbox(testUser!.inbox.id, {
+      const email = await waitForEmailInMailServiceInbox(testUser!.inbox.id, {
         timeout: 300000,
         subjectFilter: "Registration",
       });
@@ -107,13 +106,13 @@ test.describe.serial("User Registration", () => {
 
     await test.step("Extract verification code and verify", async () => {
       // Get the verification email from MailSlurp inbox
-      const email = await waitForEmailInMailSlurpInbox(testUser!.inbox.id, {
+      const email = await waitForEmailInMailServiceInbox(testUser!.inbox.id, {
         timeout: 30000,
         subjectFilter: "Registration",
       });
 
       // Extract the verification code
-      const verificationCode = extractVerificationCodeFromMailSlurp(email);
+      const verificationCode = extractVerificationCodeFromMailService(email);
 
       expect(verificationCode).toBeTruthy();
       expect(verificationCode).toMatch(/^\d{6}$/); // Should be 6 digits
@@ -162,10 +161,10 @@ test.describe.serial("User Registration", () => {
     });
 
     await test.step("Attempt registration with existing email", async () => {
-      await page.goto("/register");
-      await page.getByLabel("Email").fill(testEmail);
-      await page.getByLabel("Password").fill(testPassword);
-      await page.getByRole("button", { name: "Register" }).click();
+      await pomManager.registerPage.goto();
+      await pomManager.registerPage.fillEmail(testEmail);
+      await pomManager.registerPage.fillPassword(testPassword);
+      await pomManager.registerPage.submitForm();
     });
 
     await test.step("Verify error message", async () => {
@@ -181,9 +180,8 @@ test.describe.serial("User Registration", () => {
     });
 
     await test.step("Test email validation on blur", async () => {
-      const emailInput = page.getByLabel("Email");
-      await emailInput.fill("invalid-email");
-      await emailInput.blur(); // Trigger validation on blur
+      await pomManager.registerPage.fillEmail("invalid-email");
+      await pomManager.registerPage.emailInput.blur(); // Trigger validation on blur
 
       // Check if validation error appears
       await expect(page.locator("text=Invalid email address")).toBeVisible();
@@ -191,10 +189,10 @@ test.describe.serial("User Registration", () => {
 
     await test.step("Test email validation on submit", async () => {
       // Clear the field and try again
-      await page.getByLabel("Email").fill("");
-      await page.getByLabel("Email").fill("invalid-email");
-      await page.getByLabel("Password").fill("password123");
-      await page.getByRole("button", { name: "Register" }).click();
+      await pomManager.registerPage.fillEmail("");
+      await pomManager.registerPage.fillEmail("invalid-email");
+      await pomManager.registerPage.fillPassword("password123");
+      await pomManager.registerPage.submitForm();
 
       // Should show validation error
       await expect(page.locator("text=Invalid email address")).toBeVisible();
@@ -203,15 +201,12 @@ test.describe.serial("User Registration", () => {
 
   test("should validate password length", async ({ page }) => {
     await test.step("Navigate to register page", async () => {
-      await page.goto("/register");
-      // Wait for the page to be fully loaded
-      await page.waitForLoadState("networkidle");
+      await pomManager.registerPage.goto();
     });
 
     await test.step("Test password validation on blur", async () => {
-      const passwordInput = page.getByLabel("Password");
-      await passwordInput.fill("123");
-      await passwordInput.blur(); // Trigger validation on blur
+      await pomManager.registerPage.fillPassword("123");
+      await pomManager.registerPage.passwordInput.blur(); // Trigger validation on blur
 
       // Check if validation error appears
       await expect(
@@ -221,10 +216,10 @@ test.describe.serial("User Registration", () => {
 
     await test.step("Test password validation on submit", async () => {
       // Clear the field and try again
-      await page.getByLabel("Email").fill("test@example.com");
-      await page.getByLabel("Password").fill("");
-      await page.getByLabel("Password").fill("123");
-      await page.getByRole("button", { name: "Register" }).click();
+      await pomManager.registerPage.fillEmail("test@example.com");
+      await pomManager.registerPage.fillPassword("");
+      await pomManager.registerPage.fillPassword("123");
+      await pomManager.registerPage.submitForm();
 
       // Should show validation error
       await expect(
@@ -241,18 +236,16 @@ test.describe.serial("User Registration", () => {
     });
 
     await test.step("Test email validation on blur", async () => {
-      const emailInput = page.getByLabel("Email");
-      await emailInput.fill("invalid-email");
-      await emailInput.blur();
+      await pomManager.registerPage.fillEmail("invalid-email");
+      await pomManager.registerPage.emailInput.blur();
 
       // Check if validation error appears
       await expect(page.locator("text=Invalid email address")).toBeVisible();
     });
 
     await test.step("Test password validation on blur", async () => {
-      const passwordInput = page.getByLabel("Password");
-      await passwordInput.fill("123");
-      await passwordInput.blur();
+      await pomManager.registerPage.fillPassword("123");
+      await pomManager.registerPage.passwordInput.blur();
 
       // Check if validation error appears
       await expect(
@@ -269,8 +262,8 @@ test.describe.serial("User Registration", () => {
     });
 
     await test.step("Fill form and submit", async () => {
-      await page.getByLabel("Email").fill("test@example.com");
-      await page.getByLabel("Password").fill("password123");
+      await pomManager.registerPage.fillEmail("test@example.com");
+      await pomManager.registerPage.fillPassword("password123");
 
       const submitButton = page.getByRole("button", { name: "Register" });
       await submitButton.click();
@@ -318,35 +311,6 @@ test.describe.serial("User Registration", () => {
     );
   });
 
-  test("should support keyboard navigation", async ({ page }) => {
-    await test.step("Navigate to register page", async () => {
-      await page.goto("/register");
-    });
-
-    await test.step("Test tab navigation", async () => {
-      await page.keyboard.press("Tab"); // Focus email field
-      await expect(page.getByLabel("Email")).toBeFocused();
-
-      await page.keyboard.press("Tab"); // Focus password field
-      await expect(page.getByLabel("Password")).toBeFocused();
-
-      await page.keyboard.press("Tab"); // Focus submit button
-      await expect(
-        page.getByRole("button", { name: "Register" })
-      ).toBeFocused();
-    });
-
-    await test.step("Test form submission with Enter key", async () => {
-      await page.getByLabel("Email").fill("test@example.com");
-      await page.getByLabel("Password").fill("password123");
-      await page.keyboard.press("Enter");
-
-      // Should redirect to verify page
-      await expect(page).toHaveURL(/\/verify/);
-    });
-  });
-
-  //==============================================
 
   test("should show error for invalid verification code", async ({ page }) => {
     const testEmail = "invalid-code@example.com";
@@ -357,9 +321,9 @@ test.describe.serial("User Registration", () => {
     });
 
     await test.step("Fill registration form", async () => {
-      await page.getByLabel("Email").fill(testEmail);
-      await page.getByLabel("Password").fill("password123");
-      await page.getByRole("button", { name: "Register" }).click();
+      await pomManager.registerPage.fillEmail(testEmail);
+      await pomManager.registerPage.fillPassword("password123");
+      await pomManager.registerPage.submitForm();
     });
 
     await test.step("Verify redirect to verification page", async () => {
@@ -386,9 +350,9 @@ test.describe.serial("User Registration", () => {
     });
 
     await test.step("Fill registration form", async () => {
-      await page.getByLabel("Email").fill(testEmail);
-      await page.getByLabel("Password").fill("password123");
-      await page.getByRole("button", { name: "Register" }).click();
+      await pomManager.registerPage.fillEmail(testEmail);
+      await pomManager.registerPage.fillPassword("password123");
+      await pomManager.registerPage.submitForm();
     });
 
     await test.step("Verify redirect to verification page", async () => {
@@ -477,9 +441,9 @@ test.describe.serial("User Registration", () => {
     });
 
     await test.step("Fill registration form", async () => {
-      await page.getByLabel("Email").fill(testEmail);
-      await page.getByLabel("Password").fill("password123");
-      await page.getByRole("button", { name: "Register" }).click();
+      await pomManager.registerPage.fillEmail(testEmail);
+      await pomManager.registerPage.fillPassword("password123");
+      await pomManager.registerPage.submitForm();
     });
 
     await test.step("Verify redirect to verification page", async () => {

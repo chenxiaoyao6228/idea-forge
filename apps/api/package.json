@@ -33,8 +33,8 @@
     "format:fix": "biome format --write .",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "test:e2e": "vitest run --config vitest.integration.config.ts",
-    "test:e2e:watch": "vitest --watch --config vitest.integration.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:watch": "vitest --watch --config vitest.integration.config.ts",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --inspect --logHeapUsage --threads=false",
     "setup": "chmod +x scripts/start-docker.sh && chmod +x ./scripts/setup.sh  && ./scripts/setup.sh"

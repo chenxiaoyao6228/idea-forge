@@ -1,7 +1,7 @@
 let prisma: any;
 let redis: any;
 
-async function getPrismaClient() {
+export async function getPrismaClient() {
   if (!prisma) {
     // Lazy load Prisma client from the API directory
     const { PrismaClient } = require('../../../apps/api/node_modules/@prisma/client');
@@ -26,7 +26,7 @@ async function getPrismaClient() {
   return prisma;
 }
 
-async function getRedisClient() {
+export async function getRedisClient() {
   if (!redis) {
     // Lazy load Redis client
     const Redis = require('ioredis');
@@ -85,63 +85,3 @@ export async function getPrisma() {
 export async function getRedis() {
   return await getRedisClient();
 }
-
-// Helper function to create a test user
-export async function createTestUser(email: string, password?: string) {
-  const prisma = await getPrisma();
-  
-  // First, try to delete any existing user with this email
-  try {
-    await prisma.user.delete({
-      where: { email },
-    });
-    console.log(`Deleted existing user: ${email}`);
-  } catch (error) {
-    // User doesn't exist, that's fine
-    console.log(`No existing user to delete: ${email}`);
-  }
-  
-  try {
-    const user = await prisma.user.create({
-      data: {
-        email,
-        displayName: 'Test User',
-        status: 'PENDING',
-        password: password ? {
-          create: {
-            hash: password,
-          },
-        } : undefined,
-      },
-    });
-    
-    console.log(`Created user: ${email} with ID: ${user.id}`);
-    return user;
-  } catch (error) {
-    console.error(`Failed to create user ${email}:`, error);
-    throw error;
-  }
-}
-
-// Helper function to verify a user's email (bypass email verification)
-export async function verifyUserEmail(email: string) {
-  const prisma = await getPrisma();
-  
-  // First check if user exists
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-  
-  if (!user) {
-    throw new Error(`User with email ${email} not found`);
-  }
-  
-  await prisma.user.update({
-    where: { email },
-    data: {
-      emailVerified: new Date(),
-      status: 'ACTIVE',
-    },
-  });
-}
-

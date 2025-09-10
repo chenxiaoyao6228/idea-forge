@@ -1,21 +1,69 @@
-import { Page } from '@playwright/test';
 import { MailSlurp } from 'mailslurp-client';
 
-export interface MailSlurpTestUser {
-  inbox: MailSlurpInbox;
+
+export interface MailServiceConfig {
+  apiKey: string;
+  client: MailSlurp;
+}
+
+export interface MailServiceInbox {
+  id: string;
+  emailAddress: string;
+}
+
+export interface MailServiceEmail {
+  id: string;
+  from: string;
+  to: string[];
+  subject: string;
+  body: string;
+  createdAt: Date;
+}
+
+let mailSlurpClient: MailSlurp | null = null;
+
+export interface EMailTestUser {
+  inbox: MailServiceInbox;
   emailAddress: string;
   password?: string;
 }
 
 /**
- * Create a test user with MailSlurp email address
+ * Initialize MailSlurp client with API key from environment
+ * Gracefully handles missing API key for environments that don't use MailSlurp
+ */
+export function initializeMailService(): MailServiceConfig | null {
+  const apiKey = process.env.MAILSLURP_API_KEY;
+  
+  if (!apiKey) {
+    console.warn('[MAILSLURP] API key not found in environment variables');
+    return null;
+  }
+
+  try {
+    mailSlurpClient = new MailSlurp({ apiKey });
+    console.log('[MAILSLURP] Client initialized successfully');
+    
+    return {
+      apiKey,
+      client: mailSlurpClient,
+    };
+  } catch (error) {
+    console.error('[MAILSLURP] Failed to initialize client:', error);
+    return null;
+  }
+}
+
+
+/**
+ * Create a test user with MailService email address
  * Returns user data and inbox for cleanup
  */
-export async function createMailSlurpTestUser(
+export async function createEMailTestUser(
   password: string = 'password123',
   prefix: string = 'test-user'
-): Promise<MailSlurpTestUser> {
-  if (!isMailSlurpAvailable()) {
+): Promise<EMailTestUser> {
+  if (!isMailServiceAvailable()) {
     throw new Error('MailSlurp is not available. Check MAILSLURP_API_KEY environment variable.');
   }
 
@@ -28,214 +76,14 @@ export async function createMailSlurpTestUser(
   };
 }
 
-/**
- * Register a user using MailSlurp email and complete email verification
- * This is the main helper for registration testing with MailSlurp
- */
-export async function registerUserWithMailSlurp(
-  page: Page,
-  options: {
-    password?: string;
-    userPrefix?: string;
-    timeout?: number;
-    skipEmailVerification?: boolean;
-  } = {}
-): Promise<{
-  user: MailSlurpTestUser;
-  verificationCode?: string;
-  email?: MailSlurpEmail;
-}> {
-  const {
-    password = 'password123',
-    userPrefix = 'register-test',
-    timeout = 30000,
-    skipEmailVerification = false,
-  } = options;
-
-  // Create test user with MailSlurp email
-  const user = await createMailSlurpTestUser(password, userPrefix);
-  
-  try {
-    // Navigate to registration page
-    await page.goto('/register');
-    
-    // Fill registration form
-    await page.locator('input[type="email"]').fill(user.emailAddress);
-    await page.locator('input[type="password"]').fill(password);
-    
-    // Submit registration form
-    await page.getByRole('button', { name: 'Register' }).click();
-    
-    if (skipEmailVerification) {
-      return { user };
-    }
-    
-    // Wait for verification email and extract code
-    const email = await waitForEmailInMailSlurpInbox(user.inbox.id, {
-      timeout,
-      subjectFilter: 'Registration',
-    });
-    
-    const verificationCode = extractVerificationCodeFromMailSlurp(email);
-    
-    if (!verificationCode) {
-      throw new Error('Failed to extract verification code from MailSlurp email');
-    }
-    
-    return {
-      user,
-      verificationCode,
-      email,
-    };
-  } catch (error) {
-    // Cleanup on error
-    await deleteMailSlurpInbox(user.inbox.id);
-    throw error;
-  }
-}
-
-/**
- * Complete email verification process using MailSlurp verification code
- * Assumes user is on the verification page
- */
-export async function completeEmailVerificationWithMailSlurp(
-  page: Page,
-  verificationCode: string
-): Promise<void> {
-  // Fill verification code
-  await page.locator('input[name="code"]').fill(verificationCode);
-  
-  // Submit verification
-  await page.getByRole('button', { name: 'Verify' }).click();
-}
-
-/**
- * Full registration and verification flow using MailSlurp
- * Handles the complete user journey from registration to verified account
- */
-export async function completeRegistrationWithMailSlurp(
-  page: Page,
-  options: {
-    password?: string;
-    userPrefix?: string;
-    timeout?: number;
-  } = {}
-): Promise<{
-  user: MailSlurpTestUser;
-  verificationCode: string;
-}> {
-  const {
-    password = 'password123',
-    userPrefix = 'full-registration',
-    timeout = 30000,
-  } = options;
-
-  // Register user and get verification code
-  const { user, verificationCode, email } = await registerUserWithMailSlurp(page, {
-    password,
-    userPrefix,
-    timeout,
-  });
-  
-  if (!verificationCode) {
-    throw new Error('Verification code not received from MailSlurp');
-  }
-  
-  // Complete email verification
-  await completeEmailVerificationWithMailSlurp(page, verificationCode);
-  
-  return {
-    user,
-    verificationCode,
-  };
-}
-
-/**
- * Test password reset flow using MailSlurp
- * Initiates password reset and retrieves reset code
- */
-export async function initiatePasswordResetWithMailSlurp(
-  page: Page,
-  emailAddress: string,
-  options: {
-    timeout?: number;
-  } = {}
-): Promise<{
-  resetCode: string;
-  email: MailSlurpEmail;
-}> {
-  const { timeout = 30000 } = options;
-  
-  // We need to find the inbox ID for this email address
-  // This assumes the email was created by our test helpers
-  throw new Error('Password reset with MailSlurp requires inbox tracking. Use registerUserWithMailSlurp first.');
-}
-
-/**
- * Enhanced password reset flow that tracks the inbox
- */
-export async function passwordResetFlowWithMailSlurp(
-  page: Page,
-  user: MailSlurpTestUser,
-  options: {
-    timeout?: number;
-  } = {}
-): Promise<{
-  resetCode: string;
-  email: MailSlurpEmail;
-}> {
-  const { timeout = 30000 } = options;
-  
-  // Navigate to password reset page
-  await page.goto('/forgot-password');
-  
-  // Fill email address
-  await page.locator('input[type="email"]').fill(user.emailAddress);
-  
-  // Submit password reset request
-  await page.getByRole('button', { name: 'Send Reset Code' }).click();
-  
-  // Wait for reset email
-  const email = await waitForEmailInMailSlurpInbox(user.inbox.id, {
-    timeout,
-    subjectFilter: 'reset',
-  });
-  
-  const resetCode = extractVerificationCodeFromMailSlurp(email);
-  
-  if (!resetCode) {
-    throw new Error('Failed to extract reset code from MailSlurp email');
-  }
-  
-  return {
-    resetCode,
-    email,
-  };
-}
-
-/**
- * Login with a MailSlurp test user
- * Assumes the user account is already verified
- */
-export async function loginWithMailSlurpUser(
-  page: Page,
-  user: MailSlurpTestUser
-): Promise<void> {
-  await page.goto('/login');
-  
-  await page.locator('input[type="email"]').fill(user.emailAddress);
-  await page.locator('input[type="password"]').fill(user.password || 'password123');
-  
-  await page.getByRole('button', { name: 'Login' }).click();
-}
 
 /**
  * Cleanup helper to delete MailSlurp inbox after test
  * Should be called in test teardown
  */
-export async function cleanupMailSlurpUser(user: MailSlurpTestUser): Promise<void> {
+export async function cleanupMailServiceUser(user: EMailTestUser): Promise<void> {
   try {
-    await deleteMailSlurpInbox(user.inbox.id);
+    await deleteMailServiceInbox(user.inbox.id);
   } catch (error) {
     console.warn(`Failed to cleanup MailSlurp inbox ${user.inbox.id}:`, error);
   }
@@ -244,40 +92,33 @@ export async function cleanupMailSlurpUser(user: MailSlurpTestUser): Promise<voi
 /**
  * Cleanup helper for multiple MailSlurp users
  */
-export async function cleanupMailSlurpUsers(users: MailSlurpTestUser[]): Promise<void> {
-  const cleanupPromises = users.map(user => cleanupMailSlurpUser(user));
+export async function cleanupMailServiceUsers(users: EMailTestUser[]): Promise<void> {
+  const cleanupPromises = users.map(user => cleanupMailServiceUser(user));
   await Promise.allSettled(cleanupPromises);
 }
 
 /**
  * Wait for any email in a MailSlurp inbox (useful for debugging)
  */
-export async function waitForAnyEmailInMailSlurp(
-  user: MailSlurpTestUser,
+export async function waitForAnyEmailInMailService(
+  user: EMailTestUser,
   timeout: number = 30000
-): Promise<MailSlurpEmail> {
-  return await waitForEmailInMailSlurpInbox(user.inbox.id, { timeout });
+): Promise<MailServiceEmail> {
+  return await waitForEmailInMailServiceInbox(user.inbox.id, { timeout });
 }
 
-/**
- * Check if MailSlurp email testing is available in the current environment
- * Returns true if MAILSLURP_API_KEY is set and client is initialized
- */
-export function isMailSlurpTestingAvailable(): boolean {
-  return isMailSlurpAvailable();
-}
 
 /**
  * Create multiple test users for batch testing
  */
-export async function createMultipleMailSlurpUsers(
+export async function createMultipleMailServiceUsers(
   count: number,
   prefix: string = 'batch-user'
-): Promise<MailSlurpTestUser[]> {
-  const users: MailSlurpTestUser[] = [];
+): Promise<EMailTestUser[]> {
+  const users: EMailTestUser[] = [];
   
   for (let i = 0; i < count; i++) {
-    const user = await createMailSlurpTestUser('password123', `${prefix}-${i}`);
+    const user = await createEMailTestUser('password123', `${prefix}-${i}`);
     users.push(user);
   }
   
@@ -289,7 +130,7 @@ export async function createMultipleMailSlurpUsers(
  * Useful for testing email content accuracy
  */
 export function verifyEmailContent(
-  email: MailSlurpEmail,
+  email: MailServiceEmail,
   expectedContent: {
     subjectContains?: string;
     bodyContains?: string;
@@ -313,28 +154,11 @@ export function verifyEmailContent(
   return true;
 }
 
-/**
- * Extract multiple verification codes from email (if multiple codes are present)
- */
-export function extractAllVerificationCodes(email: MailSlurpEmail): string[] {
-  const content = email.body || '';
-  const codePattern = /\b\d{6}\b/g;
-  const matches = content.match(codePattern) || [];
-  
-  // Filter out common non-verification patterns
-  return matches.filter(code => {
-    const num = parseInt(code);
-    return num > 100000 && num < 999999 && // Valid range
-           !code.startsWith('000') &&       // Not all zeros start
-           code !== '123456' &&             // Not test pattern
-           code !== '654321';               // Not test pattern
-  });
-}
 
 /**
  * Debug helper to log email details
  */
-export function logEmailDetails(email: MailSlurpEmail): void {
+export function logEmailDetails(email: MailServiceEmail): void {
   console.log('[MAILSLURP] Email Details:', {
     id: email.id,
     from: email.from,
@@ -346,62 +170,13 @@ export function logEmailDetails(email: MailSlurpEmail): void {
   });
 }
 
-
-// MailSlurp client configuration
-export interface MailSlurpConfig {
-  apiKey: string;
-  client: MailSlurp;
-}
-
-export interface MailSlurpInbox {
-  id: string;
-  emailAddress: string;
-}
-
-export interface MailSlurpEmail {
-  id: string;
-  from: string;
-  to: string[];
-  subject: string;
-  body: string;
-  createdAt: Date;
-}
-
-let mailSlurpClient: MailSlurp | null = null;
-
-/**
- * Initialize MailSlurp client with API key from environment
- * Gracefully handles missing API key for environments that don't use MailSlurp
- */
-export function initializeMailSlurp(): MailSlurpConfig | null {
-  const apiKey = process.env.MAILSLURP_API_KEY;
-  
-  if (!apiKey) {
-    console.warn('[MAILSLURP] API key not found in environment variables');
-    return null;
-  }
-
-  try {
-    mailSlurpClient = new MailSlurp({ apiKey });
-    console.log('[MAILSLURP] Client initialized successfully');
-    
-    return {
-      apiKey,
-      client: mailSlurpClient,
-    };
-  } catch (error) {
-    console.error('[MAILSLURP] Failed to initialize client:', error);
-    return null;
-  }
-}
-
 /**
  * Get the current MailSlurp client instance
  * Throws error if client is not initialized
  */
-export function getMailSlurpClient(): MailSlurp {
+export function getMailServiceClient(): MailSlurp {
   if (!mailSlurpClient) {
-    throw new Error('MailSlurp client not initialized. Call initializeMailSlurp() first.');
+    throw new Error('MailSlurp client not initialized. Call initializeMailService() first.');
   }
   return mailSlurpClient;
 }
@@ -409,7 +184,7 @@ export function getMailSlurpClient(): MailSlurp {
 /**
  * Check if MailSlurp is available and properly configured
  */
-export function isMailSlurpAvailable(): boolean {
+export function isMailServiceAvailable(): boolean {
   return !!process.env.MAILSLURP_API_KEY && !!mailSlurpClient;
 }
 
@@ -417,11 +192,11 @@ export function isMailSlurpAvailable(): boolean {
  * Create a temporary MailSlurp inbox for testing
  * Returns inbox with ID and email address
  */
-export async function createMailSlurpInbox(
+export async function createMailServiceInbox(
   name?: string,
   description?: string
-): Promise<MailSlurpInbox> {
-  const client = getMailSlurpClient();
+): Promise<MailServiceInbox> {
+  const client = getMailServiceClient();
   
   try {
     const inbox = await client.createInbox();
@@ -441,8 +216,8 @@ export async function createMailSlurpInbox(
 /**
  * Delete a MailSlurp inbox to clean up resources
  */
-export async function deleteMailSlurpInbox(inboxId: string): Promise<void> {
-  const client = getMailSlurpClient();
+export async function deleteMailServiceInbox(inboxId: string): Promise<void> {
+  const client = getMailServiceClient();
   
   try {
     await client.deleteInbox(inboxId);
@@ -457,7 +232,7 @@ export async function deleteMailSlurpInbox(inboxId: string): Promise<void> {
  * Wait for an email to arrive in a MailSlurp inbox
  * Polls the inbox with configurable timeout and filtering options
  */
-export async function waitForEmailInMailSlurpInbox(
+export async function waitForEmailInMailServiceInbox(
   inboxId: string,
   options: {
     timeout?: number;
@@ -466,7 +241,7 @@ export async function waitForEmailInMailSlurpInbox(
     fromFilter?: string;
     minCount?: number;
   } = {}
-): Promise<MailSlurpEmail> {
+): Promise<MailServiceEmail> {
   const {
     timeout = 30000, // 30 seconds default
     interval = 2000,  // 2 second polling interval
@@ -475,7 +250,7 @@ export async function waitForEmailInMailSlurpInbox(
     minCount = 1,
   } = options;
 
-  const client = getMailSlurpClient();
+  const client = getMailServiceClient();
   const startTime = Date.now();
   
   console.log(`[MAILSLURP] Waiting for email in inbox ${inboxId}`, {
@@ -512,7 +287,7 @@ export async function waitForEmailInMailSlurpInbox(
           const latestEmail = filteredEmails[filteredEmails.length - 1];
           const fullEmail = await client.getEmail(latestEmail.id!);
           
-          const mailSlurpEmail: MailSlurpEmail = {
+          const mailSlurpEmail: MailServiceEmail = {
             id: fullEmail.id!,
             from: fullEmail.from || 'unknown',
             to: fullEmail.to || [],
@@ -537,11 +312,186 @@ export async function waitForEmailInMailSlurpInbox(
   throw new Error(`Timeout waiting for email in MailSlurp inbox ${inboxId} after ${timeout}ms`);
 }
 
+
+/**
+ * Get all emails from a MailSlurp inbox
+ * Useful for debugging and test verification
+ */
+export async function getAllEmailsFromInbox(inboxId: string): Promise<MailServiceEmail[]> {
+  const client = getMailServiceClient();
+  
+  try {
+    const emails = await client.getEmails(inboxId);
+    
+    // Convert to our standard format
+    const mailSlurpEmails: MailServiceEmail[] = await Promise.all(
+      emails.map(async (email) => {
+        const fullEmail = await client.getEmail(email.id!);
+        return {
+          id: fullEmail.id!,
+          from: fullEmail.from || 'unknown',
+          to: fullEmail.to || [],
+          subject: fullEmail.subject || 'No Subject',
+          body: fullEmail.body || '',
+          createdAt: new Date(fullEmail.createdAt!),
+        };
+      })
+    );
+    
+    console.log(`[MAILSLURP] Retrieved ${mailSlurpEmails.length} emails from inbox ${inboxId}`);
+    return mailSlurpEmails;
+  } catch (error) {
+    console.error(`[MAILSLURP] Failed to get emails from inbox ${inboxId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Helper function to create a test email address using MailSlurp
+ * Returns both the inbox and email address for easy cleanup
+ */
+export async function createTestEmailAddress(prefix: string = 'test'): Promise<{
+  inbox: MailServiceInbox;
+  emailAddress: string;
+}> {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  const name = `${prefix}-${timestamp}-${random}`;
+  
+  const inbox = await createMailServiceInbox(name, `Test inbox for ${prefix} testing`);
+  
+  return {
+    inbox,
+    emailAddress: inbox.emailAddress,
+  };
+}
+
+/**
+ * Cleanup function to delete multiple inboxes
+ * Useful for test teardown
+ */
+export async function cleanupMailServiceInboxes(inboxIds: string[]): Promise<void> {
+  const client = getMailServiceClient();
+  
+  console.log(`[MAILSLURP] Cleaning up ${inboxIds.length} inboxes`);
+  
+  const cleanupPromises = inboxIds.map(async (inboxId) => {
+    try {
+      await client.deleteInbox(inboxId);
+      console.log(`[MAILSLURP] Cleaned up inbox: ${inboxId}`);
+    } catch (error) {
+      console.warn(`[MAILSLURP] Failed to cleanup inbox ${inboxId}:`, error);
+    }
+  });
+  
+  await Promise.all(cleanupPromises);
+}
+
+
+/// =================== business related emails ======================================
+
+
+/**
+ * Extract multiple verification codes from email (if multiple codes are present)
+ */
+export function extractAllVerificationCodes(email: MailServiceEmail): string[] {
+  const content = email.body || '';
+  const codePattern = /\b\d{6}\b/g;
+  const matches = content.match(codePattern) || [];
+  
+  // Filter out common non-verification patterns
+  return matches.filter(code => {
+    const num = parseInt(code);
+    return num > 100000 && num < 999999 && // Valid range
+           !code.startsWith('000') &&       // Not all zeros start
+           code !== '123456' &&             // Not test pattern
+           code !== '654321';               // Not test pattern
+  });
+}
+
+
+/**
+ * Wait for verification email and extract code for a MailSlurp user
+ * Pure email logic - no page interactions
+ */
+export async function waitForVerificationEmail(
+  user: EMailTestUser,
+  options: {
+    timeout?: number;
+    emailType?: 'registration' | 'password-reset' | 'change-email';
+  } = {}
+): Promise<{
+  email: MailServiceEmail;
+  verificationCode: string;
+}> {
+  const {
+    timeout = 30000,
+    emailType = 'registration',
+  } = options;
+
+  const subjectFilters = {
+    'registration': 'Registration',
+    'password-reset': 'reset',
+    'change-email': 'change',
+  };
+
+  // Wait for verification email and extract code
+  const email = await waitForEmailInMailServiceInbox(user.inbox.id, {
+    timeout,
+    subjectFilter: subjectFilters[emailType],
+  });
+  
+  const verificationCode = extractVerificationCodeFromMailService(email);
+  
+  if (!verificationCode) {
+    throw new Error('Failed to extract verification code from MailSlurp email');
+  }
+  
+  return {
+    email,
+    verificationCode,
+  };
+}
+
+/**
+ * Wait for password reset email and extract reset code
+ * Pure email logic - no page interactions
+ */
+export async function waitForPasswordResetEmail(
+  user: EMailTestUser,
+  options: {
+    timeout?: number;
+  } = {}
+): Promise<{
+  resetCode: string;
+  email: MailServiceEmail;
+}> {
+  const { timeout = 30000 } = options;
+  
+  // Wait for reset email
+  const email = await waitForEmailInMailServiceInbox(user.inbox.id, {
+    timeout,
+    subjectFilter: 'reset',
+  });
+  
+  const resetCode = extractVerificationCodeFromMailService(email);
+  
+  if (!resetCode) {
+    throw new Error('Failed to extract reset code from MailSlurp email');
+  }
+  
+  return {
+    resetCode,
+    email,
+  };
+}
+
+
 /**
  * Extract verification code from MailSlurp email content
  * Supports both HTML and text email content
  */
-export function extractVerificationCodeFromMailSlurp(email: MailSlurpEmail): string | null {
+export function extractVerificationCodeFromMailService(email: MailServiceEmail): string | null {
   const content = email.body || '';
   
   // Common verification code patterns
@@ -569,135 +519,42 @@ export function extractVerificationCodeFromMailSlurp(email: MailSlurpEmail): str
   return null;
 }
 
-/**
- * Get all emails from a MailSlurp inbox
- * Useful for debugging and test verification
- */
-export async function getAllEmailsFromInbox(inboxId: string): Promise<MailSlurpEmail[]> {
-  const client = getMailSlurpClient();
-  
-  try {
-    const emails = await client.getEmails(inboxId);
-    
-    // Convert to our standard format
-    const mailSlurpEmails: MailSlurpEmail[] = await Promise.all(
-      emails.map(async (email) => {
-        const fullEmail = await client.getEmail(email.id!);
-        return {
-          id: fullEmail.id!,
-          from: fullEmail.from || 'unknown',
-          to: fullEmail.to || [],
-          subject: fullEmail.subject || 'No Subject',
-          body: fullEmail.body || '',
-          createdAt: new Date(fullEmail.createdAt!),
-        };
-      })
-    );
-    
-    console.log(`[MAILSLURP] Retrieved ${mailSlurpEmails.length} emails from inbox ${inboxId}`);
-    return mailSlurpEmails;
-  } catch (error) {
-    console.error(`[MAILSLURP] Failed to get emails from inbox ${inboxId}:`, error);
-    throw error;
-  }
-}
 
 /**
- * Helper function to create a test email address using MailSlurp
- * Returns both the inbox and email address for easy cleanup
+ * Test helper: Wait for email verification and extract code from existing inbox
+ * Pure email logic - no page interactions
  */
-export async function createTestEmailAddress(prefix: string = 'test'): Promise<{
-  inbox: MailSlurpInbox;
-  emailAddress: string;
-}> {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  const name = `${prefix}-${timestamp}-${random}`;
-  
-  const inbox = await createMailSlurpInbox(name, `Test inbox for ${prefix} testing`);
-  
-  return {
-    inbox,
-    emailAddress: inbox.emailAddress,
-  };
-}
-
-/**
- * Cleanup function to delete multiple inboxes
- * Useful for test teardown
- */
-export async function cleanupMailSlurpInboxes(inboxIds: string[]): Promise<void> {
-  const client = getMailSlurpClient();
-  
-  console.log(`[MAILSLURP] Cleaning up ${inboxIds.length} inboxes`);
-  
-  const cleanupPromises = inboxIds.map(async (inboxId) => {
-    try {
-      await client.deleteInbox(inboxId);
-      console.log(`[MAILSLURP] Cleaned up inbox: ${inboxId}`);
-    } catch (error) {
-      console.warn(`[MAILSLURP] Failed to cleanup inbox ${inboxId}:`, error);
-    }
-  });
-  
-  await Promise.all(cleanupPromises);
-}
-
-/**
- * Test helper: Complete email verification flow using MailSlurp
- * Creates inbox, waits for email, extracts code, and cleans up
- */
-export async function performMailSlurpEmailVerification(
+export async function performMailServiceEmailVerification(
+  inboxId: string,
   emailType: 'register' | 'password-reset' = 'register',
   options: {
     timeout?: number;
     subjectFilter?: string;
-    cleanup?: boolean;
   } = {}
 ): Promise<{
-  inbox: MailSlurpInbox;
-  email: MailSlurpEmail;
+  email: MailServiceEmail;
   verificationCode: string;
 }> {
   const {
     timeout = 30000,
     subjectFilter = emailType === 'register' ? 'Registration' : 'Reset',
-    cleanup = true,
   } = options;
 
-  // Create temporary inbox
-  const inbox = await createMailSlurpInbox(`${emailType}-test-${Date.now()}`);
+  // Wait for verification email
+  const email = await waitForEmailInMailServiceInbox(inboxId, {
+    timeout,
+    subjectFilter,
+  });
   
-  try {
-    // Wait for verification email
-    const email = await waitForEmailInMailSlurpInbox(inbox.id, {
-      timeout,
-      subjectFilter,
-    });
-    
-    // Extract verification code
-    const verificationCode = extractVerificationCodeFromMailSlurp(email);
-    
-    if (!verificationCode) {
-      throw new Error(`Failed to extract verification code from email. Email content: ${email.body}`);
-    }
-    
-    return {
-      inbox,
-      email,
-      verificationCode,
-    };
-  } catch (error) {
-    // Always cleanup on error
-    if (cleanup) {
-      await deleteMailSlurpInbox(inbox.id);
-    }
-    throw error;
-  } finally {
-    // Cleanup if requested (default: true)
-    if (cleanup) {
-      // Small delay to ensure email processing is complete
-      setTimeout(() => deleteMailSlurpInbox(inbox.id), 1000);
-    }
+  // Extract verification code
+  const verificationCode = extractVerificationCodeFromMailService(email);
+  
+  if (!verificationCode) {
+    throw new Error(`Failed to extract verification code from email. Email content: ${email.body}`);
   }
+  
+  return {
+    email,
+    verificationCode,
+  };
 }

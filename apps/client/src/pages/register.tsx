@@ -1,10 +1,11 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ErrorList, Field } from "@/components/forms";
-import { StatusButton } from "@/components/ui/status-button";
+import { ErrorList, Field, PasswordField } from "@/components/forms";
+import { StatusButton } from "@/components/status-button";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
@@ -32,7 +33,7 @@ function Register() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<z.infer<typeof RegisterRequestSchema>>({
-    resolver: zodResolver(RegisterRequestSchema as any),
+    resolver: zodResolver(RegisterRequestSchema),
     mode: "onBlur", // Validate on blur for better UX
     defaultValues: {
       email: "",
@@ -78,29 +79,35 @@ function Register() {
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Field
                 labelProps={{
-                  htmlFor: "email",
                   children: t("Email"),
+                  className: "font-medium",
                 }}
                 inputProps={{
                   ...register("email"),
-                  type: "email",
+                  type: "text", // Changed from "email" to prevent browser native validation
                   autoFocus: true,
+                  className: "lowercase",
                   autoComplete: "email",
                 }}
                 errors={errors.email?.message ? [errors.email.message] : []}
               />
-              <Field
-                labelProps={{
-                  htmlFor: "password",
-                  children: t("Password"),
-                }}
-                inputProps={{
-                  ...register("password"),
-                  type: "password",
-                  autoComplete: "new-password",
-                }}
-                errors={errors.password?.message ? [errors.password.message] : []}
-              />
+              <div className="grid gap-2">
+                <Label htmlFor="password" className="font-medium">
+                  {t("Password")}
+                </Label>
+                <PasswordField
+                  labelProps={{
+                    children: t("Password"),
+                    className: "sr-only",
+                  }}
+                  inputProps={{
+                    ...register("password"),
+                    id: "password",
+                    autoComplete: "new-password",
+                  }}
+                  errors={errors.password?.message ? [errors.password.message] : []}
+                />
+              </div>
               <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
               <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
                 {t("Register")}

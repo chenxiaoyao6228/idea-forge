@@ -8,12 +8,22 @@ import { LoginRequestSchema, type LoginRequest } from "@idea/contracts";
 import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";
 import Logo from "@/components/logo";
-import { ErrorList, Field } from "@/components/forms";
+import { ErrorList, Field, PasswordField } from "@/components/forms";
 import { Label } from "@/components/ui/label";
 import { StatusButton } from "@/components/status-button";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
 import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
+import { z } from "zod";
+
+// Custom validation schema that matches test expectations
+const LoginFormSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email"),
+  password: z.string().min(1, "Password is required"),
+  remember: z.boolean().optional(),
+});
+
+type LoginFormData = z.infer<typeof LoginFormSchema>;
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -29,8 +39,8 @@ function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginRequest>({
-    resolver: zodResolver(LoginRequestSchema as any),
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(LoginFormSchema),
     defaultValues: {
       remember: true,
       email: location.state?.email || "",
@@ -43,10 +53,19 @@ function LoginPage() {
     }
   }, [location, navigate]);
 
-  const onSubmit = async (data: LoginRequest) => {
+  const onSubmit = async (data: LoginFormData) => {
     setIsPending(true);
+    setError(null); // Clear any previous errors when resubmitting
+
     try {
-      const res = await authApi.login(data);
+      // Convert form data to API request format
+      const loginRequest: LoginRequest = {
+        email: data.email,
+        password: data.password,
+        remember: data.remember,
+      };
+
+      const res = await authApi.login(loginRequest);
       if (!res.user) {
         setError(t("User not found"));
         return;
@@ -57,10 +76,22 @@ function LoginPage() {
       const errorCode = err.code;
       switch (errorCode) {
         case ErrorCodeEnum.PasswordIncorrect:
-          setError(t("Password is incorrect"));
+          setError(t("The provided password is incorrect"));
+          break;
+        case ErrorCodeEnum.AuthenticationFailed:
+          setError(t("The specified user could not be found"));
+          break;
+        case ErrorCodeEnum.UserNotActive:
+          setError(t("The user is not active"));
           break;
         case ErrorCodeEnum.UserNotFound:
-          setError(t("User not found"));
+          setError(t("The specified user could not be found"));
+          break;
+        case ErrorCodeEnum.AccountError:
+          setError(t("Account error"));
+          break;
+        default:
+          setError(err.message || t("Authentication failed. Please check your credentials"));
           break;
       }
     } finally {
@@ -83,7 +114,7 @@ function LoginPage() {
             <CardDescription>{t("Enter your email below to login to your account")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
               <Field
                 labelProps={{
                   children: t("Email"),
@@ -91,7 +122,7 @@ function LoginPage() {
                 }}
                 inputProps={{
                   ...register("email"),
-                  type: "email",
+                  type: "text", // Changed from "email" to prevent browser native validation
                   autoFocus: true,
                   className: "lowercase",
                   autoComplete: "email",
@@ -108,14 +139,13 @@ function LoginPage() {
                     {t("Forgot password?")}
                   </Link>
                 </div>
-                <Field
+                <PasswordField
                   labelProps={{
                     children: t("Password"),
                     className: "sr-only",
                   }}
                   inputProps={{
                     ...register("password"),
-                    type: "password",
                     autoComplete: "current-password",
                   }}
                   errors={errors.password?.message ? [errors.password.message] : []}

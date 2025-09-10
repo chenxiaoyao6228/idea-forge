@@ -1,13 +1,13 @@
 import { FullConfig } from '@playwright/test';
-import { initializeMailSlurp, isMailSlurpAvailable } from '../helpers/email';
+import { initializeMailService, isMailServiceAvailable } from '../helpers/email';
 
 async function globalSetup(config: FullConfig) {
   console.log('Starting global setup...');
   
   try {
     // Initialize MailSlurp client for tests
-    console.log('Initializing MailSlurp client...');
-    const mailSlurpConfig = initializeMailSlurp();
+    console.log('Initializing MailSl  urp client...');
+    const mailSlurpConfig = initializeMailService();
     
     if (mailSlurpConfig) {
       console.log('MailSlurp client initialized successfully');
@@ -22,7 +22,7 @@ async function globalSetup(config: FullConfig) {
     console.log('MailSlurp testing will be disabled for this run');
   }
   
-  console.log(`- MailSlurp: ${isMailSlurpAvailable() ? 'Available' : 'Not Available'}`);
+  console.log(`- MailSlurp: ${isMailServiceAvailable() ? 'Available' : 'Not Available'}`);
 }
 
 export default globalSetup;

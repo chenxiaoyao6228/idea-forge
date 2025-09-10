@@ -20,6 +20,10 @@ export default defineConfig({
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    // Set language to English for consistent test results
+    locale: 'en-US',
+    // Set timezone for consistent test results
+    // timezoneId: 'UTC',
   },
 
   projects: [

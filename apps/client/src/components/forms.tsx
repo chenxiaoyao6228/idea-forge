@@ -1,5 +1,5 @@
 import type React from "react";
-import { useId } from "react";
+import { useId, useState } from "react";
 import { type OTPInputProps } from "input-otp";
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
 import { Checkbox, type CheckboxProps } from "./ui/checkbox.tsx";
@@ -7,6 +7,8 @@ import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/i
 import { Input } from "./ui/input.tsx";
 import { Label } from "./ui/label.tsx";
 import { Textarea } from "./ui/textarea.tsx";
+import { Button } from "./ui/button.tsx";
+import { Eye, EyeOff } from "lucide-react";
 
 export type ListOfErrors = Array<string | null | undefined> | null | undefined;
 
@@ -21,7 +23,7 @@ export function ErrorList({
   const errorsToRender = errors?.filter(Boolean);
   if (!errorsToRender?.length) return null;
   return (
-    <ul id={id} className="flex flex-col gap-1">
+    <ul id={id} className="flex flex-col gap-1" data-testid="form-errors">
       {errorsToRender.map((e) => (
         <li key={e} className="text-[10px] text-foreground-destructive">
           {e}
@@ -50,7 +52,57 @@ export function Field({
     <div className={className}>
       <Label htmlFor={id} {...labelProps} />
       <Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
-      {errorId ? <ErrorList id={errorId} errors={errors} /> : null}
+      {errorId ? <ErrorList id={errorId} errors={errors} data-testid="email-error" /> : null}
+    </div>
+  );
+}
+
+export function PasswordField({
+  labelProps,
+  inputProps,
+  errors,
+  className,
+}: {
+  labelProps: React.LabelHTMLAttributes<HTMLLabelElement>;
+  inputProps: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">;
+  errors?: ListOfErrors;
+  className?: string;
+}) {
+  const fallbackId = useId();
+  const id = inputProps.id ?? labelProps.htmlFor ?? fallbackId;
+  const errorId = errors?.length ? `${id}-error` : undefined;
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  return (
+    <div className={className}>
+      <Label htmlFor={id} {...labelProps} />
+      <div className="relative">
+        <Input
+          id={id}
+          type={showPassword ? "text" : "password"}
+          aria-invalid={errorId ? true : undefined}
+          aria-describedby={errorId}
+          className="pr-10"
+          data-testid="password-input"
+          {...inputProps}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+          onClick={togglePasswordVisibility}
+          aria-label={showPassword ? "Hide password visibility" : "Show password visibility"}
+          data-testid="password-toggle"
+        >
+          {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+        </Button>
+      </div>
+      {errorId ? <ErrorList id={errorId} errors={errors} data-testid="password-error" /> : null}
     </div>
   );
 }

@@ -37,7 +37,7 @@ jobs:
         run: pnpm --filter @idea/api prisma:generate
 
       - name: Run API Integration Tests
-        run: pnpm --filter @idea/api test:e2e
+        run: pnpm --filter @idea/api test:integration
 
       # if mock client integration tests, add this step
       # - name: Run Client Integration Tests

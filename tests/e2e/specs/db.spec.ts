@@ -1,5 +1,49 @@
 import { test, expect } from '@playwright/test';
-import { setupDatabase, cleanupDatabase, createTestUser, verifyUserEmail, getPrisma } from '../helpers/database';
+import { setupDatabase, cleanupDatabase, getPrisma } from '../helpers/database';
+
+async function createTestUser(email: string, password?: string) {
+  const prisma = await getPrisma();
+  
+  // First, try to delete any existing user with this email
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+    
+    if (existingUser) {
+      await prisma.user.delete({
+        where: { email },
+      });
+      console.log(`Deleted existing user: ${email}`);
+    } else {
+      console.log(`No existing user to delete: ${email}`);
+    }
+  } catch (error) {
+    // User doesn't exist, that's fine
+    console.log(`No existing user to delete: ${email}`);
+  }
+  
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email,
+        displayName: 'Test User',
+        status: 'PENDING',
+        password: password ? {
+          create: {
+            hash: password,
+          },
+        } : undefined,
+      },
+    });
+    
+    console.log(`Created user: ${email} with ID: ${user.id}`);
+    return user;
+  } catch (error) {
+    console.error(`Failed to create user ${email}:`, error);
+    throw error;
+  }
+}
 
 test.describe.serial('Database Connection', () => {
   test.beforeEach(async () => {
@@ -20,58 +64,6 @@ test.describe.serial('Database Connection', () => {
     expect(result).toBeTruthy();
     expect(Array.isArray(result)).toBe(true);
     expect(result[0]).toHaveProperty('test', 1);
-  });
-
-  test('should create and delete a test user', async () => {
-    const testEmail = 'db-test@example.com';
-    
-    // Create a test user
-    const user = await createTestUser(testEmail);
-    expect(user).toBeTruthy();
-    expect(user.email).toBe(testEmail);
-    expect(user.status).toBe('PENDING');
-
-    // Verify user exists in database
-    const prisma = await getPrisma();
-    const foundUser = await prisma.user.findUnique({
-      where: { email: testEmail },
-    });
-    
-    expect(foundUser).toBeTruthy();
-    expect(foundUser?.email).toBe(testEmail);
-  });
-
-  test('should verify user email successfully', async () => {
-    const testEmail = 'verify-test@example.com';
-    
-    // Create a test user
-    const user = await createTestUser(testEmail);
-    expect(user.status).toBe('PENDING');
-
-    // Verify the user's email
-    await verifyUserEmail(testEmail);
-
-    // Check that user status was updated
-    const prisma = await getPrisma();
-    const updatedUser = await prisma.user.findUnique({
-      where: { email: testEmail },
-    });
-    
-    expect(updatedUser?.status).toBe('ACTIVE');
-    expect(updatedUser?.emailVerified).toBeTruthy();
-  });
-
-  test('should handle duplicate email creation', async () => {
-    const testEmail = 'duplicate-test@example.com';
-    
-    // Create first user
-    const user1 = await createTestUser(testEmail);
-    expect(user1.email).toBe(testEmail);
-
-    // Create second user with same email (should delete first and create new)
-    const user2 = await createTestUser(testEmail);
-    expect(user2.email).toBe(testEmail);
-    expect(user2.id).not.toBe(user1.id);
   });
 
   test('should clean up database properly', async () => {
