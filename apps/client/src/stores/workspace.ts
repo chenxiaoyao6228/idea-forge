@@ -83,8 +83,10 @@ const useWorkspaceStore = create<StoreState>()(
                 get().setAll(workspaceEntities);
                 set({ isLoaded: true });
 
+                const currentWorkspace = get().currentWorkspace;
                 // If no current workspace, set the first one as the current workspace
-                if (!get().currentWorkspace) {
+                // remove the current workspace if not matching the new workspace list in case the user have been removed from the workspace
+                if (!currentWorkspace || !workspaceEntities.find((workspace) => workspace.id === currentWorkspace.id)) {
                   const firstWorkspace = workspaceEntities[0];
                   if (firstWorkspace) {
                     get().setCurrentWorkspace(firstWorkspace);

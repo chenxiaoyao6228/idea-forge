@@ -107,7 +107,7 @@ interface Action {
   handleSubspaceUpdate: (subspaceId: string, updatedAt?: string) => Promise<void>;
   refreshNavigationTree: (subspaceId: string) => Promise<void>;
   refreshSubspaceMembers: (subspaceId: string) => Promise<void>;
-  leaveSubspace: (subspaceId: string) => Promise<void>;
+  leaveSubspace: (subspaceId: string) => Promise<{ success: boolean; error?: { code: string; message: string; originalError: any } }>;
   joinSubspace: (subspaceId: string) => Promise<void>;
 }
 
@@ -567,6 +567,16 @@ const useSubSpaceStore = create<StoreState>()(
             };
 
             get().addOne(subspace);
+
+            // Refresh the subspace list to ensure we have the latest data from server
+            // This is important for getting updated member counts, permissions, etc.
+            try {
+              await get().fetchList(payload.workspaceId);
+            } catch (refreshError) {
+              console.warn("Failed to refresh subspace list after creation:", refreshError);
+              // Don't throw here as the creation was successful
+            }
+
             return subspace;
           } catch (error) {
             console.error("Failed to create subspace:", error);
@@ -864,9 +874,23 @@ const useSubSpaceStore = create<StoreState>()(
         leaveSubspace: async (subspaceId) => {
           try {
             await subspaceApi.leaveSubspace(subspaceId);
-          } catch (error) {
+
+            // Remove the subspace from the store after successful leave
+            get().removeOne(subspaceId);
+
+            return { success: true };
+          } catch (error: any) {
             console.error("Failed to leave subspace:", error);
-            throw error;
+
+            // Return structured error information for the component to handle
+            return {
+              success: false,
+              error: {
+                code: error?.response?.data?.code || error?.code || "unknown_error",
+                message: error?.response?.data?.message || error?.message || "Failed to leave subspace",
+                originalError: error,
+              },
+            };
           }
         },
 
@@ -900,6 +924,14 @@ const useSubSpaceStore = create<StoreState>()(
 
             // Refresh subspace members after adding new ones
             await get().refreshSubspaceMembers(subspaceId);
+
+            // Also refresh the full subspace to ensure we have the latest data
+            try {
+              await get().fetchSubspace(subspaceId);
+            } catch (refreshError) {
+              console.warn("Failed to refresh subspace after adding members:", refreshError);
+              // Don't throw here as the member addition was successful
+            }
 
             return response;
           } catch (error) {

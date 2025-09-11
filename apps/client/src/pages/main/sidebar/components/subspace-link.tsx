@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
 import useStarStore from "@/stores/star";
@@ -108,9 +109,34 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     console.log("Open subspace settings:", subspaceId);
   }, [subspaceId]);
 
-  const handleLeaveSubspace = useCallback(() => {
-    leaveSubspace(subspaceId);
-  }, [subspaceId, leaveSubspace]);
+  const handleLeaveSubspace = useCallback(async () => {
+    try {
+      const result = await leaveSubspace(subspaceId);
+
+      if (result.success) {
+        toast.success(t("Successfully left subspace"));
+      } else if (result.error) {
+        // Handle specific error codes
+        switch (result.error.code) {
+          case "cannot_leave_as_last_admin":
+            toast.error(t("Cannot leave subspace as the last admin. Please assign another admin first."));
+            break;
+          case "not_member":
+            toast.error(t("You are not a member of this subspace"));
+            break;
+          case "permission_denied":
+            toast.error(t("You don't have permission to leave this subspace"));
+            break;
+          default:
+            toast.error(result.error.message || t("Failed to leave subspace"));
+        }
+      }
+    } catch (error) {
+      // Fallback error handling
+      console.error("Unexpected error leaving subspace:", error);
+      toast.error(t("An unexpected error occurred"));
+    }
+  }, [subspaceId, leaveSubspace, t]);
 
   const handleTitleChange = useCallback(
     async (value: string) => {
