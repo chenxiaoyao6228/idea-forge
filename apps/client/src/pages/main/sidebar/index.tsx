@@ -21,15 +21,14 @@ import SharedWithMe from "./shared-with-me";
 import SubspacesArea from "./subspaces";
 import MyDocsArea from "./ my-docs";
 import React from "react";
-import { SettingDialog } from "../settings/setting-dialog";
 import { Button } from "@/components/ui/button";
 import { SettingsIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import useUIStore from "@/stores/ui";
+import { useCentralModal } from "@/components/central-modal";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
-  const openSettingDialog = useUIStore((state) => state.openSettingDialog);
+  const settingModal = useCentralModal("setting-modal");
   const { t } = useTranslation();
 
   return (
@@ -55,7 +54,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                     {/* setting */}
                     <button
                       onClick={() => {
-                        openSettingDialog("subspace");
+                        settingModal.show({ tab: "subspace" });
                       }}
                       className={cn(
                         "group/tree-node relative flex w-full items-center py-1 px-2",

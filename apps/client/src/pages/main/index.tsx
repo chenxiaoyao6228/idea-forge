@@ -7,7 +7,6 @@ import useUIStore from "@/stores/ui";
 import useWorkspaceStore, { workspaceSelectors } from "@/stores/workspace";
 import SidebarContainer from "./sidebar";
 import { useCurrentDocumentId } from "@/hooks/use-current-document";
-import { SettingDialog } from "./settings/setting-dialog";
 
 export default function Main() {
   const activeDocumentId = useUIStore((state) => state.activeDocumentId);
@@ -38,7 +37,6 @@ export default function Main() {
 
   return (
     <>
-      <SettingDialog />
       <SidebarContainer content={content} />
     </>
   );

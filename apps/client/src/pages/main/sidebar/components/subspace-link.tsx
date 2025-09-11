@@ -15,7 +15,7 @@ import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
 import { subspaceApi } from "@/apis/subspace";
 import { AddSubspaceMemberDialog } from "../../settings/subspace/add-subspace-member-dialog";
-import useUIStore from "@/stores/ui";
+import { useCentralModal } from "@/components/central-modal";
 
 interface SubspaceLinkProps {
   subspace: SubspaceEntity;
@@ -47,7 +47,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   const isStarred = useStarStore((state) => state.isStarred(undefined, subspaceId));
   const leaveSubspace = useSubSpaceStore((state) => state.leaveSubspace);
 
-  const openSettingDialog = useUIStore((state) => state.openSettingDialog);
+  const settingModal = useCentralModal("setting-modal");
 
   // Auto-expand if contains active document
   const shouldExpand = useMemo(() => {
@@ -108,8 +108,8 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   );
 
   const handleSubspaceSettings = useCallback(() => {
-    openSettingDialog("subspace", subspaceId);
-  }, [openSettingDialog]);
+    settingModal.show({ tab: "subspace", subspaceId });
+  }, [settingModal, subspaceId]);
 
   const handleLeaveSubspace = useCallback(async () => {
     try {
