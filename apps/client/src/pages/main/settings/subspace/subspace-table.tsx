@@ -15,13 +15,14 @@ import { CreateSubspaceDialog } from "./create-subspace-dialog";
 
 interface SubspaceTableProps {
   workspaceId: string;
+  selectedSubspaceId?: string;
 }
 
 type FilterStatus = "all" | "archived" | "not_archived";
 type FilterManager = "all" | string;
 type FilterPermission = "all" | SubspaceType;
 
-export function SubspaceTable({ workspaceId }: SubspaceTableProps) {
+export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("not_archived");
   const [managerFilter, setManagerFilter] = useState<FilterManager>("all");
@@ -228,7 +229,10 @@ export function SubspaceTable({ workspaceId }: SubspaceTableProps) {
                 </TableRow>
               ) : (
                 filteredSubspaces.map((subspace) => (
-                  <TableRow key={subspace.id} className={cn(subspace.archivedAt && "opacity-60")}>
+                  <TableRow
+                    key={subspace.id}
+                    className={cn(subspace.archivedAt && "opacity-60", selectedSubspaceId === subspace.id && "bg-accent/50 border-l-4 border-l-primary")}
+                  >
                     {/* name */}
                     <TableCell>
                       <div className="flex items-center space-x-3">

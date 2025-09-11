@@ -1,17 +1,17 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogTrigger } from "@/components/ui/dialog";
-import { useMemo, useState } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { User, SettingsIcon, Users, Building2, Layers } from "lucide-react";
+import { User, Users, Building2, Layers } from "lucide-react";
 import { Account } from "./account";
 import { Members } from "./members";
 import { Subspace } from "./subspace";
 import { Workspace } from "./workspace";
-import { cn } from "@/lib/utils";
+import useUIStore from "@/stores/ui";
 
 export const SettingDialog = () => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const { activeSettingDialogTab, isSettingDialogOpen, closeSettingDialog, updateStore } = useUIStore();
 
   const tabList = useMemo(() => {
     return [
@@ -39,7 +39,13 @@ export const SettingDialog = () => {
   }, [t]);
 
   const content = (
-    <Tabs defaultValue="subspace" className="flex h-full gap-4 overflow-hidden">
+    <Tabs
+      value={activeSettingDialogTab}
+      onValueChange={(value) => {
+        updateStore({ activeSettingDialogTab: value });
+      }}
+      className="flex h-full gap-4 overflow-hidden"
+    >
       <TabsList className="grid gap-2 bg-inherit text-left">
         {tabList.map(({ key, name, Icon }) => {
           return (
@@ -66,20 +72,8 @@ export const SettingDialog = () => {
   );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button
-          className={cn(
-            "group/tree-node relative flex w-full items-center py-1 px-2",
-            "rounded-lg transition-colors",
-            "hover:bg-accent/50 dark:hover:bg-accent/25",
-            "text-sm font-normal",
-          )}
-        >
-          <SettingsIcon className="h-4 w-4 mr-2 shrink-0" />
-          <span className="truncate">{t("Settings")}</span>
-        </button>
-      </DialogTrigger>
+    <Dialog open={isSettingDialogOpen} onOpenChange={closeSettingDialog}>
+      <DialogTitle className="sr-only">Setting Dialog</DialogTitle>
       <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0">{content}</DialogContent>
     </Dialog>
   );

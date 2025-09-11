@@ -22,10 +22,15 @@ import SubspacesArea from "./subspaces";
 import MyDocsArea from "./ my-docs";
 import React from "react";
 import { SettingDialog } from "../settings/setting-dialog";
+import { Button } from "@/components/ui/button";
+import { SettingsIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import useUIStore from "@/stores/ui";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
-  console.log("SidebarContainer render");
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
+  const openSettingDialog = useUIStore((state) => state.openSettingDialog);
+  const { t } = useTranslation();
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragMove={handleDragMove} onDragOver={handleDragOver}>
@@ -48,7 +53,20 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     {/* setting */}
-                    <SettingDialog />
+                    <button
+                      onClick={() => {
+                        openSettingDialog("subspace");
+                      }}
+                      className={cn(
+                        "group/tree-node relative flex w-full items-center py-1 px-2",
+                        "rounded-lg transition-colors",
+                        "hover:bg-accent/50 dark:hover:bg-accent/25",
+                        "text-sm font-normal",
+                      )}
+                    >
+                      <SettingsIcon className="h-4 w-4 mr-2 shrink-0" />
+                      <span className="truncate">{t("Settings")}</span>
+                    </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

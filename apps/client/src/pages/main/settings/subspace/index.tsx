@@ -9,10 +9,12 @@ import { WorkspaceSubspaceSettings } from "./workspace-subspace-settings";
 import useWorkspaceStore from "@/stores/workspace";
 import { SubspaceTable } from "./subspace-table";
 import { MoreAboutSubspaceTip } from "./more-about-subspace-tip";
+import useUIStore from "@/stores/ui";
 
 export const Subspace = () => {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  const selectedSubspaceId = useUIStore((state) => state.settingDialogActiveSubspaceId);
 
   if (!currentWorkspace) {
     return (
@@ -45,7 +47,7 @@ export const Subspace = () => {
           <Separator />
 
           {/* Subspace Management */}
-          <SubspaceTable workspaceId={currentWorkspace.id} />
+          <SubspaceTable workspaceId={currentWorkspace.id} selectedSubspaceId={selectedSubspaceId} />
         </div>
       </div>
     </div>
