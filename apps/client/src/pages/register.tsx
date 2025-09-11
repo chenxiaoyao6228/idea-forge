@@ -43,6 +43,7 @@ function Register() {
 
   const onSubmit = async (data) => {
     setIsPending(true);
+    setError(null); // Clear previous errors
     try {
       await authApi.register(data);
 
@@ -76,7 +77,7 @@ function Register() {
             <CardDescription>{t("Create your account to get started")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" data-testid="register-form">
               <Field
                 labelProps={{
                   children: t("Email"),
@@ -88,28 +89,31 @@ function Register() {
                   autoFocus: true,
                   className: "lowercase",
                   autoComplete: "email",
+                  "data-testid": "email-input",
                 }}
                 errors={errors.email?.message ? [errors.email.message] : []}
               />
-              <div className="grid gap-2">
-                <Label htmlFor="password" className="font-medium">
-                  {t("Password")}
-                </Label>
-                <PasswordField
-                  labelProps={{
-                    children: t("Password"),
-                    className: "sr-only",
-                  }}
-                  inputProps={{
-                    ...register("password"),
-                    id: "password",
-                    autoComplete: "new-password",
-                  }}
-                  errors={errors.password?.message ? [errors.password.message] : []}
-                />
-              </div>
-              <ErrorList errors={[error].filter(Boolean)} id="form-errors" />
-              <StatusButton className="w-full" status={isPending ? "pending" : "idle"} type="submit" disabled={isPending || isSubmitting}>
+              <PasswordField
+                labelProps={{
+                  children: t("Password"),
+                  className: "font-medium",
+                }}
+                inputProps={{
+                  ...register("password"),
+                  id: "password",
+                  autoComplete: "new-password",
+                  "data-testid": "password-input",
+                }}
+                errors={errors.password?.message ? [errors.password.message] : []}
+              />
+              <ErrorList errors={[error].filter(Boolean)} id="form-errors" data-testid="form-errors" />
+              <StatusButton
+                className="w-full"
+                status={isPending ? "pending" : "idle"}
+                type="submit"
+                disabled={isPending || isSubmitting}
+                data-testid="register-button"
+              >
                 {t("Register")}
               </StatusButton>
 

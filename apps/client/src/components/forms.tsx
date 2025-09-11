@@ -40,7 +40,7 @@ export function Field({
   className,
 }: {
   labelProps: React.LabelHTMLAttributes<HTMLLabelElement>;
-  inputProps: React.InputHTMLAttributes<HTMLInputElement>;
+  inputProps: React.InputHTMLAttributes<HTMLInputElement> & { "data-testid"?: string };
   errors?: ListOfErrors;
   className?: string;
 }) {
@@ -51,8 +51,14 @@ export function Field({
   return (
     <div className={className}>
       <Label htmlFor={id} {...labelProps} />
-      <Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
-      {errorId ? <ErrorList id={errorId} errors={errors} data-testid="email-error" /> : null}
+      <Input
+        id={id}
+        aria-invalid={errorId ? true : undefined}
+        aria-describedby={errorId}
+        data-testid={inputProps["data-testid"] || `${id}-input`}
+        {...inputProps}
+      />
+      {errorId ? <ErrorList id={errorId} errors={errors} data-testid={`${id}-error`} /> : null}
     </div>
   );
 }
@@ -64,7 +70,7 @@ export function PasswordField({
   className,
 }: {
   labelProps: React.LabelHTMLAttributes<HTMLLabelElement>;
-  inputProps: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">;
+  inputProps: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & { "data-testid"?: string };
   errors?: ListOfErrors;
   className?: string;
 }) {
@@ -107,7 +113,6 @@ export function PasswordField({
   );
 }
 
-// OTPField remains largely the same
 export function OTPField({
   labelProps,
   inputProps,

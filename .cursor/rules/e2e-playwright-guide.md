@@ -3,6 +3,67 @@ You write concise, technical TypeScript and technical JavaScript codes with accu
 
 ## Core Testing Principles
 
+### What Makes a "Good" Test Case?
+
+A "good" test case is a **complete collection** that covers all equivalence classes and boundary values, regardless of whether it discovers defects. Think of it like a fishing net that covers the entire pond - if there are fish (defects), the net will catch them; if there are no fish, the net's quality isn't diminished.
+
+**Three Essential Characteristics:**
+
+1. **Overall Completeness**: Complete collection of effective test cases that fully cover test requirements
+2. **Accurate Equivalence Class Partitioning**: Each equivalence class ensures if one input passes, others in the same class will also pass
+3. **Complete Equivalence Class Coverage**: All possible boundary values and boundary conditions are correctly identified
+
+### Three Core Testing Methodologies
+
+#### 1. Equivalence Class Partitioning
+
+Divide all possible input data into subsets (equivalence classes). Within each subset, any input data has the same effect on revealing potential program errors. Select one representative value from each equivalence class for testing.
+
+**Key Points:**
+
+- Identify both **valid** and **invalid** equivalence classes
+- For each class, test one representative value
+- Covers maximum scenarios with minimum test cases
+
+**Example**: Student grade input (0-100, pass=60+)
+
+- Valid class 1: [0-59] → test with 30
+- Valid class 2: [60-100] → test with 80
+- Invalid class 1: [<0] → test with -5
+- Invalid class 2: [>100] → test with 150
+- Invalid class 3: [non-integers] → test with 85.5
+- Invalid class 4: [non-numeric] → test with "abc"
+
+#### 2. Boundary Value Analysis
+
+Test boundary values where most software errors occur. Select values exactly equal to, just greater than, or just less than boundaries.
+
+**Example**: Same grade input (0-100)
+
+- Boundary values: [-1, 0, 1, 59, 60, 61, 99, 100, 101]
+- Test cases: exactly at boundary (0, 100), just outside (-1, 101), just inside (1, 99)
+
+#### 3. Error Guessing Method
+
+Based on understanding of system design, past experience, and intuition, predict potential defects and design targeted test cases.
+
+**Common Error Scenarios:**
+
+- Web GUI: Browser cache/no-cache behavior
+- API testing: Third-party service failures
+- Unit testing: Null parameter handling
+- Database: Connection timeouts, data corruption
+
+### Test Case Design Process
+
+1. **Understand Business Requirements** → **Software Function Requirements** → **Test Requirements** → **Test Cases**
+2. **Comprehensive Test Requirement Identification**: Critical for test coverage
+3. **Combined Methodology Application**: Use all three methods together for each test requirement
+4. **Architecture Understanding**: Know system boundaries, integrations, and internal logic
+5. **Coverage Metrics**: Use requirement coverage and code coverage to identify gaps
+
+### Technical Implementation Guidelines
+
 - Use descriptive and meaningful test names that clearly describe the expected behavior
 - Keep tests DRY (Don't Repeat Yourself) by extracting reusable logic into helper functions
 - Use Data-Driven Testing when appropriate
