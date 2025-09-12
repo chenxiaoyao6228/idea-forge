@@ -6,7 +6,7 @@ import { Account } from "@/pages/main/settings/account";
 import { Members } from "@/pages/main/settings/members";
 import { Subspace } from "@/pages/main/settings/subspace";
 import { Workspace } from "@/pages/main/settings/workspace";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { confirmable, ConfirmDialog } from "react-confirm";
 import { createConfirmation } from "react-confirm";
 
@@ -76,11 +76,6 @@ const SettingModal: ConfirmDialog<SettingModalProps, any> = ({
   return (
     <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0">
-        <DialogHeader>
-          <DialogTitle className="sr-only">{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
-        </DialogHeader>
-
         {content || (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full gap-4 overflow-hidden">
             <TabsList className="grid gap-2 bg-inherit text-left">

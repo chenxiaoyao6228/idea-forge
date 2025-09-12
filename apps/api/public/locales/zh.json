@@ -278,5 +278,14 @@
   "{{count}} members_many": "{{count}} 位成员",
   "{{count}} members_one": "{{count}} 位成员",
   "{{count}} members_other": "{{count}} 位成员",
-  "{{count}} members_plural": "{{count}} 位成员"
+  "{{count}} members_plural": "{{count}} 位成员",
+  "time.today": "今天",
+  "time.yesterday": "昨天",
+  "time.justNow": "刚刚",
+  "time.minutesAgo": "{{minutes}}分钟前",
+  "time.hoursAgo": "{{hours}}小时前",
+  "time.daysAgo": "{{days}}天前",
+  "time.weeksAgo": "{{weeks}}周前",
+  "time.monthsAgo": "{{months}}个月前",
+  "time.yearsAgo": "{{years}}年前"
 }

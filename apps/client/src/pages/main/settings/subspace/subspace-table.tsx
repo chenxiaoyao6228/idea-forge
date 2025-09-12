@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,12 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus } from "lucide-react";
-import { Subspace, SubspaceType } from "@idea/contracts";
+import { SubspaceType } from "@idea/contracts";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { SubspaceMenu } from "./subspace-menu";
 import useSubSpaceStore from "@/stores/subspace";
 import { CreateSubspaceDialog } from "./create-subspace-dialog";
+import { useTimeFormat } from "@/hooks/use-time-format";
 
 interface SubspaceTableProps {
   workspaceId: string;
@@ -28,6 +29,7 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
   const [managerFilter, setManagerFilter] = useState<FilterManager>("all");
   const [permissionFilter, setPermissionFilter] = useState<FilterPermission>("all");
   const { t } = useTranslation();
+  const { formatSmartRelative } = useTimeFormat();
 
   const subspaces = useSubSpaceStore((state) => state.allSubspaces);
 
@@ -117,28 +119,6 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
       default:
         return type;
     }
-  };
-
-  const formatDate = (date: string | Date) => {
-    const dateObj = new Date(date);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - dateObj.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 1) {
-      return (
-        t("Yesterday") +
-        " " +
-        dateObj.toLocaleTimeString("zh-CN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      );
-    }
-    if (diffDays < 7) {
-      return t("{{days}} days ago", { days: diffDays });
-    }
-    return dateObj.toLocaleDateString("zh-CN");
   };
 
   return (
@@ -268,7 +248,7 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
                     </TableCell>
                     {/* last modified */}
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">{formatDate(subspace.updatedAt)}</span>
+                      <span className="text-sm text-muted-foreground">{formatSmartRelative(subspace.updatedAt)}</span>
                     </TableCell>
                     {/* more */}
                     <TableCell>

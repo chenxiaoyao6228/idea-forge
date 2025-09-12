@@ -213,6 +213,141 @@ components/feature-name/
 
 ## Component Architecture
 
+### Separation of UI and Logic
+
+**MANDATORY: Components MUST separate UI rendering from business logic. Business logic should be encapsulated in stores, custom hooks, or utility functions.**
+
+#### ✅ Correct Pattern - Logic in Store
+
+```typescript
+// Store handles all business logic
+const useStarStore = create<StarStoreState>()((set, get) => ({
+  // ... other state and actions
+
+  // Business logic method
+  getNavigationNodeForStar: (star) => {
+    // Complex logic for finding navigation nodes
+    // across different data sources
+    if (star.subspaceId) {
+      const subspace = useSubSpaceStore.getState().entities[star.subspaceId];
+      if (!subspace) return null;
+      return {
+        id: subspace.id,
+        title: subspace.name,
+        type: NavigationNodeType.Subspace,
+        url: `/subspace/${subspace.id}`,
+        children: subspace.navigationTree || [],
+        parent: null,
+      };
+    }
+
+    // More complex logic...
+    return null;
+  },
+}));
+
+// Component only handles UI rendering
+export function StarLink({ star }: StarLinkProps) {
+  const getNavigationNodeForStar = useStarStore(
+    (state) => state.getNavigationNodeForStar
+  );
+
+  // Simple UI logic only
+  const navigationNode = useMemo(() => {
+    return getNavigationNodeForStar(star);
+  }, [star, getNavigationNodeForStar]);
+
+  if (!navigationNode) return null;
+
+  return (
+    <div className="star-link">
+      <SidebarLink
+        to={navigationNode.url || `/${navigationNode.id}`}
+        icon={<StarIcon className="h-4 w-4 text-yellow-500" />}
+        label={navigationNode.title}
+        // ... other UI props
+      />
+    </div>
+  );
+}
+```
+
+#### ❌ Incorrect Pattern - Logic in Component
+
+```typescript
+// ❌ DON'T: Complex business logic in component
+export function StarLink({ star }: StarLinkProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const document = useDocumentStore((state) => state.entities[star.docId || ""]);
+  const subspace = useSubSpaceStore((state) => state.entities[star.subspaceId || ""]);
+  const sharedDocuments = useSharedWithMeStore((state) => state.documents);
+
+  // ❌ Complex business logic in component
+  const findNavigationNode = useCallback((docId: string, nodes: NavigationNode[]): NavigationNode | null => {
+    for (const node of nodes) {
+      if (node.id === docId) {
+        return node;
+      }
+      if (node.children) {
+        const found = findNavigationNode(docId, node.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, []);
+
+  // ❌ More complex logic...
+  const navigationNode = useMemo(() => {
+    if (!star.docId) return null;
+
+    // Check subspace navigation tree
+    if (subspace?.navigationTree) {
+      const found = findNavigationNode(star.docId, subspace.navigationTree);
+      if (found) return found;
+    }
+
+    // Check personal subspace...
+    // Check shared documents...
+    // etc...
+  }, [star.docId, subspace, findNavigationNode]);
+
+  // ❌ Data fetching logic in component
+  useEffect(() => {
+    if (star.docId && !document && !isLoading) {
+      setIsLoading(true);
+      fetchDocumentDetail(star.docId, { silent: true })
+        .catch((error) => {
+          console.warn(`Failed to fetch document ${star.docId}:`, error);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [star.docId, document, isLoading, fetchDocumentDetail]);
+
+  // Component is now bloated with business logic
+  return (
+    // ... UI rendering
+  );
+}
+```
+
+#### Separation Principles
+
+1. **Store Methods**: Complex business logic should be in store methods
+2. **Custom Hooks**: Reusable logic should be in custom hooks
+3. **Utility Functions**: Pure functions should be in utility modules
+4. **Component Focus**: Components should only handle UI rendering and simple state
+5. **Single Responsibility**: Each layer should have a single, clear responsibility
+
+#### Benefits of Separation
+
+- **Testability**: Business logic can be tested independently
+- **Reusability**: Logic can be reused across multiple components
+- **Maintainability**: Changes to business logic don't affect UI code
+- **Performance**: Logic can be optimized without touching UI
+- **Clarity**: Components are easier to understand and modify
+
 ### Functional Component Pattern
 
 ```typescript
@@ -303,6 +438,10 @@ export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
 8. **Keep components focused and single-purpose**
 9. **Use proper error boundaries**
 10. **Implement proper cleanup in useEffect**
+11. **MANDATORY: Separate UI from business logic** - Components should only handle UI rendering, not complex business logic
+12. **Encapsulate business logic in stores or custom hooks** - Keep components clean and focused on presentation
+13. **Avoid data fetching in components** - Use stores or custom hooks for data management
+14. **Minimize component complexity** - If a component has too much logic, extract it to a store or hook
 
 ## State Management
 

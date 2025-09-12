@@ -256,5 +256,14 @@
   "workspace description": "workspace description",
   "workspace name": "workspace name",
   "{{count}} members": "{{count}} members",
-  "{{count}} members_plural": "{{count}} members"
+  "{{count}} members_plural": "{{count}} members",
+  "time.today": "Today",
+  "time.yesterday": "Yesterday",
+  "time.justNow": "Just now",
+  "time.minutesAgo": "{{minutes}} minutes ago",
+  "time.hoursAgo": "{{hours}} hours ago",
+  "time.daysAgo": "{{days}} days ago",
+  "time.weeksAgo": "{{weeks}} weeks ago",
+  "time.monthsAgo": "{{months}} months ago",
+  "time.yearsAgo": "{{years}} years ago"
 }
