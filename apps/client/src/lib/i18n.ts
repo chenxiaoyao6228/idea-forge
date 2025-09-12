@@ -32,8 +32,8 @@ i18n
       lookupLocalStorage: "lng",
       caches: ["localStorage"],
     },
-    saveMissing: true,
-    saveMissingTo: "all",
+    saveMissing: false,
+    // saveMissingTo: "all", // Temporarily disabled to reduce network requests
   })
   .then(() => {
     console.log("=====i18n initialized =======");

@@ -127,7 +127,7 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
   const docTitle = document?.title || "Untitled";
 
   return (
-    <>
+    <div className="share-with-me-link">
       <SidebarLink
         to={`/${document?.id}`}
         // icon={icon}
@@ -153,6 +153,6 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -44,7 +44,7 @@ export function SidebarLink({
   const linkContent = (
     <div
       className={cn(
-        "group relative flex w-full items-center gap-2 rounded-lg pl-6 pr-3 py-1 text-sm transition-colors",
+        "sidebar-link group relative flex w-full items-center gap-2 rounded-lg pl-6 pr-3 py-1 text-sm transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
         active && "bg-accent text-accent-foreground",
         isActiveDrop && "bg-accent text-accent-foreground border border-foreground",

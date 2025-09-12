@@ -7,6 +7,7 @@ import useDocumentStore, { DocumentEntity } from "./document";
 import useAbilityStore from "./ability";
 import useUserStore from "./user";
 import useWorkspaceStore from "./workspace";
+import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 
 const STORE_NAME = "sharedWithMeStore";
 
@@ -25,6 +26,9 @@ interface SharedWithMeActions {
   handleWebsocketAbilityChange: (abilities: any[]) => void;
   handleWebsocketDocumentShare: (document: DocumentEntity) => void;
   handleWebsocketReconnect: () => void;
+
+  // Navigation node finding method for star functionality
+  findNavigationNodeInSharedDocuments: (documentId: string) => NavigationNode | null;
 
   reset: () => void;
 }
@@ -169,6 +173,23 @@ const useSharedWithMeStore = create<StoreState>()(
             // (user might have gained new abilities while offline)
             get().resetPagination();
             get().fetchSharedDocuments();
+          },
+
+          findNavigationNodeInSharedDocuments: (documentId: string) => {
+            const { documents } = get();
+            const document = documents.find((doc) => doc.id === documentId);
+
+            if (!document) return null;
+
+            // Convert DocumentEntity to NavigationNode
+            return {
+              id: document.id,
+              title: document.title,
+              type: NavigationNodeType.Document,
+              url: `/${document.id}`,
+              children: [],
+              parent: null,
+            };
           },
 
           reset: () => {

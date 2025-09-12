@@ -109,6 +109,11 @@ interface Action {
   refreshSubspaceMembers: (subspaceId: string) => Promise<void>;
   leaveSubspace: (subspaceId: string) => Promise<{ success: boolean; error?: { code: string; message: string; originalError: any } }>;
   joinSubspace: (subspaceId: string) => Promise<void>;
+
+  // Navigation node finding methods for star functionality
+  findNavigationNodeInTree: (nodes: NavigationNode[], targetId: string) => NavigationNode | null;
+  findNavigationNodeInSubspace: (subspaceId: string, documentId: string) => NavigationNode | null;
+  findNavigationNodeInPersonalSubspace: (documentId: string) => NavigationNode | null;
 }
 
 const defaultState: State = {
@@ -938,6 +943,32 @@ const useSubSpaceStore = create<StoreState>()(
             console.error("Failed to batch add subspace members:", error);
             throw error;
           }
+        },
+
+        // Navigation node finding methods for star functionality
+        findNavigationNodeInTree: (nodes: NavigationNode[], targetId: string) => {
+          for (const node of nodes) {
+            if (node.id === targetId) {
+              return node;
+            }
+            if (node.children && node.children.length > 0) {
+              const found = get().findNavigationNodeInTree(node.children, targetId);
+              if (found) return found;
+            }
+          }
+          return null;
+        },
+
+        findNavigationNodeInSubspace: (subspaceId: string, documentId: string) => {
+          const subspace = get().entities[subspaceId];
+          if (!subspace?.navigationTree) return null;
+          return get().findNavigationNodeInTree(subspace.navigationTree, documentId);
+        },
+
+        findNavigationNodeInPersonalSubspace: (documentId: string) => {
+          const personalSubspace = getPersonalSubspace(get());
+          if (!personalSubspace?.navigationTree) return null;
+          return get().findNavigationNodeInTree(personalSubspace.navigationTree, documentId);
         },
       })),
       {

@@ -1,15 +1,12 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
 import { StarIcon, MoreHorizontal } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useStarStore from "@/stores/star";
-import useDocumentStore from "@/stores/document";
-import useSubSpaceStore from "@/stores/subspace";
 import { StarEntity } from "@/stores/star";
 import { DocumentLink } from "./document-link";
 
@@ -22,25 +19,34 @@ interface StarLinkProps {
 export function StarLink({ star, isDragging = false, isDraggingOverlay = false }: StarLinkProps) {
   const { t } = useTranslation();
   const { docId: activeDocumentId } = useParams();
-  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
 
-  const document = useDocumentStore((state) => state.entities[star.docId || ""]);
-  const subspace = useSubSpaceStore((state) => state.entities[star.subspaceId || ""]);
   const removeStar = useStarStore((state) => state.remove);
+  const getNavigationNodeForStar = useStarStore((state) => state.getNavigationNodeForStar);
+
+  // Get navigation node for this star
+  const navigationNode = useMemo(() => {
+    return getNavigationNodeForStar(star);
+  }, [star, getNavigationNodeForStar]);
 
   // Auto-expand if contains active document
   const shouldExpand = useMemo(() => {
-    if (!activeDocumentId) return false;
-    if (star.docId) {
-      return document?.id === activeDocumentId;
-    }
-    if (star.subspaceId) {
-      return subspace?.navigationTree?.some((node) => node.id === activeDocumentId);
-    }
-    return false;
-  }, [activeDocumentId, document?.id, star.docId, star.subspaceId, subspace?.navigationTree]);
+    if (!activeDocumentId || !navigationNode) return false;
+
+    // Check if the navigation node itself is active
+    if (navigationNode.id === activeDocumentId) return true;
+
+    // Check if any child contains the active document
+    const checkChildren = (node: any): boolean => {
+      if (node.id === activeDocumentId) return true;
+      if (node.children) {
+        return node.children.some(checkChildren);
+      }
+      return false;
+    };
+
+    return checkChildren(navigationNode);
+  }, [activeDocumentId, navigationNode]);
 
   useEffect(() => {
     if (shouldExpand) {
@@ -65,12 +71,13 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
     }
   }, [removeStar, star.id]);
 
-  if (!document && !subspace) {
+  // Don't render if no navigation node found
+  if (!navigationNode) {
     return null;
   }
 
-  const hasDocuments = document?.children?.length > 0 || subspace?.navigationTree?.length > 0;
-  const title = document?.title || subspace?.name || "";
+  const hasDocuments = navigationNode.children && navigationNode.children.length > 0;
+  const title = navigationNode.title;
   const icon = <StarIcon className="h-4 w-4 text-yellow-500" />;
 
   const menu = (
@@ -95,9 +102,9 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
   };
 
   return (
-    <>
+    <div className="star-link">
       <SidebarLink
-        to={document ? `/${document.id}` : `/${subspace?.id}`}
+        to={navigationNode.url || `/${navigationNode.id}`}
         icon={icon}
         label={title}
         expanded={hasDocuments ? isExpanded : undefined}
@@ -111,14 +118,11 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
 
       {hasDocuments && isExpanded && !isDraggingOverlay && (
         <div className="ml-4">
-          {document?.children?.map((node, index) => (
-            <DocumentLink key={node.id} node={node} depth={1} index={index} parentId={star.docId || null} subspaceId={document.subspaceId || null} />
-          ))}
-          {subspace?.navigationTree?.map((node, index) => (
-            <DocumentLink key={node.id} node={node} depth={1} index={index} parentId={star.docId || null} subspaceId={subspace.id} />
+          {navigationNode.children?.map((node, index) => (
+            <DocumentLink key={node.id} node={node} depth={1} index={index} parentId={star.docId || null} subspaceId={star.subspaceId || null} />
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

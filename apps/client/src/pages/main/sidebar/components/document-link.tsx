@@ -188,7 +188,7 @@ export function DocumentLink(props: DocumentLinkProps) {
   const isExpandedAndNotDragging = isExpanded && !isDragging;
 
   return (
-    <>
+    <div className="document-link">
       <SidebarLink
         to={`/${node.id}`}
         // icon={<FolderIcon className="h-4 w-4" />}
@@ -227,6 +227,6 @@ export function DocumentLink(props: DocumentLinkProps) {
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -4,6 +4,9 @@ import { createComputed } from "zustand-computed";
 import { starApi } from "@/apis/star";
 import createEntitySlice, { EntityState, EntityActions, EntitySelectors } from "./utils/entity-slice";
 import useDocumentStore from "./document";
+import useSubSpaceStore from "./subspace";
+import useSharedWithMeStore from "./shared-with-me";
+import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 
 const STORE_NAME = "starStore";
 
@@ -39,6 +42,9 @@ interface Action {
   needsUpdate: (id: string, updatedAt: Date) => boolean;
   handleStarUpdate: (starId: string, updatedAt?: string) => Promise<void>;
   handleStarRemove: (starId: string) => void;
+
+  // Navigation node resolution for star functionality
+  getNavigationNodeForStar: (star: StarEntity) => NavigationNode | null;
 }
 
 const defaultState: State = {
@@ -114,6 +120,19 @@ const useStarStore = create<StoreState>()(
               };
 
               get().addOne(star);
+
+              // Fetch document details if docId is provided and document is not in store
+              if (star.docId) {
+                const documentStore = useDocumentStore.getState();
+                const existingDocument = documentStore.entities[star.docId];
+                if (!existingDocument) {
+                  // Fetch document details in background, don't wait for it
+                  documentStore.fetchDetail(star.docId, { silent: true }).catch((error) => {
+                    console.warn(`Failed to fetch document ${star.docId} for star:`, error);
+                  });
+                }
+              }
+
               return star;
             } catch (error) {
               console.error("Failed to create star:", error);
@@ -194,6 +213,54 @@ const useStarStore = create<StoreState>()(
 
           handleStarRemove: (starId) => {
             get().removeOne(starId);
+          },
+
+          getNavigationNodeForStar: (star) => {
+            // For starred subspaces, return the subspace as a navigation node
+            if (star.subspaceId) {
+              const subspace = useSubSpaceStore.getState().entities[star.subspaceId];
+              if (!subspace) return null;
+
+              return {
+                id: subspace.id,
+                title: subspace.name,
+                type: NavigationNodeType.Subspace,
+                url: `/subspace/${subspace.id}`,
+                children: subspace.navigationTree || [],
+                parent: null,
+              };
+            }
+
+            // For starred documents, search across different sources
+            if (star.docId) {
+              const subspaceStore = useSubSpaceStore.getState();
+              const sharedWithMeStore = useSharedWithMeStore.getState();
+
+              // 1. Check if document is in the specific subspace (if star.subspaceId exists)
+              if (star.subspaceId) {
+                const node = subspaceStore.findNavigationNodeInSubspace(star.subspaceId, star.docId);
+                if (node) return node;
+              }
+
+              // 2. Check personal subspace
+              const personalNode = subspaceStore.findNavigationNodeInPersonalSubspace(star.docId);
+              if (personalNode) return personalNode;
+
+              // 3. Check shared-with-me documents
+              const sharedNode = sharedWithMeStore.findNavigationNodeInSharedDocuments(star.docId);
+              if (sharedNode) return sharedNode;
+
+              // 4. Check all other subspaces
+              const allSubspaces = subspaceStore.entities;
+              for (const subspace of Object.values(allSubspaces)) {
+                if (subspace.id !== star.subspaceId) {
+                  const node = subspaceStore.findNavigationNodeInSubspace(subspace.id, star.docId);
+                  if (node) return node;
+                }
+              }
+            }
+
+            return null;
           },
         };
 

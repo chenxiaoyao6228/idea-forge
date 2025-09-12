@@ -19,6 +19,8 @@ export default function StarsArea() {
 
   if (!orderedStars.length) return null;
 
+  console.log("orderedStars", orderedStars);
+
   return (
     <SidebarGroup>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>

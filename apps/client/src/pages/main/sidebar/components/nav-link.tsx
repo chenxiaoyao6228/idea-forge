@@ -65,7 +65,7 @@ export function NavLink({
   );
 
   return (
-    <Link ref={linkRef} to={to} className={cn(className, isActive && activeClassName)} onClick={handleClick} {...rest}>
+    <Link ref={linkRef} to={to} className={cn("nav-link", className, isActive && activeClassName)} onClick={handleClick} {...rest}>
       {children}
     </Link>
   );
