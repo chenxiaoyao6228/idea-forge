@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import useStarStore from "@/stores/star";
+import useWorkspaceStore from "@/stores/workspace";
 import { useDragAndDropContext } from "./hooks/use-dnd";
 import { DraggableStarContainer } from "./components/draggable-star-container";
 

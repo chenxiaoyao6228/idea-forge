@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from "@nestjs/common";
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
 import { StarService } from "./star.service";
-import { CreateStarDto, UpdateStarDto } from "./star.dto";
+import { CreateStarDto, ListStarDto, UpdateStarDto } from "./star.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 
 @Controller("/api/stars")
@@ -13,8 +13,8 @@ export class StarController {
   }
 
   @Get()
-  findAll(@GetUser("id") userId: string) {
-    return this.starService.findAll(userId);
+  findAll(@GetUser("id") userId: string, @Query() listStarDto: ListStarDto) {
+    return this.starService.findAll(userId, listStarDto.workspaceId);
   }
 
   @Get(":id")

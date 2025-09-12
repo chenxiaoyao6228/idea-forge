@@ -6,6 +6,7 @@ import createEntitySlice, { EntityState, EntityActions, EntitySelectors } from "
 import useDocumentStore from "./document";
 import useSubSpaceStore from "./subspace";
 import useSharedWithMeStore from "./shared-with-me";
+import useWorkspaceStore from "./workspace";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 
 const STORE_NAME = "starStore";
@@ -74,9 +75,17 @@ const useStarStore = create<StoreState>()(
           // API Actions
           fetchList: async () => {
             if (get().isLoading) return [];
+
+            // Get current workspace
+            const currentWorkspace = useWorkspaceStore.getState().currentWorkspace;
+            if (!currentWorkspace) {
+              console.warn("No current workspace found, cannot fetch stars");
+              return [];
+            }
+
             set({ isLoading: true });
             try {
-              const response = await starApi.findAll();
+              const response = await starApi.findAll(currentWorkspace.id);
               const stars = response.data.stars.map((star) => ({
                 ...star,
                 createdAt: new Date(star.createdAt),

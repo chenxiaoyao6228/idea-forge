@@ -1,6 +1,6 @@
 import request from "@/lib/request";
 import type { Star } from "@idea/contracts";
-import { CreateStarDto, UpdateStarDto, StarResponse } from "@idea/contracts";
+import { CreateStarDto, UpdateStarDto, StarResponse, ListStarDto } from "@idea/contracts";
 
 export const starApi = {
   /**
@@ -9,9 +9,9 @@ export const starApi = {
   create: async (data: CreateStarDto) => request.post<CreateStarDto, { data: Star; permissions: any[] }>("/api/stars", data),
 
   /**
-   * Get all stars for the current user
+   * Get all stars for the current user in a specific workspace
    */
-  findAll: async () => request.get<void, StarResponse>("/api/stars"),
+  findAll: async (workspaceId: string) => request.get<ListStarDto, StarResponse>("/api/stars", { params: { workspaceId } }),
 
   /**
    * Get a specific star by ID

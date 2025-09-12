@@ -24,7 +24,9 @@ export const updateStarSchema = z.object({
 export type UpdateStarDto = z.infer<typeof updateStarSchema>;
 
 // List stars
-export const listStarSchema = basePagerSchema;
+export const listStarSchema = basePagerSchema.extend({
+  workspaceId: z.string().cuid(),
+});
 export type ListStarDto = z.infer<typeof listStarSchema>;
 
 // Response types

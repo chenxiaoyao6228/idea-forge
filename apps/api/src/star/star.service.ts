@@ -101,10 +101,24 @@ export class StarService {
     };
   }
 
-  private async reorderStarredItems(userId: string): Promise<Record<string, string | null>> {
-    // Fetch user's starred items with their current order
+  private async reorderStarredItems(userId: string, workspaceId: string): Promise<Record<string, string | null>> {
+    // Fetch user's starred items with their current order, filtered by workspace
     const starredItems = await this.prismaService.star.findMany({
-      where: { userId },
+      where: {
+        userId,
+        OR: [
+          {
+            doc: {
+              workspaceId,
+            },
+          },
+          {
+            subspace: {
+              workspaceId,
+            },
+          },
+        ],
+      },
       orderBy: [{ index: "asc" }, { updatedAt: "desc" }],
     });
 
@@ -163,10 +177,43 @@ export class StarService {
     return Object.fromEntries(sortedItems.map((item) => [item.id, item.index]));
   }
 
-  async findAll(userId: string) {
-    // Fetch starred items with current ordering
+  async findAll(userId: string, workspaceId: string) {
+    // Validate workspace access
+    if (!workspaceId) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
+    // Check if user has access to the workspace
+    const workspaceMember = await this.prismaService.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId,
+        },
+      },
+    });
+
+    if (!workspaceMember) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
+    // Fetch starred items with current ordering, filtered by workspace
     const starredItems = await this.prismaService.star.findMany({
-      where: { userId },
+      where: {
+        userId,
+        OR: [
+          {
+            doc: {
+              workspaceId,
+            },
+          },
+          {
+            subspace: {
+              workspaceId,
+            },
+          },
+        ],
+      },
       orderBy: [{ index: "asc" }, { updatedAt: "desc" }],
     });
 
@@ -175,7 +222,7 @@ export class StarService {
 
     if (needsReordering) {
       // Get updated order positions
-      const orderPositions = await this.reorderStarredItems(userId);
+      const orderPositions = await this.reorderStarredItems(userId, workspaceId);
 
       // Update items with new order positions
       starredItems.forEach((item) => {
