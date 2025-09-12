@@ -5,7 +5,7 @@
  */
 
 import * as React from "react";
-import { confirmable, ConfirmDialog } from "react-confirm";
+import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { useKey } from "react-use";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { createConfirmation } from "react-confirm";
 import { ButtonProps } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -49,7 +48,7 @@ export interface ConfirmModalProps {
   proceed?: (value: boolean) => void;
 }
 
-const ConfirmModal: ConfirmDialog<ConfirmModalProps, boolean> = ({
+const ConfirmModal: React.FC<ConfirmDialogProps<ConfirmModalProps, boolean>> = ({
   show = false,
   proceed,
   title,
@@ -168,4 +167,4 @@ const ConfirmModal: ConfirmDialog<ConfirmModalProps, boolean> = ({
   );
 };
 
-export const confirmModal = createConfirmation(confirmable(ConfirmModal));
+export const confirmModal = ContextAwareConfirmation.createConfirmation(confirmable(ConfirmModal));

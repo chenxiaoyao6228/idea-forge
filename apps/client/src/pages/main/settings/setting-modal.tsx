@@ -7,8 +7,7 @@ import { Members } from "@/pages/main/settings/members";
 import { Subspace } from "@/pages/main/settings/subspace";
 import { Workspace } from "@/pages/main/settings/workspace";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { confirmable, ConfirmDialog } from "react-confirm";
-import { createConfirmation } from "react-confirm";
+import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
 export interface SettingModalProps {
   // basic info
@@ -25,7 +24,7 @@ export interface SettingModalProps {
   proceed?: (value: any) => void;
 }
 
-const SettingModal: ConfirmDialog<SettingModalProps, any> = ({
+const SettingModal = ({
   show = false,
   proceed,
   title = "Settings",
@@ -33,7 +32,7 @@ const SettingModal: ConfirmDialog<SettingModalProps, any> = ({
   tab = "subspace",
   subspaceId,
   content,
-}) => {
+}: ConfirmDialogProps<SettingModalProps, boolean>) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(tab);
   const [activeSubspaceId, setActiveSubspaceId] = useState<string | undefined>(subspaceId);
@@ -107,4 +106,4 @@ const SettingModal: ConfirmDialog<SettingModalProps, any> = ({
   );
 };
 
-export const settingModal = createConfirmation(confirmable(SettingModal));
+export const settingModal = ContextAwareConfirmation.createConfirmation(confirmable(SettingModal));

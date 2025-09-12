@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useTheme } from "@/components/providers/theme-provider";
+import { useTheme } from "@/components/theme-provider";
 import { Theme } from "emoji-picker-react";
 import Loading from "@/components/ui/loading";
 

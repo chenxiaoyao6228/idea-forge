@@ -216,8 +216,13 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
                     {/* name */}
                     <TableCell>
                       <div className="flex items-center space-x-3">
-                        <div className={cn("w-8 h-8 rounded text-white text-sm flex items-center justify-center", getSubspaceTypeColor(subspace.type))}>
-                          {getSubspaceTypeIcon(subspace.type)}
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded text-white text-sm flex items-center justify-center",
+                            getSubspaceTypeColor(subspace.type as SubspaceType),
+                          )}
+                        >
+                          {getSubspaceTypeIcon(subspace.type as SubspaceType)}
                         </div>
                         <div>
                           <div className="font-medium">{subspace.name}</div>
@@ -230,7 +235,7 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
                     {/* type */}
                     <TableCell>
                       <Badge variant="secondary" className={cn("text-xs", subspace.type === SubspaceType.WORKSPACE_WIDE && "bg-pink-100 text-pink-800")}>
-                        {getSubspaceTypeLabel(subspace.type)}
+                        {getSubspaceTypeLabel(subspace.type as SubspaceType)}
                       </Badge>
                     </TableCell>
 

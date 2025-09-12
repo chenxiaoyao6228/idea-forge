@@ -8,8 +8,7 @@ import { toast } from "sonner";
 import useSubSpaceStore from "@/stores/subspace";
 import { MultiSelectOption } from "@/components/ui/multi-select";
 import { SubspaceMemberSelect } from "@/components/subspace-member-select";
-import { confirmable, ConfirmDialog } from "react-confirm";
-import { createConfirmation } from "react-confirm";
+import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
 export interface AddSubspaceMemberModalProps {
   subspaceId: string;
@@ -23,7 +22,7 @@ export interface AddSubspaceMemberModalProps {
   proceed?: (value: any) => void;
 }
 
-const AddSubspaceMemberModal: ConfirmDialog<AddSubspaceMemberModalProps, any> = ({
+const AddSubspaceMemberModal = ({
   show = false,
   proceed,
   subspaceId,
@@ -31,7 +30,7 @@ const AddSubspaceMemberModal: ConfirmDialog<AddSubspaceMemberModalProps, any> = 
   workspaceId,
   title,
   description,
-}) => {
+}: ConfirmDialogProps<AddSubspaceMemberModalProps, { success: boolean; addedCount: number; errors?: any[] } | null>) => {
   const [selectedItems, setSelectedItems] = useState<MultiSelectOption[]>([]);
   const [selectedRole, setSelectedRole] = useState<"MEMBER" | "ADMIN">("MEMBER");
   const [loading, setLoading] = useState(false);
@@ -152,4 +151,4 @@ const AddSubspaceMemberModal: ConfirmDialog<AddSubspaceMemberModalProps, any> = 
   );
 };
 
-export const addSubspaceMemberModal = createConfirmation(confirmable(AddSubspaceMemberModal));
+export const addSubspaceMemberModal = ContextAwareConfirmation.createConfirmation(confirmable(AddSubspaceMemberModal));

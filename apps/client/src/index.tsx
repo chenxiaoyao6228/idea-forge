@@ -2,7 +2,7 @@
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { RouterProvider } from "react-router-dom";
-import { ThemeProvider } from "./components/providers/theme-provider";
+import { ThemeProvider } from "./components/theme-provider";
 import AppWithInspector from "./components/react-dev-inspector";
 import router from "./router";
 import { createReactTreeMounter, createMountPoint } from "react-confirm";

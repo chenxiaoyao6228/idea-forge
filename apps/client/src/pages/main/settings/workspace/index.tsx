@@ -47,7 +47,7 @@ const DATE_FORMAT_OPTIONS = [
 
 export const Workspace = () => {
   const { t } = useTranslation();
-  const { currentWorkspace, setCurrentWorkspace } = useWorkspaceStore();
+  const { currentWorkspace, setCurrentWorkspace, updateWorkspace } = useWorkspaceStore();
 
   // Form states
   const [workspaceName, setWorkspaceName] = useState("");
@@ -94,11 +94,11 @@ export const Workspace = () => {
           name: newName,
           description: currentWorkspace.description || null,
           avatar: currentWorkspace.avatar || null,
+          memberSubspaceCreate: currentWorkspace.memberSubspaceCreate ?? false,
           settings: currentWorkspace.settings as WorkspaceSettings,
         };
 
-        const updatedWorkspace = await workspaceApi.updateWorkspace(currentWorkspace.id, updateData);
-        setCurrentWorkspace(updatedWorkspace);
+        await updateWorkspace(currentWorkspace.id, updateData);
         toast.success(t("Workspace name updated successfully"));
       } catch (error) {
         console.error("Failed to update workspace name:", error);
@@ -129,11 +129,11 @@ export const Workspace = () => {
           name: currentWorkspace.name,
           description: currentWorkspace.description || null,
           avatar: currentWorkspace.avatar || null,
+          memberSubspaceCreate: currentWorkspace.memberSubspaceCreate ?? false,
           settings: updatedSettings,
         };
 
-        const updatedWorkspace = await workspaceApi.updateWorkspace(currentWorkspace.id, updateData);
-        setCurrentWorkspace(updatedWorkspace);
+        await updateWorkspace(currentWorkspace.id, updateData);
         toast.success(t("Settings updated successfully"));
       } catch (error) {
         console.error("Failed to update settings:", error);
@@ -208,11 +208,11 @@ export const Workspace = () => {
           name: currentWorkspace.name,
           description: currentWorkspace.description || null,
           avatar: uploadResult.downloadUrl,
+          memberSubspaceCreate: currentWorkspace.memberSubspaceCreate ?? false,
           settings: currentWorkspace.settings as WorkspaceSettings,
         };
 
-        const updatedWorkspace = await workspaceApi.updateWorkspace(currentWorkspace.id, updateData);
-        setCurrentWorkspace(updatedWorkspace);
+        await updateWorkspace(currentWorkspace.id, updateData);
 
         // Clean up
         setSelectedFile(null);

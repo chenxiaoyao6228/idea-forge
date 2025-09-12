@@ -2,8 +2,8 @@ import { Outlet, useRoutes } from "react-router-dom";
 import { useIsMobile } from "./hooks/use-mobile";
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AutoModalProvider } from "./components/central-modal/auto-modal-provider";
-import "./components/modals/register-all-modals"; // register all modals in this app
+// import "./components/modals/register-all-modals"; // register all modals in this app
+import { ContextAwareConfirmation } from "react-confirm";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -48,9 +48,8 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AutoModalProvider>
-        <Outlet />
-      </AutoModalProvider>
+      <ContextAwareConfirmation.ConfirmationRoot />
+      <Outlet />
     </QueryClientProvider>
   );
 }
