@@ -22,13 +22,12 @@ import SubspacesArea from "./subspaces";
 import MyDocsArea from "./ my-docs";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { SettingsIcon } from "lucide-react";
+import { SettingsIcon, Search as SearchIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useCentralModal } from "@/components/central-modal";
+import { settingModal } from "@/pages/main/settings/setting-modal";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
-  const settingModal = useCentralModal("setting-modal");
   const { t } = useTranslation();
 
   return (
@@ -54,7 +53,9 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                     {/* setting */}
                     <button
                       onClick={() => {
-                        settingModal.show({ tab: "subspace" });
+                        settingModal({
+                          tab: "subspace",
+                        });
                       }}
                       className={cn(
                         "group/tree-node relative flex w-full items-center py-1 px-2",
@@ -63,7 +64,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                         "text-sm font-normal",
                       )}
                     >
-                      <SettingsIcon className="h-4 w-4 mr-2 shrink-0" />
+                      <SettingsIcon className="h-4 w-4 shrink-0" />
                       <span className="truncate">{t("Settings")}</span>
                     </button>
                   </SidebarMenuButton>

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, UserPlus, Settings, Copy, LogOut, Archive } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { AddSubspaceMemberDialog } from "./add-subspace-member-dialog";
+import { addSubspaceMemberModal } from "@/components/modals/add-subspace-member-modal";
 import useSubspaceStore from "@/stores/subspace";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -17,6 +17,18 @@ interface SubspaceMenuProps {
 export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspaceId }: SubspaceMenuProps) {
   const { t } = useTranslation();
   const leaveSubspace = useSubspaceStore((state) => state.leaveSubspace);
+
+  const handleAddMembers = async () => {
+    const result = await addSubspaceMemberModal({
+      subspaceId,
+      subspaceName,
+      workspaceId,
+    });
+
+    if (result?.success) {
+      console.log("Members added successfully:", result);
+    }
+  };
 
   const handleSubspaceSettings = () => {
     // TODO: Implement subspace settings
@@ -45,12 +57,10 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <AddSubspaceMemberDialog subspaceId={subspaceId} subspaceName={subspaceName} subspaceType={subspaceType} workspaceId={workspaceId}>
-          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            {t("Add member...")}
-          </DropdownMenuItem>
-        </AddSubspaceMemberDialog>
+        <DropdownMenuItem onClick={handleAddMembers}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          {t("Add member...")}
+        </DropdownMenuItem>
 
         <DropdownMenuItem onClick={handleSubspaceSettings}>
           <Settings className="mr-2 h-4 w-4" />

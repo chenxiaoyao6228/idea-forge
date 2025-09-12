@@ -9,12 +9,14 @@ import { WorkspaceSubspaceSettings } from "./workspace-subspace-settings";
 import useWorkspaceStore from "@/stores/workspace";
 import { SubspaceTable } from "./subspace-table";
 import { MoreAboutSubspaceTip } from "./more-about-subspace-tip";
-import useUIStore from "@/stores/ui";
+interface SubspaceProps {
+  activeSubspaceId?: string;
+}
 
-export const Subspace = () => {
+export const Subspace = ({ activeSubspaceId }: SubspaceProps = {}) => {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const selectedSubspaceId = useUIStore((state) => state.settingDialogActiveSubspaceId);
+  const selectedSubspaceId = activeSubspaceId;
 
   if (!currentWorkspace) {
     return (

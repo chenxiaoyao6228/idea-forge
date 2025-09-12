@@ -1,2 +1,2 @@
 // use registerModal to register all modals in this app
-import "./setting-modal";
+// Note: setting-modal uses react-confirm pattern, no registration needed

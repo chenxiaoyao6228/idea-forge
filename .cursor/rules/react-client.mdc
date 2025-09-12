@@ -21,6 +21,7 @@ This document serves as the definitive guide for code style, patterns, and conve
 - [Routing](mdc:#routing)
 - [Testing Patterns](mdc:#testing-patterns)
 - [Performance Optimization](mdc:#performance-optimization)
+- [Modal Management](mdc:#modal-management)
 - [Code Quality and Linting](mdc:#code-quality-and-linting)
 
 ## Project Overview
@@ -42,6 +43,7 @@ This is a modern React application built with:
 - **Lucide React** - Icon library
 - **Vitest** - Testing framework
 - **Biome** - Code formatting and linting
+- **react-confirm** - Modal and confirmation dialog management
 
 ## General TypeScript Guidelines
 
@@ -219,6 +221,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserStore } from "@/stores/user-store";
 import { api } from "@/lib/api";
+import { confirm } from "react-confirm";
 import type { User } from "@/types/user";
 
 interface UserCardProps {
@@ -232,7 +235,16 @@ export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
   const { currentUser } = useUserStore();
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this user?")) {
+    const confirmed = await confirm({
+      title: "Delete User",
+      message:
+        "Are you sure you want to delete this user? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive",
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -845,6 +857,171 @@ export function App() {
 9. **Optimize bundle size**
 10. **Use proper image optimization**
 
+## Modal Management
+
+### react-confirm Pattern
+
+**MANDATORY: All modal dialogs, confirmations, and popups MUST use `react-confirm` library. Do NOT use native browser `confirm()`, `alert()`, or custom modal implementations.**
+
+```typescript
+import { confirm } from "react-confirm";
+
+// Basic confirmation dialog
+const handleDelete = async () => {
+  const confirmed = await confirm({
+    title: "Delete Item",
+    message:
+      "Are you sure you want to delete this item? This action cannot be undone.",
+    confirmText: "Delete",
+    cancelText: "Cancel",
+    variant: "destructive",
+  });
+
+  if (confirmed) {
+    // Proceed with deletion
+    await deleteItem();
+  }
+};
+
+// Custom confirmation with additional options
+const handleSaveChanges = async () => {
+  const confirmed = await confirm({
+    title: "Save Changes",
+    message:
+      "You have unsaved changes. Do you want to save them before continuing?",
+    confirmText: "Save",
+    cancelText: "Discard",
+    variant: "default",
+    showCancel: true,
+    closeOnOverlayClick: false,
+  });
+
+  if (confirmed) {
+    await saveChanges();
+  } else {
+    // Discard changes
+    resetForm();
+  }
+};
+
+// Information dialog
+const showInfo = async () => {
+  await confirm({
+    title: "Information",
+    message: "Your changes have been saved successfully.",
+    confirmText: "OK",
+    showCancel: false,
+    variant: "default",
+  });
+};
+
+// Warning dialog
+const showWarning = async () => {
+  await confirm({
+    title: "Warning",
+    message:
+      "This action will affect multiple items. Please review your selection.",
+    confirmText: "Continue",
+    cancelText: "Cancel",
+    variant: "warning",
+  });
+};
+```
+
+### Modal Best Practices
+
+1. **ALWAYS use react-confirm for all modal interactions**
+2. **Use descriptive titles and messages**
+3. **Provide clear action button text**
+4. **Use appropriate variants (default, destructive, warning)**
+5. **Handle async operations properly**
+6. **Use proper TypeScript typing**
+7. **Implement proper error handling**
+8. **Test modal interactions thoroughly**
+9. **Ensure accessibility compliance**
+10. **Use consistent styling and behavior**
+
+### Forbidden Patterns
+
+**DO NOT use these patterns:**
+
+```typescript
+// ❌ NEVER use native browser confirm
+if (confirm("Are you sure?")) {
+  // action
+}
+
+// ❌ NEVER use native browser alert
+alert("Operation completed");
+
+// ❌ NEVER create custom modal components for simple confirmations
+const [showModal, setShowModal] = useState(false);
+// ... custom modal implementation
+
+// ❌ NEVER use window.confirm or window.alert
+if (window.confirm("Delete item?")) {
+  // action
+}
+```
+
+### Advanced Modal Patterns
+
+```typescript
+// Confirmation with loading state
+const handleComplexAction = async () => {
+  const confirmed = await confirm({
+    title: "Complex Action",
+    message: "This will perform multiple operations. Continue?",
+    confirmText: "Continue",
+    cancelText: "Cancel",
+    variant: "default",
+  });
+
+  if (!confirmed) return;
+
+  try {
+    setIsLoading(true);
+    await performComplexAction();
+    await confirm({
+      title: "Success",
+      message: "Operation completed successfully.",
+      confirmText: "OK",
+      showCancel: false,
+    });
+  } catch (error) {
+    await confirm({
+      title: "Error",
+      message: "Operation failed. Please try again.",
+      confirmText: "OK",
+      showCancel: false,
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Conditional confirmation
+const handleConditionalAction = async () => {
+  if (hasUnsavedChanges) {
+    const confirmed = await confirm({
+      title: "Unsaved Changes",
+      message: "You have unsaved changes. Save before continuing?",
+      confirmText: "Save & Continue",
+      cancelText: "Discard & Continue",
+      variant: "warning",
+    });
+
+    if (confirmed) {
+      await saveChanges();
+    }
+  }
+
+  // Continue with action
+  await performAction();
+};
+```
+
 ## Code Quality and Linting
 
 ### Biome Configuration
@@ -893,6 +1070,7 @@ This React client follows modern TypeScript and React best practices with:
 - **Radix UI and Shadcn UI** for accessible components
 - **Tailwind CSS** for utility-first styling
 - **React Router** for client-side routing
+- **react-confirm** for consistent modal and confirmation management
 - **Comprehensive testing** setup with Vitest
 - **Code quality** enforced by Biome
 

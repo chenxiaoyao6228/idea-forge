@@ -14,8 +14,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
 import { subspaceApi } from "@/apis/subspace";
-import { AddSubspaceMemberDialog } from "../../settings/subspace/add-subspace-member-dialog";
-import { useCentralModal } from "@/components/central-modal";
+import { addSubspaceMemberModal } from "@/components/modals/add-subspace-member-modal";
+import { settingModal } from "../../settings/setting-modal";
 
 interface SubspaceLinkProps {
   subspace: SubspaceEntity;
@@ -46,8 +46,6 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   const unStar = useSubSpaceStore((state) => state.unStar);
   const isStarred = useStarStore((state) => state.isStarred(undefined, subspaceId));
   const leaveSubspace = useSubSpaceStore((state) => state.leaveSubspace);
-
-  const settingModal = useCentralModal("setting-modal");
 
   // Auto-expand if contains active document
   const shouldExpand = useMemo(() => {
@@ -108,8 +106,24 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   );
 
   const handleSubspaceSettings = useCallback(() => {
-    settingModal.show({ tab: "subspace", subspaceId });
-  }, [settingModal, subspaceId]);
+    settingModal({
+      tab: "subspace",
+      subspaceId,
+    });
+  }, [subspaceId]);
+
+  const handleAddMembers = useCallback(async () => {
+    const result = await addSubspaceMemberModal({
+      subspaceId,
+      subspaceName: subspace.name,
+      workspaceId: subspace.workspaceId,
+    });
+
+    if (result?.success) {
+      // Optionally refresh data or show additional feedback
+      console.log("Members added successfully:", result);
+    }
+  }, [subspaceId, subspace.name, subspace.workspaceId]);
 
   const handleLeaveSubspace = useCallback(async () => {
     try {
@@ -161,32 +175,33 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
 
   const hasDocuments = subspace.navigationTree && subspace.navigationTree.length > 0;
 
-  const menu = (
-    <div className="flex items-center gap-1">
-      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateDocument} disabled={isCreating} title={t("Create new document")}>
-        <PlusIcon className="h-3 w-3" />
-      </Button>
-      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleRename} disabled={isEditing} title={t("Rename subspace")}>
-        <EditIcon className="h-3 w-3" />
-      </Button>
+  const menu = useMemo(
+    () => (
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateDocument} disabled={isCreating} title={t("Create new document")}>
+          <PlusIcon className="h-3 w-3" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleRename} disabled={isEditing} title={t("Rename subspace")}>
+          <EditIcon className="h-3 w-3" />
+        </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" title={t("More options")}>
-            <MoreHorizontal className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <AddSubspaceMemberDialog subspaceId={subspaceId} subspaceName={subspace.name} workspaceId={subspace.workspaceId} onSuccess={() => {}}>
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>{t("Add members")}</DropdownMenuItem>
-          </AddSubspaceMemberDialog>
-          <DropdownMenuItem onClick={handleSubspaceSettings}>{t("Subspace settings")}</DropdownMenuItem>
-          <DropdownMenuItem onClick={handleLeaveSubspace} className="text-destructive focus:text-destructive">
-            {t("Leave subspace")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" title={t("More options")}>
+              <MoreHorizontal className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleAddMembers}>{t("Add members")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSubspaceSettings}>{t("Subspace settings")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLeaveSubspace} className="text-destructive focus:text-destructive">
+              {t("Leave subspace")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    ),
+    [handleCreateDocument, handleRename, handleAddMembers, handleSubspaceSettings, handleLeaveSubspace, subspaceId, subspace.name, subspace.workspaceId],
   );
 
   const dragStyle = {
