@@ -3,7 +3,7 @@ import { Search as SearchIcon, FileText, FileSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useDebounce } from "react-use";
 import { documentApi } from "@/apis/document";
 import type { ContentMatch } from "@idea/contracts";
@@ -13,40 +13,31 @@ import Loading from "../../../components/ui/loading";
 import { TextSelection } from "@tiptap/pm/state";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { useEditorStore } from "../../../stores/editor-store";
-import { forwardRef } from "react";
+import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
-type Props = {};
-export const SearchDocDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
+interface SearchDocDialogProps {
+  show?: boolean;
+  proceed?: (value: any) => void;
+}
+
+const SearchDocDialog: React.FC<ConfirmDialogProps<SearchDocDialogProps, any>> = ({ show = false, proceed }) => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+
+  const handleClose = () => {
+    proceed?.(null);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button
-          className={cn(
-            "group/tree-node relative flex w-full items-center py-1 px-2",
-            "rounded-lg transition-colors",
-            "hover:bg-accent/50 dark:hover:bg-accent/25",
-            "text-sm font-normal",
-          )}
-        >
-          <SearchIcon className="h-4 w-4 mr-2 shrink-0" />
-          <span className="truncate">{t("Search")}</span>
-          {/* <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-            <span className="text-xs">⌘</span>K
-          </kbd> */}
-        </button>
-      </DialogTrigger>
+    <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
           <DialogTitle>{t("Search Documents")}</DialogTitle>
         </DialogHeader>
-        <SearchPanel onClose={() => setOpen(false)} />
+        <SearchPanel onClose={handleClose} />
       </DialogContent>
     </Dialog>
   );
-});
+};
 
 function SearchPanel({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
@@ -281,3 +272,9 @@ function highlightKeyword(text: string, keyword: string) {
     </>
   );
 }
+
+export const searchModal = ContextAwareConfirmation.createConfirmation(confirmable(SearchDocDialog));
+
+export const showSearchModal = () => {
+  return searchModal({});
+};

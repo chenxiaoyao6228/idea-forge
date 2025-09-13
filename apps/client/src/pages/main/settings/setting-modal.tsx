@@ -29,7 +29,7 @@ const SettingModal = ({
   proceed,
   title = "Settings",
   description,
-  tab = "subspace",
+  tab = "profile",
   subspaceId,
   content,
 }: ConfirmDialogProps<SettingModalProps, boolean>) => {

@@ -6,7 +6,7 @@ import { Layers, Users, Lock, Globe, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import useSubSpaceStore from "@/stores/subspace";
 import useWorkspaceStore from "@/stores/workspace";
-import { CreateSubspaceDialog } from "./create-subspace-dialog";
+import { showCreateSubspaceModal } from "./create-subspace-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 interface AllSubspaceSheetProps {
@@ -114,13 +114,21 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
           <div className="">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-foreground">{t("My subspaces")}</h3>
-              <CreateSubspaceDialog workspaceId={currentWorkspace?.id!}>
-                <div className="ml-1 flex items-center gap-1 invisible group-hover/label:visible">
-                  <Button variant="ghost" size="icon" className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25" disabled={isCreating}>
-                    <PlusIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CreateSubspaceDialog>
+              <div className="ml-1 flex items-center gap-1 invisible group-hover/label:visible">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25"
+                  disabled={isCreating}
+                  onClick={() => {
+                    if (currentWorkspace?.id) {
+                      showCreateSubspaceModal(currentWorkspace.id);
+                    }
+                  }}
+                >
+                  <PlusIcon className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">

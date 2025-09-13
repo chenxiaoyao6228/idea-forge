@@ -1,6 +1,7 @@
 /*
- * Shadcn Dialog inside of Dropdown closes automatically, see:
- * https://stackoverflow.com/questions/77185827/shadcn-dialog-inside-of-dropdown-closes-automatically
+ * Shadcn Dialog has lots of drawback
+ * eg: inside of Dropdown closes automatically, see: https://stackoverflow.com/questions/77185827/shadcn-dialog-inside-of-dropdown-closes-automatically
+ * or dialog over dialog does not close somehow
  * So we use react-confirm to create a custom confirm modal, instead of using AlertDialog/Dialog directly from shadcn/ui
  */
 

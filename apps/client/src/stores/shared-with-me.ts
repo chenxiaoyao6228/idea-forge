@@ -80,10 +80,15 @@ const useSharedWithMeStore = create<StoreState>()(
               }
 
               const userInfo = useUserStore.getState().userInfo;
-              const currentWorkspace = useWorkspaceStore.getState().currentWorkspace;
 
               if (!userInfo?.id) {
                 throw new Error("User not authenticated");
+              }
+
+              const currentWorkspace = useWorkspaceStore.getState().currentWorkspace;
+
+              if (!currentWorkspace?.id) {
+                throw new Error("Current workspace not found");
               }
 
               const response = await documentApi.getSharedWithMe({

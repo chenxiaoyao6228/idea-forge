@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImageCropper } from "@/components/image-cropper";
 import { MultiSelectOption } from "@/components/ui/multi-select";
@@ -18,11 +18,15 @@ import { dataURLtoFile } from "@/lib/file";
 import { MoreAboutSubspaceTip } from "./more-about-subspace-tip";
 import { SubspaceType } from "@idea/contracts";
 import { SubspaceMemberSelect } from "@/components/subspace-member-select";
+import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
 interface CreateSubspaceDialogProps {
   workspaceId: string;
-  children: React.ReactNode;
   onSuccess?: () => void;
+
+  // react-confirm props
+  show?: boolean;
+  proceed?: (value: any) => void;
 }
 
 interface FileWithPreview extends File {
@@ -30,9 +34,8 @@ interface FileWithPreview extends File {
   path?: string;
 }
 
-export function CreateSubspaceDialog({ workspaceId, children, onSuccess }: CreateSubspaceDialogProps) {
+const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProps, any>> = ({ show = false, proceed, workspaceId, onSuccess }) => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -44,6 +47,7 @@ export function CreateSubspaceDialog({ workspaceId, children, onSuccess }: Creat
 
   // Avatar upload states
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const [cropperDialogOpen, setCropperDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileWithPreview | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -52,10 +56,19 @@ export function CreateSubspaceDialog({ workspaceId, children, onSuccess }: Creat
   const createSubspace = useSubSpaceStore((state) => state.create);
   const batchAddSubspaceMembers = useSubSpaceStore((state) => state.batchAddSubspaceMembers);
 
+  // Auto-focus name input when dialog opens
+  useEffect(() => {
+    if (show && nameInputRef.current) {
+      // Small delay to ensure the dialog is fully rendered
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+    }
+  }, [show]);
+
   // Reset state when dialog closes
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen) {
+  useEffect(() => {
+    if (!show) {
       // Reset state when dialog closes
       setName("");
       setDescription("");
@@ -65,7 +78,7 @@ export function CreateSubspaceDialog({ workspaceId, children, onSuccess }: Creat
       setLoading(false);
       setUploading(false);
     }
-  };
+  }, [show]);
 
   // Handle avatar upload
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,7 +200,7 @@ export function CreateSubspaceDialog({ workspaceId, children, onSuccess }: Creat
         toast.success(t("Subspace created successfully"));
       }
 
-      setOpen(false);
+      proceed?.(subspace);
       onSuccess?.();
     } catch (error) {
       console.error("Failed to create subspace:", error);
@@ -221,9 +234,12 @@ export function CreateSubspaceDialog({ workspaceId, children, onSuccess }: Creat
     </div>
   );
 
+  const handleCancel = () => {
+    proceed?.(null);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={show} onOpenChange={(open) => !open && handleCancel()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <div className="flex justify-between items-start">
@@ -253,6 +269,7 @@ export function CreateSubspaceDialog({ workspaceId, children, onSuccess }: Creat
 
               <div className="ml-4 flex-1">
                 <Input
+                  ref={nameInputRef}
                   className="w-full"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -315,7 +332,7 @@ export function CreateSubspaceDialog({ workspaceId, children, onSuccess }: Creat
 
         <DialogFooter className="flex justify-end">
           <div className="flex space-x-2">
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+            <Button variant="outline" onClick={handleCancel} disabled={loading}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={!name.trim() || loading}>
@@ -335,4 +352,15 @@ export function CreateSubspaceDialog({ workspaceId, children, onSuccess }: Creat
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+// Create the confirm modal
+export const createSubspaceModal = ContextAwareConfirmation.createConfirmation(confirmable(CreateSubspaceDialog));
+
+// Helper function to show the create subspace modal
+export const showCreateSubspaceModal = (workspaceId: string, onSuccess?: () => void) => {
+  return createSubspaceModal({
+    workspaceId,
+    onSuccess,
+  });
+};

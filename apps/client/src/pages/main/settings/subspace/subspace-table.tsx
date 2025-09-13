@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { SubspaceMenu } from "./subspace-menu";
 import useSubSpaceStore from "@/stores/subspace";
-import { CreateSubspaceDialog } from "./create-subspace-dialog";
+import { showCreateSubspaceModal } from "./create-subspace-dialog";
 import { useTimeFormat } from "@/hooks/use-time-format";
 
 interface SubspaceTableProps {
@@ -129,12 +129,10 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
             <CardTitle>{t("Manage subspaces")}</CardTitle>
             <CardDescription>{t("You can browse and manage subspaces here")}</CardDescription>
           </div>
-          <CreateSubspaceDialog workspaceId={workspaceId}>
-            <Button>
-              <Plus className="h-4 w-4 mr-1" />
-              {t("Create subspace")}
-            </Button>
-          </CreateSubspaceDialog>
+          <Button onClick={() => showCreateSubspaceModal(workspaceId)}>
+            <Plus className="h-4 w-4 mr-1" />
+            {t("Create subspace")}
+          </Button>
         </div>
       </CardHeader>
       <CardContent>

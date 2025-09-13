@@ -1,30 +1,23 @@
-import {
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarHeader,
-  SidebarMenuItem,
-  SidebarMenu,
-  SidebarRail,
-  SidebarMenuButton,
-  Sidebar,
-} from "@/components/ui/sidebar";
+import { SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarRail, SidebarMenuButton, Sidebar } from "@/components/ui/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils";
 import { useDragAndDropContext } from "./hooks/use-dnd";
 import { DndContext } from "@dnd-kit/core";
 import WorkspaceSwitcher from "./workspace-switcher";
-import { TrashDialog } from "./trash-dialog";
-import { SearchDocDialog } from "./search-doc-dialog";
+import { showTrashModal } from "./trash-dialog";
+import { showTemplateModal } from "./template-dialog";
+import { showSearchModal } from "./search-doc-dialog";
+import { showImportFilesModal } from "./import-files-dialog";
+import { MoreOptionsDropdown } from "./more-options-dropdown";
 import StarsArea from "./stars";
 import SharedWithMe from "./shared-with-me";
 import SubspacesArea from "./subspaces";
 import MyDocsArea from "./ my-docs";
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { SettingsIcon, Search as SearchIcon } from "lucide-react";
+import { Search as SearchIcon, Download, Users, Trash2, Box, Inbox } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { settingModal } from "@/pages/main/settings/setting-modal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
@@ -35,41 +28,103 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
       <SidebarProvider>
         {/* sidebar */}
         <Sidebar collapsible="offcanvas">
-          <SidebarHeader>
+          <SidebarHeader className="p-0 gap-0">
             {/* WorkspaceSwitcher */}
             <WorkspaceSwitcher />
 
             {/* Quick start */}
             <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    {/* search doc */}
-                    <SearchDocDialog />
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    {/* setting */}
-                    <button
-                      onClick={() => {
-                        settingModal({
-                          tab: "subspace",
-                        });
-                      }}
-                      className={cn(
-                        "group/tree-node relative flex w-full items-center py-1 px-2",
-                        "rounded-lg transition-colors",
-                        "hover:bg-accent/50 dark:hover:bg-accent/25",
-                        "text-sm font-normal",
-                      )}
-                    >
-                      <SettingsIcon className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{t("Settings")}</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
+              <div className="flex items-center justify-between  w-full">
+                {/* Search */}
+                <div className="flex items-center justify-center flex-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton
+                          onClick={() => showSearchModal()}
+                          className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
+                        >
+                          <SearchIcon className="h-4 w-4" />
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("Search documents")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                {/* Import Files */}
+                <div className="flex items-center justify-center flex-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton
+                          onClick={() => showImportFilesModal()}
+                          className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
+                        >
+                          <Download className="h-4 w-4" />
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("Import files")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                {/* Workspace Members */}
+                <div className="flex items-center justify-center flex-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton
+                          onClick={() => settingModal({ tab: "members" })}
+                          className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
+                        >
+                          <Users className="h-4 w-4" />
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("Members")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                {/* Mailbox */}
+                <div className="flex items-center justify-center flex-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton
+                          onClick={() => {}}
+                          className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
+                        >
+                          <Inbox className="h-4 w-4" />
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("Mailbox")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                {/* More Options */}
+                <div className="flex items-center justify-center flex-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <MoreOptionsDropdown />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("More options")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
             </SidebarGroup>
           </SidebarHeader>
           {/* docs */}
@@ -79,9 +134,38 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
             <SharedWithMe />
             <MyDocsArea />
           </SidebarContent>
-          <SidebarFooter>
-            {/* trash */}
-            <TrashDialog />
+          <SidebarFooter className="p-0 gap-0">
+            {/* Two-column footer with trash and template */}
+            <div className="grid grid-cols-2 gap-0 border-t">
+              {/* Trash button */}
+              <button
+                onClick={() => showTrashModal()}
+                className={cn(
+                  "group/tree-node relative flex w-full items-center justify-center py-2 px-2",
+                  "transition-colors",
+                  "hover:bg-accent/50 dark:hover:bg-accent/25",
+                  "text-sm font-normal",
+                  "border-r border-border", // Add right border for separation
+                )}
+              >
+                <Trash2 className="h-4 w-4 mr-2 shrink-0" />
+                <span className="truncate">{t("Trash")}</span>
+              </button>
+
+              {/* Template button */}
+              <button
+                onClick={() => showTemplateModal()}
+                className={cn(
+                  "group/tree-node relative flex w-full items-center justify-center py-2 px-2",
+                  "transition-colors",
+                  "hover:bg-accent/50 dark:hover:bg-accent/25",
+                  "text-sm font-normal",
+                )}
+              >
+                <Box className="h-4 w-4 mr-2 shrink-0" />
+                <span className="truncate">{t("Templates")}</span>
+              </button>
+            </div>
           </SidebarFooter>
           <SidebarRail />
         </Sidebar>

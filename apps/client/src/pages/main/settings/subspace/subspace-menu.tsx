@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, UserPlus, Settings, Copy, LogOut, Archive } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { addSubspaceMemberModal } from "@/pages/main/settings/add-subspace-member-modal";
+import { addSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
 import useSubspaceStore from "@/stores/subspace";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 

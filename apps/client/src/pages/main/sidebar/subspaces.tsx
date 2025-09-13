@@ -9,8 +9,8 @@ import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
 import useWorkspaceStore from "@/stores/workspace";
 import useSubSpaceStore from "@/stores/subspace";
-import { CreateSubspaceDialog } from "../settings/subspace/create-subspace-dialog";
 import { AllSubspaceSheet } from "../settings/subspace/all-subspace-sheet";
+import { showCreateSubspaceModal } from "../settings/subspace/create-subspace-dialog";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
@@ -54,13 +54,11 @@ export default function SubspacesArea() {
                 </Button>
               </div>
             </AllSubspaceSheet>
-            <CreateSubspaceDialog workspaceId={currentWorkspace?.id!}>
-              <div className="ml-1 flex items-center gap-1 invisible group-hover/label:visible">
-                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25" disabled={isCreating}>
-                  <PlusIcon className="h-4 w-4" />
-                </Button>
-              </div>
-            </CreateSubspaceDialog>
+            <div className="ml-1 flex items-center gap-1 invisible group-hover/label:visible" onClick={() => showCreateSubspaceModal(currentWorkspace?.id!)}>
+              <Button variant="ghost" size="icon" className="h-4 w-4 p-0 cursor-pointer hover:bg-accent/50 dark:hover:bg-accent/25" disabled={isCreating}>
+                <PlusIcon className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
         <CollapsibleContent>

@@ -17,9 +17,9 @@ export function SignOutButton() {
       cancelText: t("Cancel"),
       confirmVariant: "destructive",
       async onConfirm() {
-        useUserStore.getState().logout();
+        await useUserStore.getState().logout();
         navigate("/login");
-        return true;
+        return false;
       },
     });
   };

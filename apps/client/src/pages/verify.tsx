@@ -106,33 +106,6 @@ function VerifyPage() {
     },
   });
 
-  const handleOTPChange = useCallback(
-    (value: string) => {
-      setValue(codeQueryParam, value);
-    },
-    [setValue],
-  );
-
-  // Define headings based on verification type
-  const checkEmail = (
-    <>
-      <CardTitle className="text-xl">{t("Check your email")}</CardTitle>
-      <CardDescription>{t("We've sent you a code to verify your email address")}</CardDescription>
-    </>
-  );
-
-  const headings: Record<CodeValidateRequest["type"], React.ReactNode> = {
-    register: checkEmail,
-    "reset-password": checkEmail,
-    "change-email": checkEmail,
-    "2fa": (
-      <>
-        <CardTitle className="text-xl">{t("Check your 2FA app")}</CardTitle>
-        <CardDescription>{t("Please enter your 2FA code to verify your identity")}</CardDescription>
-      </>
-    ),
-  };
-
   const onSubmit = async (data: CodeValidateRequest) => {
     setIsPending(true);
     try {
@@ -162,6 +135,38 @@ function VerifyPage() {
     } finally {
       setIsPending(false);
     }
+  };
+
+  const handleOTPChange = useCallback(
+    (value: string) => {
+      setValue(codeQueryParam, value);
+
+      // Auto-submit when code length reaches 6
+      if (value.length === 6) {
+        handleSubmit(onSubmit)();
+      }
+    },
+    [setValue, handleSubmit, onSubmit],
+  );
+
+  // Define headings based on verification type
+  const checkEmail = (
+    <>
+      <CardTitle className="text-xl">{t("Check your email")}</CardTitle>
+      <CardDescription>{t("We've sent you a code to verify your email address")}</CardDescription>
+    </>
+  );
+
+  const headings: Record<CodeValidateRequest["type"], React.ReactNode> = {
+    register: checkEmail,
+    "reset-password": checkEmail,
+    "change-email": checkEmail,
+    "2fa": (
+      <>
+        <CardTitle className="text-xl">{t("Check your 2FA app")}</CardTitle>
+        <CardDescription>{t("Please enter your 2FA code to verify your identity")}</CardDescription>
+      </>
+    ),
   };
 
   return (

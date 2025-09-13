@@ -59,8 +59,8 @@ export default function WorkspaceSwitcher() {
     <div className="flex flex-col justify-center flex-shrink-0 border-b">
       <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between px-2 py-1.5 h-auto hover:bg-accent overflow-x-hidden ">
-            <div className="flex items-center space-x-2 truncate">
+          <Button variant="ghost" className="flex items-center w-full justify-between px-2 h-auto hover:bg-accent overflow-x-hidden ">
+            <div className="flex items-center space-x-2 truncate flex-1 min-w-0">
               <div className="relative">
                 <Avatar className="h-6 w-6">
                   {currentWorkspace?.avatar ? (
@@ -71,7 +71,10 @@ export default function WorkspaceSwitcher() {
                 </Avatar>
               </div>
               <span className="text-sm font-medium truncate">{currentWorkspace?.name || t("Workspace")}</span>
-              <ChevronDown className="h-4 w-4 opacity-70" />
+            </div>
+            <div className="flex items-center space-x-1 flex-shrink-0">
+              <ChevronDown className="h-4 w-4 opacity-70 mr-1" />
+              <div className="bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">2</div>
             </div>
           </Button>
         </DropdownMenuTrigger>

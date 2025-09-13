@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
 import { subspaceApi } from "@/apis/subspace";
-import { addSubspaceMemberModal } from "@/pages/main/settings/add-subspace-member-modal";
+import { addSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
 import { settingModal } from "../../settings/setting-modal";
 
 interface SubspaceLinkProps {

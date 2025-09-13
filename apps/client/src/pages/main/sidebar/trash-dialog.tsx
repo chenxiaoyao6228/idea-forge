@@ -1,8 +1,8 @@
-import { forwardRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { documentApi } from "@/apis/document";
 import { type TrashDocumentResponse } from "@idea/contracts";
@@ -13,23 +13,26 @@ import { confirmModal } from "../../../components/ui/confirm-modal";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import Loading from "../../../components/ui/loading";
+import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
-type Props = {};
+interface TrashDialogProps {
+  // react-confirm props
+  show?: boolean;
+  proceed?: (value: any) => void;
+}
 
-export const TrashDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
+const TrashDialog: React.FC<ConfirmDialogProps<TrashDialogProps, any>> = ({ show = false, proceed }) => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<TrashDocumentResponse[]>([]);
   const [keyword, setKeyword] = useState("");
-  //   const fetchSharedWithMe = useShareStore((state) => state.fetchSharedWithMe);
 
   // Load trash documents when dialog opens
   useEffect(() => {
-    if (open) {
+    if (show) {
       loadTrashDocuments();
     }
-  }, [open]);
+  }, [show]);
 
   async function loadTrashDocuments() {
     try {
@@ -89,21 +92,12 @@ export const TrashDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
 
   const filteredDocuments = documents.filter((doc) => doc.title.toLowerCase().includes(keyword.toLowerCase()));
 
+  const handleClose = () => {
+    proceed?.(null);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button
-          className={cn(
-            "group/tree-node relative flex w-full items-center py-1 px-2",
-            "rounded-lg transition-colors",
-            "hover:bg-accent/50 dark:hover:bg-accent/25",
-            "text-sm font-normal",
-          )}
-        >
-          <Trash2 className="h-4 w-4 mr-2 shrink-0" />
-          <span className="truncate">{t("Trash")}</span>
-        </button>
-      </DialogTrigger>
+    <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
           <DialogTitle>{t("Trash")}</DialogTitle>
@@ -151,4 +145,12 @@ export const TrashDialog = forwardRef<HTMLDivElement, Props>((props, ref) => {
       </DialogContent>
     </Dialog>
   );
-});
+};
+
+// Create the confirm modal
+export const trashModal = ContextAwareConfirmation.createConfirmation(confirmable(TrashDialog));
+
+// Helper function to show the trash modal
+export const showTrashModal = () => {
+  return trashModal({});
+};
