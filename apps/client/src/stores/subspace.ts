@@ -5,7 +5,7 @@ import { createComputed } from "zustand-computed";
 import { CreateSubspaceRequest, NavigationNode, NavigationNodeType, SubspaceMember } from "@idea/contracts";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
-import useStarStore from "./star";
+import { useStars } from "./star-store";
 import { EntityActions } from "./utils/entity-slice";
 import { DocumentEntity } from "./document";
 import useUserStore from "./user";
@@ -91,8 +91,6 @@ interface Action {
   getRecentlyUpdated: (subspaceId: string, limit?: number) => DocumentEntity[];
 
   // Existing helper methods
-  star: (subspaceId: string, index?: string) => Promise<void>;
-  unStar: (subspaceId: string) => Promise<void>;
   addDocument: (subspaceId: string, document: DocumentEntity) => void;
   updateDocument: (subspaceId: string, documentId: string, updates: Partial<DocumentEntity>) => void;
   removeDocument: (subspaceId: string, documentId: string) => void;
@@ -850,30 +848,6 @@ const useSubSpaceStore = create<StoreState>()(
 
         setActiveSubspace: (id) => {
           set({ activeSubspaceId: id });
-        },
-
-        star: async (subspaceId, index?) => {
-          try {
-            await useStarStore.getState().create({
-              subspaceId,
-              index,
-            });
-          } catch (error) {
-            console.error("Failed to star subspace:", error);
-            throw error;
-          }
-        },
-
-        unStar: async (subspaceId) => {
-          try {
-            const star = useStarStore.getState().getStarByTarget(undefined, subspaceId);
-            if (star) {
-              await useStarStore.getState().remove(star.id);
-            }
-          } catch (error) {
-            console.error("Failed to unStar subspace:", error);
-            throw error;
-          }
         },
 
         leaveSubspace: async (subspaceId) => {

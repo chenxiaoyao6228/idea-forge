@@ -2,7 +2,7 @@ import { io, Socket } from "socket.io-client";
 import { resolvablePromise } from "./async";
 import useSubSpaceStore from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
-import useStarStore, { StarEntity } from "@/stores/star";
+import useStarStore, { StarEntity } from "@/stores/star-store";
 import { PartialExcept } from "@/types";
 import type { Star } from "@idea/contracts";
 import { toast } from "sonner";
@@ -448,41 +448,35 @@ class WebsocketService {
 
     // Handle star related events
     this.socket.on(SocketEvents.STAR_CREATE, (event: PartialExcept<Star, "id">) => {
-      if (!event.createdAt || !event.updatedAt || !event.userId) return;
+      if (!event.createdAt || !event.updatedAt || !event.userId || !event.docId) return;
 
       const star: StarEntity = {
         id: event.id,
-        docId: event.docId ?? null,
-        subspaceId: event.subspaceId ?? null,
+        docId: event.docId, // Only allow document stars
         index: event.index ?? null,
         createdAt: new Date(event.createdAt),
         updatedAt: new Date(event.updatedAt),
         userId: event.userId,
       };
-      useStarStore.getState().addOne(star);
+      useStarStore.getState().addStar(star);
       console.log("[websocket]: Star created:", star);
     });
 
     this.socket.on(SocketEvents.STAR_UPDATE, (event: PartialExcept<Star, "id">) => {
-      if (!event.createdAt || !event.updatedAt || !event.userId) return;
+      if (!event.createdAt || !event.updatedAt || !event.userId || !event.docId) return;
 
-      const changes = {
-        docId: event.docId ?? null,
-        subspaceId: event.subspaceId ?? null,
+      const changes: Partial<StarEntity> = {
+        docId: event.docId, // Only allow document stars
         index: event.index ?? null,
         createdAt: new Date(event.createdAt),
         updatedAt: new Date(event.updatedAt),
         userId: event.userId,
       };
-      useStarStore.getState().updateOne({
-        id: event.id,
-        changes,
-      });
-      console.log("[websocket]: Star updated:", { id: event.id, ...changes });
+      useStarStore.getState().updateStar(event.id, changes);
     });
 
     this.socket.on(SocketEvents.STAR_DELETE, (event: { id: string; userId: string }) => {
-      useStarStore.getState().removeOne(event.id);
+      useStarStore.getState().removeStar(event.id);
       console.log("[websocket]: Star deleted:", event);
     });
 

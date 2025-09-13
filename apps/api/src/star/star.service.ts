@@ -31,68 +31,50 @@ export class StarService {
   }
 
   async create(createStarDto: CreateStarDto, userId: string) {
-    const { docId, subspaceId } = createStarDto;
+    const { docId } = createStarDto;
 
-    // Check if user has access to the document or subspace
-    if (docId) {
-      const doc = await this.prismaService.doc.findUnique({
-        where: { id: docId },
-        include: {
-          workspace: {
-            include: {
-              members: {
-                where: { userId },
-              },
+    // Check if user has access to the document
+    const doc = await this.prismaService.doc.findUnique({
+      where: { id: docId },
+      include: {
+        workspace: {
+          include: {
+            members: {
+              where: { userId },
             },
           },
         },
-      });
+      },
+    });
 
-      if (!doc || doc.workspace.members.length === 0) {
-        throw new ApiException(ErrorCodeEnum.DocNotFoundOrNoAccess);
-      }
+    if (!doc || doc.workspace.members.length === 0) {
+      throw new ApiException(ErrorCodeEnum.DocNotFoundOrNoAccess);
     }
 
-    if (subspaceId) {
-      const subspace = await this.prismaService.subspace.findUnique({
-        where: { id: subspaceId },
-        include: {
-          workspace: {
-            include: {
-              members: {
-                where: { userId },
-              },
-            },
-          },
-        },
-      });
-
-      if (!subspace || subspace.workspace.members.length === 0) {
-        throw new ApiException(ErrorCodeEnum.SubspaceNotFoundOrNoAccess);
-      }
-    }
-
-    // Check if star already exists
+    // Check if star already exists - return existing star if found (idempotent)
     const existingStar = await this.prismaService.star.findFirst({
       where: {
         userId,
-        docId: docId || null,
-        subspaceId: subspaceId || null,
+        docId,
       },
     });
 
     if (existingStar) {
-      throw new ApiException(ErrorCodeEnum.StarAlreadyExists);
+      // Return existing star instead of throwing error (idempotent behavior)
+      return {
+        data: presentStar(existingStar),
+        permissions: {},
+      };
     }
 
     const star = await this.prismaService.star.create({
       data: {
         userId,
         docId,
-        subspaceId,
       },
     });
 
+    // Only emit event for new stars
     await this.emitStarEvent(BusinessEvents.STAR_CREATE, star, userId);
 
     return {
@@ -102,22 +84,13 @@ export class StarService {
   }
 
   private async reorderStarredItems(userId: string, workspaceId: string): Promise<Record<string, string | null>> {
-    // Fetch user's starred items with their current order, filtered by workspace
+    // Fetch user's starred documents with their current order, filtered by workspace
     const starredItems = await this.prismaService.star.findMany({
       where: {
         userId,
-        OR: [
-          {
-            doc: {
-              workspaceId,
-            },
-          },
-          {
-            subspace: {
-              workspaceId,
-            },
-          },
-        ],
+        doc: {
+          workspaceId,
+        },
       },
       orderBy: [{ index: "asc" }, { updatedAt: "desc" }],
     });
@@ -142,10 +115,8 @@ export class StarService {
 
     // Sort items based on document timestamps
     const sortedItems = starredItems.sort((a, b) => {
-      if (!a.docId || !b.docId) return 0;
-
-      const timeA = docTimestampMap.get(a.docId) ?? 0;
-      const timeB = docTimestampMap.get(b.docId) ?? 0;
+      const timeA = docTimestampMap.get(a.docId!) ?? 0;
+      const timeB = docTimestampMap.get(b.docId!) ?? 0;
 
       return timeB - timeA;
     });
@@ -197,22 +168,13 @@ export class StarService {
       throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
     }
 
-    // Fetch starred items with current ordering, filtered by workspace
+    // Fetch starred documents with current ordering, filtered by workspace
     const starredItems = await this.prismaService.star.findMany({
       where: {
         userId,
-        OR: [
-          {
-            doc: {
-              workspaceId,
-            },
-          },
-          {
-            subspace: {
-              workspaceId,
-            },
-          },
-        ],
+        doc: {
+          workspaceId,
+        },
       },
       orderBy: [{ index: "asc" }, { updatedAt: "desc" }],
     });

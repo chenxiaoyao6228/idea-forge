@@ -6,8 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import useStarStore from "@/stores/star";
-import { StarEntity } from "@/stores/star";
+import { useStars, StarEntity } from "@/stores/star-store";
 import { DocumentLink } from "./document-link";
 
 interface StarLinkProps {
@@ -21,15 +20,15 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
   const { docId: activeDocumentId } = useParams();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const removeStar = useStarStore((state) => state.remove);
-  const getNavigationNodeForStar = useStarStore((state) => state.getNavigationNodeForStar);
+  // ✅ Clean hook usage - business logic extracted
+  const { deleteStar, getNavigationNodeForStar } = useStars();
 
-  // Get navigation node for this star
+  // ✅ Computed navigation node
   const navigationNode = useMemo(() => {
     return getNavigationNodeForStar(star);
   }, [star, getNavigationNodeForStar]);
 
-  // Auto-expand if contains active document
+  // ✅ Auto-expand logic extracted to useMemo
   const shouldExpand = useMemo(() => {
     if (!activeDocumentId || !navigationNode) return false;
 
@@ -54,6 +53,7 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
     }
   }, [shouldExpand]);
 
+  // ✅ Simple UI event handlers
   const handleDisclosureClick = useCallback(
     (ev?: React.MouseEvent<HTMLButtonElement>) => {
       ev?.preventDefault();
@@ -64,12 +64,8 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
   );
 
   const handleUnStar = useCallback(async () => {
-    try {
-      await removeStar(star.id);
-    } catch (error) {
-      console.error("Failed to unStar:", error);
-    }
-  }, [removeStar, star.id]);
+    await deleteStar.execute(star.id);
+  }, [deleteStar, star.id]);
 
   // Don't render if no navigation node found
   if (!navigationNode) {
@@ -89,7 +85,7 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={handleUnStar} className="text-destructive focus:text-destructive">
+          <DropdownMenuItem onClick={handleUnStar} disabled={deleteStar.isLoading} className="text-destructive focus:text-destructive">
             {t("Remove star")}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -119,7 +115,7 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
       {hasDocuments && isExpanded && !isDraggingOverlay && (
         <div className="ml-4">
           {navigationNode.children?.map((node, index) => (
-            <DocumentLink key={node.id} node={node} depth={1} index={index} parentId={star.docId || null} subspaceId={star.subspaceId || null} />
+            <DocumentLink key={node.id} node={node} depth={1} index={index} parentId={star.docId || null} subspaceId={null} />
           ))}
         </div>
       )}

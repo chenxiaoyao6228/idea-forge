@@ -3,24 +3,22 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import useStarStore from "@/stores/star";
-import useWorkspaceStore from "@/stores/workspace";
+import { useStars } from "@/stores/star-store";
 import { useDragAndDropContext } from "./hooks/use-dnd";
 import { DraggableStarContainer } from "./components/draggable-star-container";
 
 export default function StarsArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
-  const { fetchList, orderedStars } = useStarStore();
+
+  const { orderedStars, fetchStars } = useStars();
   const { activeId } = useDragAndDropContext();
 
   useEffect(() => {
-    fetchList();
-  }, []);
+    fetchStars.execute();
+  }, []); // Only run once on mount
 
   if (!orderedStars.length) return null;
-
-  console.log("orderedStars", orderedStars);
 
   return (
     <SidebarGroup>

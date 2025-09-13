@@ -5,7 +5,7 @@ import { CoverImage, DocTypeSchema, DocVisibilitySchema, SubspaceTypeSchema } fr
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useSubSpaceStore, { getPersonalSubspace } from "./subspace";
-import useStarStore from "./star";
+import { useStars } from "./star-store";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import useWorkspaceStore from "./workspace";
 import useAbilityStore from "./ability";
@@ -95,8 +95,6 @@ interface Action {
   findDescendants: (documentId: string) => DocumentEntity[];
 
   // Existing helper methods
-  star: (documentId: string, index?: string) => Promise<void>;
-  unStar: (documentId: string) => Promise<void>;
   isArchived: (doc: DocumentEntity) => boolean;
   isDeleted: (doc: DocumentEntity) => boolean;
   isDraft: (doc: DocumentEntity) => boolean;
@@ -109,7 +107,6 @@ interface Action {
 
   getPersonalRootDocuments: () => NavigationNode[];
   getPathToDocumentInMyDocs: (documentId: string) => NavigationNode[];
-  fetchMyDocsChildren: (parentId: string | null) => Promise<void>;
   createMyDocsDocument: (options: {
     title: string;
     parentId?: string | null;
@@ -604,31 +601,6 @@ const useDocumentStore = create<StoreState>()(
           set({ activeDocumentId: id });
         },
 
-        star: async (documentId, index?) => {
-          try {
-            await useStarStore.getState().create({
-              docId: documentId,
-              subspaceId: null,
-              index,
-            });
-          } catch (error) {
-            console.error("Failed to star document:", error);
-            throw error;
-          }
-        },
-
-        unStar: async (documentId) => {
-          try {
-            const star = useStarStore.getState().getStarByTarget(documentId);
-            if (star) {
-              await useStarStore.getState().remove(star.id);
-            }
-          } catch (error) {
-            console.error("Failed to unStar document:", error);
-            throw error;
-          }
-        },
-
         getPersonalRootDocuments: () => {
           const personalSubspace = getPersonalSubspace(useSubSpaceStore.getState());
           return personalSubspace?.navigationTree || [];
@@ -673,10 +645,6 @@ const useDocumentStore = create<StoreState>()(
           }
 
           return path;
-        },
-
-        fetchMyDocsChildren: async (parentId) => {
-          // No-op: navigationTree is already loaded with subspace
         },
 
         createMyDocsDocument: async ({ title, parentId = null }) => {

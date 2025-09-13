@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { PlusIcon, MoreHorizontal, EditIcon, StarIcon, Layers } from "lucide-react";
+import { PlusIcon, MoreHorizontal, EditIcon, Layers } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -8,7 +8,6 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
-import useStarStore from "@/stores/star";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DraggableDocumentContainer } from "./draggable-document-container";
@@ -16,6 +15,7 @@ import { EditableTitle } from "./editable-title";
 import { subspaceApi } from "@/apis/subspace";
 import { addSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
 import { settingModal } from "../../settings/setting-modal";
+import { useRefCallback } from "@/hooks/use-ref-callback";
 
 interface SubspaceLinkProps {
   subspace: SubspaceEntity;
@@ -42,9 +42,6 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
 
   const editableTitleRef = React.useRef<{ setIsEditing: (editing: boolean) => void }>(null);
 
-  const star = useSubSpaceStore((state) => state.star);
-  const unStar = useSubSpaceStore((state) => state.unStar);
-  const isStarred = useStarStore((state) => state.isStarred(undefined, subspaceId));
   const leaveSubspace = useSubSpaceStore((state) => state.leaveSubspace);
 
   // Auto-expand if contains active document
@@ -79,31 +76,28 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     [isExpanded],
   );
 
-  const handleCreateDocument = useCallback(
-    async (ev: React.MouseEvent) => {
-      ev.preventDefault();
-      ev.stopPropagation();
+  const handleCreateDocument = useRefCallback(async (ev: React.MouseEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
 
-      try {
-        setIsCreating(true);
-        const newDocId = await createDocument({
-          // FIXME:
-          title: "Doc" + Math.floor(Math.random() * 1000),
-          parentId: null,
-          subspaceId,
-        });
+    try {
+      setIsCreating(true);
+      const newDocId = await createDocument({
+        // FIXME:
+        title: "Doc" + Math.floor(Math.random() * 1000),
+        parentId: null,
+        subspaceId,
+      });
 
-        setIsExpanded(true);
+      setIsExpanded(true);
 
-        navigate(`/${newDocId}`);
-      } catch (error) {
-        console.error("Failed to create document:", error);
-      } finally {
-        setIsCreating(false);
-      }
-    },
-    [createDocument, subspaceId],
-  );
+      navigate(`/${newDocId}`);
+    } catch (error) {
+      console.error("Failed to create document:", error);
+    } finally {
+      setIsCreating(false);
+    }
+  });
 
   const handleSubspaceSettings = useCallback(() => {
     settingModal({

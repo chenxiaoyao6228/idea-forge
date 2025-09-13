@@ -14,7 +14,7 @@ import SharedWithMe from "./shared-with-me";
 import SubspacesArea from "./subspaces";
 import MyDocsArea from "./ my-docs";
 import React from "react";
-import { Search as SearchIcon, Download, Users, Trash2, Box, Inbox } from "lucide-react";
+import { Search as SearchIcon, Download, Users, Trash2, Box, Inbox, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { settingModal } from "@/pages/main/settings/setting-modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -33,7 +33,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
             <WorkspaceSwitcher />
 
             {/* Quick start */}
-            <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden p-1">
               <div className="flex items-center justify-between  w-full">
                 {/* Search */}
                 <div className="flex items-center justify-center flex-1">
@@ -73,20 +73,20 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                   </TooltipProvider>
                 </div>
 
-                {/* Workspace Members */}
+                {/* Workspace Settings */}
                 <div className="flex items-center justify-center flex-1">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <SidebarMenuButton
-                          onClick={() => settingModal({ tab: "members" })}
+                          onClick={() => settingModal({ tab: "workspace" })}
                           className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
                         >
-                          <Users className="h-4 w-4" />
+                          <Settings className="h-4 w-4" />
                         </SidebarMenuButton>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{t("Members")}</p>
+                        <p>{t("Settings")}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

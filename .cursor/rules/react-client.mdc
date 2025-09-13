@@ -588,6 +588,7 @@ export function useDocuments() {
 6. **Use query invalidation for cache updates**
 7. **Keep hooks focused and single-purpose**
 8. **Use proper cleanup in useEffect**
+9. **MANDATORY: Use custom `useRefCallback` hook instead of `useCallback` to avoid stale closure issues**
 
 ## Styling and UI
 
@@ -987,7 +988,7 @@ export function App() {
 
 1. **Use React.memo for expensive components**
 2. **Use useMemo for expensive calculations**
-3. **Use useCallback for stable references**
+3. **MANDATORY: Use useRefCallback instead of useCallback for stable references**
 4. **Implement lazy loading for routes and components**
 5. **Use proper key props for lists**
 6. **Avoid unnecessary re-renders**

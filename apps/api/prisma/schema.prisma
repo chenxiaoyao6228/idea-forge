@@ -162,15 +162,15 @@ enum UserStatus {
 }
 
 model Workspace {
-  id              String   @id @default(cuid())
-  name            String
-  description     String?
-  avatar          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  memberSubspaceCreate Boolean  @default(false)
-  settings Json?
+  memberSubspaceCreate Boolean @default(false)
+  settings             Json?
 
   // relations
   subspaces    Subspace[]
@@ -271,9 +271,9 @@ model Subspace {
   type        SubspaceType @default(PUBLIC)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  archivedAt  DateTime?   
-  
-  settings    Json?
+  archivedAt  DateTime?
+
+  settings Json?
 
   navigationTree Json?
   index          String?
@@ -283,9 +283,6 @@ model Subspace {
   workspaceId String
   docs        Doc[]
   members     SubspaceMember[]
-
-  // star relationships
-  stars Star[] // Stars for this subspace
 }
 
 model SubspaceMember {
@@ -488,18 +485,13 @@ model Star {
   updatedAt DateTime @updatedAt
 
   // Relations 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     String
-  doc        Doc?      @relation(fields: [docId], references: [id], onDelete: Cascade)
-  docId      String?
-  subspace   Subspace? @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
-  subspaceId String?
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  doc    Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
+  docId  String
 
-  // Ensure each user can only star a resource once
+  // Ensure each user can only star a document once
   @@unique([userId, docId])
-  @@unique([userId, subspaceId])
-  // Ensure docId and subspaceId cannot both be null
-  @@unique([docId, subspaceId])
 }
 
 enum WorkspaceRole {

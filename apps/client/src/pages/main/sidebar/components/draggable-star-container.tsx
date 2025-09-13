@@ -13,7 +13,6 @@ export function DraggableStarContainer({ star, index, ...props }) {
       type: "star",
       id: star.id,
       docId: star.docId,
-      subspaceId: star.subspaceId,
     },
   });
 

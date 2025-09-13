@@ -35,9 +35,5 @@ export default function Main() {
     content = <Doc />;
   }
 
-  return (
-    <>
-      <SidebarContainer content={content} />
-    </>
-  );
+  return <SidebarContainer content={content} />;
 }

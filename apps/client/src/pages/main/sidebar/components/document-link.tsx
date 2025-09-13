@@ -1,13 +1,14 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { EditIcon, FileIcon, FolderIcon, PlusIcon, StarIcon } from "lucide-react";
+import { EditIcon, PlusIcon, StarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavigationNode } from "@idea/contracts";
 import useDocumentStore from "@/stores/document";
 import { SidebarLink } from "./sidebar-link";
 import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
-import useStarStore from "@/stores/star";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useStars } from "@/stores/star-store";
+import { useEffect, useMemo, useState } from "react";
+import { useRefCallback } from "@/hooks/use-ref-callback";
 import { useNavigate } from "react-router-dom";
 import { EditableTitle } from "./editable-title";
 import { documentApi } from "@/apis/document";
@@ -32,46 +33,42 @@ export function DocumentLink(props: DocumentLinkProps) {
 
   const createDocument = useDocumentStore((state) => state.createDocument);
   const fetchChildren = useDocumentStore((state) => state.fetchChildren);
-  const fetchNavigationTree = useSubSpaceStore((state) => state.fetchNavigationTree);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const isActiveDocument = activeDocumentId === node.id;
   const hasChildren = node.children && node.children.length > 0;
 
+  const { checkStarred, toggleStar, isToggling } = useStars();
+
   // Load children details when document is active and has children in navigation tree
-  // This ensures that child documents are fetched from the API and the navigation tree is updated
-  // Similar to Outline's implementation where children are loaded on expand
-  useEffect(() => {
-    if (isActiveDocument) {
-      const fetchData = async () => {
-        try {
-          // Check if children are already loaded to avoid unnecessary API calls
-          const existingDocs = useDocumentStore.getState().entities;
-          const hasLoadedChildren = Object.values(existingDocs).some((doc) => doc.parentId === node.id);
+  const fetchChildrenData = useRefCallback(async () => {
+    if (!isActiveDocument) return;
 
-          if (!hasLoadedChildren) {
-            // Fetch children documents
-            await fetchChildren({ parentId: node.id, subspaceId: subspaceId || null });
-          }
-        } catch (error) {
-          console.error("Failed to fetch children or refresh navigation tree:", error);
-        }
-      };
+    try {
+      // Check if children are already loaded to avoid unnecessary API calls
+      const existingDocs = useDocumentStore.getState().entities;
+      const hasLoadedChildren = Object.values(existingDocs).some((doc) => doc.parentId === node.id);
 
-      void fetchData();
+      if (!hasLoadedChildren) {
+        // Fetch children documents
+        await fetchChildren({ parentId: node.id, subspaceId: subspaceId || null });
+      }
+    } catch (error) {
+      console.error("Failed to fetch children or refresh navigation tree:", error);
     }
-  }, [fetchChildren, fetchNavigationTree, node.id, hasChildren, isActiveDocument, subspaceId]);
+  });
+
+  useEffect(() => {
+    void fetchChildrenData();
+  }, [isActiveDocument, fetchChildrenData]);
 
   // auto expand state sync
-  const getPathToDocument = useSubSpaceStore((state) => state.getPathToDocument);
-  const pathFinder = props.getPathToDocument || getPathToDocument;
+  const subspace = useSubSpaceStore((state) => (subspaceId ? state.entities[subspaceId] : undefined));
 
   const showChildren = useMemo(() => {
     if (!hasChildren || !activeDocumentId) return false;
 
-    // Get the subspace entity
-    const subspace = subspaceId ? useSubSpaceStore.getState().entities[subspaceId] : undefined;
     const isPersonal = subspace?.type === "PERSONAL";
 
     if (isPersonal && props.getPathToDocument) {
@@ -87,7 +84,7 @@ export function DocumentLink(props: DocumentLinkProps) {
       return pathIds.includes(node.id) || isActiveDocument;
     }
     return isActiveDocument;
-  }, [hasChildren, activeDocumentId, node.id, isActiveDocument, pathFinder, subspaceId, props.getPathToDocument]);
+  }, [hasChildren, activeDocumentId, node.id, isActiveDocument, subspace?.type, subspaceId, props.getPathToDocument]);
 
   // auto expand state sync
   useEffect(() => {
@@ -96,93 +93,74 @@ export function DocumentLink(props: DocumentLinkProps) {
     }
   }, [showChildren]);
 
-  const handleDisclosureClick = useCallback(
-    (ev?: React.MouseEvent<HTMLButtonElement>) => {
-      ev?.preventDefault();
-      ev?.stopPropagation();
-      setIsExpanded(!isExpanded);
-    },
-    [isExpanded],
-  );
+  const handleDisclosureClick = useRefCallback((ev?: React.MouseEvent<HTMLButtonElement>) => {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    setIsExpanded(!isExpanded);
+  });
 
-  const handleCreateChild = useCallback(
-    async (ev: React.MouseEvent) => {
-      ev.preventDefault();
-      ev.stopPropagation();
+  const handleCreateChild = useRefCallback(async (ev: React.MouseEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
 
-      try {
-        setIsCreating(true);
-        const newDocId = await createDocument({
-          // FIXME: remove the random number
-          title: "New Doc-" + Math.floor(Math.random() * 1000),
-          parentId: node.id,
-          subspaceId: subspaceId || null,
-        });
-        setIsExpanded(true);
+    try {
+      setIsCreating(true);
+      const newDocId = await createDocument({
+        // FIXME: remove the random number
+        title: "New Doc-" + Math.floor(Math.random() * 1000),
+        parentId: node.id,
+        subspaceId: subspaceId || null,
+      });
+      setIsExpanded(true);
 
-        navigate(`/${newDocId}`);
-      } catch (error) {
-        console.error("Failed to create document:", error);
-      } finally {
-        setIsCreating(false);
-      }
-    },
-    [createDocument, node.id, subspaceId],
-  );
+      navigate(`/${newDocId}`);
+    } catch (error) {
+      console.error("Failed to create document:", error);
+    } finally {
+      setIsCreating(false);
+    }
+  });
 
   const editableTitleRef = React.useRef<{ setIsEditing: (editing: boolean) => void }>(null);
-  const handleTitleChange = useCallback(
-    async (value: string) => {
-      try {
-        await documentApi.update(node.id, { title: value });
-      } catch (error) {
-        console.error("Failed to update document title:", error);
-      }
-    },
-    [node.id],
-  );
+  const handleTitleChange = useRefCallback(async (value: string) => {
+    try {
+      await documentApi.update(node.id, { title: value });
+    } catch (error) {
+      console.error("Failed to update document title:", error);
+      // TODO: Show user-friendly error message and potentially revert the title
+      // Consider using a toast notification or inline error state
+    }
+  });
 
-  const handleRename = useCallback(() => {
+  const handleRename = useRefCallback(() => {
     editableTitleRef.current?.setIsEditing(true);
-  }, []);
+  });
 
-  const star = useDocumentStore((state) => state.star);
-  const unStar = useDocumentStore((state) => state.unStar);
-  const isStarred = useStarStore((state) => state.isStarred(node.id));
+  // ✅ Simple star handler using action hook
+  const handleStar = useRefCallback(async (ev: React.MouseEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    await toggleStar(node.id);
+  });
 
-  const handleStar = useCallback(
-    async (ev: React.MouseEvent) => {
-      ev.preventDefault();
-      ev.stopPropagation();
+  const isDocStarred = checkStarred(node.id);
 
-      try {
-        if (isStarred) {
-          await unStar(node.id);
-        } else {
-          await star(node.id);
-        }
-      } catch (error) {
-        console.error("Failed to toggle star:", error);
-      }
-    },
-    [isStarred, node.id, node.title, star, unStar],
-  );
-
-  // const icon = hasChildren ? <FolderIcon className="h-4 w-4" /> : <FileIcon className="h-4 w-4" />;
-
-  const menu = (
-    <>
-      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleStar} title={isStarred ? "Remove star" : "Add star"}>
-        <StarIcon className={`h-3 w-3 ${isStarred ? "text-yellow-500" : ""}`} />
-      </Button>
-      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating}>
-        <PlusIcon className="h-3 w-3" />
-      </Button>
-      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleRename} disabled={isEditing}>
-        <EditIcon className="h-3 w-3" />
-      </Button>
-      {/* TODO:  more operations  */}
-    </>
+  const menu = useMemo(
+    () => (
+      <>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleStar} disabled={isToggling} title={isDocStarred ? "Remove star" : "Add star"}>
+          <StarIcon className={`h-3 w-3 ${isDocStarred ? "text-yellow-500" : ""}`} />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating}>
+          <PlusIcon className="h-3 w-3" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleRename} disabled={isEditing}>
+          <EditIcon className="h-3 w-3" />
+        </Button>
+        {/* TODO:  more operations  */}
+      </>
+    ),
+    [handleStar, handleCreateChild, handleRename, isToggling, isCreating, isEditing, isDocStarred],
   );
 
   const isExpandedAndNotDragging = isExpanded && !isDragging;
@@ -191,7 +169,6 @@ export function DocumentLink(props: DocumentLinkProps) {
     <div className="document-link">
       <SidebarLink
         to={`/${node.id}`}
-        // icon={<FolderIcon className="h-4 w-4" />}
         expanded={hasChildren ? isExpandedAndNotDragging : undefined}
         onDisclosureClick={hasChildren ? handleDisclosureClick : undefined}
         depth={depth}

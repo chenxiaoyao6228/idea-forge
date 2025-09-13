@@ -5,14 +5,9 @@ import { Star } from "./prisma-type-generated";
 // ===== DTO/Response =====
 
 // Create star
-export const createStarSchema = z
-  .object({
-    docId: z.string().cuid().optional(),
-    subspaceId: z.string().cuid().nullable(),
-  })
-  .refine((data) => data.docId || data.subspaceId, {
-    message: "Either docId or subspaceId must be provided",
-  });
+export const createStarSchema = z.object({
+  docId: z.string().cuid(),
+});
 
 export type CreateStarDto = z.infer<typeof createStarSchema>;
 

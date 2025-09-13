@@ -20,7 +20,6 @@ export default function Doc() {
   const activeDocumentId = useCurrentDocumentId();
   const collabToken = useUserStore((s) => s.userInfo?.collabToken);
   const currentDocument = useCurrentDocument();
-  const isCurrentDocLoading = useDocumentStore((state) => state.isFetching);
 
   const isHomeDoc = activeDocumentId === "0";
 
@@ -33,10 +32,6 @@ export default function Doc() {
   const hasNoPermission = permission === "NONE";
   const hasEditPermission = permission === "EDIT";
   const isMyDoc = currentDocument?.ownerId === userId;
-
-  if (isCurrentDocLoading) {
-    return <Loading fullScreen size="lg" />;
-  }
 
   if (isHomeDoc) {
     return <DocHome />;
