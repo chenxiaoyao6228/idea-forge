@@ -11,7 +11,7 @@ import { ChevronDown, ChevronRight, MoreVertical, X } from "lucide-react";
 import { groupApi } from "@/apis/group";
 import { userApi } from "@/apis/user";
 import type { User } from "@idea/contracts";
-import { confirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
 
 const ManageGroupMembersModal = ({
   open,
@@ -123,7 +123,7 @@ const GroupManagementPanel = () => {
   };
 
   const handleDisband = async (id: string) => {
-    confirmModal({
+    showConfirmModal({
       title: t("Are you sure to disband this group?"),
       description: t("This action cannot be undone."),
       hideCancel: false,

@@ -1,16 +1,13 @@
 import { create } from "zustand";
-import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { starApi } from "@/apis/star";
-import { useRequest } from "@/hooks/use-request";
+import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useSubSpaceStore from "./subspace";
 import useSharedWithMeStore from "./shared-with-me";
 import useWorkspaceStore from "./workspace";
 import { NavigationNode, NavigationNodeType, CreateStarDto } from "@idea/contracts";
-
-const STORE_NAME = "starStore";
 
 export interface StarEntity {
   id: string;
@@ -28,48 +25,39 @@ const useStarStore = create<{
   updateStar: (id: string, changes: Partial<StarEntity>) => void;
   removeStar: (id: string) => void;
   upsertStar: (star: StarEntity) => void;
-}>()(
-  subscribeWithSelector(
-    devtools(
-      (set) => ({
-        stars: [],
+}>((set) => ({
+  stars: [],
 
-        setStars: (stars) => set({ stars }),
+  setStars: (stars) => set({ stars }),
 
-        addStar: (star) =>
-          set((state) => ({
-            stars: [...state.stars, star],
-          })),
+  addStar: (star) =>
+    set((state) => ({
+      stars: [...state.stars, star],
+    })),
 
-        updateStar: (id, changes) =>
-          set((state) => ({
-            stars: state.stars.map((star) => (star.id === id ? { ...star, ...changes } : star)),
-          })),
+  updateStar: (id, changes) =>
+    set((state) => ({
+      stars: state.stars.map((star) => (star.id === id ? { ...star, ...changes } : star)),
+    })),
 
-        removeStar: (id) =>
-          set((state) => ({
-            stars: state.stars.filter((star) => star.id !== id),
-          })),
+  removeStar: (id) =>
+    set((state) => ({
+      stars: state.stars.filter((star) => star.id !== id),
+    })),
 
-        upsertStar: (star) =>
-          set((state) => {
-            const existingIndex = state.stars.findIndex((s) => s.id === star.id);
-            if (existingIndex >= 0) {
-              // Update existing
-              const newStars = [...state.stars];
-              newStars[existingIndex] = star;
-              return { stars: newStars };
-            }
-            // Add new
-            return { stars: [...state.stars, star] };
-          }),
-      }),
-      {
-        name: STORE_NAME,
-      },
-    ),
-  ),
-);
+  upsertStar: (star) =>
+    set((state) => {
+      const existingIndex = state.stars.findIndex((s) => s.id === star.id);
+      if (existingIndex >= 0) {
+        // Update existing
+        const newStars = [...state.stars];
+        newStars[existingIndex] = star;
+        return { stars: newStars };
+      }
+      // Add new
+      return { stars: [...state.stars, star] };
+    }),
+}));
 
 // ✅ Consolidated data access and operations hook
 export const useStars = () => {
@@ -124,7 +112,8 @@ export const useStars = () => {
         toast.error("Failed to fetch stars", {
           description: error.message,
         }),
-      enabled: !!currentWorkspace,
+      ready: !!currentWorkspace,
+      manual: true,
     },
   );
 
@@ -159,6 +148,7 @@ export const useStars = () => {
         toast.error("Failed to star document", {
           description: error.message,
         }),
+      manual: true,
     },
   );
 
@@ -176,6 +166,7 @@ export const useStars = () => {
         toast.error("Failed to unstar document", {
           description: error.message,
         }),
+      manual: true,
     },
   );
 
@@ -189,9 +180,9 @@ export const useStars = () => {
 
     if (starred) {
       const star = findStar(docId);
-      if (star) await deleteStar.execute(star.id);
+      if (star) await deleteStar.run(star.id);
     } else {
-      await createStar.execute({ docId });
+      await createStar.run({ docId });
     }
   });
 
@@ -233,7 +224,7 @@ export const useStars = () => {
     toggleStar,
     getNavigationNodeForStar,
     // Loading states
-    isToggling: createStar.isLoading || deleteStar.isLoading,
+    isToggling: createStar.loading || deleteStar.loading,
   };
 };
 

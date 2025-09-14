@@ -15,7 +15,7 @@ export default function StarsArea() {
   const { activeId } = useDragAndDropContext();
 
   useEffect(() => {
-    fetchStars.execute();
+    fetchStars.run();
   }, []); // Only run once on mount
 
   if (!orderedStars.length) return null;

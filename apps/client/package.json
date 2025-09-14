@@ -20,6 +20,7 @@
     "i18n:extract": "i18next --config i18next-parser.config.js"
   },
   "dependencies": {
+    "@ahooksjs/use-request": "^2.8.15",
     "@casl/ability": "^6.7.3",
     "@casl/prisma": "^1.5.1",
     "@casl/react": "^5.0.0",
@@ -54,7 +55,6 @@
     "@remix-run/router": "^1.21.0",
     "@sentry/react": "^8.54.0",
     "@sentry/vite-plugin": "^3.1.2",
-    "@tanstack/react-query": "^5.76.1",
     "@tanstack/react-virtual": "^3.13.9",
     "@tiptap/core": "^2.23.1",
     "@tiptap/extension-blockquote": "^2.9.1",

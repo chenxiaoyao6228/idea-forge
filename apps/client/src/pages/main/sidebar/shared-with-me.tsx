@@ -16,7 +16,6 @@ export default function SharedWithMe() {
   const { t } = useTranslation();
   const { userInfo } = useUserStore();
 
-  // Use the new Zustand store instead of react-query
   const {
     documents: sharedDocuments,
     isLoading,

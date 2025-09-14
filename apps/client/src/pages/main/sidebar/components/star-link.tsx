@@ -64,7 +64,7 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
   );
 
   const handleUnStar = useCallback(async () => {
-    await deleteStar.execute(star.id);
+    await deleteStar.run(star.id);
   }, [deleteStar, star.id]);
 
   // Don't render if no navigation node found
@@ -85,7 +85,7 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={handleUnStar} disabled={deleteStar.isLoading} className="text-destructive focus:text-destructive">
+          <DropdownMenuItem onClick={handleUnStar} disabled={deleteStar.loading} className="text-destructive focus:text-destructive">
             {t("Remove star")}
           </DropdownMenuItem>
         </DropdownMenuContent>

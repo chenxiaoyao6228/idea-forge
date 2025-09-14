@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import useRequest from "@ahooksjs/use-request";
 import { useInView } from "react-intersection-observer";
 import * as React from "react";
 import { Card } from "@/components/ui/card";
@@ -30,43 +30,51 @@ type Props<T extends InfiniteListItem> = {
 export function InfiniteList<T extends InfiniteListItem>({ queryKey, fetchFn, renderItem, heading, empty, className, limit = 25 }: Props<T>) {
   const { ref, inView } = useInView();
   const { t } = useTranslation();
+  const [page, setPage] = React.useState(1);
+  const [allData, setAllData] = React.useState<T[]>([]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
-    queryKey,
-    queryFn: async ({ pageParam = 1 }) => {
+  const { data, loading, error, run } = useRequest(
+    async (pageNum: number) => {
       const result = await fetchFn({
-        page: pageParam,
+        page: pageNum,
         limit,
         sortBy: "createdAt",
         sortOrder: "desc",
       });
       return result;
     },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      const totalPages = Math.ceil(lastPage.pagination.total / lastPage.pagination.limit);
-      const nextPage = lastPage.pagination.page + 1;
-      return nextPage <= totalPages ? nextPage : undefined;
+    {
+      manual: true,
+      onSuccess: (result) => {
+        if (result.pagination.page === 1) {
+          setAllData(result.data);
+        } else {
+          setAllData((prev) => [...prev, ...result.data]);
+        }
+      },
     },
-  });
+  );
 
   React.useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage();
-    }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+    run(1);
+  }, [run]);
 
-  if (isLoading) {
+  React.useEffect(() => {
+    if (inView && data && data.pagination.page < Math.ceil(data.pagination.total / data.pagination.limit)) {
+      run(page + 1);
+      setPage((prev) => prev + 1);
+    }
+  }, [inView, data, page, run]);
+
+  if (loading && allData.length === 0) {
     return (
       <div className={className}>
         {Array.from({ length: 3 })
           .map((_, index) => ({ id: index.toString() }))
           .map((item) => (
-            <>
-              <Card key={`skeleton-${item.id}`} className="p-4 mb-4">
-                <Skeleton className="h-6 w-full" />
-              </Card>
-            </>
+            <Card key={`skeleton-${item.id}`} className="p-4 mb-4">
+              <Skeleton className="h-6 w-full" />
+            </Card>
           ))}
       </div>
     );
@@ -80,18 +88,16 @@ export function InfiniteList<T extends InfiniteListItem>({ queryKey, fetchFn, re
     );
   }
 
-  const items = data?.pages.flatMap((page) => page.data) ?? [];
-
-  if (items.length === 0) {
+  if (allData.length === 0) {
     return empty || null;
   }
 
   return (
     <div className={className}>
       {heading}
-      {items.map((item, index) => renderItem(item, index))}
+      {allData.map((item, index) => renderItem(item, index))}
       <div ref={ref} style={{ height: "1px" }}>
-        {isFetchingNextPage && (
+        {loading && (
           <Card className="p-4">
             <Skeleton className="h-6 w-full" />
           </Card>

@@ -22,27 +22,26 @@ This document serves as the definitive guide for code style, patterns, and conve
 - [Testing Patterns](mdc:#testing-patterns)
 - [Performance Optimization](mdc:#performance-optimization)
 - [Modal Management](mdc:#modal-management)
-- [Code Quality and Linting](mdc:#code-quality-and-linting)
 
 ## Project Overview
 
-This is a modern React application built with:
+This is a modern Notion-like note taking React application built with:
 
 - **React 18.x** - UI library with concurrent features
 - **TypeScript 5.x** - Strict type checking enabled
 - **Vite** - Fast build tool and dev server
 - **React Router** - Client-side routing
+- **React Use** - Primitive react hook sets
+- **@ahooksjs/use-request** - Async request management
 - **Zustand** - Lightweight state management
-- **TanStack Query** - Server state management
 - **TipTap** - Rich text editor with collaboration
 - **Yjs** - Real-time collaboration
-- **Radix UI** - Accessible component primitives
 - **Shadcn UI** - Component library built on Radix
 - **Tailwind CSS** - Utility-first CSS framework
+- **Socket.io** - Websocket lib
 - **Class Variance Authority (CVA)** - Component variant management
 - **Lucide React** - Icon library
 - **Vitest** - Testing framework
-- **Biome** - Code formatting and linting
 - **react-confirm** - Modal and confirmation dialog management
 
 ## General TypeScript Guidelines
@@ -67,13 +66,9 @@ export function UserCard() {}
 
 // camelCase for variables, functions, methods
 const userName = "john";
-function createUser() {}
-const isLoading = true;
 
 // kebab-case for files and directories
-user - card.tsx;
-use - user - data.ts;
-user - settings.ts;
+'user-data.ts";
 
 // UPPERCASE for constants
 const MAX_RETRY_ATTEMPTS = 3;
@@ -86,24 +81,8 @@ const API_ENDPOINTS = {
 const isLoading = true;
 const hasError = false;
 const canDelete = user.role === "admin";
-```
-
-### Import Organization
-
-```typescript
-// 1. React and external libraries
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-
-// 2. Internal imports with absolute paths
-import { useUserStore } from "@/stores/user-store";
-import { api } from "@/lib/api";
-import type { User } from "@/types/user";
-
-// 3. Relative imports
-import { UserCard } from "./user-card";
-import { useUserData } from "./hooks/use-user-data";
+// use verb for action
+const checkStar = ()=> {}
 ```
 
 ### TypeScript Conventions
@@ -134,11 +113,6 @@ const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
   event.preventDefault();
   // handle form submission
 };
-
-const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const { value } = event.target;
-  // handle input change
-};
 ```
 
 ## File and Directory Structure
@@ -156,11 +130,6 @@ apps/client/src/
 │   │   ├── button.tsx
 │   │   ├── input.tsx
 │   │   └── dialog.tsx
-│   ├── layout/                 # Layout components
-│   │   ├── header.tsx
-│   │   ├── sidebar.tsx
-│   │   └── footer.tsx
-│   ├── forms/                  # Form components
 │   ├── editor/                 # TipTap editor components
 │   └── collaboration/          # Collaboration components
 ├── pages/                      # Page components
@@ -340,100 +309,14 @@ export function StarLink({ star }: StarLinkProps) {
 4. **Component Focus**: Components should only handle UI rendering and simple state
 5. **Single Responsibility**: Each layer should have a single, clear responsibility
 
-#### Benefits of Separation
-
-- **Testability**: Business logic can be tested independently
-- **Reusability**: Logic can be reused across multiple components
-- **Maintainability**: Changes to business logic don't affect UI code
-- **Performance**: Logic can be optimized without touching UI
-- **Clarity**: Components are easier to understand and modify
-
 ### Functional Component Pattern
-
-```typescript
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useUserStore } from "@/stores/user-store";
-import { api } from "@/lib/api";
-import { confirm } from "react-confirm";
-import type { User } from "@/types/user";
-
-interface UserCardProps {
-  user: User;
-  onEdit?: (user: User) => void;
-  onDelete?: (userId: string) => void;
-}
-
-export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const { currentUser } = useUserStore();
-
-  const handleDelete = async () => {
-    const confirmed = await confirm({
-      title: "Delete User",
-      message:
-        "Are you sure you want to delete this user? This action cannot be undone.",
-      confirmText: "Delete",
-      cancelText: "Cancel",
-      variant: "destructive",
-    });
-
-    if (!confirmed) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await api.delete(`/users/${user.id}`);
-      onDelete?.(user.id);
-    } catch (error) {
-      console.error("Failed to delete user:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="p-4 border rounded-lg shadow-sm">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">
-            {user.firstName} {user.lastName}
-          </h3>
-          <p className="text-sm text-gray-600">{user.email}</p>
-        </div>
-        <div className="flex gap-2">
-          {onEdit && (
-            <Button variant="outline" size="sm" onClick={() => onEdit(user)}>
-              Edit
-            </Button>
-          )}
-          {onDelete && currentUser?.role === "admin" && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              disabled={isLoading}
-            >
-              {isLoading ? "Deleting..." : "Delete"}
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
-### Component Best Practices
 
 1. **Use functional components with hooks**
 2. **Use TypeScript interfaces for props**
 3. **Use descriptive prop names**
 4. **Handle loading and error states**
 5. **Use proper event handling**
-6. **Implement proper accessibility**
+6. **Implement proper accessibility** d
 7. **Use composition over inheritance**
 8. **Keep components focused and single-purpose**
 9. **Use proper error boundaries**
@@ -443,7 +326,184 @@ export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
 13. **Avoid data fetching in components** - Use stores or custom hooks for data management
 14. **Minimize component complexity** - If a component has too much logic, extract it to a store or hook
 
+### Modal Management
+
+**MANDATORY: All modal dialogs, confirmations, and popups MUST use `react-confirm` library. Do NOT use native browser `confirm()`, `alert()`, or custom modal implementations.**
+
+for simple confirmation, use the predefined custom confirm modal
+
+```ts
+// import
+import { showConfirmModal } from "@/components/ui/confirm-modal";
+// usage
+showConfirmModal({
+  type: "alert",
+  confirmVariant: "destructive",
+  title: t("Permanent Delete"),
+  description: t(
+    "Are you sure you want to permanently delete this document? This action cannot be undone."
+  ),
+  confirmText: t("Delete"),
+  cancelText: t("Cancel"),
+  onConfirm: async () => {
+    try {
+      await documentApi.permanentDelete(id);
+      await loadTrashDocuments();
+      toast.success(t("Document deleted permanently"));
+      return true;
+    } catch (error: any) {
+      if (error?.code === ErrorCodeEnum.DocumentNotFound) {
+        // refresh trash documents
+        toast.error(t("Document not found in trash"));
+        await loadTrashDocuments();
+        return false;
+      }
+      toast.error(t("Failed to delete document"));
+      return false;
+    }
+  },
+});
+```
+
 ## State Management
+
+### Hook-Based Store Architecture
+
+**MANDATORY: Use the new hook-based architecture for all state management. This provides better developer experience, maintainability, and WebSocket compatibility.**
+
+#### Architecture Principles
+
+1. **Minimal Store**: Only state and basic mutations
+2. **Root-level CRUD Hooks**: Individual hooks for each operation
+3. **Custom useRequest**: Handle loading states automatically
+4. **Clean Computed Values**: Use React's `useMemo`
+5. **WebSocket Compatible**: Direct store mutations work seamlessly
+6. **Separation of Concerns**: UI logic separate from business logic
+
+#### Store Structure Pattern
+
+```typescript
+// ✅ Minimal store - just state and basic mutations
+const useStarStore = create<{
+  stars: StarEntity[];
+  setStars: (stars: StarEntity[]) => void;
+  addStar: (star: StarEntity) => void;
+  updateStar: (id: string, changes: Partial<StarEntity>) => void;
+  removeStar: (id: string) => void;
+}>((set) => ({
+  stars: [],
+
+  setStars: (stars) => set({ stars }),
+
+  addStar: (star) =>
+    set((state) => ({
+      stars: [...state.stars, star],
+    })),
+
+  updateStar: (id, changes) =>
+    set((state) => ({
+      stars: state.stars.map((star) =>
+        star.id === id ? { ...star, ...changes } : star
+      ),
+    })),
+
+  removeStar: (id) =>
+    set((state) => ({
+      stars: state.stars.filter((star) => star.id !== id),
+    })),
+}));
+```
+
+#### Individual CRUD Hooks Pattern
+
+```typescript
+// ✅ Data access hook with computed values
+export const useStars = () => {
+  const { stars } = useStarStore();
+
+  const orderedStars = useMemo(
+    () => stars.sort((a, b) => (a.index || "").localeCompare(b.index || "")),
+    [stars]
+  );
+
+  const starsBySubspace = useMemo(() => groupBy(stars, "subspaceId"), [stars]);
+
+  const isStarred = useCallback(
+    (docId?: string, subspaceId?: string) => {
+      return stars.some(
+        (star) =>
+          (docId && star.docId === docId) ||
+          (subspaceId && star.subspaceId === subspaceId)
+      );
+    },
+    [stars]
+  );
+
+  return {
+    stars,
+    orderedStars,
+    starsBySubspace,
+    isStarred,
+  };
+};
+
+// ✅ Fetch operation
+export const useFetchStars = () => {
+  const { setStars } = useStarStore();
+  const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
+  const toast = useToast();
+
+  return useRequest(() => starApi.findAll(currentWorkspace.id), {
+    onSuccess: (response) => setStars(response.data.stars),
+    onError: (error) =>
+      toast.error("Failed to fetch stars", {
+        description: error.message,
+      }),
+    enabled: !!currentWorkspace,
+  });
+};
+
+// ✅ Create operation
+export const useCreateStar = () => {
+  const { addStar } = useStarStore();
+  const toast = useToast();
+
+  return useRequest((params: CreateStarDto) => starApi.create(params), {
+    onSuccess: (response) => {
+      addStar(response.data);
+      toast.success("Star created");
+    },
+    onError: (error) =>
+      toast.error("Failed to create star", {
+        description: error.message,
+      }),
+  });
+};
+
+// ✅ High-level hook that combines operations
+export const useStarActions = (docId?: string, subspaceId?: string) => {
+  const { isStarred, findStar } = useStars();
+  const { execute: createStar, isLoading: isCreating } = useCreateStar();
+  const { execute: deleteStar, isLoading: isDeleting } = useDeleteStar();
+
+  const starred = isStarred(docId, subspaceId);
+
+  const toggleStar = useRefCallback(async () => {
+    if (starred) {
+      const star = findStar(docId, subspaceId);
+      if (star) await deleteStar(star.id);
+    } else {
+      await createStar({ docId, subspaceId });
+    }
+  });
+
+  return {
+    isStarred: starred,
+    toggleStar,
+    isLoading: isCreating || isDeleting,
+  };
+};
+```
 
 ### Zustand Store Pattern
 
@@ -483,6 +543,162 @@ const useUserStore = create<UserStoreState>()((set) => ({
 - Do NOT type the implementation parameters.
 - This keeps the implementation concise and leverages TypeScript inference from the interface.
 
+### State Management Best Practices
+
+#### DO ✅
+
+1. **Create minimal stores with only state and mutations**
+
+   ```typescript
+   // ✅ Good
+   const useStarStore = create<{
+     stars: StarEntity[];
+     setStars: (stars: StarEntity[]) => void;
+     addStar: (star: StarEntity) => void;
+   }>((set) => ({
+     /* ... */
+   }));
+   ```
+
+2. **Use individual hooks for each CRUD operation**
+
+   ```typescript
+   // ✅ Good
+   const useCreateStar = () => {
+     /* ... */
+   };
+   const useUpdateStar = () => {
+     /* ... */
+   };
+   const useDeleteStar = () => {
+     /* ... */
+   };
+   ```
+
+3. **Use useMemo for computed values**
+
+   ```typescript
+   // ✅ Good
+   const orderedStars = useMemo(
+     () => stars.sort((a, b) => a.index.localeCompare(b.index)),
+     [stars]
+   );
+   ```
+
+4. **Handle errors with toast in hooks**
+
+   ```typescript
+   // ✅ Good
+   return useRequest(apiCall, {
+     onError: (error) =>
+       toast.error("Operation failed", {
+         description: error.message,
+       }),
+   });
+   ```
+
+5. **Use `useRefCallback` for stable references**
+
+   ```typescript
+   // ✅ Good
+   const handleAction = useRefCallback(async () => {
+     // This always has latest closure values
+   });
+   ```
+
+6. **Separate UI from logic with action hooks**
+
+   ```typescript
+   // ✅ Good - Logic in hook
+   const useStarActions = (docId, subspaceId) => {
+     return { isStarred, toggleStar, isLoading };
+   };
+
+   // ✅ Good - UI only
+   function StarButton({ docId, subspaceId }) {
+     const { isStarred, toggleStar, isLoading } = useStarActions(
+       docId,
+       subspaceId
+     );
+     return (
+       <Button onClick={toggleStar}>{isStarred ? "Unstar" : "Star"}</Button>
+     );
+   }
+   ```
+
+#### DON'T ❌
+
+1. **Don't put API logic in stores**
+
+   ```typescript
+   // ❌ Bad
+   const useStore = create((set) => ({
+     fetchData: async () => {
+       set({ isLoading: true });
+       try {
+         const data = await api.fetch();
+         set({ data, isLoading: false });
+       } catch (error) {
+         // ... error handling
+       }
+     },
+   }));
+   ```
+
+2. **Don't use entity slice patterns**
+
+   ```typescript
+   // ❌ Bad
+   const entity = store.entities[id];
+   ```
+
+3. **Don't use createComputed for complex computations**
+
+   ```typescript
+   // ❌ Bad
+   createComputed((state) => ({
+     complexComputation: heavyCalculation(state),
+   }));
+   ```
+
+4. **Don't handle errors with console.log**
+
+   ```typescript
+   // ❌ Bad
+   catch (error) {
+     console.error("Something failed:", error);
+   }
+   ```
+
+5. **Don't use React Query with direct WebSocket mutations**
+
+   ```typescript
+   // ❌ Bad - creates cache conflicts
+   const query = useQuery(["data"], fetchData);
+   socket.on("update", (data) => {
+     // This conflicts with React Query cache
+     updateStore(data);
+   });
+   ```
+
+6. **Don't put business logic in components**
+
+   ```typescript
+   // ❌ Bad - Logic mixed with UI
+   function StarButton({ docId, subspaceId }) {
+     const [isLoading, setIsLoading] = useState(false);
+     const handleClick = async () => {
+       setIsLoading(true);
+       try {
+         // Complex business logic here...
+       } catch (error) {
+         toast.error("Failed");
+       }
+       setIsLoading(false);
+     };
+   }
+   ```
+
 ### Store Best Practices
 
 1. **Use Zustand for client state management**
@@ -493,138 +709,208 @@ const useUserStore = create<UserStoreState>()((set) => ({
 6. **Implement proper error handling**
 7. **Use localStorage for persistence when needed**
 8. **Keep stores focused and single-purpose**
+9. **MANDATORY: Use hook-based architecture for all new stores**
+10. **MANDATORY: Separate UI logic from business logic**
+11. **MANDATORY: Use individual CRUD hooks for each operation**
+12. **MANDATORY: Use useRequest for automatic loading state management**
 
 ## Hooks and Custom Hooks
 
-### Custom Hook Pattern
+### Hook Library Strategy
+
+**MANDATORY: Use react-use for basic functionality, @ahooksjs/use-request for async operations, and useRefCallback for stable function references.**
 
 ```typescript
-import { useState, useEffect, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type {
-  Document,
-  CreateDocumentDto,
-  UpdateDocumentDto,
-} from "@/types/document";
+// ✅ useRefCallback implementation
+import { useRef, useCallback } from "react";
 
-export function useDocuments() {
-  const queryClient = useQueryClient();
+export function useRefCallback<T extends (...args: any[]) => any>(fn: T): T {
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+  return useCallback(
+    (...args: Parameters<T>) => fnRef.current(...args),
+    []
+  ) as T;
+}
+```
 
-  // Query for fetching documents
-  const {
-    data: documents,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ["documents"],
-    queryFn: async () => {
-      const response = await api.get("/documents");
-      return response.data as Document[];
+### useRequest Pattern
+
+**MANDATORY: Use @ahooksjs/use-request for all async operations. It provides automatic loading states, error handling, and caching.**
+
+```typescript
+import useRequest from "@ahooksjs/use-request";
+
+// ✅ Basic usage
+const { data, loading, error, run } = useRequest(
+  async () => {
+    const response = await api.getData();
+    return response.data;
+  },
+  {
+    onSuccess: (data) => {
+      toast.success("Data loaded successfully");
     },
+    onError: (error) => {
+      toast.error("Failed to load data", {
+        description: error.message,
+      });
+    },
+  }
+);
+
+// ✅ Manual trigger
+const { data, loading, error, run } = useRequest(
+  async (params: CreateParams) => {
+    const response = await api.create(params);
+    return response.data;
+  },
+  {
+    manual: true, // Don't auto-trigger
+    onSuccess: (data) => {
+      toast.success("Created successfully");
+    },
+  }
+);
+
+// ✅ Conditional execution
+const { data, loading, error } = useRequest(
+  async () => {
+    const response = await api.getData();
+    return response.data;
+  },
+  {
+    ready: !!userId, // Only run when userId exists
+    refreshDeps: [userId], // Re-run when userId changes
+  }
+);
+
+// ✅ Pagination
+const { data, loading, error, run } = useRequest(
+  async (page: number) => {
+    const response = await api.getData({ page, limit: 25 });
+    return response.data;
+  },
+  {
+    manual: true,
+    onSuccess: (result) => {
+      if (result.page === 1) {
+        setAllData(result.data);
+      } else {
+        setAllData((prev) => [...prev, ...result.data]);
+      }
+    },
+  }
+);
+```
+
+### Custom Hook Patterns
+
+#### State Management Hooks
+
+```typescript
+// ✅ Toggle hook with stable reference
+export function useToggle<T>(initialValue: T, alternateValue: T) {
+  const [state, setState] = useState(initialValue);
+
+  const toggle = useRefCallback(() => {
+    setState((current) =>
+      current === initialValue ? alternateValue : initialValue
+    );
   });
 
-  // Mutation for creating documents
-  const createDocumentMutation = useMutation({
-    mutationFn: async (data: CreateDocumentDto) => {
-      const response = await api.post("/documents", data);
-      return response.data as Document;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-    },
+  return [state, toggle] as const;
+}
+
+// ✅ Counter hook
+export function useCounter(initialValue: number = 0) {
+  const [count, setCount] = useState(initialValue);
+
+  const increment = useRefCallback(() => setCount((prev) => prev + 1));
+  const decrement = useRefCallback(() => setCount((prev) => prev - 1));
+  const reset = useRefCallback(() => setCount(initialValue));
+
+  return { count, increment, decrement, reset };
+}
+```
+
+#### Async Operation Hooks
+
+```typescript
+// ✅ Async operation hook
+export function useAsyncOperation<T, P extends any[]>(
+  asyncFn: (...args: P) => Promise<T>
+) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const execute = useRefCallback(async (...args: P) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await asyncFn(...args);
+      setData(result);
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   });
 
-  // Mutation for updating documents
-  const updateDocumentMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: UpdateDocumentDto;
-    }) => {
-      const response = await api.put(`/documents/${id}`, data);
-      return response.data as Document;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-    },
+  return { data, loading, error, execute };
+}
+```
+
+#### Event Handler Hooks
+
+```typescript
+// ✅ Debounced callback
+export function useDebouncedCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): T {
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  const debouncedCallback = useRefCallback((...args: Parameters<T>) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => callback(...args), delay);
   });
 
-  // Mutation for deleting documents
-  const deleteDocumentMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/documents/${id}`);
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-    },
-  });
+    []
+  );
 
-  return {
-    documents,
-    isLoading,
-    error,
-    refetch,
-    createDocument: createDocumentMutation.mutate,
-    updateDocument: updateDocumentMutation.mutate,
-    deleteDocument: deleteDocumentMutation.mutate,
-    isCreating: createDocumentMutation.isPending,
-    isUpdating: updateDocumentMutation.isPending,
-    isDeleting: deleteDocumentMutation.isPending,
-  };
+  return debouncedCallback as T;
 }
 ```
 
 ### Hook Best Practices
 
-1. **Use TanStack Query for server state**
-2. **Use custom hooks for reusable logic**
-3. **Handle loading and error states**
-4. **Use proper TypeScript typing**
-5. **Implement proper error handling**
-6. **Use query invalidation for cache updates**
-7. **Keep hooks focused and single-purpose**
-8. **Use proper cleanup in useEffect**
-9. **MANDATORY: Use custom `useRefCallback` hook instead of `useCallback` to avoid stale closure issues**
+#### DO ✅
+
+1. **Use useRefCallback for all function references**
+2. **Use react-use for basic functionality**
+3. **Use @ahooksjs/use-request for async operations**
+4. **Keep hooks focused and single-purpose**
+5. **Handle cleanup in useEffect**
+6. **Return stable references**
+
+#### DON'T ❌
+
+1. **Don't use useCallback for function references**
+2. **Don't use TanStack Query - use @ahooksjs/use-request instead**
+3. **Don't forget cleanup in useEffect**
+4. **Don't return unstable references**
+5. **Don't use hooks inside conditions or loops**
 
 ## Styling and UI
-
-### Component with CVA Pattern
-
-TODO:
-
-```typescript
-
-```
-
-### Tailwind CSS Best Practices
-
-```typescript
-// Use Tailwind utility classes
-<div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-  <h2 className="text-lg font-semibold text-gray-900">Document Title</h2>
-  <Button variant="outline" size="sm">
-    Edit
-  </Button>
-</div>
-
-// Use responsive design
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  {items.map((item) => (
-    <Card key={item.id}>{item.content}</Card>
-  ))}
-</div>
-
-// Use dark mode support
-<div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-  <h1 className="text-2xl font-bold">Title</h1>
-</div>
-```
-
-### UI Best Practices
 
 1. **Use Shadcn UI components as base**
 2. **Use Radix UI for accessibility**
@@ -642,77 +928,18 @@ TODO:
 ### API Client Pattern
 
 ```typescript
-import axios from "axios";
-import { useAuthStore } from "@/stores/auth-store";
-
-// Create axios instance
-export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001",
-  timeout: 10000,
-});
-
-// Request interceptor for authentication
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const { refreshToken } = useAuthStore.getState();
-        await refreshToken();
-
-        const token = localStorage.getItem("token");
-        originalRequest.headers.Authorization = `Bearer ${token}`;
-
-        return api(originalRequest);
-      } catch (refreshError) {
-        useAuthStore.getState().logout();
-        return Promise.reject(refreshError);
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
-
+// use contracts from packages/contract, if have no one, please define them in that folder
+import type { ListDocumentResponse, ListDocumentDto } from "@idea/contracts";
 // API functions
 export const documentApi = {
-  getAll: () => api.get("/documents"),
-  getById: (id: string) => api.get(`/documents/${id}`),
-  create: (data: CreateDocumentDto) => api.post("/documents", data),
-  update: (id: string, data: UpdateDocumentDto) =>
-    api.put(`/documents/${id}`, data),
-  delete: (id: string) => api.delete(`/documents/${id}`),
+  list: async (data: ListDocumentDto) => {
+    return request.post<ListDocumentDto, ListDocumentResponse>(
+      `/api/documents/list`,
+      data
+    );
+  },
 };
 ```
-
-### API Best Practices
-
-1. **Use axios for HTTP requests**
-2. **Implement proper authentication**
-3. **Handle token refresh automatically**
-4. **Use proper error handling**
-5. **Implement request/response interceptors**
-6. **Use environment variables for configuration**
-7. **Implement proper timeout handling**
-8. **Use TypeScript for API responses**
 
 ## Routing
 
@@ -797,84 +1024,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
 }
 ```
 
-## Testing Patterns
-
-### Component Test Pattern
-
-```typescript
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter } from "react-router-dom";
-import { UserCard } from "./user-card";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-    },
-  },
-});
-
-const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>{children}</BrowserRouter>
-  </QueryClientProvider>
-);
-
-const mockUser = {
-  id: "1",
-  email: "test@example.com",
-  firstName: "John",
-  lastName: "Doe",
-  role: "user",
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
-
-describe("UserCard", () => {
-  it("renders user information correctly", () => {
-    render(
-      <TestWrapper>
-        <UserCard user={mockUser} />
-      </TestWrapper>
-    );
-
-    expect(screen.getByText("John Doe")).toBeInTheDocument();
-    expect(screen.getByText("test@example.com")).toBeInTheDocument();
-  });
-
-  it("calls onEdit when edit button is clicked", () => {
-    const onEdit = jest.fn();
-
-    render(
-      <TestWrapper>
-        <UserCard user={mockUser} onEdit={onEdit} />
-      </TestWrapper>
-    );
-
-    fireEvent.click(screen.getByText("Edit"));
-    expect(onEdit).toHaveBeenCalledWith(mockUser);
-  });
-
-  it("calls onDelete when delete button is clicked", async () => {
-    const onDelete = jest.fn();
-
-    render(
-      <TestWrapper>
-        <UserCard user={mockUser} onDelete={onDelete} />
-      </TestWrapper>
-    );
-
-    fireEvent.click(screen.getByText("Delete"));
-
-    await waitFor(() => {
-      expect(onDelete).toHaveBeenCalledWith(mockUser.id);
-    });
-  });
-});
-```
-
 ### Hook Test Pattern
 
 ```typescript
@@ -920,72 +1069,6 @@ describe("useDocuments", () => {
 
 ## Performance Optimization
 
-### React.memo and useMemo Pattern
-
-```typescript
-import React, { useMemo, useCallback } from "react";
-
-interface UserListProps {
-  users: User[];
-  onUserSelect: (user: User) => void;
-  searchTerm: string;
-}
-
-export const UserList = React.memo<UserListProps>(
-  ({ users, onUserSelect, searchTerm }) => {
-    // Memoize filtered users
-    const filteredUsers = useMemo(() => {
-      return users.filter(
-        (user) =>
-          user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.lastName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }, [users, searchTerm]);
-
-    // Memoize callback
-    const handleUserSelect = useCallback(
-      (user: User) => {
-        onUserSelect(user);
-      },
-      [onUserSelect]
-    );
-
-    return (
-      <div className="space-y-2">
-        {filteredUsers.map((user) => (
-          <UserCard key={user.id} user={user} onSelect={handleUserSelect} />
-        ))}
-      </div>
-    );
-  }
-);
-
-UserList.displayName = "UserList";
-```
-
-### Lazy Loading Pattern
-
-```typescript
-import React, { Suspense, lazy } from "react";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-
-// Lazy load components
-const DocumentEditor = lazy(
-  () => import("@/components/editor/document-editor")
-);
-const SettingsPage = lazy(() => import("@/pages/settings/settings-page"));
-
-export function App() {
-  return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <DocumentEditor />
-    </Suspense>
-  );
-}
-```
-
-### Performance Best Practices
-
 1. **Use React.memo for expensive components**
 2. **Use useMemo for expensive calculations**
 3. **MANDATORY: Use useRefCallback instead of useCallback for stable references**
@@ -997,221 +1080,8 @@ export function App() {
 9. **Optimize bundle size**
 10. **Use proper image optimization**
 
-## Modal Management
+## Testing Patterns
 
-### react-confirm Pattern
-
-**MANDATORY: All modal dialogs, confirmations, and popups MUST use `react-confirm` library. Do NOT use native browser `confirm()`, `alert()`, or custom modal implementations.**
-
-```typescript
-import { confirm } from "react-confirm";
-
-// Basic confirmation dialog
-const handleDelete = async () => {
-  const confirmed = await confirm({
-    title: "Delete Item",
-    message:
-      "Are you sure you want to delete this item? This action cannot be undone.",
-    confirmText: "Delete",
-    cancelText: "Cancel",
-    variant: "destructive",
-  });
-
-  if (confirmed) {
-    // Proceed with deletion
-    await deleteItem();
-  }
-};
-
-// Custom confirmation with additional options
-const handleSaveChanges = async () => {
-  const confirmed = await confirm({
-    title: "Save Changes",
-    message:
-      "You have unsaved changes. Do you want to save them before continuing?",
-    confirmText: "Save",
-    cancelText: "Discard",
-    variant: "default",
-    showCancel: true,
-    closeOnOverlayClick: false,
-  });
-
-  if (confirmed) {
-    await saveChanges();
-  } else {
-    // Discard changes
-    resetForm();
-  }
-};
-
-// Information dialog
-const showInfo = async () => {
-  await confirm({
-    title: "Information",
-    message: "Your changes have been saved successfully.",
-    confirmText: "OK",
-    showCancel: false,
-    variant: "default",
-  });
-};
-
-// Warning dialog
-const showWarning = async () => {
-  await confirm({
-    title: "Warning",
-    message:
-      "This action will affect multiple items. Please review your selection.",
-    confirmText: "Continue",
-    cancelText: "Cancel",
-    variant: "warning",
-  });
-};
-```
-
-### Modal Best Practices
-
-1. **ALWAYS use react-confirm for all modal interactions**
-2. **Use descriptive titles and messages**
-3. **Provide clear action button text**
-4. **Use appropriate variants (default, destructive, warning)**
-5. **Handle async operations properly**
-6. **Use proper TypeScript typing**
-7. **Implement proper error handling**
-8. **Test modal interactions thoroughly**
-9. **Ensure accessibility compliance**
-10. **Use consistent styling and behavior**
-
-### Forbidden Patterns
-
-**DO NOT use these patterns:**
-
-```typescript
-// ❌ NEVER use native browser confirm
-if (confirm("Are you sure?")) {
-  // action
-}
-
-// ❌ NEVER use native browser alert
-alert("Operation completed");
-
-// ❌ NEVER create custom modal components for simple confirmations
-const [showModal, setShowModal] = useState(false);
-// ... custom modal implementation
-
-// ❌ NEVER use window.confirm or window.alert
-if (window.confirm("Delete item?")) {
-  // action
-}
-```
-
-### Advanced Modal Patterns
-
-```typescript
-// Confirmation with loading state
-const handleComplexAction = async () => {
-  const confirmed = await confirm({
-    title: "Complex Action",
-    message: "This will perform multiple operations. Continue?",
-    confirmText: "Continue",
-    cancelText: "Cancel",
-    variant: "default",
-  });
-
-  if (!confirmed) return;
-
-  try {
-    setIsLoading(true);
-    await performComplexAction();
-    await confirm({
-      title: "Success",
-      message: "Operation completed successfully.",
-      confirmText: "OK",
-      showCancel: false,
-    });
-  } catch (error) {
-    await confirm({
-      title: "Error",
-      message: "Operation failed. Please try again.",
-      confirmText: "OK",
-      showCancel: false,
-      variant: "destructive",
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-// Conditional confirmation
-const handleConditionalAction = async () => {
-  if (hasUnsavedChanges) {
-    const confirmed = await confirm({
-      title: "Unsaved Changes",
-      message: "You have unsaved changes. Save before continuing?",
-      confirmText: "Save & Continue",
-      cancelText: "Discard & Continue",
-      variant: "warning",
-    });
-
-    if (confirmed) {
-      await saveChanges();
-    }
-  }
-
-  // Continue with action
-  await performAction();
-};
-```
-
-## Code Quality and Linting
-
-### Biome Configuration
-
-The project uses Biome for code formatting and linting with the following key rules:
-
-```json
-{
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 160
-  },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "double",
-      "semicolons": "always"
-    }
-  }
-}
-```
-
-### Code Quality Best Practices
-
-1. **Use Biome for formatting and linting**
-2. **Follow the established import organization**
-3. **Use proper TypeScript types throughout**
-4. **Write comprehensive tests for all components**
-5. **Use meaningful variable and function names**
-6. **Keep functions small and focused**
-7. **Use proper error handling**
-8. **Document complex business logic**
-9. **Use consistent naming conventions**
-10. **Follow the established component structure**
-
-## Summary
-
-This React client follows modern TypeScript and React best practices with:
-
-- **Strict typing** throughout the codebase
-- **Functional components** with hooks
-- **Zustand** for client state management
-- **TanStack Query** for server state management
-- **TipTap** for rich text editing with collaboration
-- **Radix UI and Shadcn UI** for accessible components
-- **Tailwind CSS** for utility-first styling
-- **React Router** for client-side routing
-- **react-confirm** for consistent modal and confirmation management
-- **Comprehensive testing** setup with Vitest
-- **Code quality** enforced by Biome
+TODO:
 
 Use this guide as the definitive reference for all code generation and development work on this project.

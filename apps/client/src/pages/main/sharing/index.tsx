@@ -11,9 +11,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import useRequest from "@ahooksjs/use-request";
 import { groupApi } from "@/apis/group";
-// import { AccessControlList } from "./access-control-list";
 import React from "react";
 import { userApi } from "@/apis/user";
 import { permissionApi } from "@/apis/permission";
@@ -51,29 +50,33 @@ export function ShareButton({ documentId }: ShareButtonProps) {
     },
   });
 
-  const { data: usersRes } = useQuery<Awaited<ReturnType<typeof userApi.search>>>({
-    queryKey: ["users", form.watch("query")],
-    queryFn: () =>
+  const { data: usersRes } = useRequest(
+    () =>
       userApi.search({
         query: form.watch("query"),
         page: 1,
         limit: 100,
         sortBy: "createdAt",
       }),
-    enabled: form.watch("query").length > 0,
-  });
+    {
+      ready: form.watch("query").length > 0,
+      refreshDeps: [form.watch("query")],
+    },
+  );
 
-  const { data: groupsRes } = useQuery({
-    queryKey: ["groups", form.watch("query")],
-    queryFn: () =>
+  const { data: groupsRes } = useRequest(
+    () =>
       groupApi.list({
         query: form.watch("query"),
         page: 1,
         limit: 100,
         sortBy: "createdAt",
       }),
-    enabled: form.watch("query").length > 0,
-  });
+    {
+      ready: form.watch("query").length > 0,
+      refreshDeps: [form.watch("query")],
+    },
+  );
 
   const handleAddPendingId = (id: string, type: "user" | "group") => {
     setPendingIds((prev) => (prev.some((item) => item.id === id && item.type === type) ? prev : [...prev, { id, type }]));

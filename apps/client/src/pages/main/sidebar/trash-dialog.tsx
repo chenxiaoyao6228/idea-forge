@@ -9,8 +9,7 @@ import { type TrashDocumentResponse } from "@idea/contracts";
 import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { confirmModal } from "../../../components/ui/confirm-modal";
-import { cn } from "@/lib/utils";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
 import { useTranslation } from "react-i18next";
 import Loading from "../../../components/ui/loading";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
@@ -63,7 +62,7 @@ const TrashDialog: React.FC<ConfirmDialogProps<TrashDialogProps, any>> = ({ show
   }
 
   async function handlePermanentDelete(id: string) {
-    confirmModal({
+    showConfirmModal({
       type: "alert",
       confirmVariant: "destructive",
       title: t("Permanent Delete"),

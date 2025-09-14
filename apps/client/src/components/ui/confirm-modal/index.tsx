@@ -168,4 +168,4 @@ const ConfirmModal: React.FC<ConfirmDialogProps<ConfirmModalProps, boolean>> = (
   );
 };
 
-export const confirmModal = ContextAwareConfirmation.createConfirmation(confirmable(ConfirmModal));
+export const showConfirmModal = ContextAwareConfirmation.createConfirmation(confirmable(ConfirmModal));
