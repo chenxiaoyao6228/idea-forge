@@ -1,12 +1,13 @@
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Fragment, useCallback } from "react";
+import { Fragment, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { Emoji } from "emoji-picker-react";
-import useUIStore from "@/stores/ui";
-import useSubSpaceStore from "@/stores/subspace";
+import { useCurrentDocumentId } from "@/hooks/use-current-document";
+import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
+import useSharedWithMeStore from "@/stores/shared-with-me";
 
 interface BreadcrumbItemData {
   id: string;
@@ -15,27 +16,61 @@ interface BreadcrumbItemData {
 }
 
 export default function DocumentBreadcrumb() {
-  const activeDocumentId = useUIStore((state) => state.activeDocumentId);
+  const activeDocumentId = useCurrentDocumentId();
 
   const navigate = useNavigate();
 
-  // FIXME: this only handle subspace navigation tree, there might be other cases like star
-  const getBreadcrumbItems = useCallback(() => {
+  // ✅ Use useMemo for computed breadcrumb items with comprehensive path finding
+  const breadcrumbItems = useMemo(() => {
     if (!activeDocumentId) return [];
-    // getPathToDocumentInMyDocs returns NavigationNode[]
-    const path = useSubSpaceStore.getState().getPathToDocument(activeDocumentId, activeDocumentId);
-    // Map NavigationNode to BreadcrumbItemData
-    return path.map(
-      (node) =>
-        ({
+
+    const subspaceStore = useSubSpaceStore.getState();
+    const sharedWithMeStore = useSharedWithMeStore.getState();
+
+    let path: any[] = [];
+
+    // 1. Check personal subspace first
+    const personalSubspace = getPersonalSubspace(subspaceStore);
+    if (personalSubspace) {
+      path = subspaceStore.getPathToDocument(personalSubspace.id, activeDocumentId);
+      if (path.length > 0) {
+        return path.map((node) => ({
           id: node.id,
           title: node.title,
           icon: node.icon ?? undefined,
-        }) as BreadcrumbItemData,
-    );
-  }, [activeDocumentId]);
+        })) as BreadcrumbItemData[];
+      }
+    }
 
-  const breadcrumbItems = getBreadcrumbItems();
+    // 2. Check shared-with-me documents
+    const sharedNode = sharedWithMeStore.findNavigationNodeInSharedDocuments(activeDocumentId);
+    if (sharedNode) {
+      return [
+        {
+          id: sharedNode.id,
+          title: sharedNode.title,
+          icon: sharedNode.icon ?? undefined,
+        },
+      ] as BreadcrumbItemData[];
+    }
+
+    // 3. Check all other subspaces
+    const allSubspaces = subspaceStore.entities;
+    for (const subspace of Object.values(allSubspaces)) {
+      if (subspace.id === personalSubspace?.id) continue; // Skip personal subspace (already checked)
+
+      path = subspaceStore.getPathToDocument(subspace.id, activeDocumentId);
+      if (path.length > 0) {
+        return path.map((node) => ({
+          id: node.id,
+          title: node.title,
+          icon: node.icon ?? undefined,
+        })) as BreadcrumbItemData[];
+      }
+    }
+
+    return [];
+  }, [activeDocumentId]);
 
   const handleNavigate = (id: string) => {
     navigate(`/${id}`);

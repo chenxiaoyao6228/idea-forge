@@ -9,7 +9,7 @@ import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
 import { useRef, useMemo, useEffect } from "react";
-import { useCurrentDocumentState, useEditorStore } from "@/stores/editor-store";
+import { useEditorStore } from "@/stores/editor-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import AIPanel from "./ai-panel";
 import { getHierarchicalIndexes } from "@tiptap/extension-table-of-contents";
 import TableOfContents from "@tiptap/extension-table-of-contents";
 import React from "react";
+import { useCurrentDocument } from "@/hooks/use-current-document";
 import { TextSelection } from "@tiptap/pm/state";
 
 interface Props {
@@ -30,7 +31,7 @@ interface Props {
 export default function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) {
   const menuContainerRef = useRef(null);
   const { userInfo } = useUserStore();
-  const currentDocument = useCurrentDocumentState();
+  const currentDocument = useCurrentDocument();
   const setEditor = useEditorStore((state) => state.setEditor);
   const setTocItems = useEditorStore((state) => state.setTocItems);
   const { status, error, lastSyncedAt, pendingChanges, isIndexedDBLoaded } = currentDocument || {};
@@ -59,10 +60,11 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
       Collaboration.configure({
         document: provider.document,
       }),
-      CollaborationCursor.configure({
-        provider,
-        user,
-      }),
+      // FIXME: the cursor will cause the editor to crash somehow, need to fix it later
+      // CollaborationCursor.configure({
+      //   provider,
+      //   user,
+      // }),
       TableOfContents.configure({
         scrollParent: () => document?.getElementById("WORK_CONTENT_SCROLL_CONTAINER") || window,
         getIndex: getHierarchicalIndexes,
@@ -84,7 +86,7 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
       console.log("Editor created:", editor);
     },
     onUpdate: ({ editor }) => {
-      // console.log("Editor content:", editor.getJSON());
+      console.log("Editor content:", editor.getJSON());
     },
   });
 
@@ -211,8 +213,8 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
         {status !== "loading" && (
           <>
             <EditorContent editor={editor} className="w-full" />
-            <BubbleMenus editor={editor} containerRef={menuContainerRef} />
-            <AIPanel editor={editor} />
+            {/* <BubbleMenus editor={editor} containerRef={menuContainerRef} /> */}
+            {/* <AIPanel editor={editor} /> */}
           </>
         )}
       </div>

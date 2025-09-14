@@ -5,7 +5,6 @@ export function presentStar(star: Star) {
     return {
       id: star.id,
       docId: star.docId,
-      subspaceId: star.subspaceId,
       index: star.index,
     };
   } catch (error) {

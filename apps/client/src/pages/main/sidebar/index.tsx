@@ -25,7 +25,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragMove={handleDragMove} onDragOver={handleDragOver}>
-      <SidebarProvider>
+      <SidebarProvider defaultOpen={true}>
         {/* sidebar */}
         <Sidebar collapsible="offcanvas">
           <SidebarHeader className="p-0 gap-0">
@@ -112,7 +112,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                 </div>
 
                 {/* More Options */}
-                <div className="flex items-center justify-center flex-1">
+                {/* <div className="flex items-center justify-center flex-1">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -123,7 +123,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                </div>
+                </div> */}
               </div>
             </SidebarGroup>
           </SidebarHeader>

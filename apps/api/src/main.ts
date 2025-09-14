@@ -39,6 +39,9 @@ async function bootstrap() {
 
   if (isDev) {
     // Development: Allow inline scripts and Vite dev server
+    const wsPort = configService.get("NEST_API_WS_PORT");
+    const apiPort = configService.get("NEST_API_PORT");
+
     app.use(
       helmet({
         contentSecurityPolicy: {
@@ -47,7 +50,15 @@ async function bootstrap() {
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "http://localhost:5173", "http://localhost:3000"],
             styleSrc: ["'self'", "'unsafe-inline'", "http://localhost:5173"],
             imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
-            connectSrc: ["'self'", "http://localhost:5173", "ws://localhost:5173", "http://localhost:9000", "https://localhost:9000"],
+            connectSrc: [
+              "'self'",
+              "http://localhost:5173",
+              "ws://localhost:5173",
+              `http://localhost:${apiPort}`,
+              `https://localhost:${apiPort}`,
+              `ws://localhost:${wsPort}`,
+              `http://localhost:${wsPort}`,
+            ],
             fontSrc: ["'self'", "data:", "http:", "https:"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
@@ -67,12 +78,12 @@ async function bootstrap() {
   app.use(requestIpMw({ attributeName: "ip" }));
 
   // Rate limit
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 1000, // limit each IP to 1000 requests per windowMs
-    }),
-  );
+  // app.use(
+  //   rateLimit({
+  //     windowMs: 15 * 60 * 1000, // 15 minutes
+  //     max: 1000, // limit each IP to 1000 requests per windowMs
+  //   }),
+  // );
 
   // Body parsing middleware with 50MB limits
   app.use(json({ limit: "50mb" }));

@@ -14,11 +14,11 @@ import { useScrollTop } from "@/hooks/use-scroll-top";
 import ImportMarkdownButton from "./import-markdown";
 import { Separator } from "@/components/ui/separator";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import useUIStore from "@/stores/ui";
+import { useCurrentDocumentId } from "@/hooks/use-current-document";
 import { ShareButton } from "@/pages/main/sharing";
 
 export default function DocumentHeader() {
-  const { activeDocumentId } = useUIStore();
+  const activeDocumentId = useCurrentDocumentId();
   const { t } = useTranslation();
 
   const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);

@@ -92,8 +92,3 @@ export const useEditorStore = create<EditorState>((set) => ({
   setTocItems: (items) => set({ tocItems: items }),
   setEditor: (editor) => set({ editor }),
 }));
-
-export function useCurrentDocumentState() {
-  const { currentDocumentId, documents } = useEditorStore();
-  return currentDocumentId ? documents[currentDocumentId] : null;
-}

@@ -1,25 +1,21 @@
-import { useParams } from "react-router-dom";
-import { useEffect } from "react";
 import Loading from "@/components/ui/loading";
 import Doc from "../doc";
-import { websocketService } from "@/lib/websocket";
-import useUIStore from "@/stores/ui";
 import useWorkspaceStore, { workspaceSelectors } from "@/stores/workspace";
 import SidebarContainer from "./sidebar";
-import { useCurrentDocumentId } from "@/hooks/use-current-document";
+import { useCurrentDocument } from "@/hooks/use-current-document";
+import { websocketService } from "@/lib/websocket";
+import { useLayoutEffect } from "react";
 
 export default function Main() {
-  const activeDocumentId = useUIStore((state) => state.activeDocumentId);
   const fetchWorkspaces = useWorkspaceStore((state) => state.fetchList);
+  const currentDocument = useCurrentDocument();
   const workspaces = useWorkspaceStore((state) => workspaceSelectors.selectAll(state));
 
-  useCurrentDocumentId();
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     fetchWorkspaces();
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     websocketService.connect();
     return () => {
       websocketService.disconnect();
@@ -30,8 +26,8 @@ export default function Main() {
     return <Loading />;
   }
 
-  let content = <></>;
-  if (activeDocumentId) {
+  let content = <Loading />;
+  if (currentDocument) {
     content = <Doc />;
   }
 

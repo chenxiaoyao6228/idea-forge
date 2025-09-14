@@ -3,7 +3,7 @@ import { FileIcon, FolderIcon, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import useUIStore from "@/stores/ui";
+import { useCurrentDocumentId } from "@/hooks/use-current-document";
 import useDocumentStore from "@/stores/document";
 import useAbilityStore from "@/stores/ability";
 import { DocumentLink } from "./document-link";
@@ -16,7 +16,7 @@ interface ShareWithMeLinkProps {
 
 export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareWithMeLinkProps) {
   const { t } = useTranslation();
-  const activeDocumentId = useUIStore((state) => state.activeDocumentId);
+  const activeDocumentId = useCurrentDocumentId();
   const { fetchDetail, fetchChildren, getDocumentAsNavigationNode } = useDocumentStore();
   const { hasAbility: hasPermission } = useAbilityStore();
   const [isExpanded, setIsExpanded] = useState(false);

@@ -21,23 +21,32 @@ export default function Doc() {
   const collabToken = useUserStore((s) => s.userInfo?.collabToken);
   const currentDocument = useCurrentDocument();
 
-  const isHomeDoc = activeDocumentId === "0";
+  const isHomeDoc = false;
 
-  useTitle(`Idea Forge ${currentDocument?.title ? `- ${currentDocument.title}` : ""}`);
+  // Type guard to ensure we have a proper document
+  const isDocumentLoaded = currentDocument && !currentDocument.isLoading && "id" in currentDocument;
+
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  useTitle(`Idea Forge ${isDocumentLoaded && currentDocument?.title ? `- ${currentDocument.title}` : ""}`);
 
   console.log("currentDocument", currentDocument);
 
   // Move these up, use optional chaining to avoid errors
-  const permission = currentDocument?.permission;
+  const permission = isDocumentLoaded ? currentDocument?.permission : undefined;
   const hasNoPermission = permission === "NONE";
   const hasEditPermission = permission === "EDIT";
-  const isMyDoc = currentDocument?.ownerId === userId;
+  const isMyDoc = isDocumentLoaded ? currentDocument?.createdById === userId : false;
+
+  // Handle loading state
+  if (currentDocument?.isLoading) {
+    return <Loading />;
+  }
 
   if (isHomeDoc) {
     return <DocHome />;
   }
 
-  if (!activeDocumentId) {
+  if (!activeDocumentId || !isDocumentLoaded || currentDocument?.id === null) {
     return null;
   }
 
@@ -53,12 +62,11 @@ export default function Doc() {
     <>
       <DocumentHeader />
       <div className="flex-auto overflow-y-auto">
-        {/* TODO: use yjs-zustand to allow multiple user edit  title , cover and icon */}
-        {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={isMyDoc} />}
+        {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={true} />}
         <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative">
-          {/* <Toolbar doc={currentDocument} editable={isMyDoc} />
-          <TiptapEditor id={currentDocument.id} editable={hasEditPermission} collabToken={collabToken} collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")} />
-          <TableOfContent /> */}
+          <Toolbar doc={currentDocument} editable={true} />
+          <TiptapEditor id={currentDocument.id!} editable={true} collabToken={collabToken} collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")} />
+          <TableOfContent />
         </div>
       </div>
       <BackToTop />

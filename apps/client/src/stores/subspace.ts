@@ -779,7 +779,6 @@ const useSubSpaceStore = create<StoreState>()(
 
           const findPath = (nodes: NavigationNode[], targetId: string, currentPath: NavigationNode[]): boolean => {
             for (const node of nodes) {
-              console.log("node", node);
               const newPath = [...currentPath, node];
 
               if (node.id === targetId) {

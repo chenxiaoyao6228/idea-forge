@@ -19,14 +19,9 @@ export default function WorkspaceSwitcher() {
 
   const workspaces = useWorkspaceStore((state) => workspaceSelectors.selectAll(state));
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const fetchWorkspaces = useWorkspaceStore((state) => state.fetchList);
   const switchWorkspace = useWorkspaceStore((state) => state.switchWorkspace);
   const reorderWorkspaces = useWorkspaceStore((state) => state.reorderWorkspaces);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  useEffect(() => {
-    fetchWorkspaces();
-  }, []);
 
   const createWorkspace = async () => {
     navigate("/create-workspace");
