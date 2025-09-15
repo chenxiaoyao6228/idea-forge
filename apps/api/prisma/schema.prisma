@@ -273,6 +273,17 @@ model Subspace {
   updatedAt   DateTime     @updatedAt
   archivedAt  DateTime?
 
+  // Security settings
+  allowPublicSharing      Boolean @default(true)
+  allowGuestCollaborators Boolean @default(true)
+  allowExport             Boolean @default(true)
+  allowMemberInvites      Boolean @default(true)
+  allowTopLevelEdit       Boolean @default(true)
+
+  // Permission management
+  memberInvitePermission String @default("ALL_MEMBERS") // ALL_MEMBERS, ADMINS_ONLY
+  topLevelEditPermission String @default("ADMINS_ONLY") // ALL_MEMBERS, ADMINS_ONLY
+
   settings Json?
 
   navigationTree Json?

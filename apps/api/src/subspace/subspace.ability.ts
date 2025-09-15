@@ -45,10 +45,13 @@ export class SubspaceAbility extends BaseAbility {
         can(Action.ViewMembers, "Subspace", { id: subspaceId });
         can(Action.ManagePermissions, "Subspace", { id: subspaceId });
         can(Action.ViewPermissions, "Subspace", { id: subspaceId });
+        can(Action.ManageSubspaceSettings, "Subspace", { id: subspaceId });
+        can(Action.ManageNavigationTree, "Subspace", { id: subspaceId });
         break;
       case PermissionLevel.EDIT:
         can([Action.Read, Action.Update], "Subspace", { id: subspaceId });
         can(Action.ViewMembers, "Subspace", { id: subspaceId });
+        can(Action.ManageNavigationTree, "Subspace", { id: subspaceId });
         break;
       case PermissionLevel.COMMENT:
         can([Action.Read, Action.Comment], "Subspace", { id: subspaceId });

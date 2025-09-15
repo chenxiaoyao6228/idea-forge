@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
-import { Subspace, SubspaceTypeSchema } from "@idea/contracts";
+import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, UpdateSubspaceSettingsDto } from "./subspace.dto";
+import { Subspace, SubspaceTypeSchema, SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
@@ -1567,5 +1567,152 @@ export class SubspaceService {
       updatedCount: updatedSubspaces.length,
       subspaces: presentSubspaces(updatedSubspaces),
     };
+  }
+
+  /**
+   * Get complete subspace settings including permissions
+   */
+  async getSubspaceSettings(subspaceId: string, currentUserId: string): Promise<SubspaceSettingsResponse> {
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                displayName: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+        workspace: {
+          include: {
+            members: {
+              where: { userId: currentUserId },
+            },
+          },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // Check if user has access to this subspace
+    const isSubspaceMember = subspace.members.some((member) => member.userId === currentUserId);
+    const isWorkspaceMember = subspace.workspace.members.length > 0;
+    const isPublicSubspace = subspace.type === "PUBLIC";
+
+    if (!isSubspaceMember && !isWorkspaceMember && !isPublicSubspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
+    }
+
+    // Get user permissions
+    const userPermission = await this.permissionService.getUserPermission(currentUserId, ResourceType.SUBSPACE, subspaceId);
+
+    const isSubspaceAdmin = subspace.members.find((member) => member.userId === currentUserId)?.role === "ADMIN";
+    const isWorkspaceAdmin = subspace.workspace.members[0]?.role === "ADMIN" || subspace.workspace.members[0]?.role === "OWNER";
+
+    const permissions = {
+      canEditSettings: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE || userPermission === PermissionLevel.OWNER,
+      canManageMembers: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE || userPermission === PermissionLevel.OWNER,
+      canChangeType: isWorkspaceAdmin || userPermission === PermissionLevel.OWNER,
+      canManageSecurity: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE || userPermission === PermissionLevel.OWNER,
+    };
+
+    return {
+      subspace: {
+        ...subspace,
+        members: subspace.members.map((member) => ({
+          ...member,
+          user: member.user,
+        })),
+        memberCount: subspace.members.length,
+      },
+      permissions,
+    };
+  }
+
+  /**
+   * Update subspace settings
+   */
+  async updateSubspaceSettings(subspaceId: string, settings: UpdateSubspaceSettingsRequest, currentUserId: string): Promise<SubspaceSettingsResponse> {
+    // First validate access
+    const currentSettings = await this.getSubspaceSettings(subspaceId, currentUserId);
+
+    if (!currentSettings.permissions.canEditSettings) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
+    }
+
+    // Validate type change permissions
+    if (settings.type && !currentSettings.permissions.canChangeType) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
+    }
+
+    // Update the subspace
+    const updatedSubspace = await this.prismaService.subspace.update({
+      where: { id: subspaceId },
+      data: {
+        ...(settings.name && { name: settings.name }),
+        ...(settings.description !== undefined && { description: settings.description }),
+        ...(settings.avatar !== undefined && { avatar: settings.avatar }),
+        ...(settings.type && { type: settings.type }),
+        ...(settings.allowPublicSharing !== undefined && { allowPublicSharing: settings.allowPublicSharing }),
+        ...(settings.allowGuestCollaborators !== undefined && { allowGuestCollaborators: settings.allowGuestCollaborators }),
+        ...(settings.allowExport !== undefined && { allowExport: settings.allowExport }),
+        ...(settings.allowMemberInvites !== undefined && { allowMemberInvites: settings.allowMemberInvites }),
+        ...(settings.allowTopLevelEdit !== undefined && { allowTopLevelEdit: settings.allowTopLevelEdit }),
+        ...(settings.memberInvitePermission && { memberInvitePermission: settings.memberInvitePermission }),
+        ...(settings.topLevelEditPermission && { topLevelEditPermission: settings.topLevelEditPermission }),
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                displayName: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+        workspace: {
+          include: {
+            members: {
+              where: { userId: currentUserId },
+            },
+          },
+        },
+      },
+    });
+
+    // Publish event for real-time updates
+    await this.eventPublisher.publish(BusinessEvents.SUBSPACE_UPDATED, {
+      subspaceId,
+      workspaceId: updatedSubspace.workspaceId,
+      updatedBy: currentUserId,
+      changes: settings,
+    });
+
+    // Return updated settings
+    return this.getSubspaceSettings(subspaceId, currentUserId);
+  }
+
+  /**
+   * Validate user access to subspace settings
+   */
+  async validateSubspaceSettingsAccess(subspaceId: string, currentUserId: string): Promise<boolean> {
+    try {
+      const settings = await this.getSubspaceSettings(subspaceId, currentUserId);
+      return settings.permissions.canEditSettings;
+    } catch (error) {
+      return false;
+    }
   }
 }

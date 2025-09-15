@@ -330,6 +330,8 @@ export function StarLink({ star }: StarLinkProps) {
 
 **MANDATORY: All modal dialogs, confirmations, and popups MUST use `react-confirm` library. Do NOT use native browser `confirm()`, `alert()`, or custom modal implementations.**
 
+**MANDATORY: All modal dialogs, confirmations, and popups MUST use name start with`show`, eg: `showSubspaceModal`**
+
 for simple confirmation, use the predefined custom confirm modal
 
 ```ts

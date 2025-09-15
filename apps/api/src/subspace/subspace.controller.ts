@@ -9,6 +9,7 @@ import {
   MoveSubspaceDto,
   BatchSetWorkspaceWideDto,
   BatchAddSubspaceMemberDto,
+  UpdateSubspaceSettingsDto,
 } from "./subspace.dto";
 import { Action } from "@/_shared/casl/ability.class";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
@@ -124,17 +125,15 @@ export class SubspaceController {
   }
 
   // ==== settings ====
-  // @Get(":id/settings")
-  // @CheckPolicy(Action.Update, "Subspace")
-  // async getSubspaceSettings(@Param("id") id: string, @GetUser("id") userId: string) {
-  //   return this.subspaceService.getSubspaceSettings(id, userId);
-  // }
+  @Get(":id/settings")
+  async getSubspaceSettings(@Param("id") id: string, @GetUser("id") userId: string) {
+    return this.subspaceService.getSubspaceSettings(id, userId);
+  }
 
-  // @Patch(":id/settings")
-  // @CheckPolicy(Action.Update, "Subspace")
-  // async updateSubspaceSettings(@Param("id") id: string, @Body() dto: UpdateSubspaceSettingsDto, @GetUser("id") userId: string) {
-  //   return this.subspaceService.updateSubspaceSettings(id, dto, userId);
-  // }
+  @Put(":id/settings")
+  async updateSubspaceSettings(@Param("id") id: string, @Body() dto: UpdateSubspaceSettingsDto, @GetUser("id") userId: string) {
+    return this.subspaceService.updateSubspaceSettings(id, dto, userId);
+  }
 
   // ==== batch operations ====
   @Post("batch-set-workspace-wide")

@@ -164,3 +164,49 @@ export const JoinSubspaceResponseSchema = z.object({
   success: z.boolean(),
 });
 export type JoinSubspaceResponse = z.infer<typeof JoinSubspaceResponseSchema>;
+
+// Subspace settings
+export const UpdateSubspaceSettingsRequestSchema = z.object({
+  name: z.string().optional(),
+  description: z.string().nullable().optional(),
+  avatar: z.string().nullable().optional(),
+  type: SubspaceTypeSchema.optional(),
+  allowPublicSharing: z.boolean().optional(),
+  allowGuestCollaborators: z.boolean().optional(),
+  allowExport: z.boolean().optional(),
+  allowMemberInvites: z.boolean().optional(),
+  allowTopLevelEdit: z.boolean().optional(),
+  memberInvitePermission: z.enum(["ALL_MEMBERS", "ADMINS_ONLY"]).optional(),
+  topLevelEditPermission: z.enum(["ALL_MEMBERS", "ADMINS_ONLY"]).optional(),
+});
+export type UpdateSubspaceSettingsRequest = z.infer<typeof UpdateSubspaceSettingsRequestSchema>;
+
+export const SubspaceSettingsResponseSchema = z.object({
+  subspace: SubspaceSchema.extend({
+    allowPublicSharing: z.boolean(),
+    allowGuestCollaborators: z.boolean(),
+    allowExport: z.boolean(),
+    allowMemberInvites: z.boolean(),
+    allowTopLevelEdit: z.boolean(),
+    memberInvitePermission: z.string(),
+    topLevelEditPermission: z.string(),
+    members: z.array(
+      SubspaceMemberSchema.extend({
+        user: z.object({
+          id: z.string(),
+          email: z.string(),
+          displayName: z.string().nullable(),
+          imageUrl: z.string().nullable(),
+        }),
+      }),
+    ),
+    memberCount: z.number(),
+  }),
+  permissions: z.object({
+    canEditSettings: z.boolean(),
+    canManageMembers: z.boolean(),
+    canChangeType: z.boolean(),
+    canManageSecurity: z.boolean(),
+  }),
+});
+export type SubspaceSettingsResponse = z.infer<typeof SubspaceSettingsResponseSchema>;
