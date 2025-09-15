@@ -2,7 +2,14 @@ import { create } from "zustand";
 import { subspaceApi } from "@/apis/subspace";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { createComputed } from "zustand-computed";
-import { CreateSubspaceRequest, NavigationNode, NavigationNodeType, SubspaceMember } from "@idea/contracts";
+import {
+  CreateSubspaceRequest,
+  NavigationNode,
+  NavigationNodeType,
+  SubspaceMember,
+  SubspaceSettingsResponse,
+  UpdateSubspaceSettingsRequest,
+} from "@idea/contracts";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
 import { useStars } from "./star-store";
@@ -48,6 +55,9 @@ interface State {
   activeSubspaceId?: string;
   //  state
   isCreating: boolean;
+  // Settings state
+  subspaceSettings: SubspaceSettingsResponse | null;
+  isSettingsLoading: boolean;
   isUpdating: boolean;
   expandedKeys: Set<string>; // Track expanded tree nodes
 }
@@ -65,6 +75,11 @@ interface Action {
 
   // Member management actions
   batchAddSubspaceMembers: (subspaceId: string, items: Array<{ id: string; type: "user" | "group"; role: "MEMBER" | "ADMIN" }>) => Promise<any>;
+
+  // Settings management actions
+  fetchSubspaceSettings: (subspaceId: string) => Promise<SubspaceSettingsResponse>;
+  updateSubspaceSettings: (subspaceId: string, settings: UpdateSubspaceSettingsRequest) => Promise<SubspaceSettingsResponse>;
+  clearSubspaceSettings: () => void;
 
   //  document structure management
   addDocumentToStructure: (subspaceId: string, document: DocumentEntity, index?: number) => void;
@@ -121,6 +136,9 @@ const defaultState: State = {
   isCreating: false,
   isUpdating: false,
   expandedKeys: new Set(),
+  // Settings state
+  subspaceSettings: null,
+  isSettingsLoading: false,
 };
 
 const subspaceEntitySlice = createEntitySlice<SubspaceEntity>();
@@ -916,6 +934,55 @@ const useSubSpaceStore = create<StoreState>()(
             console.error("Failed to batch add subspace members:", error);
             throw error;
           }
+        },
+
+        // Settings management actions
+        fetchSubspaceSettings: async (subspaceId: string) => {
+          set({ isSettingsLoading: true });
+          try {
+            const response = await subspaceApi.getSubspaceSettings(subspaceId);
+            set({ subspaceSettings: response });
+            return response;
+          } catch (error) {
+            console.error("Failed to fetch subspace settings:", error);
+            throw error;
+          } finally {
+            set({ isSettingsLoading: false });
+          }
+        },
+
+        updateSubspaceSettings: async (subspaceId: string, settings: UpdateSubspaceSettingsRequest) => {
+          set({ isUpdating: true });
+          try {
+            const response = await subspaceApi.updateSubspaceSettings(subspaceId, settings);
+            set({ subspaceSettings: response });
+
+            // Also update the subspace entity in the store
+            const currentSubspace = get().entities[subspaceId];
+            if (currentSubspace) {
+              get().updateOne({
+                id: subspaceId,
+                changes: {
+                  ...currentSubspace,
+                  name: response.subspace.name,
+                  description: response.subspace.description || undefined,
+                  avatar: response.subspace.avatar,
+                  type: response.subspace.type,
+                },
+              });
+            }
+
+            return response;
+          } catch (error) {
+            console.error("Failed to update subspace settings:", error);
+            throw error;
+          } finally {
+            set({ isUpdating: false });
+          }
+        },
+
+        clearSubspaceSettings: () => {
+          set({ subspaceSettings: null });
         },
 
         // Navigation node finding methods for star functionality

@@ -106,4 +106,4 @@ const SettingModal = ({
   );
 };
 
-export const settingModal = ContextAwareConfirmation.createConfirmation(confirmable(SettingModal));
+export const showSettingModal = ContextAwareConfirmation.createConfirmation(confirmable(SettingModal));

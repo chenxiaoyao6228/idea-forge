@@ -1612,7 +1612,7 @@ export class SubspaceService {
     }
 
     // Get user permissions
-    const userPermission = await this.permissionService.getUserPermission(currentUserId, ResourceType.SUBSPACE, subspaceId);
+    const userPermission = await this.permissionService.resolveUserPermission(currentUserId, ResourceType.SUBSPACE, subspaceId);
 
     const isSubspaceAdmin = subspace.members.find((member) => member.userId === currentUserId)?.role === "ADMIN";
     const isWorkspaceAdmin = subspace.workspace.members[0]?.role === "ADMIN" || subspace.workspace.members[0]?.role === "OWNER";
@@ -1632,7 +1632,7 @@ export class SubspaceService {
           user: member.user,
         })),
         memberCount: subspace.members.length,
-      },
+      } as any,
       permissions,
     };
   }
@@ -1693,11 +1693,15 @@ export class SubspaceService {
     });
 
     // Publish event for real-time updates
-    await this.eventPublisher.publish(BusinessEvents.SUBSPACE_UPDATED, {
-      subspaceId,
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_UPDATE,
       workspaceId: updatedSubspace.workspaceId,
-      updatedBy: currentUserId,
-      changes: settings,
+      actorId: currentUserId,
+      data: {
+        subspaceId,
+        changes: settings,
+      },
+      timestamp: new Date().toISOString(),
     });
 
     // Return updated settings

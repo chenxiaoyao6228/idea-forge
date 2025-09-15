@@ -14,7 +14,7 @@ import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
 import { subspaceApi } from "@/apis/subspace";
 import { addSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
-import { settingModal } from "../../settings/setting-modal";
+import { showSettingModal } from "../../settings/setting-modal";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 
 interface SubspaceLinkProps {
@@ -100,7 +100,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   });
 
   const handleSubspaceSettings = useCallback(() => {
-    settingModal({
+    showSettingModal({
       tab: "subspace",
       subspaceId,
     });

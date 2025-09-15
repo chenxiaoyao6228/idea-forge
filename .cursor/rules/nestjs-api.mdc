@@ -25,6 +25,16 @@ This document serves as the definitive guide for code style, patterns, and conve
 - [Testing Patterns](mdc:#testing-patterns)
 - [Code Quality and Linting](mdc:#code-quality-and-linting)
 
+## Development Environment
+
+**IMPORTANT: The development server is already running!**
+
+- The NestJS API development server (`pnpm dev` in `apps/api`) is already started and running
+- **DO NOT attempt to restart or start the development server** - it's already active
+- If you need any information about the running server (logs, status, configuration), ask the user to provide it
+- The user can copy and provide any necessary information from the running development environment
+- Focus on code changes, not server management
+
 ## Project Overview
 
 This is a modern NestJS API built with:

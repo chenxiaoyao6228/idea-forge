@@ -17,6 +17,8 @@ import {
   BatchSetWorkspaceWideResponse,
   BatchAddSubspaceMemberRequest,
   BatchAddSubspaceMemberResponse,
+  SubspaceSettingsResponse,
+  UpdateSubspaceSettingsRequest,
 } from "@idea/contracts";
 
 export const subspaceApi = {
@@ -79,4 +81,9 @@ export const subspaceApi = {
   removeGroupPermission: async (id: string, groupId: string) => request.delete<void, { success: boolean }>(`/api/subspaces/${id}/group-permissions/${groupId}`),
 
   listGroupPermissions: async (id: string) => request.get<void, SubspaceGroupPermissionResponse>(`/api/subspaces/${id}/group-permissions`),
+
+  // Settings operations
+  getSubspaceSettings: async (id: string) => request.get<void, SubspaceSettingsResponse>(`/api/subspaces/${id}/settings`),
+  updateSubspaceSettings: async (id: string, data: UpdateSubspaceSettingsRequest) =>
+    request.put<UpdateSubspaceSettingsRequest, SubspaceSettingsResponse>(`/api/subspaces/${id}/settings`, data),
 };

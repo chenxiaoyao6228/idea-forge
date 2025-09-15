@@ -67,7 +67,7 @@ export const EditableTitle = React.forwardRef<{ setIsEditing: (editing: boolean)
       }
     };
 
-    if (editing && canUpdate) {
+    if (editing && editable) {
       return (
         <Input
           ref={inputRef}

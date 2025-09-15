@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, UserPlus, Settings, Copy, LogOut, Archive } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { addSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
+import { showSubspaceSettingsModal } from "@/pages/main/settings/subspace/subspace-setting-modal/subspace-settings-modal";
 import useSubspaceStore from "@/stores/subspace";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -30,9 +31,16 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
     }
   };
 
-  const handleSubspaceSettings = () => {
-    // TODO: Implement subspace settings
-    console.log("Subspace settings clicked");
+  const handleSubspaceSettings = async () => {
+    const result = await showSubspaceSettingsModal({
+      subspaceId,
+      workspaceId,
+    });
+
+    if (result) {
+      // Refresh subspace data
+      await useSubspaceStore.getState().fetchSubspace(subspaceId);
+    }
   };
 
   const handleCopySubspace = () => {
