@@ -178,6 +178,10 @@ export const UpdateSubspaceSettingsRequestSchema = z.object({
   allowTopLevelEdit: z.boolean().optional(),
   memberInvitePermission: z.enum(["ALL_MEMBERS", "ADMINS_ONLY"]).optional(),
   topLevelEditPermission: z.enum(["ALL_MEMBERS", "ADMINS_ONLY"]).optional(),
+  // Role-based permission settings
+  subspaceAdminPermission: PermissionLevelSchema.optional(),
+  subspaceMemberPermission: PermissionLevelSchema.optional(),
+  nonSubspaceMemberPermission: PermissionLevelSchema.optional(),
 });
 export type UpdateSubspaceSettingsRequest = z.infer<typeof UpdateSubspaceSettingsRequestSchema>;
 
@@ -190,6 +194,10 @@ export const SubspaceSettingsResponseSchema = z.object({
     allowTopLevelEdit: z.boolean(),
     memberInvitePermission: z.string(),
     topLevelEditPermission: z.string(),
+    // Role-based permission settings
+    subspaceAdminPermission: PermissionLevelSchema,
+    subspaceMemberPermission: PermissionLevelSchema,
+    nonSubspaceMemberPermission: PermissionLevelSchema,
     members: z.array(
       SubspaceMemberSchema.extend({
         user: z.object({

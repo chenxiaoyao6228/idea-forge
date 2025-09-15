@@ -1646,6 +1646,10 @@ export class SubspaceService {
           user: member.user,
         })),
         memberCount: subspace.members.length,
+        // Include role-based permission settings
+        subspaceAdminPermission: subspace.subspaceAdminPermission,
+        subspaceMemberPermission: subspace.subspaceMemberPermission,
+        nonSubspaceMemberPermission: subspace.nonSubspaceMemberPermission,
       } as any,
       permissions,
     };
@@ -1667,6 +1671,12 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
     }
 
+    // Auto-set initial permissions based on subspace type if type is being changed
+    let permissionUpdates = {};
+    if (settings.type) {
+      permissionUpdates = this.getInitialPermissionsForSubspaceType(settings.type);
+    }
+
     // Update the subspace
     const updatedSubspace = await this.prismaService.subspace.update({
       where: { id: subspaceId },
@@ -1682,6 +1692,12 @@ export class SubspaceService {
         ...(settings.allowTopLevelEdit !== undefined && { allowTopLevelEdit: settings.allowTopLevelEdit }),
         ...(settings.memberInvitePermission && { memberInvitePermission: settings.memberInvitePermission }),
         ...(settings.topLevelEditPermission && { topLevelEditPermission: settings.topLevelEditPermission }),
+        // Handle role-based permission updates
+        ...(settings.subspaceAdminPermission && { subspaceAdminPermission: settings.subspaceAdminPermission }),
+        ...(settings.subspaceMemberPermission && { subspaceMemberPermission: settings.subspaceMemberPermission }),
+        ...(settings.nonSubspaceMemberPermission && { nonSubspaceMemberPermission: settings.nonSubspaceMemberPermission }),
+        // Apply auto-set permissions based on subspace type
+        ...permissionUpdates,
       },
       include: {
         members: {
@@ -1731,6 +1747,44 @@ export class SubspaceService {
       return settings.permissions.canEditSettings;
     } catch (error) {
       return false;
+    }
+  }
+
+  /**
+   * Get initial permissions based on subspace type
+   */
+  private getInitialPermissionsForSubspaceType(subspaceType: SubspaceType): Partial<{
+    subspaceAdminPermission: PermissionLevel;
+    subspaceMemberPermission: PermissionLevel;
+    nonSubspaceMemberPermission: PermissionLevel;
+  }> {
+    switch (subspaceType) {
+      case "WORKSPACE_WIDE":
+        return {
+          subspaceAdminPermission: PermissionLevel.OWNER,
+          subspaceMemberPermission: PermissionLevel.OWNER,
+          // Non-subspace member permissions are not applicable for WORKSPACE_WIDE
+        };
+      case "PUBLIC":
+        return {
+          subspaceAdminPermission: PermissionLevel.OWNER,
+          subspaceMemberPermission: PermissionLevel.OWNER,
+          nonSubspaceMemberPermission: PermissionLevel.COMMENT,
+        };
+      case "INVITE_ONLY":
+        return {
+          subspaceAdminPermission: PermissionLevel.OWNER,
+          subspaceMemberPermission: PermissionLevel.OWNER,
+          nonSubspaceMemberPermission: PermissionLevel.NONE,
+        };
+      case "PRIVATE":
+        return {
+          subspaceAdminPermission: PermissionLevel.OWNER,
+          subspaceMemberPermission: PermissionLevel.OWNER,
+          nonSubspaceMemberPermission: PermissionLevel.NONE,
+        };
+      default:
+        return {};
     }
   }
 }

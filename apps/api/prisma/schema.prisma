@@ -284,6 +284,11 @@ model Subspace {
   memberInvitePermission String @default("ALL_MEMBERS") // ALL_MEMBERS, ADMINS_ONLY
   topLevelEditPermission String @default("ADMINS_ONLY") // ALL_MEMBERS, ADMINS_ONLY
 
+  // Role-based permission settings
+  subspaceAdminPermission     PermissionLevel @default(OWNER)
+  subspaceMemberPermission    PermissionLevel @default(OWNER)
+  nonSubspaceMemberPermission PermissionLevel @default(COMMENT)
+
   settings Json?
 
   navigationTree Json?

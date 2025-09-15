@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { HelpCircle, Search, UserPlus } from "lucide-react";
-import { SubspaceSettingsResponse } from "@idea/contracts";
+import { HelpCircle, Search, UserPlus, Users } from "lucide-react";
+import { SubspaceSettingsResponse, PermissionLevel } from "@idea/contracts";
 import { SubspaceTypeSelector } from "../subspace-type-selector";
+import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 
 interface MembersPermissionsTabProps {
   settings: SubspaceSettingsResponse;
@@ -17,7 +18,79 @@ export function MembersPermissionsTab({ settings, onSettingsChange, onAddMember 
   const { t } = useTranslation();
 
   const handleTypeChange = (type: any) => {
-    onSettingsChange({ type });
+    // Auto-set initial permissions based on subspace type
+    const permissionUpdates = getInitialPermissionsForSubspaceType(type);
+    onSettingsChange({ type, ...permissionUpdates });
+  };
+
+  // Helper function to get initial permissions based on subspace type
+  const getInitialPermissionsForSubspaceType = (subspaceType: string) => {
+    switch (subspaceType) {
+      case "WORKSPACE_WIDE":
+        return {
+          subspaceAdminPermission: "OWNER" as PermissionLevel,
+          subspaceMemberPermission: "OWNER" as PermissionLevel,
+          // Non-subspace member permissions are not applicable for WORKSPACE_WIDE
+        };
+      case "PUBLIC":
+        return {
+          subspaceAdminPermission: "OWNER" as PermissionLevel,
+          subspaceMemberPermission: "OWNER" as PermissionLevel,
+          nonSubspaceMemberPermission: "COMMENT" as PermissionLevel,
+        };
+      case "INVITE_ONLY":
+        return {
+          subspaceAdminPermission: "OWNER" as PermissionLevel,
+          subspaceMemberPermission: "OWNER" as PermissionLevel,
+          nonSubspaceMemberPermission: "NONE" as PermissionLevel,
+        };
+      case "PRIVATE":
+        return {
+          subspaceAdminPermission: "OWNER" as PermissionLevel,
+          subspaceMemberPermission: "OWNER" as PermissionLevel,
+          nonSubspaceMemberPermission: "NONE" as PermissionLevel,
+        };
+      default:
+        return {};
+    }
+  };
+
+  const handlePermissionChange = (permissionType: string, value: PermissionLevel) => {
+    // Validate permission changes
+    if (validatePermissionChange(permissionType, value)) {
+      onSettingsChange({ [permissionType]: value });
+    }
+  };
+
+  // Validation function to prevent invalid permission combinations
+  const validatePermissionChange = (permissionType: string, newValue: PermissionLevel): boolean => {
+    const currentSettings = settings.subspace;
+
+    // Subspace administrators should always have OWNER permissions
+    if (permissionType === "subspaceAdminPermission" && newValue !== "OWNER") {
+      console.warn("Subspace administrators must have OWNER permissions");
+      return false;
+    }
+
+    // Non-members should not have higher permissions than members
+    if (permissionType === "nonSubspaceMemberPermission") {
+      const memberPermission = currentSettings.subspaceMemberPermission;
+      if (newValue === "OWNER" || newValue === "MANAGE") {
+        console.warn("Non-subspace members cannot have higher permissions than subspace members");
+        return false;
+      }
+    }
+
+    // Members should not have lower permissions than non-members (except for NONE)
+    if (permissionType === "subspaceMemberPermission") {
+      const nonMemberPermission = currentSettings.nonSubspaceMemberPermission;
+      if (nonMemberPermission !== "NONE" && newValue === "NONE") {
+        console.warn("Subspace members should have at least READ permissions");
+        return false;
+      }
+    }
+
+    return true;
   };
 
   return (
@@ -42,17 +115,43 @@ export function MembersPermissionsTab({ settings, onSettingsChange, onAddMember 
 
           {/* Role-based permissions display */}
           <div className="space-y-3">
+            {/* Subspace Administrator */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{t("Subspace Administrator")}</span>
-              <span className="text-sm text-muted-foreground">{t("All Permissions")}</span>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="text-sm font-medium">{t("Subspace Administrator")}</span>
+              </div>
+              <PermissionLevelSelector
+                value={settings.subspace.subspaceAdminPermission}
+                onChange={(value) => handlePermissionChange("subspaceAdminPermission", value)}
+                disabled={true} // Always disabled as per requirements
+              />
             </div>
+
+            {/* Subspace Member */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{t("Subspace Member")}</span>
-              <span className="text-sm text-muted-foreground">{t("All Permissions")}</span>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="text-sm font-medium">{t("Subspace Member")}</span>
+              </div>
+              <PermissionLevelSelector
+                value={settings.subspace.subspaceMemberPermission}
+                onChange={(value) => handlePermissionChange("subspaceMemberPermission", value)}
+                disabled={!settings.permissions.canEditSettings}
+              />
             </div>
+
+            {/* Others outside the Subspace */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{t("Others outside the Subspace")}</span>
-              <span className="text-sm text-muted-foreground">{t("All Permissions")}</span>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="text-sm font-medium">{t("Others outside the Subspace")}</span>
+              </div>
+              <PermissionLevelSelector
+                value={settings.subspace.nonSubspaceMemberPermission}
+                onChange={(value) => handlePermissionChange("nonSubspaceMemberPermission", value)}
+                disabled={!settings.permissions.canEditSettings || settings.subspace.type === "WORKSPACE_WIDE"}
+              />
             </div>
           </div>
 
