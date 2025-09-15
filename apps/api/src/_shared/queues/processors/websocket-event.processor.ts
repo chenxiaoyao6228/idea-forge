@@ -242,7 +242,7 @@ export class WebsocketEventProcessor extends WorkerHost {
     const { data, name, timestamp, actorId, workspaceId } = event;
 
     // Determine target channels based on subspace type and permissions
-    const channels = this.getSubspaceEventChannels(event, data);
+    const channels = this.getSubspaceEventChannels(event, data.subspace);
 
     // Emit subspace creation event
     server.to(channels).emit(name, data);
@@ -407,15 +407,27 @@ export class WebsocketEventProcessor extends WorkerHost {
   private getSubspaceEventChannels(event: WebsocketEvent<any>, subspace: any): string[] {
     const channels: string[] = [];
 
-    if (event.actorId) {
-      channels.push(`user:${event.actorId}`);
-    }
+    // Determine notification channels based on subspace type
+    switch (subspace.type) {
+      case "PRIVATE":
+      case "PERSONAL":
+        // For private/personal subspaces, only notify the creator
+        if (event.actorId) {
+          channels.push(`user:${event.actorId}`);
+        }
+        break;
 
-    // Determine rooms based on subspace type
-    if (subspace.type === "PRIVATE" || subspace.type === "PERSONAL") {
-      channels.push(`subspace:${subspace.id}`);
-    } else {
-      channels.push(`workspace:${event.workspaceId}`);
+      case "INVITE_ONLY":
+      case "PUBLIC":
+      case "WORKSPACE_WIDE":
+        // For invite-only, public, and workspace-wide subspaces, notify all workspace members
+        channels.push(`workspace:${event.workspaceId}`);
+        break;
+
+      default:
+        // Fallback: notify workspace members for unknown types
+        channels.push(`workspace:${event.workspaceId}`);
+        break;
     }
 
     return channels;

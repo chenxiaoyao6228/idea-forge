@@ -4,13 +4,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Check, Users, Shield } from "lucide-react";
+import { Home, Users, Shield, UserPlus } from "lucide-react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
 import useSubspaceStore from "@/stores/subspace";
+import useUserStore from "@/stores/user";
+import useWorkspaceStore from "@/stores/workspace";
+import { toast } from "sonner";
 import { BasicInfoTab } from "./basic-info-tab";
 import { MembersPermissionsTab } from "./members-permissions-tab";
 import { SecurityTab } from "./security-tab";
+import { SubspaceJoinButton } from "@/components/subspace-join-button";
 
 export interface SubspaceSettingsModalProps {
   // basic info
@@ -39,11 +43,21 @@ const SubspaceSettingsModal = ({
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("basic");
   const [isLoading, setIsLoading] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
 
-  const { subspaceSettings, isSettingsLoading, fetchSubspaceSettings, updateSubspaceSettings, clearSubspaceSettings, entities } = useSubspaceStore();
+  const { subspaceSettings, isSettingsLoading, fetchSubspaceSettings, updateSubspaceSettings, clearSubspaceSettings, entities, joinSubspace, fetchList } =
+    useSubspaceStore();
+  const { userInfo } = useUserStore();
+  const { currentWorkspace } = useWorkspaceStore();
 
   // Get subspace name from store
   const subspaceName = entities[subspaceId]?.name || "Subspace";
+
+  // Check if current user is already a member of the subspace
+  const isUserMember = React.useMemo(() => {
+    if (!subspaceSettings || !userInfo) return false;
+    return subspaceSettings.subspace.members?.some((member) => member.userId === userInfo.id) || false;
+  }, [subspaceSettings, userInfo]);
 
   // Load settings when modal opens
   useEffect(() => {
@@ -82,12 +96,14 @@ const SubspaceSettingsModal = ({
       },
     };
 
-    // Update store state
+    // Update store state immediately for UI responsiveness
     useSubspaceStore.setState({ subspaceSettings: updatedSettings });
 
     // Sync to backend
     try {
-      await updateSubspaceSettings(subspaceId, changes as UpdateSubspaceSettingsRequest);
+      const response = await updateSubspaceSettings(subspaceId, changes as UpdateSubspaceSettingsRequest);
+      // Update with the actual response from server
+      useSubspaceStore.setState({ subspaceSettings: response });
     } catch (error) {
       console.error("Failed to sync settings to backend:", error);
       // Revert optimistic update on error
@@ -138,20 +154,29 @@ const SubspaceSettingsModal = ({
 
   return (
     <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0 [&>button]:hidden border border-red-500">
+      <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0 [&>button]:hidden">
         {content || (
           <>
-            <DialogHeader className="pb-4">
+            <DialogHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Home className="h-5 w-5" />
                   <DialogTitle>{subspaceName}</DialogTitle>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Check className="h-4 w-4" />
-                    {t("Joined")}
-                  </Button>
+                  <SubspaceJoinButton
+                    subspaceId={subspaceId}
+                    subspaceType={subspaceSettings.subspace.type}
+                    isUserMember={isUserMember}
+                    onJoinSuccess={async () => {
+                      // Refresh the settings to update member status
+                      await loadSettings();
+                      // Also refresh the full subspace list
+                      if (currentWorkspace?.id) {
+                        await fetchList(currentWorkspace.id);
+                      }
+                    }}
+                  />
                 </div>
               </div>
             </DialogHeader>

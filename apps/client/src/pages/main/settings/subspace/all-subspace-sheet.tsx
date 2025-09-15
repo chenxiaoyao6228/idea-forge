@@ -9,6 +9,8 @@ import useWorkspaceStore from "@/stores/workspace";
 import { showCreateSubspaceModal } from "./create-subspace-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { SubspaceJoinButton } from "@/components/subspace-join-button";
+import { SubspaceType } from "@idea/contracts";
 interface AllSubspaceSheetProps {
   children: React.ReactNode;
 }
@@ -22,8 +24,8 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const allSubspaces = useSubSpaceStore((state) => state.allSubspaces);
   const joinedSubspaces = useSubSpaceStore((state) => state.joinedSubspaces);
-  const joinSubspace = useSubSpaceStore((state) => state.joinSubspace);
   const isCreating = useSubSpaceStore((state) => state.isCreating);
+  const fetchList = useSubSpaceStore((state) => state.fetchList);
   const otherSubspaces = useMemo(() => {
     if (!allSubspaces) return [];
     const joinedIds = new Set(joinedSubspaces?.map((s) => s.id) || []);
@@ -42,15 +44,6 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
     if (!searchQuery.trim()) return otherSubspaces;
     return otherSubspaces.filter((subspace) => subspace.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [otherSubspaces, searchQuery]);
-  const handleJoin = async (subspaceId: string) => {
-    try {
-      await joinSubspace(subspaceId);
-      toast.success(t("Joined subspace successfully"));
-    } catch (error) {
-      console.error("Failed to join subspace:", error);
-      toast.error(t("Failed to join subspace"));
-    }
-  };
 
   const getSubspaceIcon = (type: string) => {
     switch (type) {
@@ -189,14 +182,17 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
                         {subspace.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{subspace.description}</div>}
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleJoin(subspace.id)}
-                      disabled={subspace.type === "PRIVATE" || subspace.type === "INVITE_ONLY"}
-                    >
-                      {subspace.type === "PRIVATE" || subspace.type === "INVITE_ONLY" ? t("Request") : t("Join")}
-                    </Button>
+                    <SubspaceJoinButton
+                      subspaceId={subspace.id}
+                      subspaceType={subspace.type as SubspaceType}
+                      isUserMember={false}
+                      onJoinSuccess={async () => {
+                        // Refresh the subspace list to update the UI
+                        if (currentWorkspace?.id) {
+                          await fetchList(currentWorkspace.id);
+                        }
+                      }}
+                    />
                   </div>
                 ))
               ) : (

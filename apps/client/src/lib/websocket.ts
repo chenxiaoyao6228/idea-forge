@@ -234,7 +234,7 @@ class WebsocketService {
 
     // Authentication events
     this.socket.on(SocketEvents.AUTH_SUCCESS, (message: GatewayMessage) => {
-      console.log("[websocket]: Authentication successful:", message.data);
+      console.log(`[websocket]: Received event ${SocketEvents.AUTH_SUCCESS}:`, message);
       if (this.socket) {
         this.socket.authenticated = true;
         this.setStatus(WebsocketStatus.CONNECTED);
@@ -249,18 +249,18 @@ class WebsocketService {
     });
 
     this.socket.on(SocketEvents.AUTH_FAILED, (message: GatewayMessage) => {
-      console.log("[websocket]: Authentication failed:", message.data);
+      console.log(`[websocket]: Received event ${SocketEvents.AUTH_FAILED}:`, message);
       this.socket?.disconnect();
       this.setStatus(WebsocketStatus.ERROR, DisconnectReason.AUTH_FAILED);
     });
 
     // Gateway connection events
     this.socket.on(SocketEvents.GATEWAY_CONNECT, (message: GatewayMessage) => {
-      console.log("[websocket]: Connected to realtime gateway:", message.data);
+      console.log(`[websocket]: Received event ${SocketEvents.GATEWAY_CONNECT}:`, message);
     });
 
     this.socket.on(SocketEvents.GATEWAY_DISCONNECT, (message: GatewayMessage) => {
-      console.log("[websocket]: Disconnected from realtime gateway:", message.data);
+      console.log(`[websocket]: Received event ${SocketEvents.GATEWAY_DISCONNECT}:`, message);
     });
   }
 
@@ -270,6 +270,7 @@ class WebsocketService {
 
     // Handle entities updates (documents and subspaces)
     this.socket.on(SocketEvents.ENTITIES, async (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.ENTITIES}:`, message);
       const { name, documentIds, subspaceIds, fetchIfMissing } = message;
 
       const documentStore = useDocumentStore.getState();
@@ -333,6 +334,7 @@ class WebsocketService {
 
     // Handle subspace creation
     this.socket.on(SocketEvents.SUBSPACE_CREATE, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_CREATE}:`, message);
       const { name, subspace } = message;
       if (!subspace) return;
 
@@ -346,6 +348,7 @@ class WebsocketService {
 
     // Handle subspace movement
     this.socket.on(SocketEvents.SUBSPACE_MOVE, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MOVE}:`, message);
       const { name, subspaceId, index, updatedAt } = message;
       if (!subspaceId) return;
 
@@ -361,6 +364,7 @@ class WebsocketService {
 
     // Handle subspace member added events
     this.socket.on(SocketEvents.SUBSPACE_MEMBER_ADDED, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MEMBER_ADDED}:`, message);
       const { subspaceId, member, memberAdded } = message;
       if (!subspaceId) return;
 
@@ -387,6 +391,7 @@ class WebsocketService {
 
     // Handle subspace members batch added events
     this.socket.on(SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED}:`, message);
       const { subspaceId, totalAdded, membersBatchAdded } = message;
       if (!subspaceId) return;
 
@@ -403,6 +408,7 @@ class WebsocketService {
     });
 
     this.socket.on(SocketEvents.SUBSPACE_MEMBER_LEFT, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MEMBER_LEFT}:`, message);
       const { subspaceId, userId } = message;
       if (!subspaceId || !userId) return;
 
@@ -426,6 +432,7 @@ class WebsocketService {
 
     // Handle subspace updates
     this.socket.on(SocketEvents.SUBSPACE_UPDATE, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_UPDATE}:`, message);
       const { name, subspace } = message;
       if (!subspace) return;
 
@@ -448,6 +455,7 @@ class WebsocketService {
 
     // Handle star related events
     this.socket.on(SocketEvents.STAR_CREATE, (event: PartialExcept<Star, "id">) => {
+      console.log(`[websocket]: Received event ${SocketEvents.STAR_CREATE}:`, event);
       if (!event.createdAt || !event.updatedAt || !event.userId || !event.docId) return;
 
       const star: StarEntity = {
@@ -463,6 +471,7 @@ class WebsocketService {
     });
 
     this.socket.on(SocketEvents.STAR_UPDATE, (event: PartialExcept<Star, "id">) => {
+      console.log(`[websocket]: Received event ${SocketEvents.STAR_UPDATE}:`, event);
       if (!event.createdAt || !event.updatedAt || !event.userId || !event.docId) return;
 
       const changes: Partial<StarEntity> = {
@@ -476,13 +485,14 @@ class WebsocketService {
     });
 
     this.socket.on(SocketEvents.STAR_DELETE, (event: { id: string; userId: string }) => {
+      console.log(`[websocket]: Received event ${SocketEvents.STAR_DELETE}:`, event);
       useStarStore.getState().removeStar(event.id);
       console.log("[websocket]: Star deleted:", event);
     });
 
     // Handle document creation
     this.socket.on(SocketEvents.DOCUMENT_UPDATE, (message: GatewayMessage) => {
-      console.log("[websocket]: Document updated:", message);
+      console.log(`[websocket]: Received event ${SocketEvents.DOCUMENT_UPDATE}:`, message);
       const { name, document, subspaceId } = message;
       if (!document) return;
 
@@ -497,6 +507,7 @@ class WebsocketService {
 
     // Handle room joining events
     this.socket.on(SocketEvents.JOIN, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.JOIN}:`, message);
       const { name, subspaceId } = message;
       if (!subspaceId) return;
 
@@ -511,6 +522,7 @@ class WebsocketService {
 
     // Handle successful room joining
     this.socket.on(SocketEvents.JOIN_SUCCESS, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.JOIN_SUCCESS}:`, message);
       const { name, roomId } = message;
       if (!roomId) return;
 
@@ -520,6 +532,7 @@ class WebsocketService {
 
     // Handle room joining errors
     this.socket.on(SocketEvents.JOIN_ERROR, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.JOIN_ERROR}:`, message);
       const { name, roomId, error } = message;
       if (!roomId) return;
       console.error(`[websocket]: Failed to join room: ${roomId}`, error);
@@ -528,6 +541,7 @@ class WebsocketService {
 
     // Handle document add user events (when user gains access to a document)
     this.socket.on(SocketEvents.DOCUMENT_ADD_USER, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.DOCUMENT_ADD_USER}:`, message);
       const { userId, documentId, document, abilities, includeChildDocuments } = message;
 
       // Check if the current user is the one who gained access

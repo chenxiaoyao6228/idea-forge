@@ -542,6 +542,20 @@ export class SubspaceService {
     const subspaces = await this.prismaService.subspace.findMany({
       where: {
         workspaceId,
+        archivedAt: null, // Only include non-archived subspaces
+        OR: [
+          // Include all non-private subspaces (PUBLIC, WORKSPACE_WIDE, INVITE_ONLY)
+          { type: { not: SubspaceType.PRIVATE } },
+          // Include private subspaces only if the user is a member
+          {
+            type: SubspaceType.PRIVATE,
+            members: {
+              some: {
+                userId: userId,
+              },
+            },
+          },
+        ],
       },
       include: {
         members: {

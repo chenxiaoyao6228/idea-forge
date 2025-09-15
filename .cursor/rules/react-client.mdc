@@ -17,6 +17,7 @@ This document serves as the definitive guide for code style, patterns, and conve
 - [State Management](mdc:#state-management)
 - [Hooks and Custom Hooks](mdc:#hooks-and-custom-hooks)
 - [Styling and UI](mdc:#styling-and-ui)
+- [Internationalization (i18n)](mdc:#internationalization-i18n)
 - [API Integration](mdc:#api-integration)
 - [Routing](mdc:#routing)
 - [Testing Patterns](mdc:#testing-patterns)
@@ -924,6 +925,324 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
 8. **Implement proper accessibility**
 9. **Use consistent design tokens**
 10. **Follow mobile-first approach**
+
+## Internationalization (i18n)
+
+### i18n Design Principles
+
+**MANDATORY: Always consider internationalization when designing and implementing pages. Take character length variations into account to avoid text truncation and other unexpected behavior across different languages.**
+
+### Character Length Considerations
+
+Different languages have significantly different character lengths for the same concept:
+
+```typescript
+// Example: "Delete" button text lengths
+const deleteTexts = {
+  en: "Delete", // 6 characters
+  de: "Löschen", // 7 characters
+  fr: "Supprimer", // 10 characters
+  es: "Eliminar", // 8 characters
+  zh: "删除", // 2 characters
+  ja: "削除", // 2 characters
+  ru: "Удалить", // 7 characters
+  ar: "حذف", // 2 characters
+};
+```
+
+### UI Design Guidelines for i18n
+
+#### 1. Flexible Layout Design
+
+```typescript
+// ✅ Good: Flexible button sizing
+<Button
+  className="min-w-[80px] px-4 py-2" // Minimum width with padding
+  variant="destructive"
+>
+  {t("Delete")}
+</Button>
+
+// ❌ Bad: Fixed width that may truncate
+<Button
+  className="w-20" // Fixed width may be too small for some languages
+  variant="destructive"
+>
+  {t("Delete")}
+</Button>
+```
+
+#### 2. Responsive Text Containers
+
+```typescript
+// ✅ Good: Flexible text containers
+<div className="flex-1 min-w-0"> {/* Allows shrinking */}
+  <h3 className="truncate" title={document.title}>
+    {document.title}
+  </h3>
+  <p className="text-sm text-muted-foreground line-clamp-2">
+    {document.description}
+  </p>
+</div>
+
+// ❌ Bad: Fixed width containers
+<div className="w-48"> {/* May be too narrow for longer text */}
+  <h3>{document.title}</h3>
+</div>
+```
+
+#### 3. Table and List Design
+
+```typescript
+// ✅ Good: Responsive table with flexible columns
+<div className="overflow-x-auto">
+  <table className="w-full min-w-[600px]">
+    {" "}
+    {/* Minimum width for content */}
+    <thead>
+      <tr>
+        <th className="text-left min-w-[200px]">{t("Document Name")}</th>
+        <th className="text-left min-w-[120px]">{t("Last Modified")}</th>
+        <th className="text-left min-w-[100px]">{t("Status")}</th>
+        <th className="text-right min-w-[80px]">{t("Actions")}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {documents.map((doc) => (
+        <tr key={doc.id}>
+          <td className="truncate max-w-[200px]" title={doc.title}>
+            {doc.title}
+          </td>
+          <td>{formatDate(doc.updatedAt)}</td>
+          <td>
+            <Badge variant={getStatusVariant(doc.status)}>
+              {t(doc.status)}
+            </Badge>
+          </td>
+          <td className="text-right">
+            <DropdownMenu>{/* Actions */}</DropdownMenu>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+```
+
+#### 4. Form Design Considerations
+
+```typescript
+// ✅ Good: Flexible form layout
+<div className="space-y-4">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-2">
+      <Label htmlFor="firstName" className="text-sm font-medium">
+        {t("First Name")}
+      </Label>
+      <Input
+        id="firstName"
+        className="w-full" // Full width within container
+        placeholder={t("Enter your first name")}
+      />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="lastName" className="text-sm font-medium">
+        {t("Last Name")}
+      </Label>
+      <Input
+        id="lastName"
+        className="w-full"
+        placeholder={t("Enter your last name")}
+      />
+    </div>
+  </div>
+
+  <div className="space-y-2">
+    <Label htmlFor="description" className="text-sm font-medium">
+      {t("Description")}
+    </Label>
+    <Textarea
+      id="description"
+      className="w-full min-h-[100px] resize-y" // Flexible height
+      placeholder={t("Enter a detailed description of your project")}
+    />
+  </div>
+</div>
+```
+
+### Text Length Testing Strategy
+
+#### 1. Test with Long Text
+
+```typescript
+// ✅ Good: Test component with various text lengths
+const testTexts = {
+  short: "Hi",
+  medium: "This is a medium length text",
+  long: "This is a very long text that might cause layout issues in some languages and should be handled properly with truncation or wrapping",
+  veryLong:
+    "This is an extremely long text that contains many words and might cause significant layout issues in various languages and should definitely be tested to ensure proper handling of text overflow and responsive design",
+};
+
+// Test component with different text lengths
+<DocumentCard title={testTexts.long} description={testTexts.veryLong} />;
+```
+
+#### 2. Use CSS for Text Handling
+
+```css
+/* ✅ Good: CSS classes for text handling */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-wrap {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+```
+
+### i18n Implementation Patterns
+
+#### 1. Translation Hook Usage
+
+```typescript
+// ✅ Good: Proper translation usage
+import { useTranslation } from "react-i18next";
+
+export function DocumentActions({ document }: DocumentActionsProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        className="min-w-[60px]" // Minimum width for button
+      >
+        {t("Edit")}
+      </Button>
+      <Button
+        size="sm"
+        variant="destructive"
+        className="min-w-[70px]" // Slightly larger for "Delete"
+      >
+        {t("Delete")}
+      </Button>
+    </div>
+  );
+}
+```
+
+#### 2. Dynamic Content Handling
+
+```typescript
+// ✅ Good: Handle dynamic content with proper spacing
+export function UserProfile({ user }: UserProfileProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Avatar className="h-12 w-12">
+          <AvatarImage src={user.avatar} />
+          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          {" "}
+          {/* Flexible container */}
+          <h2 className="font-semibold truncate" title={user.name}>
+            {user.name}
+          </h2>
+          <p className="text-sm text-muted-foreground truncate">{t("Last active: {{date}}", { date: formatDate(user.lastActive) })}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Common i18n Pitfalls to Avoid
+
+#### 1. Fixed Width Elements
+
+```typescript
+// ❌ Bad: Fixed widths that don't accommodate longer text
+<div className="w-32"> {/* Too narrow for some languages */}
+  <Button>{t("Create New Document")}</Button>
+</div>
+
+// ✅ Good: Flexible widths with minimum constraints
+<div className="min-w-[120px]">
+  <Button className="w-full">{t("Create New Document")}</Button>
+</div>
+```
+
+#### 2. Hardcoded Text Lengths
+
+```typescript
+// ❌ Bad: Assuming text length
+const maxLength = 50; // May be too short for some languages
+
+// ✅ Good: Language-aware length limits
+const getMaxLength = (language: string) => {
+  const limits = {
+    en: 50,
+    de: 60, // German tends to be longer
+    zh: 25, // Chinese characters are more compact
+    ja: 30,
+  };
+  return limits[language] || 50;
+};
+```
+
+#### 3. Ignoring Text Direction
+
+```typescript
+// ✅ Good: Support for RTL languages
+<div className="text-left rtl:text-right"> {/* RTL support */}
+  <p>{t("Welcome to our application")}</p>
+</div>
+
+// ✅ Good: Flexible icon positioning
+<div className="flex items-center gap-2 rtl:flex-row-reverse">
+  <Icon className="h-4 w-4" />
+  <span>{t("Settings")}</span>
+</div>
+```
+
+### i18n Best Practices
+
+#### DO ✅
+
+1. **Always use flexible layouts** - Avoid fixed widths for text containers
+2. **Test with long text** - Use placeholder text of varying lengths
+3. **Use CSS truncation** - Implement proper text overflow handling
+4. **Consider text direction** - Support RTL languages when needed
+5. **Use semantic HTML** - Proper heading hierarchy and landmarks
+6. **Implement responsive design** - Ensure layouts work on all screen sizes
+7. **Use translation keys consistently** - Follow naming conventions
+8. **Handle dynamic content** - Account for variable-length translated content
+
+#### DON'T ❌
+
+1. **Don't use fixed widths** - Text length varies significantly across languages
+2. **Don't assume text length** - Always test with longer translations
+3. **Don't ignore text overflow** - Implement proper truncation or wrapping
+4. **Don't hardcode text** - Always use translation functions
+5. **Don't forget RTL support** - Consider right-to-left languages
+6. **Don't use absolute positioning** - Use flexible layouts instead
+7. **Don't ignore mobile layouts** - Ensure responsive design works with longer text
 
 ## API Integration
 

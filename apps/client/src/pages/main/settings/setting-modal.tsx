@@ -74,7 +74,7 @@ const SettingModal = ({
 
   return (
     <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0">
+      <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0 [&>button]:hidden">
         {content || (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full gap-4 overflow-hidden">
             <TabsList className="grid gap-2 bg-inherit text-left">

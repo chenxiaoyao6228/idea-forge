@@ -102,6 +102,9 @@ export function MembersPermissionsTab({ settings, onSettingsChange, onAddMember 
           </div>
         </CardContent>
       </Card>
+
+      {/* FIXME: if you remove this, a wierd gap shows up at the top of the modal */}
+      <div className="h-10"></div>
     </div>
   );
 }
