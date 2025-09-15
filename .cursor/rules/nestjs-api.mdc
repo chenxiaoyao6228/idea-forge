@@ -349,6 +349,7 @@ export class DocumentController {
 - Use `@UseGuards` for authentication/authorization.
 - Inject services via constructor.
 - Use DTOs for request validation.
+- **Always use `@Patch` instead of `@Put` for update operations** - PATCH is preferred for partial updates.
 - Return service results directly; use presenters for response shaping if needed.
 - Handle errors with global exception filters.
 

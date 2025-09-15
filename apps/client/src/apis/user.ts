@@ -20,7 +20,7 @@ export const userApi = {
    * @param body - Updated user data
    * @returns Updated user information
    */
-  update: async (id: string, body: UpdateUserRequest) => request.put<UpdateUserRequest, UserResponse>(`/api/users/${id}`, body),
+  update: async (id: string, body: UpdateUserRequest) => request.patch<UpdateUserRequest, UserResponse>(`/api/users/${id}`, body),
 
   /**
    * Search users with pagination and filtering

@@ -41,7 +41,7 @@ export class SubspaceController {
     return this.subspaceService.getSubspace(id, userId);
   }
 
-  @Put(":id")
+  @Patch(":id")
   @CheckPolicy(Action.Update, "Subspace")
   async updateSubspace(@Param("id") id: string, @Body() dto: UpdateSubspaceDto, @GetUser("id") userId: string) {
     return this.subspaceService.updateSubspace(id, dto, userId);
@@ -130,7 +130,7 @@ export class SubspaceController {
   //   return this.subspaceService.getSubspaceSettings(id, userId);
   // }
 
-  // @Put(":id/settings")
+  // @Patch(":id/settings")
   // @CheckPolicy(Action.Update, "Subspace")
   // async updateSubspaceSettings(@Param("id") id: string, @Body() dto: UpdateSubspaceSettingsDto, @GetUser("id") userId: string) {
   //   return this.subspaceService.updateSubspaceSettings(id, dto, userId);

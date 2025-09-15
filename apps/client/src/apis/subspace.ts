@@ -56,7 +56,7 @@ export const subspaceApi = {
     request.post<BatchAddSubspaceMemberRequest, BatchAddSubspaceMemberResponse>(`/api/subspaces/${subspaceId}/members/batch`, data),
 
   updateSubspaceMember: async (subspaceId: string, memberId: string, data: UpdateSubspaceMemberRequest) =>
-    request.put<UpdateSubspaceMemberRequest, { member: any }>(`/api/subspaces/${subspaceId}/members/${memberId}`, data),
+    request.patch<UpdateSubspaceMemberRequest, { member: any }>(`/api/subspaces/${subspaceId}/members/${memberId}`, data),
 
   removeSubspaceMember: async (subspaceId: string, memberId: string) =>
     request.delete<void, { success: boolean }>(`/api/subspaces/${subspaceId}/members/${memberId}`),
