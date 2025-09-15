@@ -182,7 +182,7 @@ export function DocumentLink(props: DocumentLinkProps) {
             onSubmit={handleTitleChange}
             isEditing={isEditing}
             onEditing={setIsEditing}
-            canUpdate={true} // Add proper permission check here
+            editable={true} // Add proper permission check here
             maxLength={255}
             ref={editableTitleRef}
           />

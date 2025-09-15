@@ -213,8 +213,8 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
         {status !== "loading" && (
           <>
             <EditorContent editor={editor} className="w-full" />
-            {/* <BubbleMenus editor={editor} containerRef={menuContainerRef} /> */}
-            {/* <AIPanel editor={editor} /> */}
+            <BubbleMenus editor={editor} containerRef={menuContainerRef} />
+            <AIPanel editor={editor} />
           </>
         )}
       </div>

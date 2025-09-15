@@ -26,7 +26,7 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
 
     if (!randomCover) throw new Error("No preset covers available");
 
-    const response = await documentApi.updateCover(doc.id, {
+    await documentApi.updateCover(doc.id, {
       url: randomCover.url,
       scrollY: 50,
       isPreset: true,
@@ -34,7 +34,6 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
   }, [doc.id]);
 
   const onIconSelect = (icon: string) => {
-    // TODO: update through websocket
     documentApi.update(doc.id, { icon });
   };
 
@@ -146,6 +145,13 @@ function TitleInput({ doc, editable, onUpdateTitle }: TitleInputProps) {
       debouncedUpdate.cancel();
     };
   }, [debouncedUpdate]);
+
+  // Sync local state with prop changes from WebSocket events
+  useEffect(() => {
+    if (!isEditing) {
+      setValue(doc?.title || t("Untitled"));
+    }
+  }, [doc.title, isEditing, t]);
 
   const enableInput = () => {
     if (!editable) return;

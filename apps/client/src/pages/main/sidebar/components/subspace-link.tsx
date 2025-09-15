@@ -214,7 +214,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
               onSubmit={handleTitleChange}
               isEditing={isEditing}
               onEditing={setIsEditing}
-              canUpdate={true}
+              editable={true}
               maxLength={255}
               ref={editableTitleRef}
             />

@@ -150,16 +150,32 @@ export class DocumentService {
       await this.updateSubspaceNavigationTree(updatedDoc.subspaceId!, "update", updatedDoc);
     }
 
-    await this.eventPublisher.publishWebsocketEvent({
-      name: BusinessEvents.DOCUMENT_UPDATE,
-      workspaceId: updatedDoc.workspaceId,
-      actorId: updatedDoc.lastModifiedById.toString(),
-      data: {
-        document: presentDocument(updatedDoc, { isPublic: true }),
-        subspaceId: updatedDoc.subspaceId || null,
+    // Fetch complete updated document with relations for WebSocket event
+    const completeUpdatedDoc = await this.prismaService.doc.findUnique({
+      where: { id },
+      include: {
+        author: true,
+        workspace: true,
+        subspace: true,
+        coverImage: true,
+        parent: true,
+        children: true,
       },
-      timestamp: new Date().toISOString(),
     });
+
+    if (completeUpdatedDoc) {
+      // Publish WebSocket event for real-time synchronization
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.DOCUMENT_UPDATE,
+        workspaceId: completeUpdatedDoc.workspaceId,
+        actorId: userId,
+        data: {
+          document: presentDocument(completeUpdatedDoc, { isPublic: true }),
+          subspaceId: completeUpdatedDoc.subspaceId || null,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     return updatedDoc;
   }
@@ -655,15 +671,16 @@ export class DocumentService {
   async updateCover(docId: string, userId: string, dto: UpdateCoverDto) {
     // 1. verify doc and cover exist
     const doc = await this.prismaService.doc.findFirst({
-      where: { id: docId, authorId: userId },
+      where: { id: docId },
       include: { coverImage: true },
     });
     if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
 
+    let coverResult: any;
     // 2. if no cover, create new cover
     if (!doc.coverImage) {
       if (!dto.url) throw new BadRequestException("URL is required for new cover");
-      return this.prismaService.coverImage.create({
+      coverResult = await this.prismaService.coverImage.create({
         data: {
           url: dto.url,
           scrollY: dto.scrollY || 0,
@@ -671,17 +688,46 @@ export class DocumentService {
           isPreset: dto.isPreset || false,
         },
       });
+    } else {
+      // 3. update existing cover
+      coverResult = await this.prismaService.coverImage.update({
+        where: { docId },
+        data: {
+          ...(dto.url && { url: dto.url }),
+          ...(dto.scrollY !== undefined && { scrollY: dto.scrollY }),
+          ...(dto.isPreset !== undefined && { isPreset: dto.isPreset }),
+        },
+      });
     }
 
-    // 3. update existing cover
-    return this.prismaService.coverImage.update({
-      where: { docId },
-      data: {
-        ...(dto.url && { url: dto.url }),
-        ...(dto.scrollY !== undefined && { scrollY: dto.scrollY }),
-        ...(dto.isPreset !== undefined && { isPreset: dto.isPreset }),
+    // 4. Fetch complete updated document with relations for WebSocket event
+    const updatedDoc = await this.prismaService.doc.findUnique({
+      where: { id: docId },
+      include: {
+        author: true,
+        workspace: true,
+        subspace: true,
+        coverImage: true,
+        parent: true,
+        children: true,
       },
     });
+
+    if (updatedDoc) {
+      // 5. Publish WebSocket event for real-time synchronization
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.DOCUMENT_UPDATE,
+        workspaceId: updatedDoc.workspaceId,
+        actorId: userId,
+        data: {
+          document: presentDocument(updatedDoc, { isPublic: true }),
+          subspaceId: updatedDoc.subspaceId || null,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return coverResult;
   }
 
   async removeCover(docId: string, userId: string) {
@@ -693,9 +739,38 @@ export class DocumentService {
     if (!doc || !doc.coverImage) throw new ApiException(ErrorCodeEnum.DocumentCoverNotFound);
 
     // 2. delete cover
-    return await this.prismaService.coverImage.delete({
+    const deleteResult = await this.prismaService.coverImage.delete({
       where: { docId },
     });
+
+    // 3. Fetch complete updated document with relations for WebSocket event
+    const updatedDoc = await this.prismaService.doc.findUnique({
+      where: { id: docId },
+      include: {
+        author: true,
+        workspace: true,
+        subspace: true,
+        coverImage: true,
+        parent: true,
+        children: true,
+      },
+    });
+
+    if (updatedDoc) {
+      // 4. Publish WebSocket event for real-time synchronization
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.DOCUMENT_UPDATE,
+        workspaceId: updatedDoc.workspaceId,
+        actorId: userId,
+        data: {
+          document: presentDocument(updatedDoc, { isPublic: true }),
+          subspaceId: updatedDoc.subspaceId || null,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return deleteResult;
   }
 
   async duplicate(userId: string, id: string) {

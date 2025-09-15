@@ -19,14 +19,15 @@ interface CoverProps {
 }
 
 const CONTAINER_HEIGHT_VH = 30;
+const DEFAULT_SCROLL_Y = 50;
 
-export default function Cover({ cover = { url: "", scrollY: 50 }, editable = false }: CoverProps) {
+export default function Cover({ cover = { url: "", scrollY: DEFAULT_SCROLL_Y }, editable = false }: CoverProps) {
   const { t } = useTranslation();
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
   const currentDocument = useCurrentDocument();
   const isCurrentDocLoading = useDocumentStore((state) => state.isFetching);
-  const [imagePosition, setImagePosition] = useState(cover.scrollY || 50);
+  const [imagePosition, setImagePosition] = useState(cover.scrollY || DEFAULT_SCROLL_Y);
   const [startY, setStartY] = useState(0);
   const imageRef = useRef<HTMLImageElement>(null);
   const { isLoading: isCoverImgLoading, handleImageLoad } = useImageLoading();
@@ -63,7 +64,7 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, editable = fal
   const handleCancelRepositioning = () => {
     if (!currentDocument) return;
     setIsRepositioning(false);
-    setImagePosition(scrollY);
+    setImagePosition(cover.scrollY || DEFAULT_SCROLL_Y);
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -91,9 +92,9 @@ export default function Cover({ cover = { url: "", scrollY: 50 }, editable = fal
 
   useEffect(() => {
     if (cover.url) {
-      setImagePosition(scrollY);
+      setImagePosition(cover.scrollY || DEFAULT_SCROLL_Y);
     }
-  }, [cover.url]);
+  }, [cover.url, cover.scrollY]);
 
   useEffect(() => {
     const handlePointerUp = (e: PointerEvent) => {

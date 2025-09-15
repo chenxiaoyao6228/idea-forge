@@ -7,14 +7,14 @@ interface EditableTitleProps {
   onSubmit: (value: string) => Promise<void> | void;
   isEditing?: boolean;
   onEditing?: (editing: boolean) => void;
-  canUpdate?: boolean;
+  editable?: boolean;
   maxLength?: number;
   placeholder?: string;
   onCancel?: () => void;
 }
 
 export const EditableTitle = React.forwardRef<{ setIsEditing: (editing: boolean) => void }, EditableTitleProps>(
-  ({ title, onSubmit, isEditing, onEditing, canUpdate, maxLength, placeholder, onCancel }, ref) => {
+  ({ title, onSubmit, isEditing, onEditing, editable, maxLength, placeholder, onCancel }, ref) => {
     const [value, setValue] = React.useState(title);
     const [isEditingInternal, setIsEditingInternal] = React.useState(false);
     const inputRef = React.useRef<HTMLInputElement>(null);
@@ -34,6 +34,13 @@ export const EditableTitle = React.forwardRef<{ setIsEditing: (editing: boolean)
         inputRef.current.select();
       }
     }, [editing]);
+
+    // Sync local state with prop changes from WebSocket events
+    React.useEffect(() => {
+      if (!editing) {
+        setValue(title);
+      }
+    }, [title, editing]);
 
     const handleSubmit = async () => {
       if (value.trim() && value !== title) {

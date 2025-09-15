@@ -18,6 +18,7 @@ export class WebsocketEventProcessor extends WorkerHost {
 
   // Process incoming WebSocket events from the queue
   async process(job: Job<WebsocketEvent<any>>) {
+    console.log("[websocket-event-processor]: Processing event:", job.data);
     const event = job.data;
     const { data, name, timestamp, actorId, workspaceId } = event;
     const server = this.realtimeGateway.server;
@@ -202,7 +203,7 @@ export class WebsocketEventProcessor extends WorkerHost {
     const { document } = data;
 
     // Determine target channels based on document visibility and permissions
-    const channels = this.getDocumentEventChannels(event, document);
+    const channels = await this.getDocumentEventChannels(event, document);
 
     // Emit document update event to target channels
     server.to(channels).emit(BusinessEvents.DOCUMENT_UPDATE, data);

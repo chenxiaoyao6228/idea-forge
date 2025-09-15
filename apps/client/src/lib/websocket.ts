@@ -482,6 +482,7 @@ class WebsocketService {
 
     // Handle document creation
     this.socket.on(SocketEvents.DOCUMENT_UPDATE, (message: GatewayMessage) => {
+      console.log("[websocket]: Document updated:", message);
       const { name, document, subspaceId } = message;
       if (!document) return;
 
