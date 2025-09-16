@@ -18,10 +18,12 @@ import { Search as SearchIcon, Download, Users, Trash2, Box, Inbox, Settings } f
 import { useTranslation } from "react-i18next";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useWorkspaceType } from "@/hooks/use-workspace-type";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
   const { t } = useTranslation();
+  const { isPersonalWorkspace } = useWorkspaceType();
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragMove={handleDragMove} onDragOver={handleDragOver}>
@@ -130,7 +132,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
           {/* docs */}
           <SidebarContent className="custom-scrollbar">
             <StarsArea />
-            <SubspacesArea />
+            {!isPersonalWorkspace && <SubspacesArea />}
             <SharedWithMe />
             <MyDocsArea />
           </SidebarContent>

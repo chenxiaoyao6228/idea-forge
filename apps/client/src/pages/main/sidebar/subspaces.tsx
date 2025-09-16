@@ -11,11 +11,13 @@ import useWorkspaceStore from "@/stores/workspace";
 import useSubSpaceStore from "@/stores/subspace";
 import { AllSubspaceSheet } from "../settings/subspace/all-subspace-sheet";
 import { showCreateSubspaceModal } from "../settings/subspace/create-subspace-dialog";
+import { useWorkspaceType } from "@/hooks/use-workspace-type";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
+  const { isPersonalWorkspace } = useWorkspaceType();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const joinedSubspaces = useSubSpaceStore((state) => state.joinedSubspaces);
   const fetchList = useSubSpaceStore((state) => state.fetchList);
@@ -35,6 +37,9 @@ export default function SubspacesArea() {
       fetchList(currentWorkspace.id);
     }
   }, [fetchList, currentWorkspace]);
+
+  // Hide subspace area for personal workspaces
+  if (isPersonalWorkspace) return null;
 
   if (!joinedSubspaces) return null;
 

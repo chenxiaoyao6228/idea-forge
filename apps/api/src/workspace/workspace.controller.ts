@@ -18,6 +18,11 @@ export class WorkspaceController {
     return this.workspaceService.createWorkspace(dto, userId);
   }
 
+  @Post("initialize")
+  async initializeWorkspace(@Body() dto: CreateWorkspaceDto, @GetUser("id") userId: string) {
+    return this.workspaceService.initializeWorkspace(dto, userId);
+  }
+
   @Get()
   async getWorkspaces(@GetUser("id") userId: string): Promise<WorkspaceListResponse> {
     return this.workspaceService.getUserWorkspaces(userId);

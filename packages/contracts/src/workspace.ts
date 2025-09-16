@@ -10,11 +10,23 @@ export const WorkspaceSettingsSchema = z.object({
 });
 export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>;
 
+// Workspace types
+export const WorkspaceTypeEnumSchema = z.enum(["PERSONAL", "TEAM"]);
+export type WorkspaceTypeEnum = z.infer<typeof WorkspaceTypeEnumSchema>;
+
+// Export enum values for runtime use
+export const WorkspaceTypeEnum = {
+  PERSONAL: "PERSONAL" as const,
+  TEAM: "TEAM" as const,
+};
+
 // Create workspace
 export const CreateWorkspaceRequestSchema = WorkspaceSchema.pick({
   name: true,
   description: true,
   avatar: true,
+}).extend({
+  type: WorkspaceTypeEnumSchema,
 });
 export type CreateWorkspaceRequest = z.infer<typeof CreateWorkspaceRequestSchema>;
 

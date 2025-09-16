@@ -7,7 +7,7 @@ import { presentWorkspace } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
 import { PermissionService } from "@/permission/permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { ResourceType, WorkspaceRole, WorkspaceMember, SubspaceType, SubspaceRole } from "@idea/contracts";
+import { ResourceType, WorkspaceRole, WorkspaceMember, SubspaceType, SubspaceRole, WorkspaceType } from "@idea/contracts";
 
 @Injectable()
 export class WorkspaceService {
@@ -128,6 +128,7 @@ export class WorkspaceService {
         name: dto.name,
         description: dto.description,
         avatar: dto.avatar,
+        type: dto.type || WorkspaceType.PERSONAL,
         settings: defaultSettings as any,
         members: {
           create: {
@@ -141,12 +142,13 @@ export class WorkspaceService {
     // Assign workspace permissions to creator with full ownership
     const permission = await this.permissionService.assignWorkspacePermissions(userId, workspace.id, WorkspaceRole.OWNER, userId);
 
-    // TODO: add some default subspaces
+    // Create subspaces based on workspace type
+    if (dto.type === WorkspaceType.TEAM) {
+      // For team workspaces, create a default public subspace
+      await this.subspaceService.createDefaultGlobalSubspace(userId, workspace.id);
+    }
 
-    // Propagate permissions to all child resources (subspaces and documents)
-    // TODO:
-
-    // --- Create personal subspace for the owner ---
+    // Always create personal subspace for the owner
     await this.subspaceService.createPersonalSubspace(userId, workspace.id);
 
     return presentWorkspace(workspace);

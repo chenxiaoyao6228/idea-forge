@@ -8,6 +8,7 @@ import { Subspace } from "@/pages/main/settings/subspace";
 import { Workspace } from "@/pages/main/settings/workspace";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
+import { useWorkspaceType } from "@/hooks/use-workspace-type";
 
 export interface SettingModalProps {
   // basic info
@@ -34,6 +35,7 @@ const SettingModal = ({
   content,
 }: ConfirmDialogProps<SettingModalProps, boolean>) => {
   const { t } = useTranslation();
+  const { isPersonalWorkspace } = useWorkspaceType();
   const [activeTab, setActiveTab] = useState(tab);
   const [activeSubspaceId, setActiveSubspaceId] = useState<string | undefined>(subspaceId);
 
@@ -44,7 +46,7 @@ const SettingModal = ({
   }, [tab, subspaceId]);
 
   const tabList = useMemo(() => {
-    return [
+    const baseTabs = [
       {
         key: "profile",
         name: t("Account"),
@@ -66,7 +68,10 @@ const SettingModal = ({
         Icon: Layers,
       },
     ];
-  }, [t]);
+
+    // Filter out subspaces tab for personal workspaces
+    return isPersonalWorkspace ? baseTabs.filter((tab) => tab.key !== "subspaces") : baseTabs;
+  }, [t, isPersonalWorkspace]);
 
   const handleClose = () => {
     proceed?.(null);
@@ -93,9 +98,11 @@ const SettingModal = ({
             <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
               <Members />
             </TabsContent>
-            <TabsContent tabIndex={-1} value="subspaces" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-              <Subspace activeSubspaceId={activeSubspaceId} />
-            </TabsContent>
+            {!isPersonalWorkspace && (
+              <TabsContent tabIndex={-1} value="subspaces" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
+                <Subspace activeSubspaceId={activeSubspaceId} />
+              </TabsContent>
+            )}
             <TabsContent tabIndex={-1} value="workspace" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
               <Workspace />
             </TabsContent>

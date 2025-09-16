@@ -17,6 +17,7 @@ export interface WorkspaceEntity {
   updatedAt?: Date | string;
   settings?: WorkspaceSettings | null;
   memberSubspaceCreate?: boolean;
+  type?: "PERSONAL" | "TEAM";
 }
 
 interface State {
@@ -78,6 +79,7 @@ const useWorkspaceStore = create<StoreState>()(
                   updatedAt: workspace.updatedAt,
                   memberSubspaceCreate: workspace.memberSubspaceCreate,
                   settings: workspace.settings as WorkspaceSettings | null,
+                  type: workspace.type,
                 }));
 
                 get().setAll(workspaceEntities);
@@ -156,6 +158,7 @@ const useWorkspaceStore = create<StoreState>()(
                 updatedAt: updatedWorkspace.updatedAt,
                 memberSubspaceCreate: updatedWorkspace.memberSubspaceCreate,
                 settings: updatedWorkspace.settings as WorkspaceSettings | null,
+                type: updatedWorkspace.type,
               };
 
               // Update the workspace in store with the converted data
@@ -223,9 +226,6 @@ const useWorkspaceStore = create<StoreState>()(
       ),
       {
         name: STORE_NAME,
-        partialize: (state) => ({
-          currentWorkspace: state.currentWorkspace,
-        }),
       },
     ),
   ),

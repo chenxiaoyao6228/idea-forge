@@ -14,6 +14,9 @@ export const workspaceApi = {
   // Workspace operations
   createWorkspace: async (data: CreateWorkspaceRequest) => request.post<CreateWorkspaceRequest, Workspace>("/api/workspaces", data),
 
+  initializeWorkspace: async (data: CreateWorkspaceRequest) =>
+    request.post<CreateWorkspaceRequest, { workspace: Workspace }>("/api/workspaces/initialize", data),
+
   getWorkspace: async (id: string) => request.get<void, Workspace>(`/api/workspaces/${id}`),
 
   getWorkspaces: async () => request.get<void, WorkspaceListResponse>("/api/workspaces"),

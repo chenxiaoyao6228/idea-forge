@@ -162,12 +162,13 @@ enum UserStatus {
 }
 
 model Workspace {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
   description String?
   avatar      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  type        WorkspaceType @default(TEAM)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   memberSubspaceCreate Boolean @default(false)
   settings             Json?
@@ -525,4 +526,9 @@ enum DocType {
   NOTE
   WHITEBOARD
   MIND
+}
+
+enum WorkspaceType {
+  PERSONAL
+  TEAM
 }
