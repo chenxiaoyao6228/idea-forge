@@ -1,12 +1,10 @@
-import React from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserPlus, Settings, Copy, LogOut, Archive } from "lucide-react";
+import { MoreHorizontal, UserPlus, Settings, LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { showAddSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
 import { showSubspaceSettingsModal } from "@/pages/main/settings/subspace/subspace-setting-modal/subspace-settings-modal";
 import useSubspaceStore, { useLeaveSubspace } from "@/stores/subspace";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SubspaceMenuProps {
   subspaceId: string;
@@ -43,10 +41,15 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
     }
   };
 
-  const handleLeaveSubspace = () => {
-    leaveSubspace({
-      subspaceId,
-    });
+  const handleLeaveSubspace = async () => {
+    try {
+      await leaveSubspace({
+        subspaceId,
+      });
+    } catch (error) {
+      // Error is already handled by the hook (toast shown)
+      // Component can add additional error handling if needed
+    }
   };
 
   const handleArchiveSubspace = () => {

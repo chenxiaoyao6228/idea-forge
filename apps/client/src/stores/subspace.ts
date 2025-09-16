@@ -1030,51 +1030,55 @@ export const useBatchAddSubspaceMembers = () => {
       subspaceId: string;
       items: Array<{ id: string; type: "user" | "group"; role: "MEMBER" | "ADMIN" }>;
     }) => {
-      const response = await subspaceApi.batchAddSubspaceMembers(params.subspaceId, { items: params.items });
-      return response as BatchAddSubspaceMemberResponse;
-    },
-    {
-      manual: true,
-      onSuccess: (response: BatchAddSubspaceMemberResponse) => {
-        if (response.addedCount > 0) {
-          toast.success(t("Successfully added {{count}} member(s)", { count: response.addedCount }));
+      try {
+        const response = await subspaceApi.batchAddSubspaceMembers(params.subspaceId, { items: params.items });
+        const result = response;
+
+        // Handle success toasts
+        if (result.addedCount > 0) {
+          toast.success(t("Successfully added {{count}} member(s)", { count: result.addedCount }));
         }
 
-        if (response.skipped && response.skipped.length > 0) {
-          const skippedMessages = response.skipped.map((item: any) => `${item.type === "user" ? "User" : "Group"} ${item.id}: ${item.reason}`).join(", ");
+        if (result.skipped && result.skipped.length > 0) {
+          const skippedMessages = result.skipped.map((item: any) => `${item.type === "user" ? "User" : "Group"} ${item.id}: ${item.reason}`).join(", ");
           toast.info(
             t("Skipped {{count}} item(s) - {{reasons}}", {
-              count: response.skipped.length,
+              count: result.skipped.length,
               reasons: skippedMessages,
             }),
           );
         }
 
-        if (response.errors && response.errors.length > 0) {
-          const errorMessages = response.errors.map((error: any) => `${error.type === "user" ? "User" : "Group"} ${error.id}: ${error.error}`).join(", ");
+        if (result.errors && result.errors.length > 0) {
+          const errorMessages = result.errors.map((error: any) => `${error.type === "user" ? "User" : "Group"} ${error.id}: ${error.error}`).join(", ");
           toast.error(t("Some items failed to add: {{errors}}", { errors: errorMessages }));
         }
 
         // If no members were added and no errors, show a message
-        if (response.addedCount === 0 && (!response.errors || response.errors.length === 0)) {
+        if (result.addedCount === 0 && (!result.errors || result.errors.length === 0)) {
           toast.info(t("All selected members are already part of this subspace"));
         }
-      },
-      onError: (error) => {
+
+        return result;
+      } catch (error) {
         console.error("Failed to batch add subspace members:", error);
         toast.error(t("Failed to add members"));
-      },
+        throw error;
+      }
+    },
+    {
+      manual: true,
     },
   );
 };
 
-// Custom hook for leaving subspace with toast handling and callback support
+// Custom hook for leaving subspace with toast handling
 export const useLeaveSubspace = () => {
   const { t } = useTranslation();
   const removeOne = useSubSpaceStore((state) => state.removeOne);
 
   return useRequest(
-    async (params: { subspaceId: string; onSuccess?: () => void }) => {
+    async (params: { subspaceId: string }) => {
       try {
         await subspaceApi.leaveSubspace(params.subspaceId);
 
@@ -1083,9 +1087,6 @@ export const useLeaveSubspace = () => {
 
         // Show success toast
         toast.success(t("Successfully left the subspace"));
-
-        // Call the success callback if provided
-        params.onSuccess?.();
 
         return { success: true };
       } catch (error: any) {
@@ -1100,15 +1101,8 @@ export const useLeaveSubspace = () => {
           toast.error(errorMessage);
         }
 
-        // Return structured error information for the component to handle
-        return {
-          success: false,
-          error: {
-            code: code || "unknown_error",
-            message: error?.response?.data?.message || error?.message || "Failed to leave subspace",
-            originalError: error,
-          },
-        };
+        // Re-throw the error for useRequest to handle
+        throw error;
       }
     },
     {

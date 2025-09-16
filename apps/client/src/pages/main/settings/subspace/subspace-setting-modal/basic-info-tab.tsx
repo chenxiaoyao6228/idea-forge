@@ -58,11 +58,16 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
     }
   };
 
-  const handleLeaveSubspace = () => {
-    leaveSubspace({
-      subspaceId,
-      onSuccess: onLeaveSubspace,
-    });
+  const handleLeaveSubspace = async () => {
+    try {
+      await leaveSubspace({
+        subspaceId,
+      });
+      onLeaveSubspace?.();
+    } catch (error) {
+      // Error is already handled by the hook (toast shown)
+      // Component can add additional error handling if needed
+    }
   };
 
   const handleArchiveSubspace = () => {

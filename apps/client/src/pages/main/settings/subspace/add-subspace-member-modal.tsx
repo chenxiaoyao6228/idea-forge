@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useBatchAddSubspaceMembers } from "@/stores/subspace";
-import { BatchAddSubspaceMemberResponse } from "@idea/contracts";
 import { MultiSelectOption } from "@/components/ui/multi-select";
 import { MemberAndGroupSelect } from "@/components/member-group-select";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
