@@ -255,6 +255,8 @@
   "insert Below": "insert Below",
   "workspace description": "workspace description",
   "workspace name": "workspace name",
+  "Joined {{count}} workspace": "Joined {{count}} workspace",
+  "Joined {{count}} workspace_plural": "Joined {{count}} workspaces",
   "{{count}} members": "{{count}} members",
   "{{count}} members_plural": "{{count}} members",
   "time.today": "Today",

@@ -142,7 +142,11 @@ export function MultiSelect({
       >
         <div className="flex flex-wrap gap-1">
           {selected.map((option) => {
-            return renderBadge ? renderBadge(option, () => handleUnselect(option)) : defaultRenderBadge(option, () => handleUnselect(option));
+            return (
+              <React.Fragment key={option.value}>
+                {renderBadge ? renderBadge(option, () => handleUnselect(option)) : defaultRenderBadge(option, () => handleUnselect(option))}
+              </React.Fragment>
+            );
           })}
           <CommandPrimitive.Input
             ref={inputRef}
@@ -165,7 +169,7 @@ export function MultiSelect({
                   const isSeparator = option.type === "separator";
 
                   if (isSeparator) {
-                    return renderOption ? renderOption(option) : defaultRenderOption(option);
+                    return <React.Fragment key={option.value}>{renderOption ? renderOption(option) : defaultRenderOption(option)}</React.Fragment>;
                   }
 
                   return (

@@ -61,8 +61,8 @@ const SettingModal = ({
         Icon: Building2,
       },
       {
-        key: "subspace",
-        name: t("Subspace"),
+        key: "subspaces",
+        name: t("Subspaces"),
         Icon: Layers,
       },
     ];
@@ -93,7 +93,7 @@ const SettingModal = ({
             <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
               <Members />
             </TabsContent>
-            <TabsContent tabIndex={-1} value="subspace" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
+            <TabsContent tabIndex={-1} value="subspaces" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
               <Subspace activeSubspaceId={activeSubspaceId} />
             </TabsContent>
             <TabsContent tabIndex={-1} value="workspace" className="mt-0 size-full overflow-y-auto overflow-x-hidden">

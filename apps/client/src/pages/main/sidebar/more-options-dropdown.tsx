@@ -26,7 +26,7 @@ export const MoreOptionsDropdown = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <SidebarMenuButton className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors">
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreHorizontal className="h-6 w-6" />
         </SidebarMenuButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">

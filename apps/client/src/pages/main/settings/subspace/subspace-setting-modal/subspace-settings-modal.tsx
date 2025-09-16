@@ -3,14 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Home, Users, Shield, UserPlus } from "lucide-react";
+import { Home, Users, Shield, Loader2 } from "lucide-react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
 import useSubspaceStore from "@/stores/subspace";
 import useUserStore from "@/stores/user";
 import useWorkspaceStore from "@/stores/workspace";
-import { toast } from "sonner";
 import { BasicInfoTab } from "./basic-info-tab";
 import { MembersPermissionsTab } from "./members-permissions-tab";
 import { SecurityTab } from "./security-tab";
@@ -121,7 +119,7 @@ const SubspaceSettingsModal = ({
         <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
               <p className="text-muted-foreground">{t("Loading settings...")}</p>
             </div>
           </div>

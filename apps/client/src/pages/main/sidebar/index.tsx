@@ -33,18 +33,18 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
             <WorkspaceSwitcher />
 
             {/* Quick start */}
-            <SidebarGroup className="group-data-[collapsible=icon]:hidden p-1">
-              <div className="flex items-center justify-between  w-full">
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden py-1 px-2">
+              <div className="flex items-center justify-between  w-full gap-2">
                 {/* Search */}
-                <div className="flex items-center justify-center flex-1">
+                <div className="flex items-center justify-center">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <SidebarMenuButton
                           onClick={() => showSearchModal()}
-                          className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
+                          className="flex items-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
                         >
-                          <SearchIcon className="h-4 w-4" />
+                          <SearchIcon className="h-6 w-6" />
                         </SidebarMenuButton>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -55,7 +55,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                 </div>
 
                 {/* Import Files */}
-                <div className="flex items-center justify-center flex-1">
+                <div className="flex items-center justify-center ">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -63,7 +63,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                           onClick={() => showImportFilesModal()}
                           className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
                         >
-                          <Download className="h-4 w-4" />
+                          <Download className="h-6 w-6" />
                         </SidebarMenuButton>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -74,15 +74,15 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                 </div>
 
                 {/* Workspace Settings */}
-                <div className="flex items-center justify-center flex-1">
+                <div className="flex items-center justify-center ">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <SidebarMenuButton
-                          onClick={() => showSettingModal({ tab: "subspace" })}
+                          onClick={() => showSettingModal({ tab: "profile" })}
                           className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
                         >
-                          <Settings className="h-4 w-4" />
+                          <Settings className="h-6 w-6" />
                         </SidebarMenuButton>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -93,7 +93,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                 </div>
 
                 {/* Mailbox */}
-                <div className="flex items-center justify-center flex-1">
+                <div className="flex items-center justify-center ">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -101,7 +101,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                           onClick={() => {}}
                           className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
                         >
-                          <Inbox className="h-4 w-4" />
+                          <Inbox className="h-6 w-6" />
                         </SidebarMenuButton>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -112,7 +112,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                 </div>
 
                 {/* More Options */}
-                {/* <div className="flex items-center justify-center flex-1">
+                <div className="flex items-center justify-center ">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -123,7 +123,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                </div> */}
+                </div>
               </div>
             </SidebarGroup>
           </SidebarHeader>

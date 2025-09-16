@@ -235,10 +235,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <DialogTitle>{t("Create Subspace")}</DialogTitle>
-              <p className="text-sm text-muted-foreground">{t("Use subspaces to organize pages, permissions, and members")}</p>
-            </div>
+            <DialogTitle>{t("Create Subspace")}</DialogTitle>
             <div className="flex-shrink-0 ml-4">
               <MoreAboutSubspaceTip className="mr-1" />
             </div>

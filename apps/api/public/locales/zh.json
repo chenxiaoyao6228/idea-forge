@@ -274,6 +274,8 @@
   "insert Below": "在下方插入",
   "workspace description": "工作区描述",
   "workspace name": "工作区名称",
+  "Joined {{count}} workspace": "已加入{{count}}个工作区",
+  "Joined {{count}} workspace_plural": "已加入{{count}}个工作区",
   "{{count}} members": "{{count}} 位成员",
   "{{count}} members_many": "{{count}} 位成员",
   "{{count}} members_one": "{{count}} 位成员",
