@@ -19,6 +19,7 @@ import useUserStore from "./user";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import useRequest from "@ahooksjs/use-request";
+import { useMemo } from "react";
 
 const STORE_NAME = "subspaceStore";
 
@@ -1020,6 +1021,22 @@ function convertDocEntityToNavigationNode(doc: DocumentEntity): NavigationNode {
 }
 
 export const getPersonalSubspace = (state: StoreState) => subspaceSelectors.selectAll(state).find((s) => (s as any).type === "PERSONAL");
+
+// Custom hook to check if current user is the only admin in a subspace
+export const useIsLastSubspaceAdmin = (subspaceId: string) => {
+  const subspace = useSubSpaceStore((state) => subspaceSelectors.selectById(state, subspaceId));
+  const { userInfo } = useUserStore();
+
+  return useMemo(() => {
+    if (!userInfo?.id || !subspace?.members) {
+      return false;
+    }
+
+    const admins = subspace.members.filter((member) => member.role === "ADMIN");
+    const currentUserIsAdmin = admins.some((admin) => admin.userId === userInfo.id);
+    return currentUserIsAdmin && admins.length === 1;
+  }, [userInfo?.id, subspace?.members]);
+};
 
 // Custom hook for batch adding subspace members with toast handling
 export const useBatchAddSubspaceMembers = () => {

@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { MoreHorizontal, UserPlus, Settings, LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { showAddSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
 import { showSubspaceSettingsModal } from "@/pages/main/settings/subspace/subspace-setting-modal/subspace-settings-modal";
-import useSubspaceStore, { useLeaveSubspace } from "@/stores/subspace";
+import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin } from "@/stores/subspace";
 
 interface SubspaceMenuProps {
   subspaceId: string;
@@ -16,6 +17,7 @@ interface SubspaceMenuProps {
 export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspaceId }: SubspaceMenuProps) {
   const { t } = useTranslation();
   const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
+  const isLastAdmin = useIsLastSubspaceAdmin(subspaceId);
 
   const handleAddMembers = async () => {
     const result = await showAddSubspaceMemberModal({
@@ -74,10 +76,12 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
           <Settings className="mr-2 h-4 w-4" />
           {t("Subspace settings...")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleLeaveSubspace} disabled={isLeavingSubspace}>
-          <LogOut className="mr-2 h-4 w-4" />
-          {isLeavingSubspace ? t("Leaving...") : t("Leave subspace")}
-        </DropdownMenuItem>
+        <TooltipWrapper disabled={isLastAdmin} tooltip={t("Cannot leave as the only admin")}>
+          <DropdownMenuItem onClick={handleLeaveSubspace} disabled={isLeavingSubspace || isLastAdmin}>
+            <LogOut className="mr-2 h-4 w-4" />
+            {isLeavingSubspace ? t("Leaving...") : t("Leave subspace")}
+          </DropdownMenuItem>
+        </TooltipWrapper>
 
         {/* <TooltipProvider>
           <Tooltip>

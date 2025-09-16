@@ -78,8 +78,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     try {
       setIsCreating(true);
       const newDocId = await createDocument({
-        // FIXME:
-        title: "Doc" + Math.floor(Math.random() * 1000),
+        title: t("Untitled"),
         parentId: null,
         subspaceId,
       });
@@ -121,9 +120,10 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateDocument} disabled={isCreating} title={t("Create new document")}>
           <PlusIcon className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleRename} disabled={isEditing} title={t("Rename subspace")}>
+        {/* Update: change the subspace name on the setting */}
+        {/* <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleRename} disabled={isEditing} title={t("Rename subspace")}>
           <EditIcon className="h-3 w-3" />
-        </Button>
+        </Button> */}
 
         <SubspaceMenu subspaceId={subspace.id} subspaceName={subspace.name} subspaceType={subspace.type} workspaceId={subspace.workspaceId} />
       </div>
@@ -147,7 +147,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
               onSubmit={handleTitleChange}
               isEditing={isEditing}
               onEditing={setIsEditing}
-              editable={true}
+              editable={false}
               maxLength={255}
               ref={editableTitleRef}
             />

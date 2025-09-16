@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Home, Check, Archive, Trash2, ArrowLeft } from "lucide-react";
-import useSubspaceStore, { useLeaveSubspace } from "@/stores/subspace";
+import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin } from "@/stores/subspace";
 
 interface BasicInfoTabProps {
   subspaceId: string;
@@ -18,6 +19,7 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
   const { t } = useTranslation();
   const { subspaceSettings, updateSubspaceSettings } = useSubspaceStore();
   const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
+  const isLastAdmin = useIsLastSubspaceAdmin(subspaceId);
   const [isSaving, setIsSaving] = useState(false);
   const [localSettings, setLocalSettings] = useState({
     name: "",
@@ -194,15 +196,17 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
               <div className="text-sm font-medium">{t("Leave Subspace")}</div>
               <div className="text-xs text-muted-foreground">{t("Remove this subspace from my sidebar")}</div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-destructive border-destructive/20 hover:bg-destructive/10"
-              onClick={handleLeaveSubspace}
-              disabled={isLeavingSubspace}
-            >
-              {isLeavingSubspace ? t("Leaving...") : t("Leave")}
-            </Button>
+            <TooltipWrapper disabled={isLastAdmin} tooltip={t("Cannot leave as the only admin")}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive border-destructive/20 hover:bg-destructive/10"
+                onClick={handleLeaveSubspace}
+                disabled={isLeavingSubspace || isLastAdmin}
+              >
+                {isLeavingSubspace ? t("Leaving...") : t("Leave")}
+              </Button>
+            </TooltipWrapper>
           </div>
 
           {/* Archive Subspace */}
@@ -216,7 +220,13 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
                 {t("Remove this subspace from members' sidebars, and subspace settings and page content will become read-only mode")}
               </div>
             </div>
-            <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive/10" onClick={handleArchiveSubspace}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive border-destructive/20 hover:bg-destructive/10"
+              disabled
+              onClick={handleArchiveSubspace}
+            >
               {t("Archive")}
             </Button>
           </div>
@@ -230,7 +240,13 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
               <div className="text-sm font-medium text-destructive/80">{t("Delete Subspace")}</div>
               <div className="text-xs text-muted-foreground">{t("This will delete the subspace and all its permissions and member settings")}</div>
             </div>
-            <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive/10" onClick={handleDeleteSubspace}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive border-destructive/20 hover:bg-destructive/10"
+              disabled
+              onClick={handleDeleteSubspace}
+            >
               {t("Delete")}
             </Button>
           </div>
