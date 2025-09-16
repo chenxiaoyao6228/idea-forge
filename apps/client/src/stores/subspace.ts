@@ -75,6 +75,7 @@ interface Action {
 
   // Member management actions
   batchAddSubspaceMembers: (subspaceId: string, items: Array<{ id: string; type: "user" | "group"; role: "MEMBER" | "ADMIN" }>) => Promise<any>;
+  batchRemoveSubspaceMembers: (subspaceId: string, memberIds: string[]) => Promise<any>;
 
   // Settings management actions
   fetchSubspaceSettings: (subspaceId: string) => Promise<SubspaceSettingsResponse>;
@@ -941,6 +942,20 @@ const useSubSpaceStore = create<StoreState>()(
             return response;
           } catch (error) {
             console.error("Failed to batch add subspace members:", error);
+            throw error;
+          }
+        },
+
+        batchRemoveSubspaceMembers: async (subspaceId: string, memberIds: string[]) => {
+          try {
+            const response = await subspaceApi.batchRemoveSubspaceMembers(subspaceId, memberIds);
+
+            // Note: No manual refresh needed here - websocket events will handle the refresh automatically
+            // The SUBSPACE_MEMBER_LEFT events will trigger refreshSubspaceMembers()
+
+            return response;
+          } catch (error) {
+            console.error("Failed to batch remove subspace members:", error);
             throw error;
           }
         },

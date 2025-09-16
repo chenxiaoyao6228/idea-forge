@@ -91,6 +91,7 @@ class WebsocketService {
   private reconnectDelay = 1000;
   private connectionPromise = resolvablePromise();
   private joinedRooms = new Set<string>();
+  private refreshTimeouts = new Map<string, NodeJS.Timeout>();
 
   // Update connection status and emit status change event
   private setStatus(status: WebsocketStatus, reason?: DisconnectReason) {
@@ -385,7 +386,7 @@ class WebsocketService {
         toast.success(`You've been added to a subspace`);
       } else {
         // Another user was added, refresh subspace member list
-        subspaceStore.refreshSubspaceMembers(subspaceId);
+        this.debouncedRefreshSubspaceMembers(subspaceId);
       }
     });
 
@@ -400,7 +401,7 @@ class WebsocketService {
       // Single refresh for batch operation instead of multiple individual refreshes
       if (membersBatchAdded) {
         // Refresh subspace member list once for the entire batch
-        subspaceStore.refreshSubspaceMembers(subspaceId);
+        this.debouncedRefreshSubspaceMembers(subspaceId);
 
         // Show single notification for batch operation
         toast.success(`${totalAdded} members added to subspace`);
@@ -409,7 +410,7 @@ class WebsocketService {
 
     this.socket.on(SocketEvents.SUBSPACE_MEMBER_LEFT, (message: GatewayMessage) => {
       console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MEMBER_LEFT}:`, message);
-      const { subspaceId, userId } = message;
+      const { subspaceId, userId, memberLeft, removedBy, batchRemoval } = message;
       if (!subspaceId || !userId) return;
 
       const subspaceStore = useSubSpaceStore.getState();
@@ -423,10 +424,26 @@ class WebsocketService {
         if (this.socket) {
           this.leaveRoom(`subspace:${subspaceId}`);
         }
+
+        // Show notification for self-removal
+        toast.success("You have left the subspace");
       } else {
-        // If another user left, update the subspace member count or refresh data
-        // This could trigger a refresh of the subspace member list
-        subspaceStore.refreshSubspaceMembers(subspaceId);
+        // If another user left, refresh the subspace member list
+        if (memberLeft) {
+          // Use debounced refresh to prevent multiple rapid calls
+          this.debouncedRefreshSubspaceMembers(subspaceId);
+
+          // Show notification for member removal (only once, not for each batch event)
+          if (!batchRemoval) {
+            if (removedBy === userInfo?.id) {
+              // Current user removed someone else
+              toast.success("Member removed from subspace");
+            } else {
+              // Someone else was removed by another admin
+              toast.info("A member was removed from the subspace");
+            }
+          }
+        }
       }
     });
 
@@ -599,6 +616,24 @@ class WebsocketService {
   // Helper method to get all joined rooms
   getJoinedRooms(): string[] {
     return Array.from(this.joinedRooms);
+  }
+
+  // Debounced refresh method to prevent multiple rapid calls
+  private debouncedRefreshSubspaceMembers(subspaceId: string) {
+    // Clear existing timeout for this subspace
+    const existingTimeout = this.refreshTimeouts.get(subspaceId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    // Set new timeout
+    const timeout = setTimeout(() => {
+      const subspaceStore = useSubSpaceStore.getState();
+      subspaceStore.refreshSubspaceMembers(subspaceId);
+      this.refreshTimeouts.delete(subspaceId);
+    }, 300); // 300ms debounce delay
+
+    this.refreshTimeouts.set(subspaceId, timeout);
   }
 
   // Public API methods

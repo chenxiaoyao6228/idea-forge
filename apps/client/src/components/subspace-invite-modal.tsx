@@ -39,6 +39,7 @@ const SubspaceInviteModal: React.FC<ConfirmDialogProps<SubspaceInviteModalProps,
 }) => {
   const { t } = useTranslation();
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [selectedRole, setSelectedRole] = useState<SubspaceRole>("MEMBER");
   const [existingMemberIds, setExistingMemberIds] = useState<Set<string>>(new Set());
   const [existingGroupIds, setExistingGroupIds] = useState<Set<string>>(new Set());
 
@@ -96,7 +97,7 @@ const SubspaceInviteModal: React.FC<ConfirmDialogProps<SubspaceInviteModalProps,
 
   const handleSelectionChange = (selected: MultiSelectOption[]) => {
     const newSelectedItems: SelectedItem[] = selected.map((option) => {
-      // Preserve existing role if member was already selected, otherwise use default role
+      // Preserve existing role if member was already selected, otherwise use selectedRole
       const existingItem = selectedItems.find((item) => item.id === option.value);
       return {
         id: option.value,
@@ -106,13 +107,15 @@ const SubspaceInviteModal: React.FC<ConfirmDialogProps<SubspaceInviteModalProps,
         avatar: option.avatar,
         memberCount: option.memberCount,
         isExistingMember: option.isExistingMember,
-        role: existingItem?.role || "MEMBER",
+        role: existingItem?.role || selectedRole,
       };
     });
     setSelectedItems(newSelectedItems);
   };
 
   const handleRoleChange = (newRole: SubspaceRole) => {
+    setSelectedRole(newRole);
+    // Also update existing selected items to the new role
     setSelectedItems((prev) => prev.map((item) => ({ ...item, role: newRole })));
   };
 
@@ -247,7 +250,7 @@ const SubspaceInviteModal: React.FC<ConfirmDialogProps<SubspaceInviteModalProps,
               {/* Single role selector on the right */}
               {
                 <div className="w-32 space-y-2">
-                  <Select value={selectedItems[0]?.role || "MEMBER"} onValueChange={handleRoleChange}>
+                  <Select value={selectedRole} onValueChange={handleRoleChange}>
                     <SelectTrigger className="w-full h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
@@ -281,7 +284,7 @@ const SubspaceInviteModal: React.FC<ConfirmDialogProps<SubspaceInviteModalProps,
                 Inviting...
               </>
             ) : (
-              `Invite ${totalMemberCount} member${totalMemberCount !== 1 ? "s" : ""}`
+              `Invite`
             )}
           </Button>
         </DialogFooter>

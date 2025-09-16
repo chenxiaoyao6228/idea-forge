@@ -63,6 +63,11 @@ export const subspaceApi = {
   removeSubspaceMember: async (subspaceId: string, memberId: string) =>
     request.delete<void, { success: boolean }>(`/api/subspaces/${subspaceId}/members/${memberId}`),
 
+  batchRemoveSubspaceMembers: async (subspaceId: string, memberIds: string[]) =>
+    request.delete<{ memberIds: string[] }, { success: boolean; removedCount: number; removedMembers: any[] }>(`/api/subspaces/${subspaceId}/members/batch`, {
+      data: { memberIds },
+    }),
+
   fetchNavigationTree: async (subspaceId: string) => request.get<void, NavigationNode>(`/api/subspaces/${subspaceId}/navigationTree`),
 
   // User Permissions

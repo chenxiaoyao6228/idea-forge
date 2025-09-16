@@ -14,6 +14,9 @@ import { PermissionLevelSelector } from "@/components/ui/permission-level-select
 import { showSubspaceInviteModal } from "@/components/subspace-invite-modal";
 import { displayUserName } from "@/lib/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { subspaceApi } from "@/apis/subspace";
+import { toast } from "sonner";
+import useUserStore from "@/stores/user";
 
 interface MembersPermissionsTabProps {
   settings: SubspaceSettingsResponse;
@@ -22,6 +25,7 @@ interface MembersPermissionsTabProps {
 
 export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPermissionsTabProps) {
   const { t } = useTranslation();
+  const userInfo = useUserStore((state) => state.userInfo);
 
   const handleTypeChange = (type: any) => {
     // Auto-set initial permissions based on subspace type
@@ -30,13 +34,39 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
   };
 
   const handleMemberRoleChange = (memberId: string, newRole: SubspaceRole) => {
+    // Find the member being updated
+    const member = settings.subspace.members.find((m) => m.id === memberId);
+
+    // Prevent users from changing their own role
+    if (member && member.userId === userInfo?.id) {
+      toast.error(t("You cannot change your own role"));
+      return;
+    }
+
     const updatedMembers = settings.subspace.members.map((member) => (member.id === memberId ? { ...member, role: newRole } : member));
     onSettingsChange({ members: updatedMembers });
   };
 
-  const handleRemoveMember = (memberId: string) => {
-    const updatedMembers = settings.subspace.members.filter((member) => member.id !== memberId);
-    onSettingsChange({ members: updatedMembers });
+  const handleRemoveMember = async (memberId: string) => {
+    // Find the member being removed
+    const member = settings.subspace.members.find((m) => m.id === memberId);
+
+    // Prevent users from removing themselves
+    if (member && member.userId === userInfo?.id) {
+      toast.error(t("You cannot remove yourself from the subspace"));
+      return;
+    }
+
+    try {
+      // Call API to remove member
+      await subspaceApi.removeSubspaceMember(settings.subspace.id, memberId);
+
+      // Note: No manual refresh needed here - websocket events will handle the refresh automatically
+      // The SUBSPACE_MEMBER_LEFT event will trigger refreshSubspaceMembers()
+    } catch (error) {
+      console.error("Failed to remove member:", error);
+      toast.error(t("Failed to remove member"));
+    }
   };
 
   // Helper function to get initial permissions based on subspace type
@@ -227,50 +257,61 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {settings.subspace.members.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={member.user.imageUrl || undefined} alt={member.user.displayName || member.user.email} />
-                          <AvatarFallback>{displayUserName(member.user)[0].toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="font-medium">{displayUserName(member.user)}</div>
-                        {/* <div className="text-sm text-muted-foreground">{member.user.email}</div> */}
-                      </div>
-                    </TableCell>
-                    <TableCell className="">
-                      <div className="flex">
-                        <Select value={member.role} onValueChange={(value: SubspaceRole) => handleMemberRoleChange(member.id, value)}>
-                          <SelectTrigger className="w-40 h-8 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MEMBER">{t("Subspace Member")}</SelectItem>
-                            <SelectItem value="ADMIN">{t("Subspace Admin")}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TableCell>
-                    <TableCell className="">
-                      <div className="flex justify-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleRemoveMember(member.id)} className="text-destructive focus:text-destructive">
-                              <UserMinus className="h-4 w-4 mr-2" />
-                              {t("Remove user from subspace")}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {settings.subspace.members.map((member) => {
+                  const isCurrentUser = member.userId === userInfo?.id;
+
+                  return (
+                    <TableRow key={member.id}>
+                      <TableCell className="">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={member.user.imageUrl || undefined} alt={member.user.displayName || member.user.email} />
+                            <AvatarFallback>{displayUserName(member.user)[0].toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="font-medium">
+                            {displayUserName(member.user)}
+                            {isCurrentUser && <span className="text-sm text-muted-foreground ml-2">({t("You")})</span>}
+                          </div>
+                          {/* <div className="text-sm text-muted-foreground">{member.user.email}</div> */}
+                        </div>
+                      </TableCell>
+                      <TableCell className="">
+                        <div className="flex">
+                          <Select
+                            value={member.role}
+                            onValueChange={(value: SubspaceRole) => handleMemberRoleChange(member.id, value)}
+                            disabled={isCurrentUser}
+                          >
+                            <SelectTrigger className="w-40 h-8 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MEMBER">{t("Subspace Member")}</SelectItem>
+                              <SelectItem value="ADMIN">{t("Subspace Admin")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TableCell>
+                      <TableCell className="">
+                        <div className="flex justify-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isCurrentUser}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleRemoveMember(member.id)} className="text-destructive focus:text-destructive">
+                                <UserMinus className="h-4 w-4 mr-2" />
+                                {t("Remove user from subspace")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

@@ -118,6 +118,12 @@ export class SubspaceController {
     return this.subspaceService.removeSubspaceMember(id, memberId, userId);
   }
 
+  @Delete(":id/members/batch")
+  @CheckPolicy(Action.ManageMembers, "Subspace")
+  async batchRemoveSubspaceMembers(@Param("id") id: string, @Body() dto: { memberIds: string[] }, @GetUser("id") userId: string) {
+    return this.subspaceService.batchRemoveSubspaceMembers(id, dto.memberIds, userId);
+  }
+
   @Get(":id/members")
   @CheckPolicy(Action.ViewMembers, "Subspace")
   async getSubspaceMembers(@Param("id") id: string, @GetUser("id") userId: string): Promise<SubspaceMemberListResponse> {

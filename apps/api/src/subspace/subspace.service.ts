@@ -1164,11 +1164,149 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
     }
 
+    // Get the member to be removed and subspace info for websocket event
+    const memberToRemove = await this.prismaService.subspaceMember.findUnique({
+      where: { id: memberId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+        subspace: {
+          select: {
+            workspaceId: true,
+          },
+        },
+      },
+    });
+
+    if (!memberToRemove) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // Delete member record
     await this.prismaService.subspaceMember.delete({
       where: { id: memberId },
     });
 
+    // Delete related permissions
+    await this.prismaService.unifiedPermission.deleteMany({
+      where: {
+        userId: memberToRemove.userId,
+        resourceType: ResourceType.SUBSPACE,
+        resourceId: subspaceId,
+      },
+    });
+
+    // Publish WebSocket event to notify other users
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_MEMBER_LEFT,
+      workspaceId: memberToRemove.subspace.workspaceId,
+      actorId: currentUserId,
+      data: {
+        subspaceId,
+        userId: memberToRemove.userId,
+        memberLeft: true,
+        removedBy: currentUserId,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
     return { success: true };
+  }
+
+  async batchRemoveSubspaceMembers(subspaceId: string, memberIds: string[], currentUserId: string) {
+    // Check if current user is an admin of the subspace
+    const currentUserMember = await this.prismaService.subspaceMember.findFirst({
+      where: {
+        subspaceId,
+        userId: currentUserId,
+        role: "ADMIN",
+      },
+    });
+
+    if (!currentUserMember) {
+      throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
+    }
+
+    // Get subspace info for websocket events
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      select: { workspaceId: true },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // Get members to be removed
+    const membersToRemove = await this.prismaService.subspaceMember.findMany({
+      where: {
+        id: { in: memberIds },
+        subspaceId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    if (membersToRemove.length === 0) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // Delete member records
+    await this.prismaService.subspaceMember.deleteMany({
+      where: {
+        id: { in: memberIds },
+        subspaceId,
+      },
+    });
+
+    // Delete related permissions for all removed members
+    const removedUserIds = membersToRemove.map((member) => member.userId);
+    await this.prismaService.unifiedPermission.deleteMany({
+      where: {
+        userId: { in: removedUserIds },
+        resourceType: ResourceType.SUBSPACE,
+        resourceId: subspaceId,
+      },
+    });
+
+    // Publish WebSocket events for each removed member
+    for (const member of membersToRemove) {
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.SUBSPACE_MEMBER_LEFT,
+        workspaceId: subspace.workspaceId,
+        actorId: currentUserId,
+        data: {
+          subspaceId,
+          userId: member.userId,
+          memberLeft: true,
+          removedBy: currentUserId,
+          batchRemoval: true,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return {
+      success: true,
+      removedCount: membersToRemove.length,
+      removedMembers: membersToRemove.map((member) => ({
+        id: member.id,
+        userId: member.userId,
+        user: member.user,
+      })),
+    };
   }
 
   async getSubspaceMembers(subspaceId: string, userId: string) {

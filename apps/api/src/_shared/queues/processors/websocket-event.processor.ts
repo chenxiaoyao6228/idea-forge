@@ -348,20 +348,16 @@ export class WebsocketEventProcessor extends WorkerHost {
   // Handle subspace member left events
   private async handleSubspaceMemberLeftEvent(event: WebsocketEvent<any>, server: any) {
     const { data, workspaceId } = event;
-    const { subspaceId, userId } = data;
+    const { subspaceId, userId, removedBy, batchRemoval } = data;
 
     // Notify all workspace members about the member leaving
+    // Only send to workspace room to avoid duplicate events (subspace members are also workspace members)
     server.to(`workspace:${workspaceId}`).emit(BusinessEvents.SUBSPACE_MEMBER_LEFT, {
       subspaceId,
       userId,
       memberLeft: true,
-    });
-
-    // Notify the subspace room (remaining members)
-    server.to(`subspace:${subspaceId}`).emit(BusinessEvents.SUBSPACE_MEMBER_LEFT, {
-      subspaceId,
-      userId,
-      memberLeft: true,
+      removedBy,
+      batchRemoval,
     });
   }
 
