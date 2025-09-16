@@ -129,7 +129,7 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
             <CardTitle>{t("Manage subspaces")}</CardTitle>
             <CardDescription>{t("You can browse and manage subspaces here")}</CardDescription>
           </div>
-          <Button onClick={() => showCreateSubspaceModal(workspaceId)}>
+          <Button onClick={() => showCreateSubspaceModal({ workspaceId })}>
             <Plus className="h-4 w-4 mr-1" />
             {t("Create subspace")}
           </Button>

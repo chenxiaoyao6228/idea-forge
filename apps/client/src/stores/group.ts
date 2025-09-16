@@ -176,7 +176,7 @@ const useGroupStore = create<StoreState>()(
         fetchWorkspaceGroups: async (workspaceId: string) => {
           try {
             const { data } = await groupApi.list({
-              limit: 100,
+              limit: 1000,
               page: 1,
               sortBy: "name",
               sortOrder: "asc",

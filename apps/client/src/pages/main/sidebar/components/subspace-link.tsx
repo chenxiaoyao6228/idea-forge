@@ -1,11 +1,9 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { PlusIcon, MoreHorizontal, EditIcon, Layers } from "lucide-react";
+import { PlusIcon, EditIcon, Layers } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
 import { SidebarLink } from "./sidebar-link";
@@ -14,7 +12,7 @@ import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
 import { subspaceApi } from "@/apis/subspace";
 import { useRefCallback } from "@/hooks/use-ref-callback";
-import { showSubspaceSettingsModal } from "../../settings/subspace/subspace-setting-modal/subspace-settings-modal";
+import { SubspaceMenu } from "../../settings/subspace/subspace-menu";
 
 interface SubspaceLinkProps {
   subspace: SubspaceEntity;
@@ -40,8 +38,6 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   const [isNavigationTreeFirstLoaded, setIsNavigationTreeFirstLoaded] = useState(false);
 
   const editableTitleRef = React.useRef<{ setIsEditing: (editing: boolean) => void }>(null);
-
-  const leaveSubspace = useSubSpaceStore((state) => state.leaveSubspace);
 
   // Auto-expand if contains active document
   const shouldExpand = useMemo(() => {
@@ -98,49 +94,6 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
     }
   });
 
-  const handleSubspaceSettings = useCallback(() => {
-    showSubspaceSettingsModal({
-      subspaceId,
-      workspaceId: subspace.workspaceId,
-    });
-  }, [subspaceId]);
-
-  const handleAddMembers = useCallback(async () => {
-    await showSubspaceSettingsModal({
-      subspaceId,
-      workspaceId: subspace.workspaceId,
-    });
-  }, [subspaceId, subspace.workspaceId]);
-
-  const handleLeaveSubspace = useCallback(async () => {
-    try {
-      const result = await leaveSubspace(subspaceId);
-
-      if (result.success) {
-        toast.success(t("Successfully left subspace"));
-      } else if (result.error) {
-        // Handle specific error codes
-        switch (result.error.code) {
-          case "cannot_leave_as_last_admin":
-            toast.error(t("Cannot leave subspace as the last admin. Please assign another admin first."));
-            break;
-          case "not_member":
-            toast.error(t("You are not a member of this subspace"));
-            break;
-          case "permission_denied":
-            toast.error(t("You don't have permission to leave this subspace"));
-            break;
-          default:
-            toast.error(result.error.message || t("Failed to leave subspace"));
-        }
-      }
-    } catch (error) {
-      // Fallback error handling
-      console.error("Unexpected error leaving subspace:", error);
-      toast.error(t("An unexpected error occurred"));
-    }
-  }, [subspaceId, leaveSubspace, t]);
-
   const handleTitleChange = useCallback(
     async (value: string) => {
       try {
@@ -172,23 +125,10 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
           <EditIcon className="h-3 w-3" />
         </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" title={t("More options")}>
-              <MoreHorizontal className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleAddMembers}>{t("Add members")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={handleSubspaceSettings}>{t("Subspace settings")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={handleLeaveSubspace} className="text-destructive focus:text-destructive">
-              {t("Leave subspace")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <SubspaceMenu subspaceId={subspace.id} subspaceName={subspace.name} subspaceType={subspace.type} workspaceId={subspace.workspaceId} />
       </div>
     ),
-    [handleCreateDocument, handleRename, handleAddMembers, handleSubspaceSettings, handleLeaveSubspace, subspaceId, subspace.name, subspace.workspaceId],
+    [handleCreateDocument, handleRename, subspaceId, subspace.name, subspace.workspaceId, subspace.type],
   );
 
   const dragStyle = {

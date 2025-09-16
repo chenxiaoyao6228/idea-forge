@@ -12,13 +12,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ImageCropper } from "@/components/image-cropper";
 import { MultiSelectOption } from "@/components/ui/multi-select";
 import { SubspaceTypeSchema } from "@idea/contracts";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore, { useBatchAddSubspaceMembers } from "@/stores/subspace";
 import { uploadFile } from "@/lib/upload";
 import { dataURLtoFile } from "@/lib/file";
 import { MoreAboutSubspaceTip } from "./more-about-subspace-tip";
 import { SubspaceType } from "@idea/contracts";
-import { SubspaceMemberSelect } from "@/components/subspace-member-select";
+import { MemberAndGroupSelect } from "@/components/member-group-select";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
+import { getInitialChar } from "@/lib/auth";
 
 interface CreateSubspaceDialogProps {
   workspaceId: string;
@@ -54,7 +55,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
 
   // Get store methods
   const createSubspace = useSubSpaceStore((state) => state.create);
-  const batchAddSubspaceMembers = useSubSpaceStore((state) => state.batchAddSubspaceMembers);
+  const { run: batchAddSubspaceMembers } = useBatchAddSubspaceMembers();
 
   // Auto-focus name input when dialog opens
   useEffect(() => {
@@ -178,19 +179,14 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
       // Step 2: Add members if any selected (skip for WORKSPACE_WIDE)
       if (type !== "WORKSPACE_WIDE" && selectedMembers.length > 0) {
         try {
-          await batchAddSubspaceMembers(
-            subspace.id,
-            selectedMembers.map((item) => ({
+          await batchAddSubspaceMembers({
+            subspaceId: subspace.id,
+            items: selectedMembers.map((item) => ({
               id: item.id,
               type: item.type,
               role: "MEMBER",
             })),
-          );
-          toast.success(
-            t("Subspace created with {{count}} member(s)", {
-              count: selectedMembers.length,
-            }),
-          );
+          });
         } catch (memberError) {
           // Subspace created but member addition failed
           console.error("Failed to add members:", memberError);
@@ -210,15 +206,11 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.charAt(0).toUpperCase();
-  };
-
   const avatarComponent = (
     <div className="group relative flex h-fit items-center justify-center cursor-pointer">
       <Avatar className="size-14">
         <AvatarImage src={avatarUrl || ""} />
-        <AvatarFallback className="text-lg">{getInitials(name) || "S"}</AvatarFallback>
+        <AvatarFallback className="text-lg">{getInitialChar(name) || "S"}</AvatarFallback>
       </Avatar>
       <div
         className="absolute left-0 top-0 size-full rounded-full bg-transparent group-hover:bg-muted-foreground/20 flex items-center justify-center"
@@ -313,7 +305,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
           {type !== "WORKSPACE_WIDE" ? (
             <div className="space-y-2">
               <Label>{t("Add Subspace Members")}</Label>
-              <SubspaceMemberSelect
+              <MemberAndGroupSelect
                 workspaceId={workspaceId}
                 selectedItems={selectedMembers}
                 onSelectionChange={setSelectedMembers}

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { BasicInfoTab } from "./basic-info-tab";
 import { MembersPermissionsTab } from "./members-permissions-tab";
 import { SecurityTab } from "./security-tab";
-import { SubspaceJoinButton } from "@/components/subspace-join-button";
+import { SubspaceJoinButton } from "@/pages/main/settings/subspace/subspace-join-button";
 
 export interface SubspaceSettingsModalProps {
   // basic info

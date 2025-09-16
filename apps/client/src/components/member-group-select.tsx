@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 import { Users, User } from "lucide-react";
 import useWorkspaceStore from "@/stores/workspace";
 import useGroupStore from "@/stores/group";
 import useSubSpaceStore from "@/stores/subspace";
+import { useRefCallback } from "@/hooks/use-ref-callback";
+import { getInitialChar } from "@/lib/auth";
 
 interface SubspaceMemberSelectProps {
   workspaceId: string;
@@ -31,7 +33,7 @@ interface Group {
   memberCount: number;
 }
 
-export function SubspaceMemberSelect({
+export function MemberAndGroupSelect({
   workspaceId,
   subspaceId,
   selectedItems,
@@ -52,64 +54,86 @@ export function SubspaceMemberSelect({
   const fetchSubspace = useSubSpaceStore((state) => state.fetchSubspace);
 
   // Fetch users and groups
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const promises: Promise<any>[] = [fetchWorkspaceMembers(workspaceId), fetchWorkspaceGroups(workspaceId)];
+  const fetchData = useRefCallback(async () => {
+    setLoading(true);
+    try {
+      const promises: Promise<any>[] = [fetchWorkspaceMembers(workspaceId), fetchWorkspaceGroups(workspaceId)];
 
-        // If subspaceId is provided, also fetch existing members to filter them out
-        if (subspaceId) {
-          promises.push(fetchSubspace(subspaceId));
-        }
+      // If subspaceId is provided, also fetch existing members to filter them out
+      if (subspaceId) {
+        promises.push(fetchSubspace(subspaceId));
+      }
 
-        const [usersData, groupsData, ...subspaceData] = await Promise.all(promises);
+      const [usersData, groupsData, ...subspaceData] = await Promise.all(promises);
 
-        // Get existing member IDs if subspace data is available
-        let existingMemberIds: string[] = [];
-        if (subspaceId && subspaceData[0]) {
-          existingMemberIds = subspaceData[0].members?.map((member: any) => member.userId) || [];
-          setExistingMembers(existingMemberIds);
-        }
+      // Get existing member IDs if subspace data is available
+      let existingMemberIds: string[] = [];
+      if (subspaceId && subspaceData[0]) {
+        existingMemberIds = subspaceData[0].members?.map((member: any) => member.userId) || [];
+        setExistingMembers(existingMemberIds);
+      }
 
-        // Transform workspace members to SubspaceUser format, excluding existing members
-        const transformedUsers: SubspaceUser[] = usersData
-          .filter((member: any) => !existingMemberIds.includes(member.user.id))
-          .map((member: any) => ({
-            id: member.user.id,
-            email: member.user.email,
-            displayName: member.user.displayName,
-            imageUrl: member.user.imageUrl,
-          }));
+      // Transform workspace members to SubspaceUser format, excluding existing members
+      const transformedUsers: SubspaceUser[] = usersData
+        .filter((member: any) => !existingMemberIds.includes(member.user.id))
+        .map((member: any) => ({
+          id: member.user.id,
+          email: member.user.email,
+          displayName: member.user.displayName,
+          imageUrl: member.user.imageUrl,
+        }));
 
-        // Transform groups to Group format
-        const transformedGroups: Group[] = groupsData.map((group: any) => ({
+      // Transform groups to Group format and filter out groups where all members are already in subspace
+      const transformedGroups: Group[] = groupsData
+        .map((group: any) => ({
           id: group.id,
           name: group.name,
           description: group.description,
           memberCount: group.members?.length || 0,
+          members: group.members || [], // Keep original members for filtering
+        }))
+        .filter((group: any) => {
+          // If no existing members, show all groups
+          if (existingMemberIds.length === 0) {
+            return true;
+          }
+
+          // Filter out groups where all members are already in the subspace
+          const groupMemberIds = group.members.map((member: any) => member.user.id);
+          const hasNonMemberUsers = groupMemberIds.some((memberId: string) => !existingMemberIds.includes(memberId));
+
+          return hasNonMemberUsers;
+        })
+        .map((group: any) => ({
+          id: group.id,
+          name: group.name,
+          description: group.description,
+          memberCount: group.memberCount,
         }));
 
-        setUsers(transformedUsers);
-        setGroups(transformedGroups);
-      } catch (error) {
-        console.error("Failed to fetch users and groups:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setUsers(transformedUsers);
+      setGroups(transformedGroups);
+    } catch (error) {
+      console.error("Failed to fetch users and groups:", error);
+    } finally {
+      setLoading(false);
+    }
+  });
 
+  useEffect(() => {
     fetchData();
-  }, [workspaceId, subspaceId, fetchWorkspaceMembers, fetchWorkspaceGroups, fetchSubspace]);
+  }, []);
 
   // Transform users and groups to MultiSelectOption format
-  const userOptions: MultiSelectOption[] = users.map((user) => ({
-    value: `user-${user.id}`,
-    label: user.displayName || user.email,
-    type: "user" as const,
-    id: user.id,
-    avatar: user.imageUrl,
-  }));
+  const userOptions: MultiSelectOption[] = users
+    .map((user) => ({
+      value: `user-${user.id}`,
+      label: user.displayName || user.email,
+      type: "user" as const,
+      id: user.id,
+      avatar: user.imageUrl,
+    }))
+    .filter((user) => !existingMembers.includes(user.id));
 
   const groupOptions: MultiSelectOption[] = groups.map((group) => ({
     value: `group-${group.id}`,
@@ -119,19 +143,27 @@ export function SubspaceMemberSelect({
     memberCount: group.memberCount,
   }));
 
-  const allOptions = [...userOptions, ...groupOptions];
+  const hasUserOrGroupOptions = userOptions.length + groupOptions.length > 0;
 
-  const getInitials = (name: string) => {
-    return name.charAt(0).toUpperCase();
-  };
+  const allOptions = [
+    { label: t("Members"), value: "separator-members", type: "separator" },
+    ...userOptions,
+    { label: t("Member Groups"), value: "separator-groups", type: "separator" },
+    ...groupOptions,
+  ];
 
   // Custom render functions for MultiSelect
   const renderOption = (option: MultiSelectOption) => {
+    if (option.type === "separator") {
+      return <div className="px-2 py-1.5 text-xs  bg-transparent">{option.label}</div>;
+    }
+
     if (option.type === "user") {
       return (
         <div className="flex items-center space-x-2">
           <Avatar className="h-6 w-6">
-            <AvatarFallback className="text-xs bg-red-500 text-white">{getInitials(option.label)}</AvatarFallback>
+            <AvatarImage src={option.avatar || undefined} />
+            <AvatarFallback className="text-xs bg-gray-500 text-white">{getInitialChar(option.label)}</AvatarFallback>
           </Avatar>
           <span className="text-sm">{option.label}</span>
         </div>
@@ -141,7 +173,7 @@ export function SubspaceMemberSelect({
     return (
       <div className="flex items-center space-x-2">
         <div className="h-6 w-6 rounded bg-gray-500 flex items-center justify-center">
-          <span className="text-xs text-white">{getInitials(option.label)}</span>
+          <span className="text-xs text-white">{getInitialChar(option.label)}</span>
         </div>
         <span className="text-sm">{option.label}</span>
         <span className="text-xs text-muted-foreground">
@@ -185,7 +217,7 @@ export function SubspaceMemberSelect({
 
   return (
     <div className="space-y-2">
-      {allOptions.length > 0 ? (
+      {hasUserOrGroupOptions ? (
         <MultiSelect
           options={allOptions}
           selected={selectedItems}
@@ -198,7 +230,7 @@ export function SubspaceMemberSelect({
         />
       ) : (
         <div className="text-sm text-muted-foreground p-3 border rounded-md">
-          {subspaceId ? t("All workspace members are already part of this subspace.") : t("No workspace members available.")}
+          {subspaceId ? t("All available workspace members and groups are already part of this subspace.") : t("No workspace members available.")}
         </div>
       )}
     </div>

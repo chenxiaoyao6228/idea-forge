@@ -1,22 +1,22 @@
-import React from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { HelpCircle, Search, UserPlus, Users, MoreHorizontal, UserMinus } from "lucide-react";
+import { Search, UserPlus, Users, MoreHorizontal, UserMinus } from "lucide-react";
 import { SubspaceSettingsResponse, PermissionLevel, SubspaceRole } from "@idea/contracts";
 import { SubspaceTypeSelector } from "../subspace-type-selector";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
-import { showSubspaceInviteModal } from "@/components/subspace-invite-modal";
 import { displayUserName } from "@/lib/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { subspaceApi } from "@/apis/subspace";
 import { toast } from "sonner";
 import useUserStore from "@/stores/user";
+import { showAddSubspaceMemberModal } from "../add-subspace-member-modal";
+import { useRefCallback } from "@/hooks/use-ref-callback";
 
 interface MembersPermissionsTabProps {
   settings: SubspaceSettingsResponse;
@@ -109,7 +109,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
   };
 
   const handleAddMember = () => {
-    showSubspaceInviteModal({
+    showAddSubspaceMemberModal({
       subspaceId: settings.subspace.id,
       subspaceName: settings.subspace.name,
       workspaceId: settings.subspace.workspaceId,
@@ -117,7 +117,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
   };
 
   // Validation function to prevent invalid permission combinations
-  const validatePermissionChange = (permissionType: string, newValue: PermissionLevel): boolean => {
+  const validatePermissionChange = useRefCallback((permissionType: string, newValue: PermissionLevel) => {
     const currentSettings = settings.subspace;
 
     // Subspace Admins should always have OWNER permissions
@@ -128,7 +128,6 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
 
     // Non-members should not have higher permissions than members
     if (permissionType === "nonSubspaceMemberPermission") {
-      const memberPermission = currentSettings.subspaceMemberPermission;
       if (newValue === "OWNER" || newValue === "MANAGE") {
         console.warn("Non-subspace members cannot have higher permissions than subspace members");
         return false;
@@ -145,7 +144,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
     }
 
     return true;
-  };
+  });
 
   return (
     <div className="space-y-6 custom-scrollbar">

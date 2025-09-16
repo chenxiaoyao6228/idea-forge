@@ -9,6 +9,7 @@ import {
   SubspaceMember,
   SubspaceSettingsResponse,
   UpdateSubspaceSettingsRequest,
+  BatchAddSubspaceMemberResponse,
 } from "@idea/contracts";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
@@ -16,6 +17,9 @@ import { useStars } from "./star-store";
 import { EntityActions } from "./utils/entity-slice";
 import { DocumentEntity } from "./document";
 import useUserStore from "./user";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import useRequest from "@ahooksjs/use-request";
 
 const STORE_NAME = "subspaceStore";
 
@@ -74,7 +78,6 @@ interface Action {
   export: (subspaceId: string, format?: "markdown" | "html" | "pdf") => Promise<void>;
 
   // Member management actions
-  batchAddSubspaceMembers: (subspaceId: string, items: Array<{ id: string; type: "user" | "group"; role: "MEMBER" | "ADMIN" }>) => Promise<any>;
   batchRemoveSubspaceMembers: (subspaceId: string, memberIds: string[]) => Promise<any>;
 
   // Settings management actions
@@ -932,20 +935,6 @@ const useSubSpaceStore = create<StoreState>()(
           }
         },
 
-        batchAddSubspaceMembers: async (subspaceId: string, items: Array<{ id: string; type: "user" | "group"; role: "MEMBER" | "ADMIN" }>) => {
-          try {
-            const response = await subspaceApi.batchAddSubspaceMembers(subspaceId, { items });
-
-            // Note: No manual refresh needed here - websocket events will handle the refresh automatically
-            // The SUBSPACE_MEMBERS_BATCH_ADDED event will trigger refreshSubspaceMembers()
-
-            return response;
-          } catch (error) {
-            console.error("Failed to batch add subspace members:", error);
-            throw error;
-          }
-        },
-
         batchRemoveSubspaceMembers: async (subspaceId: string, memberIds: string[]) => {
           try {
             const response = await subspaceApi.batchRemoveSubspaceMembers(subspaceId, memberIds);
@@ -1056,3 +1045,50 @@ function convertDocEntityToNavigationNode(doc: DocumentEntity): NavigationNode {
 }
 
 export const getPersonalSubspace = (state: StoreState) => subspaceSelectors.selectAll(state).find((s) => (s as any).type === "PERSONAL");
+
+// Custom hook for batch adding subspace members with toast handling
+export const useBatchAddSubspaceMembers = () => {
+  const { t } = useTranslation();
+
+  return useRequest(
+    async (params: {
+      subspaceId: string;
+      items: Array<{ id: string; type: "user" | "group"; role: "MEMBER" | "ADMIN" }>;
+    }) => {
+      const response = await subspaceApi.batchAddSubspaceMembers(params.subspaceId, { items: params.items });
+      return response as BatchAddSubspaceMemberResponse;
+    },
+    {
+      manual: true,
+      onSuccess: (response: BatchAddSubspaceMemberResponse) => {
+        if (response.addedCount > 0) {
+          toast.success(t("Successfully added {{count}} member(s)", { count: response.addedCount }));
+        }
+
+        if (response.skipped && response.skipped.length > 0) {
+          const skippedMessages = response.skipped.map((item: any) => `${item.type === "user" ? "User" : "Group"} ${item.id}: ${item.reason}`).join(", ");
+          toast.info(
+            t("Skipped {{count}} item(s) - {{reasons}}", {
+              count: response.skipped.length,
+              reasons: skippedMessages,
+            }),
+          );
+        }
+
+        if (response.errors && response.errors.length > 0) {
+          const errorMessages = response.errors.map((error: any) => `${error.type === "user" ? "User" : "Group"} ${error.id}: ${error.error}`).join(", ");
+          toast.error(t("Some items failed to add: {{errors}}", { errors: errorMessages }));
+        }
+
+        // If no members were added and no errors, show a message
+        if (response.addedCount === 0 && (!response.errors || response.errors.length === 0)) {
+          toast.info(t("All selected members are already part of this subspace"));
+        }
+      },
+      onError: (error) => {
+        console.error("Failed to batch add subspace members:", error);
+        toast.error(t("Failed to add members"));
+      },
+    },
+  );
+};

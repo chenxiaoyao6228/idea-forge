@@ -39,11 +39,19 @@ export type BatchAddSubspaceMemberRequest = z.infer<typeof BatchAddSubspaceMembe
 export const BatchAddSubspaceMemberResponseSchema = z.object({
   success: z.boolean(),
   addedCount: z.number(),
+  skippedCount: z.number(),
   errors: z.array(
     z.object({
       id: z.string(),
       type: z.enum(["user", "group"]),
       error: z.string(),
+    }),
+  ),
+  skipped: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(["user", "group"]),
+      reason: z.string(),
     }),
   ),
 });

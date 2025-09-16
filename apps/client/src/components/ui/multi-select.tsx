@@ -74,6 +74,10 @@ export function MultiSelect({
 
   const handleSelect = React.useCallback(
     (option: MultiSelectOption) => {
+      // Don't select separator items
+      if (option.type === "separator") {
+        return;
+      }
       setInputValue("");
       onSearchChange?.("");
       onSelectionChange([...selected, option]);
@@ -158,6 +162,12 @@ export function MultiSelect({
             <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
               <CommandGroup className="h-full overflow-auto max-h-60">
                 {filteredOptions.map((option) => {
+                  const isSeparator = option.type === "separator";
+
+                  if (isSeparator) {
+                    return renderOption ? renderOption(option) : defaultRenderOption(option);
+                  }
+
                   return (
                     <CommandItem
                       key={option.value}
@@ -166,7 +176,7 @@ export function MultiSelect({
                         e.stopPropagation();
                       }}
                       onSelect={() => handleSelect(option)}
-                      className="cursor-pointer"
+                      className={isSeparator ? "cursor-default hover:bg-transparent bg-red-500" : "cursor-pointer"}
                     >
                       {renderOption ? renderOption(option) : defaultRenderOption(option)}
                     </CommandItem>

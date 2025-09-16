@@ -396,15 +396,13 @@ class WebsocketService {
       const { subspaceId, totalAdded, membersBatchAdded } = message;
       if (!subspaceId) return;
 
-      const subspaceStore = useSubSpaceStore.getState();
-
       // Single refresh for batch operation instead of multiple individual refreshes
       if (membersBatchAdded) {
         // Refresh subspace member list once for the entire batch
         this.debouncedRefreshSubspaceMembers(subspaceId);
 
         // Show single notification for batch operation
-        toast.success(`${totalAdded} members added to subspace`);
+        // toast.success(`${totalAdded} members added to subspace`);
       }
     });
 

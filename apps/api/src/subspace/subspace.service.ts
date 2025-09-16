@@ -980,7 +980,9 @@ export class SubspaceService {
     const results = {
       success: true,
       addedCount: 0,
+      skippedCount: 0,
       errors: [] as Array<{ id: string; type: string; error: string }>,
+      skipped: [] as Array<{ id: string; type: string; reason: string }>,
     };
 
     // Track successfully added users and groups for batch WebSocket notification
@@ -991,6 +993,24 @@ export class SubspaceService {
     for (const item of dto.items) {
       try {
         if (item.type === "user") {
+          // Check if user is already a subspace member
+          const existingMember = await this.prismaService.subspaceMember.findFirst({
+            where: {
+              subspaceId,
+              userId: item.id,
+            },
+          });
+
+          if (existingMember) {
+            results.skipped.push({
+              id: item.id,
+              type: "user",
+              reason: "User is already a member of this subspace",
+            });
+            results.skippedCount++;
+            continue;
+          }
+
           // Add user to subspace
           const member = await this.prismaService.subspaceMember.create({
             data: {
@@ -1044,6 +1064,7 @@ export class SubspaceService {
           }
 
           const groupAddedMembers: any[] = [];
+          let groupSkippedCount = 0;
 
           // Add all group members to subspace
           for (const groupMember of group.members) {
@@ -1079,6 +1100,8 @@ export class SubspaceService {
               groupAddedMembers.push(memberWithUser);
 
               results.addedCount++;
+            } else {
+              groupSkippedCount++;
             }
           }
 
@@ -1087,6 +1110,16 @@ export class SubspaceService {
               groupId: item.id,
               members: groupAddedMembers,
             });
+          }
+
+          // If all group members were skipped, add to skipped list
+          if (groupSkippedCount === group.members.length && groupAddedMembers.length === 0) {
+            results.skipped.push({
+              id: item.id,
+              type: "group",
+              reason: `All ${groupSkippedCount} members are already in this subspace`,
+            });
+            results.skippedCount++;
           }
         }
       } catch (error) {

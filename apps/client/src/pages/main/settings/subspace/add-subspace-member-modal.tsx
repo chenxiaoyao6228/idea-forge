@@ -5,9 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import useSubSpaceStore from "@/stores/subspace";
+import { useBatchAddSubspaceMembers } from "@/stores/subspace";
+import { BatchAddSubspaceMemberResponse } from "@idea/contracts";
 import { MultiSelectOption } from "@/components/ui/multi-select";
-import { SubspaceMemberSelect } from "@/components/subspace-member-select";
+import { MemberAndGroupSelect } from "@/components/member-group-select";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
 export interface AddSubspaceMemberModalProps {
@@ -33,18 +34,16 @@ const AddSubspaceMemberModal = ({
 }: ConfirmDialogProps<AddSubspaceMemberModalProps, { success: boolean; addedCount: number; errors?: any[] } | null>) => {
   const [selectedItems, setSelectedItems] = useState<MultiSelectOption[]>([]);
   const [selectedRole, setSelectedRole] = useState<"MEMBER" | "ADMIN">("MEMBER");
-  const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
 
-  // Get store methods
-  const batchAddSubspaceMembers = useSubSpaceStore((state) => state.batchAddSubspaceMembers);
+  // Get custom hook
+  const { run: batchAddSubspaceMembers, loading: isAddingMembers } = useBatchAddSubspaceMembers();
 
   // Reset state when modal opens
   useEffect(() => {
     if (show) {
       setSelectedItems([]);
       setSelectedRole("MEMBER");
-      setLoading(false);
     }
   }, [show]);
 
@@ -58,45 +57,30 @@ const AddSubspaceMemberModal = ({
       return;
     }
 
-    setLoading(true);
     try {
-      const response = await batchAddSubspaceMembers(
+      const response = await batchAddSubspaceMembers({
         subspaceId,
-        selectedItems.map((item) => ({
+        items: selectedItems.map((item) => ({
           id: item.id,
           type: item.type,
           role: selectedRole,
         })),
-      );
+      });
 
       if (response.success) {
-        const result: { success: boolean; addedCount: number; errors?: any[] } = {
+        const result: { success: boolean; addedCount: number; errors?: any[]; skipped?: any[] } = {
           success: true,
           addedCount: response.addedCount,
+          errors: response.errors,
+          skipped: response.skipped,
         };
-
-        if (response.addedCount > 0) {
-          toast.success(t("Successfully added {{count}} member(s)", { count: response.addedCount }));
-        }
-
-        if (response.errors && response.errors.length > 0) {
-          const errorMessages = response.errors.map((error) => `${error.type === "user" ? "User" : "Group"} ${error.id}: ${error.error}`).join(", ");
-          toast.error(t("Some items failed to add: {{errors}}", { errors: errorMessages }));
-          result.errors = response.errors;
-        }
-
-        // Return result to caller
         proceed?.(result);
       } else {
-        toast.error(t("Failed to add members"));
         proceed?.(null);
       }
     } catch (error) {
       console.error("Error adding members:", error);
-      toast.error(t("Failed to add members"));
       proceed?.(null);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -112,14 +96,14 @@ const AddSubspaceMemberModal = ({
           {/* MultiSelect for Users and Groups */}
           <div className="space-y-2">
             <Label>{t("Select member or member group")}</Label>
-            <SubspaceMemberSelect
+            <MemberAndGroupSelect
               workspaceId={workspaceId}
               subspaceId={subspaceId}
               selectedItems={selectedItems}
               onSelectionChange={setSelectedItems}
               placeholder={t("Select member or member group")}
               searchPlaceholder={t("Search members or groups...")}
-              disabled={loading}
+              disabled={isAddingMembers}
             />
           </div>
 
@@ -139,11 +123,11 @@ const AddSubspaceMemberModal = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={loading}>
+          <Button variant="outline" onClick={handleClose} disabled={isAddingMembers}>
             {t("Cancel")}
           </Button>
-          <Button onClick={handleSubmit} disabled={selectedItems.length === 0 || loading}>
-            {loading ? t("Adding...") : t("Add Members")}
+          <Button onClick={handleSubmit} disabled={selectedItems.length === 0 || isAddingMembers}>
+            {isAddingMembers ? t("Adding...") : t("Add Members")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -151,4 +135,4 @@ const AddSubspaceMemberModal = ({
   );
 };
 
-export const addSubspaceMemberModal = ContextAwareConfirmation.createConfirmation(confirmable(AddSubspaceMemberModal));
+export const showAddSubspaceMemberModal = ContextAwareConfirmation.createConfirmation(confirmable(AddSubspaceMemberModal));

@@ -9,7 +9,7 @@ import useWorkspaceStore from "@/stores/workspace";
 import { showCreateSubspaceModal } from "./create-subspace-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { SubspaceJoinButton } from "@/components/subspace-join-button";
+import { SubspaceJoinButton } from "@/pages/main/settings/subspace/subspace-join-button";
 import { SubspaceType } from "@idea/contracts";
 interface AllSubspaceSheetProps {
   children: React.ReactNode;
@@ -18,8 +18,6 @@ interface AllSubspaceSheetProps {
 export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
 
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const allSubspaces = useSubSpaceStore((state) => state.allSubspaces);
@@ -31,19 +29,6 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
     const joinedIds = new Set(joinedSubspaces?.map((s) => s.id) || []);
     return allSubspaces.filter((s) => !joinedIds.has(s.id));
   }, [allSubspaces, joinedSubspaces]);
-
-  // Filter subspaces based on search query
-  const filteredJoinedSubspaces = useMemo(() => {
-    if (!joinedSubspaces) return [];
-    if (!searchQuery.trim()) return joinedSubspaces;
-    return joinedSubspaces.filter((subspace) => subspace.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [joinedSubspaces, searchQuery]);
-
-  const filteredOtherSubspaces = useMemo(() => {
-    if (!otherSubspaces) return [];
-    if (!searchQuery.trim()) return otherSubspaces;
-    return otherSubspaces.filter((subspace) => subspace.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [otherSubspaces, searchQuery]);
 
   const getSubspaceIcon = (type: string) => {
     switch (type) {
@@ -84,13 +69,6 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
       .slice(0, 2);
   };
 
-  const getSubspaceTypeText = (subspace: any) => {
-    const typeLabel = getSubspaceTypeLabel(subspace.type);
-    const memberCount = subspace.memberCount || 0;
-    const role = subspace.members?.find((m: any) => m.userId === currentWorkspace?.id)?.role || "member";
-
-    return `${typeLabel} - ${memberCount} ${t("members")} | ${t(role === "ADMIN" ? "Admin" : "Member")}`;
-  };
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
@@ -115,7 +93,7 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
                   disabled={isCreating}
                   onClick={() => {
                     if (currentWorkspace?.id) {
-                      showCreateSubspaceModal(currentWorkspace.id);
+                      showCreateSubspaceModal({ workspaceId: currentWorkspace.id });
                     }
                   }}
                 >

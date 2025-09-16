@@ -12,7 +12,7 @@ export const MoreAboutSubspaceTip = ({ className }: MoreAboutSubspaceTipProps) =
   const { t } = useTranslation();
 
   const handleClick = () => {
-    toast.info(t("This feature is coming soon!"));
+    toast.info(t("The doc is coming soon!"));
   };
 
   return (
