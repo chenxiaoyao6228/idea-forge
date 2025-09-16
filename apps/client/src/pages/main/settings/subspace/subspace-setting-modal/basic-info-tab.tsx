@@ -6,16 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Home, Check, Archive, Trash2, ArrowLeft } from "lucide-react";
-import useSubspaceStore from "@/stores/subspace";
+import useSubspaceStore, { useLeaveSubspace } from "@/stores/subspace";
 
 interface BasicInfoTabProps {
   subspaceId: string;
   onTabChange?: (tab: string) => void;
+  onLeaveSubspace?: () => void;
 }
 
-export function BasicInfoTab({ subspaceId, onTabChange }: BasicInfoTabProps) {
+export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: BasicInfoTabProps) {
   const { t } = useTranslation();
   const { subspaceSettings, updateSubspaceSettings } = useSubspaceStore();
+  const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
   const [isSaving, setIsSaving] = useState(false);
   const [localSettings, setLocalSettings] = useState({
     name: "",
@@ -57,8 +59,10 @@ export function BasicInfoTab({ subspaceId, onTabChange }: BasicInfoTabProps) {
   };
 
   const handleLeaveSubspace = () => {
-    // TODO: Implement leave subspace functionality
-    console.log("Leave subspace placeholder");
+    leaveSubspace({
+      subspaceId,
+      onSuccess: onLeaveSubspace,
+    });
   };
 
   const handleArchiveSubspace = () => {
@@ -185,8 +189,14 @@ export function BasicInfoTab({ subspaceId, onTabChange }: BasicInfoTabProps) {
               <div className="text-sm font-medium">{t("Leave Subspace")}</div>
               <div className="text-xs text-muted-foreground">{t("Remove this subspace from my sidebar")}</div>
             </div>
-            <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive/10" onClick={handleLeaveSubspace}>
-              {t("Leave")}
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive border-destructive/20 hover:bg-destructive/10"
+              onClick={handleLeaveSubspace}
+              disabled={isLeavingSubspace}
+            >
+              {isLeavingSubspace ? t("Leaving...") : t("Leave")}
             </Button>
           </div>
 

@@ -195,7 +195,7 @@ const SubspaceSettingsModal = ({
               </TabsList>
 
               <TabsContent tabIndex={-1} value="basic" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-                <BasicInfoTab subspaceId={subspaceId} onTabChange={setActiveTab} />
+                <BasicInfoTab subspaceId={subspaceId} onTabChange={setActiveTab} onLeaveSubspace={handleClose} />
               </TabsContent>
 
               <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">

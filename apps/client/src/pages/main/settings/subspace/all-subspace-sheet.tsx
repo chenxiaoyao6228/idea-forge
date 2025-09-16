@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Layers, Users, Lock, Globe, PlusIcon } from "lucide-react";
-import { toast } from "sonner";
+import { Layers, PlusIcon } from "lucide-react";
 import useSubSpaceStore from "@/stores/subspace";
 import useWorkspaceStore from "@/stores/workspace";
 import { showCreateSubspaceModal } from "./create-subspace-dialog";
@@ -29,21 +28,6 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
     const joinedIds = new Set(joinedSubspaces?.map((s) => s.id) || []);
     return allSubspaces.filter((s) => !joinedIds.has(s.id));
   }, [allSubspaces, joinedSubspaces]);
-
-  const getSubspaceIcon = (type: string) => {
-    switch (type) {
-      case "PUBLIC":
-        return <Globe className="h-4 w-4" />;
-      case "WORKSPACE_WIDE":
-        return <Users className="h-4 w-4" />;
-      case "INVITE_ONLY":
-        return <Lock className="h-4 w-4" />;
-      case "PRIVATE":
-        return <Lock className="h-4 w-4" />;
-      default:
-        return <Layers className="h-4 w-4" />;
-    }
-  };
 
   const getSubspaceTypeLabel = (type: string) => {
     switch (type) {
@@ -72,7 +56,7 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
-      <SheetContent side="left" className="w-[400px] sm:w-[540px] flex flex-col h-full ">
+      <SheetContent side="left" className="w-[400px] sm:w-[540px] flex flex-col h-full p-4 gap-1">
         <SheetHeader className="flex-shrink-0 pb-1">
           <SheetTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5" />
@@ -80,7 +64,7 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+        <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar">
           {/* My Subspaces Section */}
           <div className="">
             <div className="flex items-center justify-between mb-3">
@@ -102,7 +86,7 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               {joinedSubspaces && joinedSubspaces.length > 0 ? (
                 joinedSubspaces.map((subspace) => (
                   <div key={subspace.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
@@ -114,7 +98,6 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
                       <div>
                         <div className="font-medium text-sm">{subspace.name}</div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {getSubspaceIcon(subspace.type)}
                           <span>{getSubspaceTypeLabel(subspace.type)}</span>
                           <span>•</span>
                           <span>
@@ -150,7 +133,6 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
                       <div>
                         <div className="font-medium text-sm">{subspace.name}</div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {getSubspaceIcon(subspace.type)}
                           <span>{getSubspaceTypeLabel(subspace.type)}</span>
                           <span>•</span>
                           <span>

@@ -13,7 +13,6 @@ import {
 } from "@idea/contracts";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
-import { useStars } from "./star-store";
 import { EntityActions } from "./utils/entity-slice";
 import { DocumentEntity } from "./document";
 import useUserStore from "./user";
@@ -124,7 +123,6 @@ interface Action {
   handleSubspaceUpdate: (subspaceId: string, updatedAt?: string) => Promise<void>;
   refreshNavigationTree: (subspaceId: string) => Promise<void>;
   refreshSubspaceMembers: (subspaceId: string) => Promise<void>;
-  leaveSubspace: (subspaceId: string) => Promise<{ success: boolean; error?: { code: string; message: string; originalError: any } }>;
   joinSubspace: (subspaceId: string) => Promise<void>;
 
   // Navigation node finding methods for star functionality
@@ -871,29 +869,6 @@ const useSubSpaceStore = create<StoreState>()(
           set({ activeSubspaceId: id });
         },
 
-        leaveSubspace: async (subspaceId) => {
-          try {
-            await subspaceApi.leaveSubspace(subspaceId);
-
-            // Remove the subspace from the store after successful leave
-            get().removeOne(subspaceId);
-
-            return { success: true };
-          } catch (error: any) {
-            console.error("Failed to leave subspace:", error);
-
-            // Return structured error information for the component to handle
-            return {
-              success: false,
-              error: {
-                code: error?.response?.data?.code || error?.code || "unknown_error",
-                message: error?.response?.data?.message || error?.message || "Failed to leave subspace",
-                originalError: error,
-              },
-            };
-          }
-        },
-
         refreshSubspaceMembers: async (subspaceId: string) => {
           try {
             // Fetch updated member list from API
@@ -1089,6 +1064,55 @@ export const useBatchAddSubspaceMembers = () => {
         console.error("Failed to batch add subspace members:", error);
         toast.error(t("Failed to add members"));
       },
+    },
+  );
+};
+
+// Custom hook for leaving subspace with toast handling and callback support
+export const useLeaveSubspace = () => {
+  const { t } = useTranslation();
+  const removeOne = useSubSpaceStore((state) => state.removeOne);
+
+  return useRequest(
+    async (params: { subspaceId: string; onSuccess?: () => void }) => {
+      try {
+        await subspaceApi.leaveSubspace(params.subspaceId);
+
+        // Remove the subspace from the store after successful leave
+        removeOne(params.subspaceId);
+
+        // Show success toast
+        toast.success(t("Successfully left the subspace"));
+
+        // Call the success callback if provided
+        params.onSuccess?.();
+
+        return { success: true };
+      } catch (error: any) {
+        console.error("Failed to leave subspace:", error);
+
+        // Handle specific error cases
+        const code = error?.response?.data?.code || error?.code;
+        if (code === "cannot_leave_as_last_admin") {
+          toast.error(t("You cannot leave this subspace because you are the last admin. Please assign another admin before leaving."));
+        } else {
+          const errorMessage = error?.response?.data?.message || error?.message || t("Failed to leave subspace");
+          toast.error(errorMessage);
+        }
+
+        // Return structured error information for the component to handle
+        return {
+          success: false,
+          error: {
+            code: code || "unknown_error",
+            message: error?.response?.data?.message || error?.message || "Failed to leave subspace",
+            originalError: error,
+          },
+        };
+      }
+    },
+    {
+      manual: true,
     },
   );
 };

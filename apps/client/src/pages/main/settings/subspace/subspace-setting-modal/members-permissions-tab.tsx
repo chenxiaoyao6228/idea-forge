@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, UserPlus, Users, MoreHorizontal, UserMinus } from "lucide-react";
+import { Search, UserPlus, Users, MoreHorizontal, UserMinus, X } from "lucide-react";
 import { SubspaceSettingsResponse, PermissionLevel, SubspaceRole } from "@idea/contracts";
 import { SubspaceTypeSelector } from "../subspace-type-selector";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
@@ -26,6 +27,21 @@ interface MembersPermissionsTabProps {
 export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPermissionsTabProps) {
   const { t } = useTranslation();
   const userInfo = useUserStore((state) => state.userInfo);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter members based on search query
+  const filteredMembers = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return settings.subspace.members;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return settings.subspace.members.filter((member) => {
+      const displayName = displayUserName(member.user).toLowerCase();
+      const email = member.user.email.toLowerCase();
+      return displayName.includes(query) || email.includes(query);
+    });
+  }, [settings.subspace.members, searchQuery]);
 
   const handleTypeChange = (type: any) => {
     // Auto-set initial permissions based on subspace type
@@ -219,14 +235,29 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
       <Card>
         <CardHeader>
           <CardTitle>
-            {t("Members")} ({settings.subspace.memberCount})
+            {t("Members")} ({searchQuery.trim() ? `${filteredMembers.length}/${settings.subspace.memberCount}` : settings.subspace.memberCount})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search members and member groups")} className="pl-10" />
+              <Input
+                placeholder={t("Search members and member groups")}
+                className="pl-10 pr-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
             </div>
             <TooltipProvider>
               <Tooltip>
@@ -256,61 +287,69 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {settings.subspace.members.map((member) => {
-                  const isCurrentUser = member.userId === userInfo?.id;
+                {filteredMembers.length > 0 ? (
+                  filteredMembers.map((member) => {
+                    const isCurrentUser = member.userId === userInfo?.id;
 
-                  return (
-                    <TableRow key={member.id}>
-                      <TableCell className="">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={member.user.imageUrl || undefined} alt={member.user.displayName || member.user.email} />
-                            <AvatarFallback>{displayUserName(member.user)[0].toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <div className="font-medium">
-                            {displayUserName(member.user)}
-                            {isCurrentUser && <span className="text-sm text-muted-foreground ml-2">({t("You")})</span>}
+                    return (
+                      <TableRow key={member.id}>
+                        <TableCell className="">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={member.user.imageUrl || undefined} alt={member.user.displayName || member.user.email} />
+                              <AvatarFallback>{displayUserName(member.user)[0].toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div className="font-medium">
+                              {displayUserName(member.user)}
+                              {isCurrentUser && <span className="text-sm text-muted-foreground ml-2">({t("You")})</span>}
+                            </div>
+                            {/* <div className="text-sm text-muted-foreground">{member.user.email}</div> */}
                           </div>
-                          {/* <div className="text-sm text-muted-foreground">{member.user.email}</div> */}
-                        </div>
-                      </TableCell>
-                      <TableCell className="">
-                        <div className="flex">
-                          <Select
-                            value={member.role}
-                            onValueChange={(value: SubspaceRole) => handleMemberRoleChange(member.id, value)}
-                            disabled={isCurrentUser}
-                          >
-                            <SelectTrigger className="w-40 h-8 text-sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="MEMBER">{t("Subspace Member")}</SelectItem>
-                              <SelectItem value="ADMIN">{t("Subspace Admin")}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TableCell>
-                      <TableCell className="">
-                        <div className="flex justify-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isCurrentUser}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleRemoveMember(member.id)} className="text-destructive focus:text-destructive">
-                                <UserMinus className="h-4 w-4 mr-2" />
-                                {t("Remove user from subspace")}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                        </TableCell>
+                        <TableCell className="">
+                          <div className="flex">
+                            <Select
+                              value={member.role}
+                              onValueChange={(value: SubspaceRole) => handleMemberRoleChange(member.id, value)}
+                              disabled={isCurrentUser}
+                            >
+                              <SelectTrigger className="w-40 h-8 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="MEMBER">{t("Subspace Member")}</SelectItem>
+                                <SelectItem value="ADMIN">{t("Subspace Admin")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TableCell>
+                        <TableCell className="">
+                          <div className="flex justify-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isCurrentUser}>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleRemoveMember(member.id)} className="text-destructive focus:text-destructive">
+                                  <UserMinus className="h-4 w-4 mr-2" />
+                                  {t("Remove user from subspace")}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      {searchQuery.trim() ? t("No members found matching your search") : t("No members found")}
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>

@@ -81,7 +81,7 @@ export function SubspaceJoinButton({
   if (isInviteOnly) {
     return (
       <Button variant={variant} size={size} className={`gap-2 ${className || ""}`} onClick={handleRequest} disabled={isJoining}>
-        {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+        {/* {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} */}
         {t("Request")}
       </Button>
     );
@@ -91,7 +91,7 @@ export function SubspaceJoinButton({
   if (isPrivate) {
     return (
       <Button variant={variant} size={size} className={`gap-2 ${className || ""}`} onClick={handleRequest} disabled={isJoining}>
-        {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+        {/* {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} */}
         {t("Request")}
       </Button>
     );
@@ -100,7 +100,7 @@ export function SubspaceJoinButton({
   // For PUBLIC subspaces, show join button
   return (
     <Button variant={variant} size={size} className={`gap-2 ${className || ""}`} onClick={handleJoin} disabled={isJoining}>
-      {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+      {/* {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} */}
       {t("Join")}
     </Button>
   );

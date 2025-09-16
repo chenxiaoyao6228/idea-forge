@@ -5,7 +5,7 @@ import { MoreHorizontal, UserPlus, Settings, Copy, LogOut, Archive } from "lucid
 import { useTranslation } from "react-i18next";
 import { showAddSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
 import { showSubspaceSettingsModal } from "@/pages/main/settings/subspace/subspace-setting-modal/subspace-settings-modal";
-import useSubspaceStore from "@/stores/subspace";
+import useSubspaceStore, { useLeaveSubspace } from "@/stores/subspace";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SubspaceMenuProps {
@@ -17,7 +17,7 @@ interface SubspaceMenuProps {
 
 export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspaceId }: SubspaceMenuProps) {
   const { t } = useTranslation();
-  const leaveSubspace = useSubspaceStore((state) => state.leaveSubspace);
+  const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
 
   const handleAddMembers = async () => {
     const result = await showAddSubspaceMemberModal({
@@ -43,13 +43,10 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
     }
   };
 
-  const handleCopySubspace = () => {
-    // TODO: Implement copy subspace
-    console.log("Copy subspace clicked");
-  };
-
   const handleLeaveSubspace = () => {
-    leaveSubspace(subspaceId);
+    leaveSubspace({
+      subspaceId,
+    });
   };
 
   const handleArchiveSubspace = () => {
@@ -74,16 +71,12 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
           <Settings className="mr-2 h-4 w-4" />
           {t("Subspace settings...")}
         </DropdownMenuItem>
-        {/* <DropdownMenuItem onClick={handleCopySubspace}>
-          <Copy className="mr-2 h-4 w-4" />
-          {t("Copy subspace")}
-        </DropdownMenuItem> */}
-        <DropdownMenuItem onClick={handleLeaveSubspace}>
+        <DropdownMenuItem onClick={handleLeaveSubspace} disabled={isLeavingSubspace}>
           <LogOut className="mr-2 h-4 w-4" />
-          {t("Leave subspace")}
+          {isLeavingSubspace ? t("Leaving...") : t("Leave subspace")}
         </DropdownMenuItem>
 
-        <TooltipProvider>
+        {/* <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuItem onClick={handleArchiveSubspace}>
@@ -93,7 +86,7 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
             </TooltipTrigger>
             <TooltipContent side="right">{t("Archive this subspace. Settings and pages will become read-only.")}</TooltipContent>
           </Tooltip>
-        </TooltipProvider>
+        </TooltipProvider> */}
       </DropdownMenuContent>
     </DropdownMenu>
   );
