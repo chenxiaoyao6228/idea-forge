@@ -90,7 +90,7 @@ export class SubspaceController {
 
   // ==== members ====
   @Post(":id/members")
-  @CheckPolicy(Action.ManageMembers, "Subspace")
+  // @CheckPolicy(Action.ManageMembers, "Subspace")
   async addSubspaceMember(@Param("id") id: string, @Body() dto: AddSubspaceMemberDto, @GetUser("id") adminId: string) {
     return this.subspaceService.addSubspaceMember(id, dto, adminId);
   }

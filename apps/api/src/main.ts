@@ -58,6 +58,7 @@ async function bootstrap() {
               `https://localhost:${apiPort}`,
               `ws://localhost:${wsPort}`,
               `http://localhost:${wsPort}`,
+              "http://localhost:9000", // MinIO file storage
             ],
             fontSrc: ["'self'", "data:", "http:", "https:"],
             objectSrc: ["'none'"],

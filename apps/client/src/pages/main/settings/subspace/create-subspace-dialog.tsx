@@ -355,12 +355,4 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
 };
 
 // Create the confirm modal
-export const createSubspaceModal = ContextAwareConfirmation.createConfirmation(confirmable(CreateSubspaceDialog));
-
-// Helper function to show the create subspace modal
-export const showCreateSubspaceModal = (workspaceId: string, onSuccess?: () => void) => {
-  return createSubspaceModal({
-    workspaceId,
-    onSuccess,
-  });
-};
+export const showCreateSubspaceModal = ContextAwareConfirmation.createConfirmation(confirmable(CreateSubspaceDialog));

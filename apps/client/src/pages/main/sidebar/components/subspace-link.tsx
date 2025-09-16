@@ -13,9 +13,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DraggableDocumentContainer } from "./draggable-document-container";
 import { EditableTitle } from "./editable-title";
 import { subspaceApi } from "@/apis/subspace";
-import { addSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
-import { showSettingModal } from "../../settings/setting-modal";
 import { useRefCallback } from "@/hooks/use-ref-callback";
+import { showSubspaceSettingsModal } from "../../settings/subspace/subspace-setting-modal/subspace-settings-modal";
 
 interface SubspaceLinkProps {
   subspace: SubspaceEntity;
@@ -100,24 +99,18 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   });
 
   const handleSubspaceSettings = useCallback(() => {
-    showSettingModal({
-      tab: "subspace",
+    showSubspaceSettingsModal({
       subspaceId,
+      workspaceId: subspace.workspaceId,
     });
   }, [subspaceId]);
 
   const handleAddMembers = useCallback(async () => {
-    const result = await addSubspaceMemberModal({
+    await showSubspaceSettingsModal({
       subspaceId,
-      subspaceName: subspace.name,
       workspaceId: subspace.workspaceId,
     });
-
-    if (result?.success) {
-      // Optionally refresh data or show additional feedback
-      console.log("Members added successfully:", result);
-    }
-  }, [subspaceId, subspace.name, subspace.workspaceId]);
+  }, [subspaceId, subspace.workspaceId]);
 
   const handleLeaveSubspace = useCallback(async () => {
     try {

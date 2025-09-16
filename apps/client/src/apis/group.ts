@@ -23,7 +23,7 @@ export const groupApi = {
   /**
    * List groups
    */
-  list: async (params: { limit?: number; page?: number; sortBy?: string; sortOrder?: string; query?: string }) =>
+  list: async (params: { limit?: number; page?: number; sortBy?: string; sortOrder?: string; query?: string; workspaceId?: string }) =>
     request.get<typeof params, GroupListResponse>("/api/groups", { params }),
 
   /**

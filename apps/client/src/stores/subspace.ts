@@ -895,20 +895,37 @@ const useSubSpaceStore = create<StoreState>()(
             // Fetch updated member list from API
             const response = await subspaceApi.getSubspaceMembers(subspaceId);
 
+            const updatedMembers = response.members.map((member) => ({
+              ...member,
+              user: {
+                ...member.user,
+                imageUrl: member.user.imageUrl || "",
+              },
+            }));
+
             // Update store with new member list
             get().updateOne({
               id: subspaceId,
               changes: {
-                members: response.members.map((member) => ({
-                  ...member,
-                  user: {
-                    ...member.user,
-                    imageUrl: member.user.imageUrl || "",
-                  },
-                })),
+                members: updatedMembers,
                 memberCount: response.members.length,
               },
             });
+
+            // Also update subspaceSettings if it exists and matches the current subspace
+            const currentSettings = get().subspaceSettings;
+            if (currentSettings && currentSettings.subspace.id === subspaceId) {
+              set({
+                subspaceSettings: {
+                  ...currentSettings,
+                  subspace: {
+                    ...currentSettings.subspace,
+                    members: updatedMembers,
+                    memberCount: response.members.length,
+                  },
+                },
+              });
+            }
           } catch (error) {
             console.error("Failed to refresh subspace members:", error);
           }
@@ -918,16 +935,8 @@ const useSubSpaceStore = create<StoreState>()(
           try {
             const response = await subspaceApi.batchAddSubspaceMembers(subspaceId, { items });
 
-            // Refresh subspace members after adding new ones
-            await get().refreshSubspaceMembers(subspaceId);
-
-            // Also refresh the full subspace to ensure we have the latest data
-            try {
-              await get().fetchSubspace(subspaceId);
-            } catch (refreshError) {
-              console.warn("Failed to refresh subspace after adding members:", refreshError);
-              // Don't throw here as the member addition was successful
-            }
+            // Note: No manual refresh needed here - websocket events will handle the refresh automatically
+            // The SUBSPACE_MEMBERS_BATCH_ADDED event will trigger refreshSubspaceMembers()
 
             return response;
           } catch (error) {

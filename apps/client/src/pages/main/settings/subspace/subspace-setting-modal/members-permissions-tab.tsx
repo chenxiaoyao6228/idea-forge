@@ -3,24 +3,40 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { HelpCircle, Search, UserPlus, Users } from "lucide-react";
-import { SubspaceSettingsResponse, PermissionLevel } from "@idea/contracts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { HelpCircle, Search, UserPlus, Users, MoreHorizontal, UserMinus } from "lucide-react";
+import { SubspaceSettingsResponse, PermissionLevel, SubspaceRole } from "@idea/contracts";
 import { SubspaceTypeSelector } from "../subspace-type-selector";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
+import { showSubspaceInviteModal } from "@/components/subspace-invite-modal";
+import { displayUserName } from "@/lib/auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface MembersPermissionsTabProps {
   settings: SubspaceSettingsResponse;
   onSettingsChange: (settings: Partial<SubspaceSettingsResponse["subspace"]>) => void;
-  onAddMember: () => void;
 }
 
-export function MembersPermissionsTab({ settings, onSettingsChange, onAddMember }: MembersPermissionsTabProps) {
+export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPermissionsTabProps) {
   const { t } = useTranslation();
 
   const handleTypeChange = (type: any) => {
     // Auto-set initial permissions based on subspace type
     const permissionUpdates = getInitialPermissionsForSubspaceType(type);
     onSettingsChange({ type, ...permissionUpdates });
+  };
+
+  const handleMemberRoleChange = (memberId: string, newRole: SubspaceRole) => {
+    const updatedMembers = settings.subspace.members.map((member) => (member.id === memberId ? { ...member, role: newRole } : member));
+    onSettingsChange({ members: updatedMembers });
+  };
+
+  const handleRemoveMember = (memberId: string) => {
+    const updatedMembers = settings.subspace.members.filter((member) => member.id !== memberId);
+    onSettingsChange({ members: updatedMembers });
   };
 
   // Helper function to get initial permissions based on subspace type
@@ -62,13 +78,21 @@ export function MembersPermissionsTab({ settings, onSettingsChange, onAddMember 
     }
   };
 
+  const handleAddMember = () => {
+    showSubspaceInviteModal({
+      subspaceId: settings.subspace.id,
+      subspaceName: settings.subspace.name,
+      workspaceId: settings.subspace.workspaceId,
+    });
+  };
+
   // Validation function to prevent invalid permission combinations
   const validatePermissionChange = (permissionType: string, newValue: PermissionLevel): boolean => {
     const currentSettings = settings.subspace;
 
-    // Subspace administrators should always have OWNER permissions
+    // Subspace Admins should always have OWNER permissions
     if (permissionType === "subspaceAdminPermission" && newValue !== "OWNER") {
-      console.warn("Subspace administrators must have OWNER permissions");
+      console.warn("Subspace Admins must have OWNER permissions");
       return false;
     }
 
@@ -101,7 +125,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange, onAddMember 
           <CardTitle>{t("Permissions")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2 flex items-center gap-4">
+          <div className="space-y-2 flex items-center justify-between">
             <label htmlFor="subspace-type" className="text-sm font-medium">
               {t("Subspace Type")}
             </label>
@@ -115,11 +139,11 @@ export function MembersPermissionsTab({ settings, onSettingsChange, onAddMember 
 
           {/* Role-based permissions display */}
           <div className="space-y-3">
-            {/* Subspace Administrator */}
+            {/* Subspace Admin */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span className="text-sm font-medium">{t("Subspace Administrator")}</span>
+                <span className="text-sm font-medium">{t("Subspace Admin")}</span>
               </div>
               <PermissionLevelSelector
                 value={settings.subspace.subspaceAdminPermission}
@@ -155,17 +179,19 @@ export function MembersPermissionsTab({ settings, onSettingsChange, onAddMember 
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {/* <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <HelpCircle className="h-4 w-4" aria-hidden="true" />
             <span>{t("Learn about subspace permissions")}</span>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
 
       {/* Members Section */}
       <Card>
         <CardHeader>
-          <CardTitle>{t("Members")}</CardTitle>
+          <CardTitle>
+            {t("Members")} ({settings.subspace.memberCount})
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
@@ -173,31 +199,80 @@ export function MembersPermissionsTab({ settings, onSettingsChange, onAddMember 
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder={t("Search members and member groups")} className="pl-10" />
             </div>
-            <Button onClick={onAddMember} className="bg-red-500 hover:bg-red-600">
-              <UserPlus className="h-4 w-4 mr-2" />
-              {t("Add Member")}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={handleAddMember} disabled={settings.subspace.type === "WORKSPACE_WIDE"}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {t("Add Member")}
+                  </Button>
+                </TooltipTrigger>
+                {settings.subspace.type === "WORKSPACE_WIDE" && (
+                  <TooltipContent>
+                    <p>{t("Workspace-wide subspaces automatically include all workspace members")}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
-          {/* Members list placeholder */}
-          <div className="space-y-2">
-            {settings.subspace.members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    {member.user.displayName?.[0] || member.user.email[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="font-medium">{member.user.displayName || member.user.email}</div>
-                    <div className="text-sm text-muted-foreground">{member.user.email}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{t("Subspace Administrator")}</span>
-                  <span className="text-muted-foreground">...</span>
-                </div>
-              </div>
-            ))}
+          {/* Members list */}
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="">{t("User")}</TableHead>
+                  <TableHead className="">{t("Permission")}</TableHead>
+                  <TableHead className="w-12 text-center">{t("Operations")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {settings.subspace.members.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell className="">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={member.user.imageUrl || undefined} alt={member.user.displayName || member.user.email} />
+                          <AvatarFallback>{displayUserName(member.user)[0].toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="font-medium">{displayUserName(member.user)}</div>
+                        {/* <div className="text-sm text-muted-foreground">{member.user.email}</div> */}
+                      </div>
+                    </TableCell>
+                    <TableCell className="">
+                      <div className="flex">
+                        <Select value={member.role} onValueChange={(value: SubspaceRole) => handleMemberRoleChange(member.id, value)}>
+                          <SelectTrigger className="w-40 h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MEMBER">{t("Subspace Member")}</SelectItem>
+                            <SelectItem value="ADMIN">{t("Subspace Admin")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TableCell>
+                    <TableCell className="">
+                      <div className="flex justify-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleRemoveMember(member.id)} className="text-destructive focus:text-destructive">
+                              <UserMinus className="h-4 w-4 mr-2" />
+                              {t("Remove user from subspace")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>

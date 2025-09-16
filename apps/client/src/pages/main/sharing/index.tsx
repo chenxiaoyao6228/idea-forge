@@ -1,9 +1,6 @@
 import { useBoolean } from "react-use";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,25 +8,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import useRequest from "@ahooksjs/use-request";
-import { groupApi } from "@/apis/group";
 import React from "react";
-import { userApi } from "@/apis/user";
-import { permissionApi } from "@/apis/permission";
 import { PermissionLevel } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useWorkspaceStore from "@/stores/workspace";
+import { useMemberSearch } from "@/hooks/use-member-search";
 
 type PendingId = {
   id: string;
   type: "user" | "group";
 };
-
-const shareSchema = z.object({
-  query: z.string().min(1),
-});
-
-type ShareFormValues = z.infer<typeof shareSchema>;
 
 interface ShareButtonProps {
   documentId: string;
@@ -40,43 +28,16 @@ export function ShareButton({ documentId }: ShareButtonProps) {
   const [open, setOpen] = useBoolean(false);
   const [pendingIds, setPendingIds] = React.useState<PendingId[]>([]);
   const [permission, setPermission] = React.useState<PermissionLevel>(PermissionLevel.READ);
+  const [searchQuery, setSearchQuery] = React.useState("");
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
   const workspaceId = currentWorkspace?.id;
 
-  const form = useForm<ShareFormValues>({
-    resolver: zodResolver(shareSchema as any),
-    defaultValues: {
-      query: "",
-    },
+  // Use the member search hook
+  const { availableMembers, loading } = useMemberSearch({
+    workspaceId,
+    query: searchQuery,
+    enabled: open && !!workspaceId,
   });
-
-  const { data: usersRes } = useRequest(
-    () =>
-      userApi.search({
-        query: form.watch("query"),
-        page: 1,
-        limit: 100,
-        sortBy: "createdAt",
-      }),
-    {
-      ready: form.watch("query").length > 0,
-      refreshDeps: [form.watch("query")],
-    },
-  );
-
-  const { data: groupsRes } = useRequest(
-    () =>
-      groupApi.list({
-        query: form.watch("query"),
-        page: 1,
-        limit: 100,
-        sortBy: "createdAt",
-      }),
-    {
-      ready: form.watch("query").length > 0,
-      refreshDeps: [form.watch("query")],
-    },
-  );
 
   const handleAddPendingId = (id: string, type: "user" | "group") => {
     setPendingIds((prev) => (prev.some((item) => item.id === id && item.type === type) ? prev : [...prev, { id, type }]));
@@ -99,7 +60,7 @@ export function ShareButton({ documentId }: ShareButtonProps) {
       }
 
       setPendingIds([]);
-      form.reset();
+      setSearchQuery("");
     } catch (error) {
       toast.error(t("Failed to share document"));
     }
@@ -112,44 +73,33 @@ export function ShareButton({ documentId }: ShareButtonProps) {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="p-4">
-          <form onSubmit={form.handleSubmit(handleShare)} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleShare();
+            }}
+            className="space-y-4"
+          >
             <div className="space-y-2">
-              <Input placeholder={t("Search users or groups...")} {...form.register("query")} />
-              {form.watch("query") && (
+              <Input placeholder={t("Search users or groups...")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              {searchQuery && (
                 <ScrollArea className="h-32">
                   <div className="space-y-2">
-                    {usersRes?.data.map((user) => (
+                    {availableMembers.map((member) => (
                       <div
-                        key={user.id}
+                        key={`${member.type}-${member.id}`}
                         className="flex items-center justify-between p-2 hover:bg-accent rounded-md cursor-pointer"
-                        onClick={() => handleAddPendingId(user.id, "user")}
+                        onClick={() => handleAddPendingId(member.id, member.type)}
                       >
                         <div className="flex items-center gap-2">
                           <Avatar>
-                            <AvatarImage src={user.imageUrl || ""} />
-                            <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
+                            <AvatarImage src={member.avatar || ""} />
+                            <AvatarFallback>{member.type === "user" ? member.name[0] : member.name[0]}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-sm font-medium">{user.displayName}</p>
-                            <p className="text-xs text-muted-foreground">{user.email}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {groupsRes?.data.map((group) => (
-                      <div
-                        key={group.id}
-                        className="flex items-center justify-between p-2 hover:bg-accent rounded-md cursor-pointer"
-                        onClick={() => handleAddPendingId(group.id, "group")}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Avatar>
-                            <AvatarFallback>{group.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">{group.name}</p>
-                            {/* FIXME: */}
-                            <p className="text-xs text-muted-foreground">{t("{{count}} members", { count: 0 })}</p>
+                            <p className="text-sm font-medium">{member.name}</p>
+                            {member.email && <p className="text-xs text-muted-foreground">{member.email}</p>}
+                            {member.memberCount && <p className="text-xs text-muted-foreground">{t("{{count}} members", { count: member.memberCount })}</p>}
                           </div>
                         </div>
                       </div>
@@ -163,11 +113,10 @@ export function ShareButton({ documentId }: ShareButtonProps) {
                 <p className="text-sm font-medium">{t("Selected")}</p>
                 <div className="flex flex-wrap gap-2">
                   {pendingIds.map(({ id, type }) => {
-                    const user = type === "user" ? usersRes?.data.find((u) => u.id === id) : undefined;
-                    const group = type === "group" ? groupsRes?.data.find((g) => g.id === id) : undefined;
+                    const member = availableMembers.find((m) => m.id === id && m.type === type);
                     return (
                       <Badge key={id} variant="secondary" className="flex items-center gap-1">
-                        {user ? user.displayName || user.email : group?.name}
+                        {member?.name || id}
                         <button type="button" onClick={() => handleRemovePendingId(id)} className="ml-1 hover:text-destructive">
                           ×
                         </button>

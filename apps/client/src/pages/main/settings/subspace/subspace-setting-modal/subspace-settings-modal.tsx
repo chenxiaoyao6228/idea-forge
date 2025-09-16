@@ -115,11 +115,6 @@ const SubspaceSettingsModal = ({
     proceed?.(null);
   };
 
-  const handleAddMember = () => {
-    // TODO: Implement add member functionality
-    console.log("Add member clicked");
-  };
-
   if (isLoading || isSettingsLoading) {
     return (
       <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
@@ -204,7 +199,7 @@ const SubspaceSettingsModal = ({
               </TabsContent>
 
               <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-                <MembersPermissionsTab settings={subspaceSettings} onSettingsChange={handleSettingsChange} onAddMember={handleAddMember} />
+                <MembersPermissionsTab settings={subspaceSettings} onSettingsChange={handleSettingsChange} />
               </TabsContent>
 
               <TabsContent tabIndex={-1} value="security" className="mt-0 size-full overflow-y-auto overflow-x-hidden">

@@ -25,6 +25,8 @@ export interface MultiSelectProps {
   renderOption?: (option: MultiSelectOption) => React.ReactNode;
   renderBadge?: (option: MultiSelectOption, onRemove: () => void) => React.ReactNode;
   filterOptions?: (options: MultiSelectOption[], searchValue: string) => MultiSelectOption[];
+  onSearchChange?: (searchValue: string) => void;
+  searchValue?: string;
 }
 
 export function MultiSelect({
@@ -38,10 +40,12 @@ export function MultiSelect({
   renderOption,
   renderBadge,
   filterOptions,
+  onSearchChange,
+  searchValue,
 }: MultiSelectProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
+  const [inputValue, setInputValue] = React.useState(searchValue || "");
 
   const handleUnselect = React.useCallback(
     (option: MultiSelectOption) => {
@@ -71,10 +75,27 @@ export function MultiSelect({
   const handleSelect = React.useCallback(
     (option: MultiSelectOption) => {
       setInputValue("");
+      onSearchChange?.("");
       onSelectionChange([...selected, option]);
     },
-    [selected, onSelectionChange],
+    [selected, onSelectionChange, onSearchChange],
   );
+
+  // Handle input value changes
+  const handleInputChange = React.useCallback(
+    (value: string) => {
+      setInputValue(value);
+      onSearchChange?.(value);
+    },
+    [onSearchChange],
+  );
+
+  // Sync with external searchValue prop
+  React.useEffect(() => {
+    if (searchValue !== undefined && searchValue !== inputValue) {
+      setInputValue(searchValue);
+    }
+  }, [searchValue, inputValue]);
 
   // Filter out already selected options
   const availableOptions = options.filter((option) => !selected.some((s) => s.value === option.value));
@@ -122,7 +143,7 @@ export function MultiSelect({
           <CommandPrimitive.Input
             ref={inputRef}
             value={inputValue}
-            onValueChange={setInputValue}
+            onValueChange={handleInputChange}
             onBlur={() => setOpen(false)}
             onFocus={() => !disabled && setOpen(true)}
             placeholder={selected.length === 0 ? placeholder : searchPlaceholder}

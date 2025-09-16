@@ -35,18 +35,17 @@ export const BatchAddSubspaceMemberRequestSchema = z.object({
 });
 export type BatchAddSubspaceMemberRequest = z.infer<typeof BatchAddSubspaceMemberRequestSchema>;
 
+// Batch add subspace members response
 export const BatchAddSubspaceMemberResponseSchema = z.object({
   success: z.boolean(),
   addedCount: z.number(),
-  errors: z
-    .array(
-      z.object({
-        id: z.string(),
-        type: z.string(),
-        error: z.string(),
-      }),
-    )
-    .optional(),
+  errors: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(["user", "group"]),
+      error: z.string(),
+    }),
+  ),
 });
 export type BatchAddSubspaceMemberResponse = z.infer<typeof BatchAddSubspaceMemberResponseSchema>;
 
