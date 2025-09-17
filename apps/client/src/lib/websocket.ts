@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { resolvablePromise } from "./async";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
 import useStarStore, { StarEntity } from "@/stores/star-store";
 import { PartialExcept } from "@/types";
@@ -334,17 +334,51 @@ class WebsocketService {
     });
 
     // Handle subspace creation
-    this.socket.on(SocketEvents.SUBSPACE_CREATE, (message: GatewayMessage) => {
+    this.socket.on(SocketEvents.SUBSPACE_CREATE, async (message: GatewayMessage) => {
       console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_CREATE}:`, message);
       const { name, subspace } = message;
       if (!subspace) return;
 
       const store = useSubSpaceStore.getState();
-      store.addOne({
-        ...subspace,
-        updatedAt: new Date(subspace.updatedAt),
-        createdAt: new Date(subspace.createdAt),
-      });
+      const userInfo = useUserStore.getState().userInfo;
+
+      // For WORKSPACE_WIDE subspaces, we know the current user should be a member
+      // For other types, we need to check if the user is a member
+      const isWorkspaceWide = subspace.type === "WORKSPACE_WIDE";
+      const isCreator = subspace.creatorId === userInfo?.id || message.actorId === userInfo?.id;
+      const shouldBeMember = isWorkspaceWide || isCreator;
+
+      if (shouldBeMember) {
+        // Fetch full subspace data including members to ensure proper filtering
+        try {
+          console.log(`[websocket]: Fetching full subspace data for ${subspace.id}`);
+          await store.fetchSubspace(subspace.id);
+          console.log(`[websocket]: Successfully fetched and added subspace ${subspace.id}`);
+        } catch (error) {
+          console.error(`[websocket]: Failed to fetch subspace ${subspace.id}:`, error);
+          // Fallback: add basic subspace data without members
+          const subspaceEntity = {
+            id: subspace.id,
+            name: subspace.name,
+            avatar: subspace.avatar,
+            workspaceId: subspace.workspaceId,
+            type: subspace.type,
+            index: subspace.index || "0",
+            navigationTree: subspace.navigationTree || [],
+            url: undefined,
+            updatedAt: new Date(subspace.updatedAt),
+            createdAt: new Date(subspace.createdAt),
+            archivedAt: subspace.archivedAt ? new Date(subspace.archivedAt) : null,
+            description: subspace.description,
+            isPrivate: subspace.type === "PRIVATE",
+            documentCount: 0,
+            members: isWorkspaceWide ? [{ userId: userInfo?.id, role: "MEMBER" }] : [],
+            memberCount: isWorkspaceWide ? 1 : 0,
+          } as SubspaceEntity;
+
+          store.addOne(subspaceEntity);
+        }
+      }
     });
 
     // Handle subspace movement

@@ -290,7 +290,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="WORKSPACE_WIDE">{t("All Members Space")}</SelectItem>
+                <SelectItem value="WORKSPACE_WIDE">{t("Workspace-wide Space")}</SelectItem>
                 <SelectItem value="PUBLIC">{t("Public Space")}</SelectItem>
                 <SelectItem value="INVITE_ONLY">{t("Invitation Space")}</SelectItem>
                 <SelectItem value="PRIVATE">{t("Private Space")}</SelectItem>
@@ -314,7 +314,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
           ) : (
             <div className="space-y-2">
               <Label>{t("Add Subspace Members")}</Label>
-              <div className="text-muted-foreground text-sm">{t("Members are automatically set to all workspace members for an all-members space.")}</div>
+              <div className="text-muted-foreground text-sm">{t("Members are automatically set to all workspace members for an workspace-wide space.")}</div>
             </div>
           )}
         </div>

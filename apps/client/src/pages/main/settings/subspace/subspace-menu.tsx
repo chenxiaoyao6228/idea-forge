@@ -67,10 +67,12 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={handleAddMembers}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          {t("Add member...")}
-        </DropdownMenuItem>
+        <TooltipWrapper disabled={subspaceType !== "WORKSPACE_WIDE"} tooltip={t("Workspace-wide subspaces automatically include all workspace members")}>
+          <DropdownMenuItem onClick={handleAddMembers} disabled={subspaceType === "WORKSPACE_WIDE"}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            {t("Add member...")}
+          </DropdownMenuItem>
+        </TooltipWrapper>
 
         <DropdownMenuItem onClick={handleSubspaceSettings}>
           <Settings className="mr-2 h-4 w-4" />

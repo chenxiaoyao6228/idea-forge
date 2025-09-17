@@ -115,7 +115,7 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
       case SubspaceType.PERSONAL:
         return t("Personal Space");
       case SubspaceType.WORKSPACE_WIDE:
-        return t("All-member Space");
+        return t("Workspace-wide Space");
       default:
         return type;
     }
@@ -174,7 +174,7 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("All Permission Types")}</SelectItem>
-              <SelectItem value={SubspaceType.WORKSPACE_WIDE}>{t("All-member Space")}</SelectItem>
+              <SelectItem value={SubspaceType.WORKSPACE_WIDE}>{t("Workspace-wide Space")}</SelectItem>
               <SelectItem value={SubspaceType.PUBLIC}>{t("Public Space")}</SelectItem>
               <SelectItem value={SubspaceType.INVITE_ONLY}>{t("Invitation Space")}</SelectItem>
               <SelectItem value={SubspaceType.PRIVATE}>{t("Private Space")}</SelectItem>

@@ -4,6 +4,7 @@ import { Link, useSearchParams, useNavigate, useLocation } from "react-router-do
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import useUserStore from "@/stores/user";
+import useWorkspaceStore from "@/stores/workspace";
 import { LoginRequestSchema, type LoginRequest } from "@idea/contracts";
 import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";
@@ -29,6 +30,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { userInfo, setUserInfo } = useUserStore();
+  const { fetchList } = useWorkspaceStore();
   const [error, setError] = useState<string | null>(location.state?.error || null);
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
@@ -71,7 +73,22 @@ function LoginPage() {
         return;
       }
       setUserInfo(res.user);
-      navigate(redirectTo || "/");
+
+      // Check if user has workspaces after successful login
+      try {
+        const workspaces = await fetchList();
+        if (workspaces.length === 0) {
+          // User has no workspaces, redirect to create-workspace
+          navigate("/create-workspace");
+        } else {
+          // User has workspaces, proceed with normal flow
+          navigate(redirectTo || "/");
+        }
+      } catch (workspaceError) {
+        console.error("Failed to fetch workspaces:", workspaceError);
+        // If workspace fetch fails, still proceed to main app
+        navigate(redirectTo || "/");
+      }
     } catch (err: any) {
       const errorCode = err.code;
       switch (errorCode) {

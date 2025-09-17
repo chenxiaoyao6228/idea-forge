@@ -81,9 +81,9 @@ export function SubspaceBatchSettings({ workspaceId }: SubspaceBatchSettingsProp
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("All-member subspace")}</CardTitle>
+        <CardTitle>{t("Workspace-wide subspace")}</CardTitle>
         <CardDescription>
-          {t("Batch manage setting subspaces as all-member subspaces, after setting, all space members will be automatically added to the subspace")}
+          {t("Batch manage setting subspaces as workspace-wide subspaces, after setting, all space members will be automatically added to the subspace")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

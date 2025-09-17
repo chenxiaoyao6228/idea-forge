@@ -83,14 +83,14 @@ export class SubspaceService {
     return { success: true };
   }
 
-  async createDefaultGlobalSubspace(userId: string, workspaceId: string) {
+  async createDefaultWorkspaceWideSubspace(userId: string, workspaceId: string) {
     return await this.createSubspace(
       {
         workspaceId,
-        name: "Global Space",
-        description: "Global subspace",
+        name: "Workspace-wide Space",
+        description: "Workspace-wide Space",
         avatar: "",
-        type: SubspaceTypeSchema.enum.PUBLIC,
+        type: SubspaceTypeSchema.enum.WORKSPACE_WIDE,
       },
       userId,
     );

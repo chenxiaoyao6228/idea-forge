@@ -18,7 +18,7 @@ const { hash } = require('argon2');
 // Configuration
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5000';
 const USERS_PER_WORKSPACE = 30;
-const DEFAULT_PASSWORD = 'Aa1111';
+const DEFAULT_PASSWORD = 'Aa111111';
 const CONCURRENT_LIMIT = 5; // Limit concurrent API calls
 
 // Initialize Prisma client

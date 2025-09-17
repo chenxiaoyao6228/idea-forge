@@ -85,14 +85,17 @@ const useWorkspaceStore = create<StoreState>()(
                 get().setAll(workspaceEntities);
                 set({ isLoaded: true });
 
-                const currentWorkspace = get().currentWorkspace;
+                const currentWorkspaceId = localStorage.getItem("workspaceId");
                 // If no current workspace, set the first one as the current workspace
                 // remove the current workspace if not matching the new workspace list in case the user have been removed from the workspace
-                if (!currentWorkspace || !workspaceEntities.find((workspace) => workspace.id === currentWorkspace.id)) {
+                if (!currentWorkspaceId || !workspaceEntities.find((workspace) => workspace.id === currentWorkspaceId)) {
                   const firstWorkspace = workspaceEntities[0];
                   if (firstWorkspace) {
                     get().setCurrentWorkspace(firstWorkspace);
+                    localStorage.setItem("workspaceId", firstWorkspace.id);
                   }
+                } else {
+                  get().setCurrentWorkspace(workspaceEntities.find((workspace) => workspace.id === currentWorkspaceId));
                 }
               }
               return response;
@@ -106,11 +109,9 @@ const useWorkspaceStore = create<StoreState>()(
 
           switchWorkspace: async (workspaceId) => {
             try {
-              const workspace = get().entities[workspaceId];
-              if (workspace) {
-                get().setCurrentWorkspace(workspace);
-                window.location.href = "/";
-              }
+              localStorage.clear();
+              localStorage.setItem("workspaceId", workspaceId);
+              window.location.href = "/";
             } catch (error) {
               console.error("Failed to switch workspace:", error);
             }

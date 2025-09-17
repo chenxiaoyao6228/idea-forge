@@ -106,12 +106,13 @@ export class WorkspaceService {
   }
 
   /**
-   * Initialize a new workspace with default global subspace
+   * Initialize a new workspace with appropriate subspaces based on type
    * Creates workspace and sets up initial structure
    */
   async initializeWorkspace(dto: CreateWorkspaceDto, userId: string) {
     const workspace = await this.createWorkspace(dto, userId);
-    await this.subspaceService.createDefaultGlobalSubspace(userId, workspace.id);
+    // The createWorkspace method already handles subspace creation based on type
+    // No need for additional subspace creation here
     return { workspace };
   }
 
@@ -145,7 +146,7 @@ export class WorkspaceService {
     // Create subspaces based on workspace type
     if (dto.type === WorkspaceType.TEAM) {
       // For team workspaces, create a default public subspace
-      await this.subspaceService.createDefaultGlobalSubspace(userId, workspace.id);
+      await this.subspaceService.createDefaultWorkspaceWideSubspace(userId, workspace.id);
     }
 
     // Always create personal subspace for the owner
@@ -172,6 +173,7 @@ export class WorkspaceService {
         name: user.email + "'s Workspace",
         description: "default workspace for user",
         avatar: "",
+        type: WorkspaceType.PERSONAL,
       },
       userId,
     );
@@ -179,7 +181,7 @@ export class WorkspaceService {
 
   /**
    * Get all workspaces accessible to the current user
-   * Creates default workspace if user has none
+   * Returns empty array if user has no workspaces (no auto-creation)
    */
   async getUserWorkspaces(currentUserId: string) {
     const user = await this.prismaService.user.findUnique({
@@ -198,16 +200,9 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
     }
 
+    // Return empty array if user has no workspaces - no auto-creation
     if (user.workspaceMembers.length === 0) {
-      try {
-        // Create default workspace for new users
-        const workspace = await this.CreateDefaultWorkspace(currentUserId);
-        return [presentWorkspace(workspace)];
-      } catch (error) {
-        console.error("Failed to create default workspace for user:", currentUserId, error);
-        // Return empty array if workspace creation fails
-        return [];
-      }
+      return [];
     }
 
     const workspaces = user.workspaceMembers.map((member) => member.workspace);

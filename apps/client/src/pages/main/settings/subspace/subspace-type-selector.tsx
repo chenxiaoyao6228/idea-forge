@@ -19,7 +19,7 @@ export function SubspaceTypeSelector({ value, onChange, disabled = false, classN
   const subspaceTypes = [
     {
       value: "WORKSPACE_WIDE" as SubspaceType,
-      label: t("All Members Space"),
+      label: t("Workspace-wide Space"),
       description: t("All workspace members are automatically members"),
     },
     {

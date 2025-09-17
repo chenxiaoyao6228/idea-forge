@@ -9,7 +9,6 @@ import {
   SubspaceMember,
   SubspaceSettingsResponse,
   UpdateSubspaceSettingsRequest,
-  BatchAddSubspaceMemberResponse,
 } from "@idea/contracts";
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
@@ -75,7 +74,6 @@ interface Action {
   update: (subspaceId: string, updates: Partial<SubspaceEntity>) => Promise<void>;
   delete: (subspaceId: string, options?: { permanent?: boolean }) => Promise<void>;
   duplicate: (subspaceId: string, newName?: string) => Promise<SubspaceEntity>;
-  export: (subspaceId: string, format?: "markdown" | "html" | "pdf") => Promise<void>;
 
   // Member management actions
   batchRemoveSubspaceMembers: (subspaceId: string, memberIds: string[]) => Promise<any>;
@@ -102,12 +100,6 @@ interface Action {
 
   //  collection-like queries
   getDocumentCount: (subspaceId: string) => number;
-  getPublishedCount: (subspaceId: string) => number;
-  getDraftCount: (subspaceId: string) => number;
-  getArchivedCount: (subspaceId: string) => number;
-  getDocumentsByType: (subspaceId: string, type: string) => DocumentEntity[];
-  getDocumentsByAuthor: (subspaceId: string, authorId: string) => DocumentEntity[];
-  getRecentlyUpdated: (subspaceId: string, limit?: number) => DocumentEntity[];
 
   // Existing helper methods
   addDocument: (subspaceId: string, document: DocumentEntity) => void;
@@ -493,37 +485,6 @@ const useSubSpaceStore = create<StoreState>()(
           return countNodes(subspace.navigationTree);
         },
 
-        getPublishedCount: (subspaceId) => {
-          // This would need to be implemented with actual document data
-          // For now, return a placeholder
-          return get().getDocumentCount(subspaceId);
-        },
-
-        getDraftCount: (subspaceId) => {
-          // This would need to be implemented with actual document data
-          return 0;
-        },
-
-        getArchivedCount: (subspaceId) => {
-          // This would need to be implemented with actual document data
-          return 0;
-        },
-
-        getDocumentsByType: (subspaceId, type) => {
-          // This would need to be implemented with actual document data
-          return [];
-        },
-
-        getDocumentsByAuthor: (subspaceId, authorId) => {
-          // This would need to be implemented with actual document data
-          return [];
-        },
-
-        getRecentlyUpdated: (subspaceId, limit = 10) => {
-          // This would need to be implemented with actual document data
-          return [];
-        },
-
         // API Actions
         fetchList: async (workspaceId) => {
           set({ isLoading: true });
@@ -562,10 +523,7 @@ const useSubSpaceStore = create<StoreState>()(
               createdAt: new Date(response.subspace.createdAt),
             };
 
-            get().updateOne({
-              id: subspaceId,
-              changes: subspace,
-            });
+            get().upsertOne(subspace);
 
             return subspace;
           } catch (error) {
@@ -658,11 +616,6 @@ const useSubSpaceStore = create<StoreState>()(
           };
 
           return await get().create(duplicatePayload);
-        },
-
-        export: async (subspaceId, format = "markdown") => {
-          // This would need to be implemented with actual export logic
-          console.log(`Exporting subspace ${subspaceId} as ${format}`);
         },
 
         updateSubspace: (subspace) => {

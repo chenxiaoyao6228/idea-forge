@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { workspaceApi } from "@/apis/workspace";
 import { useTranslation } from "react-i18next";
 import useWorkspaceStore from "@/stores/workspace";
@@ -18,9 +17,8 @@ export default function CreateWorkspace() {
   const [currentStep, setCurrentStep] = useState<Step>("type-selection");
   const [workspaceType, setWorkspaceType] = useState<WorkspaceTypeEnum | null>(null);
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const switchWorkspace = useWorkspaceStore((state) => state.switchWorkspace);
+  const { switchWorkspace, setCurrentWorkspace } = useWorkspaceStore();
 
   const handleTypeSelection = (type: WorkspaceTypeEnum) => {
     setWorkspaceType(type);
@@ -37,12 +35,12 @@ export default function CreateWorkspace() {
     try {
       const res = await workspaceApi.initializeWorkspace({
         name,
-        description,
+        description: "",
         avatar: "",
         type: workspaceType,
       });
 
-      await switchWorkspace(res.workspace.id);
+      localStorage.setItem("workspaceId", res.workspace.id);
 
       // Navigate to workspace
       navigate("/");
@@ -63,7 +61,7 @@ export default function CreateWorkspace() {
   };
 
   const handleCancel = () => {
-    navigate("/doc");
+    navigate("/");
   };
 
   // Type selection step
