@@ -372,152 +372,100 @@ showConfirmModal({
 
 ### Hook-Based Store Architecture
 
-**MANDATORY: Use the new hook-based architecture for all state management. This provides better developer experience, maintainability, and WebSocket compatibility.**
+**MANDATORY: Use the official Zustand hook-based architecture for all state management. This provides better developer experience, maintainability, and WebSocket compatibility.**
 
 #### Architecture Principles
 
-1. **Minimal Store**: Only state and basic mutations
-2. **Root-level CRUD Hooks**: Individual hooks for each operation
-3. **Custom useRequest**: Handle loading states automatically
+1. **Colocated Actions**: Actions and state together in the store (recommended)
+2. **External Actions**: Actions defined at module level using setState (alternative)
+3. **Direct setState**: Use Zustand's built-in setState method
 4. **Clean Computed Values**: Use React's `useMemo`
 5. **WebSocket Compatible**: Direct store mutations work seamlessly
 6. **Separation of Concerns**: UI logic separate from business logic
 
 #### Store Structure Pattern
 
-**MANDATORY: Stores should only contain state and a unified `changeState` method.
-**Store Rules:\*\*
+**MANDATORY: Follow Zustand official patterns with colocated actions and state.**
 
-1. **Only State**: Store should only contain state properties
-2. **Unified changeState**: Single method to update any state property
+**Store Rules:**
+
+1. **Colocated Actions**: Actions and state together in the store (preferred)
+2. **Direct setState**: Use Zustand's built-in setState method
 3. **No CRUD Methods**: No individual add/update/remove methods in store
 4. **Hook-based CRUD**: All CRUD operations implemented as hooks
+5. **Vanilla JS First**: Prioritize native JavaScript methods over lodash-es, se lodash-es only for functions without native equivalents
+
+**Array Operations Strategy:**
 
 ```typescript
-// ✅ Minimal store - only state and unified changeState method
-const useStarStore = create<{
-  stars: StarEntity[];
-  starsMap: Record<string, StarEntity>;
-  currentStar: StarEntity | null;
-  changeState: (
-    updates: Partial<{
-      stars: StarEntity[];
-      starsMap: Record<string, StarEntity>;
-      currentStar: StarEntity | null;
-    }>
-  ) => void;
-}>((set) => ({
-  stars: [],
-  starsMap: {},
-  currentStar: null,
+// Import only lodash functions that don't have native equivalents
+import { orderBy, groupBy, uniqBy } from "lodash-es";
 
-  // Unified state update method
-  changeState: (updates) => set((state) => ({ ...state, ...updates })),
-}));
+// ✅ VANILLA JS - Use native methods when available
+[...stars, star]; // Add item (instead of concat)
+stars.filter((star) => star.id !== id); // Remove item (instead of reject)
 
-// ❌ Avoid: Individual CRUD methods in store
-const useStarStore = create<{
-  stars: StarEntity[];
-  setStars: (stars: StarEntity[]) => void;
-  addStar: (star: StarEntity) => void;
-  updateStar: (id: string, changes: Partial<StarEntity>) => void;
-  removeStar: (id: string) => void;
-}>((set) => ({
-  // ... individual methods
-}));
+// ✅ LODASH-ES - Use only when no native equivalent
+orderBy(stars, ["index"], ["asc"]); // Sort (native sort() is less flexible)
+groupBy(stars, "subspaceId"); // Group (no native equivalent)
+uniqBy(stars, "docId"); // Unique by key (no native equivalent)
 ```
 
-#### CRUD Operations with Direct Store Updates
-
-**MANDATORY: Use direct `changeState` calls for all CRUD operations instead of store methods.**
-
-**For CRUD operations, use direct store updates:**
-
-- **Fetch**: `changeState({ items: newItems })`
-- **Create**: `changeState({ items: [...items, newItem] })`
-- **Update**: `changeState({ items: items.map(item => item.id === id ? updatedItem : item) })`
-- **Delete**: `changeState({ items: items.filter(item => item.id !== id) })`
+**Store Implementation:**
 
 ```typescript
+const useStarStore = create<{
+  stars: StarEntity[];
+}>((set) => ({
+  stars: [],
+}));
 
-**Cleaner Approach:**
-- Update store state directly with `changeState` instead of syncing
-- No need for separate management hooks with `useEffect` sync
-- Simpler, more direct, and easier to understand
-
-// ✅ Split into focused hooks for better performance
-// Each hook only subscribes to what it actually needs
-
-// Benefits of splitting hooks:
-// 1. Components only re-render when their specific dependencies change
-// 2. Better performance through selective subscriptions
-// 3. Clearer intent - each hook has a single responsibility
-// 4. Easier to test and maintain
-// 5. More granular control over re-renders
-
-// Only subscribe to stars array
-export const useStars = () => {
-  const stars = useStarStore((state) => state.stars);
-  return { stars };
-};
-
-// Only subscribe to currentStar
-export const useCurrentStar = () => {
-  const currentStar = useStarStore((state) => state.currentStar);
-  return { currentStar };
-};
+// for simple store access, just use selector
+const stars = useStarStore((state) => state.stars);
 
 // Computed values that depend on stars
 export const useOrderedStars = () => {
   const stars = useStarStore((state) => state.stars);
-
-  const orderedStars = useMemo(
-    () => stars.sort((a, b) => (a.index || "").localeCompare(b.index || "")),
-    [stars]
-  );
-
-  return { orderedStars };
+  return useMemo(() => orderBy(stars, ["index"], ["asc"]), [stars]);
 };
 
-// Grouped stars by subspace
+// simple store action - use vanilla JS
+export const addStar = (star: StarEntity) =>
+  useStarStore.setState((state) => ({
+    stars: [...state.stars, star],
+  }));
+
+// complex actions 1: Grouped stars by subspace - use lodash
 export const useStarsBySubspace = () => {
   const stars = useStarStore((state) => state.stars);
-
-  const starsBySubspace = useMemo(() => groupBy(stars, "subspaceId"), [stars]);
-
-  return { starsBySubspace };
+  return useMemo(() => groupBy(stars, "subspaceId"), [stars]);
 };
 
-// Star checking utility
+// complex actions 2: Star checking utility - use vanilla JS
 export const useIsStarred = () => {
   const stars = useStarStore((state) => state.stars);
 
-  const isStarred = RefCallback(
-    (docId?: string, subspaceId?: string) => {
-      return stars.some(
-        (star) =>
-          (docId && star.docId === docId) ||
-          (subspaceId && star.subspaceId === subspaceId)
-      );
-    },
-
-  );
+  const isStarred = useRefCallback((docId?: string, subspaceId?: string) => {
+    return stars.some(
+      (star) =>
+        (docId && star.docId === docId) ||
+        (subspaceId && star.subspaceId === subspaceId)
+    );
+  });
 
   return { isStarred };
 };
 
-
-
-// ✅ Create operation - Direct store updates
+// async action operation with useRequest
 export const useCreateStar = () => {
-  const { stars, changeState } = useStarStore();
-
   return useRequest(
     async (params: CreateStarDto) => {
       try {
         const response = await starApi.create(params);
-        // Update store directly
-        changeState({ stars: [...stars, response.data] });
+        // Update store using direct setState with vanilla JS
+        useStarStore.setState((state) => ({
+          stars: [...state.stars, response.data],
+        }));
         toast.success("Star created");
         return response;
       } catch (error) {
@@ -533,25 +481,7 @@ export const useCreateStar = () => {
     }
   );
 };
-
-// ✅ Update operation - Direct store updates
-
 ```
-
-### Store Best Practices
-
-1. **Use Zustand for client state management**
-2. **Use devtools middleware for debugging**
-3. **Separate state and actions clearly**
-4. **Handle loading and error states**
-5. **Use proper TypeScript typing**
-6. **Implement proper error handling**
-7. **Use localStorage for persistence when needed**
-8. **Keep stores focused and single-purpose**
-9. **MANDATORY: Use hook-based architecture for all new stores**
-10. **MANDATORY: Separate UI logic from business logic**
-11. **MANDATORY: Use individual CRUD hooks for each operation**
-12. **MANDATORY: Use useRequest for automatic loading state management**
 
 ## Hooks and Custom Hooks
 
@@ -577,25 +507,36 @@ export function useRefCallback<T extends (...args: any[]) => any>(fn: T): T {
 
 **MANDATORY: Use @ahooksjs/use-request for all async operations. It provides automatic loading states, error handling.**
 
-**PREFERRED: Use try-catch blocks within async functions instead of onSuccess/onError callbacks for better control flow and error handling.**
-
-**Benefits of try-catch pattern:**
-
-- Better error handling control
-- Cleaner code flow
-- Easier to add complex success logic
-- Better TypeScript support
-- Consistent with modern async/await patterns
+**MANDATORY: Use try-catch blocks within async functions instead of onSuccess/onError callbacks for better control flow and error handling.**
 
 ```typescript
 import useRequest from "@ahooksjs/use-request";
 
-// ✅ Preferred: Try-catch style with manual execution
+// ✅ Manual trigger with try-catch
 const { data, loading, error, run } = useRequest(
+  async (params: CreateParams) => {
+    try {
+      const response = await api.create(params);
+      toast.success("Created successfully");
+      return response.data;
+    } catch (error) {
+      console.error("Failed to create:", error);
+      toast.error("Failed to create", {
+        description: error.message,
+      });
+      throw error;
+    }
+  },
+  {
+    manual: true,
+  }
+);
+
+// ✅ Conditional execution
+const { data, loading, error } = useRequest(
   async () => {
     try {
       const response = await api.getData();
-      toast.success("Data loaded successfully");
       return response.data;
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -606,178 +547,50 @@ const { data, loading, error, run } = useRequest(
     }
   },
   {
-    manual: true, // Manual execution for better control
-  }
-);
-
-// ❌ Avoid: onSuccess/onError callbacks (legacy pattern)
-const { data, loading, error, run } = useRequest(
-  async () => {
-    const response = await api.getData();
-    return response.data;
-  },
-  {
-    onSuccess: (data) => {
-      toast.success("Data loaded successfully");
-    },
-    onError: (error) => {
-      toast.error("Failed to load data", {
-        description: error.message,
-      });
-    },
-  }
-);
-
-// ✅ Manual trigger
-const { data, loading, error, run } = useRequest(
-  async (params: CreateParams) => {
-    const response = await api.create(params);
-    return response.data;
-  },
-  {
-    manual: true, // Don't auto-trigger
-    onSuccess: (data) => {
-      toast.success("Created successfully");
-    },
-  }
-);
-
-// ✅ Conditional execution
-const { data, loading, error } = useRequest(
-  async () => {
-    const response = await api.getData();
-    return response.data;
-  },
-  {
     ready: !!userId, // Only run when userId exists
     refreshDeps: [userId], // Re-run when userId changes
   }
 );
 
-// ✅ Pagination
+// ✅ Pagination with try-catch
 const { data, loading, error, run } = useRequest(
   async (page: number) => {
-    const response = await api.getData({ page, limit: 25 });
-    return response.data;
-  },
-  {
-    manual: true,
-    onSuccess: (result) => {
+    try {
+      const response = await api.getData({ page, limit: 25 });
+      const result = response.data;
+
+      // Handle pagination logic
       if (result.page === 1) {
         setAllData(result.data);
       } else {
         setAllData((prev) => [...prev, ...result.data]);
       }
-    },
+
+      return result;
+    } catch (error) {
+      console.error("Failed to load paginated data:", error);
+      toast.error("Failed to load data", {
+        description: error.message,
+      });
+      throw error;
+    }
+  },
+  {
+    manual: true,
   }
 );
 ```
 
-### Custom Hook Patterns
-
-#### State Management Hooks
-
-```typescript
-// ✅ Toggle hook with stable reference
-export function useToggle<T>(initialValue: T, alternateValue: T) {
-  const [state, setState] = useState(initialValue);
-
-  const toggle = useRefCallback(() => {
-    setState((current) =>
-      current === initialValue ? alternateValue : initialValue
-    );
-  });
-
-  return [state, toggle] as const;
-}
-
-// ✅ Counter hook
-export function useCounter(initialValue: number = 0) {
-  const [count, setCount] = useState(initialValue);
-
-  const increment = useRefCallback(() => setCount((prev) => prev + 1));
-  const decrement = useRefCallback(() => setCount((prev) => prev - 1));
-  const reset = useRefCallback(() => setCount(initialValue));
-
-  return { count, increment, decrement, reset };
-}
-```
-
-#### Async Operation Hooks
-
-```typescript
-// ✅ Async operation hook
-export function useAsyncOperation<T, P extends any[]>(
-  asyncFn: (...args: P) => Promise<T>
-) {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  const execute = useRefCallback(async (...args: P) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await asyncFn(...args);
-      setData(result);
-      return result;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  });
-
-  return { data, loading, error, execute };
-}
-```
-
-#### Event Handler Hooks
-
-```typescript
-// ✅ Debounced callback
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
-  callback: T,
-  delay: number
-): T {
-  const timeoutRef = useRef<NodeJS.Timeout>();
-
-  const debouncedCallback = useRefCallback((...args: Parameters<T>) => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => callback(...args), delay);
-  });
-
-  useEffect(
-    () => () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    },
-    []
-  );
-
-  return debouncedCallback as T;
-}
-```
-
 ### Hook Best Practices
 
-#### DO ✅
+- Use `useRefCallback` for function refs, `react-use` for utilities, and `@ahooksjs/use-request` for async ops (with try-catch).
+- Update state via store actions or `setState`.
+- Keep hooks focused, single-purpose, and return stable refs.
+- Always handle cleanup in `useEffect`.
 
-1. **Use useRefCallback for all function references**
-2. **Use react-use for basic functionality**
-3. **Use @ahooksjs/use-request for async operations**
-4. **Keep hooks focused and single-purpose**
-5. **Handle cleanup in useEffect**
-6. **Return stable references**
+**Avoid:**
 
-#### DON'T ❌
-
-1. **Don't use useCallback for function references**
-2. **Don't use TanStack Query - use @ahooksjs/use-request instead**
-3. **Don't forget cleanup in useEffect**
-4. **Don't return unstable references**
-5. **Don't use hooks inside conditions or loops**
+- `useCallback` for refs, TanStack Query, `onSuccess/onError` in `useRequest`, custom `changeState` methods, forgetting cleanup, unstable refs, or using hooks in conditions/loops.
 
 ## Styling and UI
 

@@ -1,14 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import { resolvablePromise } from "./async";
-import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
-import useDocumentStore from "@/stores/document";
-import useStarStore, { StarEntity } from "@/stores/star-store";
-import { PartialExcept } from "@/types";
-import type { Star } from "@idea/contracts";
-import { toast } from "sonner";
-import useUserStore from "@/stores/user";
-import useAbilityStore from "@/stores/ability";
 import useSharedWithMeStore from "@/stores/shared-with-me";
+import useSubSpaceStore from "@/stores/subspace";
 import useWorkspaceStore from "@/stores/workspace";
 
 type SocketWithAuthentication = Socket & {
@@ -48,7 +41,7 @@ class WebsocketError extends Error {
 }
 
 // Server event types enum
-enum SocketEvents {
+export enum SocketEvents {
   // Basic connection events
   GATEWAY_CONNECT = "gateway.connect",
   GATEWAY_DISCONNECT = "gateway.disconnect",
@@ -88,7 +81,7 @@ interface GatewayMessage {
 
 // Main WebSocket service class
 class WebsocketService {
-  private socket: SocketWithAuthentication | null = null;
+  socket: SocketWithAuthentication | null = null;
   private status: WebsocketStatus = WebsocketStatus.DISCONNECTED;
   private disconnectReason: DisconnectReason = DisconnectReason.NORMAL;
   private reconnectAttempts = 0;
@@ -96,7 +89,6 @@ class WebsocketService {
   private reconnectDelay = 1000;
   private connectionPromise = resolvablePromise();
   private joinedRooms = new Set<string>();
-  private refreshTimeouts = new Map<string, NodeJS.Timeout>();
 
   // Update connection status and emit status change event
   private setStatus(status: WebsocketStatus, reason?: DisconnectReason) {
@@ -158,7 +150,6 @@ class WebsocketService {
       });
 
       this.setupSocketEvents();
-      this.setupBusinessEvents();
 
       // Wait for connection with timeout
       const timeoutPromise = resolvablePromise();
@@ -169,6 +160,7 @@ class WebsocketService {
       this.socket.on("connect", () => {
         clearTimeout(timeout);
         this.reconnectAttempts = 0;
+        this.setStatus(WebsocketStatus.CONNECTED);
         console.log("[websocket]: Socket.IO connected");
 
         // Handle websocket reconnection
@@ -176,6 +168,9 @@ class WebsocketService {
 
         // Emit reconnection event for backward compatibility
         window.dispatchEvent(new CustomEvent("websocket:reconnected"));
+
+        // Resolve the connection promise
+        timeoutPromise.resolve();
       });
 
       this.socket.on("connect_error", (error) => {
@@ -184,9 +179,10 @@ class WebsocketService {
         const wsError = new WebsocketError("CONNECTION_ERROR", error.message, error);
         this.setStatus(WebsocketStatus.ERROR, DisconnectReason.NETWORK_ERROR);
         this.socket?.emit("error", wsError);
+        timeoutPromise.reject(wsError);
       });
 
-      return this.connectionPromise;
+      return timeoutPromise;
     } catch (error: any) {
       const wsError = error instanceof WebsocketError ? error : new WebsocketError("CONNECTION_FAILED", error.message, error);
       this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
@@ -270,404 +266,6 @@ class WebsocketService {
     });
   }
 
-  // Setup business-specific event handlers
-  private setupBusinessEvents() {
-    if (!this.socket) return;
-
-    // Handle entities updates (documents and subspaces)
-    this.socket.on(SocketEvents.ENTITIES, async (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.ENTITIES}:`, message);
-      const { name, documentIds, subspaceIds, fetchIfMissing } = message;
-
-      const documentStore = useDocumentStore.getState();
-      const subspaceStore = useSubSpaceStore.getState();
-
-      // Handle document updates
-      if (documentIds?.length > 0) {
-        for (const documentDescriptor of documentIds) {
-          const documentId = documentDescriptor.id;
-          const localDocument = documentStore.entities[documentId];
-
-          // Skip if document is already up to date
-          if (localDocument?.updatedAt === documentDescriptor.updatedAt) {
-            continue;
-          }
-
-          // Skip if document doesn't exist locally and we don't need to fetch missing documents
-          if (!localDocument && !fetchIfMissing) {
-            continue;
-          }
-
-          // Use handleDocumentUpdate instead of fetchDetail directly
-          try {
-            await documentStore.handleDocumentUpdate(documentId, documentDescriptor.updatedAt);
-          } catch (err: any) {
-            console.error(`Failed to handle document update for ${documentId}:`, err);
-          }
-        }
-      }
-
-      // Handle subspace updates
-      if (subspaceIds?.length > 0) {
-        for (const subspaceDescriptor of subspaceIds) {
-          const subspaceId = subspaceDescriptor.id;
-          const localSubspace = subspaceStore.entities[subspaceId];
-
-          // Skip if subspace is already up to date
-          if (localSubspace?.updatedAt === subspaceDescriptor.updatedAt) {
-            continue;
-          }
-
-          // Skip if subspace doesn't exist locally and we don't need to fetch missing subspaces
-          if (!localSubspace && !fetchIfMissing) {
-            continue;
-          }
-
-          try {
-            // Force refresh the subspace's document structure
-            await subspaceStore.fetchNavigationTree(subspaceId, {
-              force: true,
-            });
-          } catch (err: any) {
-            // Remove from local store if fetch fails (due to permissions or non-existence)
-            if (err.status === 404 || err.status === 403) {
-              subspaceStore.removeOne(subspaceId);
-            }
-          }
-        }
-      }
-    });
-
-    // Handle subspace creation
-    this.socket.on(SocketEvents.SUBSPACE_CREATE, async (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_CREATE}:`, message);
-      const { name, subspace } = message;
-      if (!subspace) return;
-
-      const store = useSubSpaceStore.getState();
-      const userInfo = useUserStore.getState().userInfo;
-
-      // For WORKSPACE_WIDE subspaces, we know the current user should be a member
-      // For other types, we need to check if the user is a member
-      const isWorkspaceWide = subspace.type === "WORKSPACE_WIDE";
-      const isCreator = subspace.creatorId === userInfo?.id || message.actorId === userInfo?.id;
-      const shouldBeMember = isWorkspaceWide || isCreator;
-
-      if (shouldBeMember) {
-        // Fetch full subspace data including members to ensure proper filtering
-        try {
-          console.log(`[websocket]: Fetching full subspace data for ${subspace.id}`);
-          await store.fetchSubspace(subspace.id);
-          console.log(`[websocket]: Successfully fetched and added subspace ${subspace.id}`);
-        } catch (error) {
-          console.error(`[websocket]: Failed to fetch subspace ${subspace.id}:`, error);
-          // Fallback: add basic subspace data without members
-          const subspaceEntity = {
-            id: subspace.id,
-            name: subspace.name,
-            avatar: subspace.avatar,
-            workspaceId: subspace.workspaceId,
-            type: subspace.type,
-            index: subspace.index || "0",
-            navigationTree: subspace.navigationTree || [],
-            url: undefined,
-            updatedAt: new Date(subspace.updatedAt),
-            createdAt: new Date(subspace.createdAt),
-            archivedAt: subspace.archivedAt ? new Date(subspace.archivedAt) : null,
-            description: subspace.description,
-            isPrivate: subspace.type === "PRIVATE",
-            documentCount: 0,
-            members: isWorkspaceWide ? [{ userId: userInfo?.id, role: "MEMBER" }] : [],
-            memberCount: isWorkspaceWide ? 1 : 0,
-          } as SubspaceEntity;
-
-          store.addOne(subspaceEntity);
-        }
-      }
-    });
-
-    // Handle subspace movement
-    this.socket.on(SocketEvents.SUBSPACE_MOVE, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MOVE}:`, message);
-      const { name, subspaceId, index, updatedAt } = message;
-      if (!subspaceId) return;
-
-      const store = useSubSpaceStore.getState();
-      store.updateOne({
-        id: subspaceId,
-        changes: {
-          index,
-          updatedAt: new Date(updatedAt),
-        },
-      });
-    });
-
-    // Handle subspace member added events
-    this.socket.on(SocketEvents.SUBSPACE_MEMBER_ADDED, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MEMBER_ADDED}:`, message);
-      const { subspaceId, member, memberAdded } = message;
-      if (!subspaceId) return;
-
-      const subspaceStore = useSubSpaceStore.getState();
-      const userInfo = useUserStore.getState().userInfo;
-
-      // If the current user was added to the subspace
-      if (member?.userId === userInfo?.id) {
-        // Refresh user's subspace list to include the new subspace
-        subspaceStore.fetchSubspace(subspaceId);
-
-        // Join the subspace room for real-time updates
-        if (this.socket) {
-          this.joinRoom(`subspace:${subspaceId}`);
-        }
-
-        // Show notification
-        toast.success(`You've been added to a subspace`);
-      } else {
-        // Another user was added, refresh subspace member list
-        this.debouncedRefreshSubspaceMembers(subspaceId);
-      }
-    });
-
-    // Handle subspace members batch added events
-    this.socket.on(SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED}:`, message);
-      const { subspaceId, totalAdded, membersBatchAdded, workspaceWideSubspaces } = message;
-      if (!subspaceId) return;
-
-      // Single refresh for batch operation instead of multiple individual refreshes
-      if (membersBatchAdded) {
-        // If this is a workspace-wide batch operation affecting multiple subspaces
-        if (workspaceWideSubspaces && Array.isArray(workspaceWideSubspaces)) {
-          // Refresh all affected subspaces
-          workspaceWideSubspaces.forEach((subspaceId: string) => {
-            this.debouncedRefreshSubspaceMembers(subspaceId);
-          });
-        } else {
-          // Regular batch operation for a single subspace
-          this.debouncedRefreshSubspaceMembers(subspaceId);
-        }
-
-        // Show single notification for batch operation
-        // toast.success(`${totalAdded} members added to subspace`);
-      }
-    });
-
-    // Handle workspace member added events
-    this.socket.on(SocketEvents.WORKSPACE_MEMBER_ADDED, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.WORKSPACE_MEMBER_ADDED}:`, message);
-      const { workspaceId, member, memberAdded } = message;
-      if (!workspaceId) return;
-
-      const workspaceStore = useWorkspaceStore.getState();
-      const userInfo = useUserStore.getState().userInfo;
-
-      // If the current user was added to the workspace
-      if (member?.userId === userInfo?.id) {
-        // Refresh user's workspace list to include the new workspace
-        workspaceStore.fetchList();
-
-        // Join the workspace room for real-time updates
-        if (this.socket) {
-          this.joinRoom(`workspace:${workspaceId}`);
-        }
-
-        // Show notification
-        toast.success(`You've been added to a workspace`);
-      } else {
-        // Another user was added, refresh workspace member list
-        this.debouncedRefreshWorkspaceMembers(workspaceId);
-      }
-    });
-
-    // Handle workspace members batch added events
-    this.socket.on(SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED}:`, message);
-      const { workspaceId, totalAdded, membersBatchAdded } = message;
-      if (!workspaceId) {
-        console.warn(`[websocket]: WORKSPACE_MEMBERS_BATCH_ADDED event missing workspaceId:`, message);
-        return;
-      }
-
-      // Single refresh for batch operation instead of multiple individual refreshes
-      if (membersBatchAdded) {
-        console.log(`[websocket]: Refreshing workspace members for workspace ${workspaceId}, totalAdded: ${totalAdded}`);
-        // Refresh workspace member list once for the entire batch
-        this.debouncedRefreshWorkspaceMembers(workspaceId);
-
-        // Show single notification for batch operation
-        // toast.success(`${totalAdded} members added to workspace`);
-      }
-    });
-
-    this.socket.on(SocketEvents.SUBSPACE_MEMBER_LEFT, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MEMBER_LEFT}:`, message);
-      const { subspaceId, userId, memberLeft, removedBy, batchRemoval } = message;
-      if (!subspaceId || !userId) return;
-
-      const subspaceStore = useSubSpaceStore.getState();
-      const userInfo = useUserStore.getState().userInfo;
-
-      // If the current user left the subspace, remove it from their local store
-      if (userId === userInfo?.id) {
-        subspaceStore.removeOne(subspaceId);
-
-        // Also leave the WebSocket room
-        if (this.socket) {
-          this.leaveRoom(`subspace:${subspaceId}`);
-        }
-
-        // Show notification for self-removal
-        toast.success("You have left the subspace");
-      } else {
-        // If another user left, refresh the subspace member list
-        if (memberLeft) {
-          // Use debounced refresh to prevent multiple rapid calls
-          this.debouncedRefreshSubspaceMembers(subspaceId);
-
-          // Show notification for member removal (only once, not for each batch event)
-          if (!batchRemoval) {
-            if (removedBy === userInfo?.id) {
-              // Current user removed someone else
-              toast.success("Member removed from subspace");
-            } else {
-              // Someone else was removed by another admin
-              toast.info("A member was removed from the subspace");
-            }
-          }
-        }
-      }
-    });
-
-    // Handle subspace updates
-    this.socket.on(SocketEvents.SUBSPACE_UPDATE, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_UPDATE}:`, message);
-      const { name, subspace } = message;
-      if (!subspace) return;
-
-      const store = useSubSpaceStore.getState();
-      store.updateOne({
-        id: subspace.id,
-        changes: {
-          ...subspace,
-          updatedAt: new Date(subspace.updatedAt),
-          navigationTree: subspace.navigationTree || [],
-        },
-      });
-    });
-
-    /*
-     * Why WebSocket events for stars:
-     * - Multi-device sync: Real-time updates across user's browser tabs/devices
-     * - UI consistency: Keeps star state in sync across all components via store updates
-     */
-
-    // Handle star related events
-    this.socket.on(SocketEvents.STAR_CREATE, (event: PartialExcept<Star, "id">) => {
-      console.log(`[websocket]: Received event ${SocketEvents.STAR_CREATE}:`, event);
-      if (!event.createdAt || !event.updatedAt || !event.userId || !event.docId) return;
-
-      const star: StarEntity = {
-        id: event.id,
-        docId: event.docId, // Only allow document stars
-        index: event.index ?? null,
-        createdAt: new Date(event.createdAt),
-        updatedAt: new Date(event.updatedAt),
-        userId: event.userId,
-      };
-      useStarStore.getState().addStar(star);
-      console.log("[websocket]: Star created:", star);
-    });
-
-    this.socket.on(SocketEvents.STAR_UPDATE, (event: PartialExcept<Star, "id">) => {
-      console.log(`[websocket]: Received event ${SocketEvents.STAR_UPDATE}:`, event);
-      if (!event.createdAt || !event.updatedAt || !event.userId || !event.docId) return;
-
-      const changes: Partial<StarEntity> = {
-        docId: event.docId, // Only allow document stars
-        index: event.index ?? null,
-        createdAt: new Date(event.createdAt),
-        updatedAt: new Date(event.updatedAt),
-        userId: event.userId,
-      };
-      useStarStore.getState().updateStar(event.id, changes);
-    });
-
-    this.socket.on(SocketEvents.STAR_DELETE, (event: { id: string; userId: string }) => {
-      console.log(`[websocket]: Received event ${SocketEvents.STAR_DELETE}:`, event);
-      useStarStore.getState().removeStar(event.id);
-      console.log("[websocket]: Star deleted:", event);
-    });
-
-    // Handle document creation
-    this.socket.on(SocketEvents.DOCUMENT_UPDATE, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.DOCUMENT_UPDATE}:`, message);
-      const { name, document, subspaceId } = message;
-      if (!document) return;
-
-      useDocumentStore.getState().updateDocument(document);
-
-      if (subspaceId) {
-        useSubSpaceStore.getState().updateDocument(subspaceId, document.id, document);
-      } else {
-        // TODO: handle mydocs document update
-      }
-    });
-
-    // Handle room joining events
-    this.socket.on(SocketEvents.JOIN, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.JOIN}:`, message);
-      const { name, subspaceId } = message;
-      if (!subspaceId) return;
-
-      // Handle join events for new subspaces
-      if (name === "subspace.create" && subspaceId) {
-        const roomId = `subspace:${subspaceId}`;
-        if (!this.joinedRooms.has(roomId)) {
-          this.joinRoom(roomId);
-        }
-      }
-    });
-
-    // Handle successful room joining
-    this.socket.on(SocketEvents.JOIN_SUCCESS, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.JOIN_SUCCESS}:`, message);
-      const { name, roomId } = message;
-      if (!roomId) return;
-
-      this.joinedRooms.add(roomId);
-      console.log(`[websocket]: Successfully joined room: ${roomId}`);
-    });
-
-    // Handle room joining errors
-    this.socket.on(SocketEvents.JOIN_ERROR, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.JOIN_ERROR}:`, message);
-      const { name, roomId, error } = message;
-      if (!roomId) return;
-      console.error(`[websocket]: Failed to join room: ${roomId}`, error);
-      this.joinedRooms.delete(roomId);
-    });
-
-    // Handle document add user events (when user gains access to a document)
-    this.socket.on(SocketEvents.DOCUMENT_ADD_USER, (message: GatewayMessage) => {
-      console.log(`[websocket]: Received event ${SocketEvents.DOCUMENT_ADD_USER}:`, message);
-      const { userId, documentId, document, abilities, includeChildDocuments } = message;
-
-      // Check if the current user is the one who gained access
-      const currentUserId = useUserStore.getState().userInfo?.id;
-      if (userId === currentUserId) {
-        // Update abilities store with the new document permissions
-        useAbilityStore.getState().updateAbility(documentId, abilities);
-
-        // Refresh shared-with-me documents since we have new access
-        useSharedWithMeStore.getState().handleWebsocketDocumentShare(document);
-
-        // Show a toast notification to inform the user
-        toast.success(`You now have access to a new document${includeChildDocuments ? " and its child documents" : ""}`);
-      }
-    });
-  }
-
   // Room management methods
   joinRoom(roomId: string) {
     if (!this.socket?.connected) {
@@ -710,44 +308,6 @@ class WebsocketService {
     return Array.from(this.joinedRooms);
   }
 
-  // Debounced refresh method to prevent multiple rapid calls
-  private debouncedRefreshSubspaceMembers(subspaceId: string) {
-    // Clear existing timeout for this subspace
-    const existingTimeout = this.refreshTimeouts.get(subspaceId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-
-    // Set new timeout
-    const timeout = setTimeout(() => {
-      const subspaceStore = useSubSpaceStore.getState();
-      subspaceStore.refreshSubspaceMembers(subspaceId);
-      this.refreshTimeouts.delete(subspaceId);
-    }, 300); // 300ms debounce delay
-
-    this.refreshTimeouts.set(subspaceId, timeout);
-  }
-
-  private debouncedRefreshWorkspaceMembers(workspaceId: string) {
-    console.log(`[websocket]: Scheduling debounced refresh for workspace ${workspaceId}`);
-    // Clear existing timeout for this workspace
-    const existingTimeout = this.refreshTimeouts.get(workspaceId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-
-    // Set new timeout
-    const timeout = setTimeout(() => {
-      console.log(`[websocket]: Executing refresh for workspace ${workspaceId}`);
-      // Call the workspace store refresh method
-      const workspaceStore = useWorkspaceStore.getState();
-      workspaceStore.refreshWorkspaceMembers(workspaceId);
-      this.refreshTimeouts.delete(workspaceId);
-    }, 500); // 500ms debounce delay
-
-    this.refreshTimeouts.set(workspaceId, timeout);
-  }
-
   // Public API methods
   getStatus = () => this.status;
   getDisconnectReason = () => this.disconnectReason;
@@ -756,4 +316,11 @@ class WebsocketService {
 }
 
 // Export singleton instance
-export const websocketService = new WebsocketService();
+
+let websocketService: WebsocketService | null = null;
+export const getWebsocketService = () => {
+  if (!websocketService) {
+    websocketService = new WebsocketService();
+  }
+  return websocketService;
+};

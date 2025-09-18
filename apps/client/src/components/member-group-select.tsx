@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MultipleSelector, { Option } from "@/components/ui/multi-selector";
 import { Users, User } from "lucide-react";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace";
 import useGroupStore from "@/stores/group";
 import useSubSpaceStore from "@/stores/subspace";
 import { useRefCallback } from "@/hooks/use-ref-callback";
@@ -49,7 +49,7 @@ export function MemberAndGroupSelect({
   const [loading, setLoading] = useState(false);
 
   // Get store methods
-  const fetchWorkspaceMembers = useWorkspaceStore((state) => state.fetchWorkspaceMembers);
+  const { run: fetchWorkspaceMembers } = useFetchMembers();
   const fetchWorkspaceGroups = useGroupStore((state) => state.fetchWorkspaceGroups);
   const fetchSubspace = useSubSpaceStore((state) => state.fetchSubspace);
 

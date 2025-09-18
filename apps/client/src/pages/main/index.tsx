@@ -3,7 +3,7 @@ import Doc from "../doc";
 import useWorkspaceStore, { workspaceSelectors } from "@/stores/workspace";
 import SidebarContainer from "./sidebar";
 import { useCurrentDocument } from "@/hooks/use-current-document";
-import { websocketService } from "@/lib/websocket";
+import { WebSocketProvider } from "@/components/websocket-provider";
 import { useLayoutEffect } from "react";
 
 export default function Main() {
@@ -15,13 +15,6 @@ export default function Main() {
     fetchWorkspaces();
   }, []);
 
-  useLayoutEffect(() => {
-    websocketService.connect();
-    return () => {
-      websocketService.disconnect();
-    };
-  }, []);
-
   if (!workspaces.length) {
     return <Loading />;
   }
@@ -31,5 +24,9 @@ export default function Main() {
     content = <Doc />;
   }
 
-  return <SidebarContainer content={content} />;
+  return (
+    <WebSocketProvider>
+      <SidebarContainer content={content} />
+    </WebSocketProvider>
+  );
 }

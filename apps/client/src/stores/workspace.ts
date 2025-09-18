@@ -4,7 +4,8 @@ import { createComputed } from "zustand-computed";
 import { workspaceApi } from "@/apis/workspace";
 import { subspaceApi } from "@/apis/subspace";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
-import { UpdateWorkspaceRequest, WorkspaceSettings } from "@idea/contracts";
+import { UpdateWorkspaceRequest, WorkspaceSettings, WorkspaceMemberListResponse } from "@idea/contracts";
+import useRequest from "@ahooksjs/use-request";
 
 const STORE_NAME = "workspaceStore";
 export interface WorkspaceEntity {
@@ -24,8 +25,8 @@ interface State {
   isLoading: boolean;
   isLoaded: boolean;
   currentWorkspace?: WorkspaceEntity;
-  workspaceMembers: Record<string, any[]>; // workspaceId -> members array
-  membersLoading: Record<string, boolean>; // workspaceId -> loading state
+  workspaceMembers: WorkspaceMemberListResponse; // Simple list for current workspace members
+  changeState: (updates: Partial<State>) => void;
 }
 
 interface Action {
@@ -39,20 +40,16 @@ interface Action {
   setCurrentWorkspace: (workspace?: WorkspaceEntity) => void;
   clear: () => void;
 
-  // Workspace members
-  fetchWorkspaceMembers: (workspaceId: string) => Promise<any[]>;
+  // Workspace members - keep for backward compatibility but will be replaced by hooks
   batchAddWorkspaceMembers: (workspaceId: string, members: Array<{ userId: string; role: any }>) => Promise<any>;
-  getWorkspaceMembers: (workspaceId: string) => any[];
-  isWorkspaceMembersLoading: (workspaceId: string) => boolean;
-  refreshWorkspaceMembers: (workspaceId: string) => Promise<any[]>;
 }
 
 const defaultState: State = {
   isLoading: false,
   isLoaded: false,
   currentWorkspace: undefined,
-  workspaceMembers: {},
-  membersLoading: {},
+  workspaceMembers: [],
+  changeState: () => {}, // Will be set in the store implementation
 };
 
 const workspaceEntitySlice = createEntitySlice<WorkspaceEntity>();
@@ -70,6 +67,9 @@ const useWorkspaceStore = create<StoreState>()(
           ...defaultState,
           ...workspaceEntitySlice.initialState,
           ...workspaceEntitySlice.createActions(set),
+
+          // Unified state update method
+          changeState: (updates) => set((state) => ({ ...state, ...updates })),
 
           // API actions
           fetchList: async () => {
@@ -219,34 +219,7 @@ const useWorkspaceStore = create<StoreState>()(
             set(defaultState);
           },
 
-          // Workspace members
-          fetchWorkspaceMembers: async (workspaceId: string) => {
-            try {
-              // Set loading state
-              set((state) => ({
-                membersLoading: { ...state.membersLoading, [workspaceId]: true },
-              }));
-
-              const response = await workspaceApi.getWorkspaceMembers(workspaceId);
-              const members = response || [];
-
-              // Store members in global state
-              set((state) => ({
-                workspaceMembers: { ...state.workspaceMembers, [workspaceId]: members },
-                membersLoading: { ...state.membersLoading, [workspaceId]: false },
-              }));
-
-              return members;
-            } catch (error) {
-              console.error("Failed to fetch workspace members:", error);
-              // Clear loading state on error
-              set((state) => ({
-                membersLoading: { ...state.membersLoading, [workspaceId]: false },
-              }));
-              return [];
-            }
-          },
-
+          // Workspace members - keep only batch add for backward compatibility
           batchAddWorkspaceMembers: async (workspaceId: string, members: Array<{ userId: string; role: any }>) => {
             try {
               const response = await workspaceApi.batchAddWorkspaceMembers(workspaceId, { items: members });
@@ -255,22 +228,6 @@ const useWorkspaceStore = create<StoreState>()(
               console.error("Failed to batch add workspace members:", error);
               throw error;
             }
-          },
-
-          // Get workspace members from global state
-          getWorkspaceMembers: (workspaceId: string) => {
-            return get().workspaceMembers[workspaceId] || [];
-          },
-
-          // Check if workspace members are loading
-          isWorkspaceMembersLoading: (workspaceId: string) => {
-            return get().membersLoading[workspaceId] || false;
-          },
-
-          // Refresh workspace members (for WebSocket events)
-          refreshWorkspaceMembers: async (workspaceId: string) => {
-            console.log(`[workspace-store]: Refreshing members for workspace ${workspaceId}`);
-            return get().fetchWorkspaceMembers(workspaceId);
           },
         })),
         {
@@ -285,3 +242,27 @@ const useWorkspaceStore = create<StoreState>()(
 );
 
 export default useWorkspaceStore;
+
+// Hook for fetching workspace members
+export const useFetchMembers = () => {
+  const { changeState } = useWorkspaceStore();
+
+  return useRequest(
+    async (workspaceId: string) => {
+      try {
+        const response = await workspaceApi.getWorkspaceMembers(workspaceId);
+        const members = response || [];
+
+        changeState({
+          workspaceMembers: members,
+        });
+
+        return members;
+      } catch (error) {
+        console.error("Failed to fetch workspace members:", error);
+        throw error;
+      }
+    },
+    { manual: true },
+  );
+};

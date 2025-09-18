@@ -4,7 +4,7 @@ import { MoreHorizontal, HelpCircle, Keyboard, Info } from "lucide-react";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export const MoreOptionsDropdown = () => {
+export const MoreOptionsDropdown = React.forwardRef<HTMLButtonElement>((props, ref) => {
   const { t } = useTranslation();
 
   const handleHelp = () => {
@@ -25,7 +25,7 @@ export const MoreOptionsDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <SidebarMenuButton className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors">
+        <SidebarMenuButton ref={ref} className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors">
           <MoreHorizontal className="h-6 w-6" />
         </SidebarMenuButton>
       </DropdownMenuTrigger>
@@ -45,4 +45,6 @@ export const MoreOptionsDropdown = () => {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+});
+
+MoreOptionsDropdown.displayName = "MoreOptionsDropdown";

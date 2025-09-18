@@ -12,6 +12,7 @@ import MultipleSelector, { Option } from "@/components/ui/multi-selector";
 import type { User } from "@idea/contracts";
 import { displayUserName } from "@/lib/auth";
 import useRequest from "@ahooksjs/use-request";
+import useWorkspaceStore from "@/stores/workspace";
 
 export interface AddWorkspaceMemberModalProps {
   workspaceId: string;
@@ -33,6 +34,12 @@ const AddWorkspaceMemberModal = ({
   const [selectedUsers, setSelectedUsers] = useState<Option[]>([]);
   const [selectedRole, setSelectedRole] = useState<"MEMBER" | "ADMIN">("MEMBER");
   const { t } = useTranslation();
+
+  // Get existing members from workspace store
+  const workspaceMembers = useWorkspaceStore((state) => state.workspaceMembers);
+  const existingMemberIds = useMemo(() => {
+    return new Set(workspaceMembers.map((member: any) => member.userId));
+  }, [workspaceMembers]);
 
   // Cache for search results to avoid duplicate API calls
   const searchCacheRef = useRef<Map<string, Option[]>>(new Map());
@@ -67,12 +74,24 @@ const AddWorkspaceMemberModal = ({
         // Store additional user data as string properties for compatibility
         email: user.email,
         imageUrl: user.imageUrl || undefined,
+        // Mark as disabled if user is already a workspace member
+        disable: existingMemberIds.has(user.id),
       }));
 
-      // Cache the results
-      searchCacheRef.current.set(cacheKey, options);
+      // Sort options: non-members first, then existing members
+      const sortedOptions = options.sort((a, b) => {
+        // If both are disabled or both are enabled, maintain alphabetical order
+        if (a.disable === b.disable) {
+          return a.label.localeCompare(b.label);
+        }
+        // Non-members (disable: false/undefined) come first
+        return a.disable ? 1 : -1;
+      });
 
-      return options;
+      // Cache the results
+      searchCacheRef.current.set(cacheKey, sortedOptions);
+
+      return sortedOptions;
     } catch (error) {
       console.error("Failed to search users:", error);
       return [];

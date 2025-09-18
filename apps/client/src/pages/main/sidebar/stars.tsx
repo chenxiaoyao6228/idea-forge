@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useStars } from "@/stores/star-store";
+import { useOrderedStars, useFetchStars } from "@/stores/star-store";
 import { useDragAndDropContext } from "./hooks/use-dnd";
 import { DraggableStarContainer } from "./components/draggable-star-container";
 
@@ -11,7 +11,8 @@ export default function StarsArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
-  const { orderedStars, fetchStars } = useStars();
+  const orderedStars = useOrderedStars();
+  const fetchStars = useFetchStars();
   const { activeId } = useDragAndDropContext();
 
   useEffect(() => {

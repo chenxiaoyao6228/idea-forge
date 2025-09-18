@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useStars, StarEntity } from "@/stores/star-store";
+import { useDeleteStar, useStarNavigation, StarEntity } from "@/stores/star-store";
 import { DocumentLink } from "./document-link";
 
 interface StarLinkProps {
@@ -21,7 +21,8 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
   const [isExpanded, setIsExpanded] = useState(false);
 
   // ✅ Clean hook usage - business logic extracted
-  const { deleteStar, getNavigationNodeForStar } = useStars();
+  const deleteStar = useDeleteStar();
+  const { getNavigationNodeForStar } = useStarNavigation();
 
   // ✅ Computed navigation node
   const navigationNode = useMemo(() => {

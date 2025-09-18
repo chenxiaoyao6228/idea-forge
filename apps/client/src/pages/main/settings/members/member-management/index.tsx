@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { workspaceApi } from "@/apis/workspace";
-import useWorkspaceStore from "@/stores/workspace";
-import type { WorkspaceMember } from "@idea/contracts";
+import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace";
+import type { WorkspaceMember, WorkspaceMemberListResponse } from "@idea/contracts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -23,22 +23,15 @@ const MemberManagementPanel = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleChanging, setRoleChanging] = useState<Record<string, boolean>>({});
 
-  // Get members from global store
-  const members = useWorkspaceStore((state) => (workspaceId ? state.getWorkspaceMembers(workspaceId) : []));
-  const loading = useWorkspaceStore((state) => (workspaceId ? state.isWorkspaceMembersLoading(workspaceId) : false));
-  const fetchWorkspaceMembers = useWorkspaceStore((state) => state.fetchWorkspaceMembers);
+  // Get members from global store using new structure
+  const members = useWorkspaceStore((state) => state.workspaceMembers);
+  const { run: fetchMembers, loading: fetchMembersLoading } = useFetchMembers();
 
   // Fetch members on component mount and when workspaceId changes
   useEffect(() => {
     if (!workspaceId) return;
-
-    // Only fetch if we don't have members cached
-    const currentMembers = useWorkspaceStore.getState().getWorkspaceMembers(workspaceId);
-    if (currentMembers.length === 0) {
-      console.log(`[member-management]: Fetching members for workspace ${workspaceId}`);
-      fetchWorkspaceMembers(workspaceId);
-    }
-  }, [workspaceId, fetchWorkspaceMembers]);
+    fetchMembers(workspaceId);
+  }, []);
 
   // Filter members based on search query
   const filteredMembers = useMemo(() => {
@@ -71,7 +64,7 @@ const MemberManagementPanel = () => {
       // TODO: do we need to notify the user that the role has been changed, eg: promoted to admin?
       await workspaceApi.updateWorkspaceMember(workspaceId, userId, { role: newRole });
       // Refresh members from store
-      await fetchWorkspaceMembers(workspaceId);
+      await fetchMembers(workspaceId);
     } finally {
       setRoleChanging((r) => ({ ...r, [userId]: false }));
     }
@@ -83,7 +76,7 @@ const MemberManagementPanel = () => {
     try {
       await workspaceApi.removeWorkspaceMember(workspaceId, userId);
       // Refresh members from store
-      await fetchWorkspaceMembers(workspaceId);
+      await fetchMembers(workspaceId);
     } finally {
       setRoleChanging((r) => ({ ...r, [userId]: false }));
     }
@@ -94,7 +87,8 @@ const MemberManagementPanel = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            {t("Members")} ({searchQuery.trim() ? `${filteredMembers.length}/${members.length}` : members.length})
+            {t("Members")}
+            {members.length > 0 && <> ({searchQuery.trim() ? `${filteredMembers.length}/${members.length}` : members.length})</>}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -188,7 +182,7 @@ const MemberManagementPanel = () => {
               </TableBody>
             </Table>
           </div>
-          {loading && <Spinner className="mt-4" text={t("Loading...")} />}
+          {fetchMembersLoading && <Spinner className="mt-4" text={t("Loading...")} />}
         </CardContent>
       </Card>
     </div>

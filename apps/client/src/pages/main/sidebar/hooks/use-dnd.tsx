@@ -21,7 +21,8 @@ import fractionalIndex from "fractional-index";
 import { useCallback, useState } from "react";
 import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
 import useDocumentStore from "@/stores/document";
-import { useStars } from "@/stores/star-store";
+import { useOrderedStars } from "@/stores/star-store";
+import useStarStore from "@/stores/star-store";
 
 export interface DragItem {
   id: string;
@@ -112,7 +113,16 @@ function useSubspaceDnD() {
 
 // --- Star DnD Hook ---
 function useStarDnD() {
-  const { orderedStars, updateStar } = useStars();
+  const orderedStars = useOrderedStars();
+
+  // For updateStar, use direct setState with vanilla JS
+  const updateStar = useCallback((id: string, changes: Partial<import("@/stores/star-store").StarEntity>) => {
+    const stars = useStarStore.getState().stars;
+    useStarStore.setState({
+      stars: stars.map((star) => (star.id === id ? { ...star, ...changes } : star)),
+    });
+  }, []);
+
   const handleStarDrop = useCallback(
     ({ draggingItem, toDropItem }: { draggingItem: DragItem; toDropItem: DropTarget }) => {
       if (!toDropItem.accept.includes("star")) return;

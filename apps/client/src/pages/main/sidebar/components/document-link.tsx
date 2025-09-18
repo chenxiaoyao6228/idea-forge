@@ -6,7 +6,7 @@ import { NavigationNode } from "@idea/contracts";
 import useDocumentStore from "@/stores/document";
 import { SidebarLink } from "./sidebar-link";
 import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
-import { useStars } from "@/stores/star-store";
+import { useCheckStarred, useToggleStar, useCreateStar, useDeleteStar } from "@/stores/star-store";
 import { useEffect, useMemo, useState } from "react";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +39,11 @@ export function DocumentLink(props: DocumentLinkProps) {
   const isActiveDocument = activeDocumentId === node.id;
   const hasChildren = node.children && node.children.length > 0;
 
-  const { checkStarred, toggleStar, isToggling } = useStars();
+  const checkStarred = useCheckStarred();
+  const toggleStar = useToggleStar();
+  const createStar = useCreateStar();
+  const deleteStar = useDeleteStar();
+  const isToggling = createStar.loading || deleteStar.loading;
 
   // Load children details when document is active and has children in navigation tree
   const fetchChildrenData = useRefCallback(async () => {
