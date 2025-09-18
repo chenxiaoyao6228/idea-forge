@@ -1,38 +1,38 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GroupManagementPanel from "./group-management";
 import VisitorPanel from "./visistor-management";
 import MemberManagementPanel from "./member-management";
 
 export const Members = () => {
   const { t } = useTranslation();
-  const [tab, setTab] = useState(0);
-  const tabs = [
-    { label: t("Member Management"), component: <MemberManagementPanel /> },
-    { label: t("Group Management"), component: <GroupManagementPanel /> },
-    { label: t("Collaborative Visitors"), component: <VisitorPanel /> },
-  ];
+
   return (
-    <div>
-      <div style={{ display: "flex", borderBottom: "1px solid #eee" }}>
-        {tabs.map((tabItem, idx) => (
-          <button
-            key={tabItem.label}
-            style={{
-              padding: "8px 16px",
-              border: "none",
-              borderBottom: tab === idx ? "2px solid #1890ff" : "none",
-              background: "none",
-              cursor: "pointer",
-              fontWeight: tab === idx ? "500" : "normal",
-            }}
-            onClick={() => setTab(idx)}
-          >
-            {tabItem.label}
-          </button>
-        ))}
-      </div>
-      <div style={{ marginTop: 24 }}>{tabs[tab].component}</div>
+    <div className="flex flex-col h-full">
+      <Tabs defaultValue="members" className="h-full">
+        <TabsList className="grid w-full grid-cols-3 gap-2 bg-background text-left sticky top-0 z-10 border-b">
+          <TabsTrigger value="members" className="justify-center gap-2 font-normal data-[state=active]:bg-muted data-[state=active]:font-medium">
+            {t("Member Management")}
+          </TabsTrigger>
+          <TabsTrigger value="groups" className="justify-center gap-2 font-normal data-[state=active]:bg-muted data-[state=active]:font-medium">
+            {t("Group Management")}
+          </TabsTrigger>
+          <TabsTrigger value="visitors" className="justify-center gap-2 font-normal data-[state=active]:bg-muted data-[state=active]:font-medium">
+            {t("Collaborative Visitors")}
+          </TabsTrigger>
+        </TabsList>
+        <div className="flex-1 overflow-y-auto p-6">
+          <TabsContent value="members" className="mt-0">
+            <MemberManagementPanel />
+          </TabsContent>
+          <TabsContent value="groups" className="mt-0">
+            <GroupManagementPanel />
+          </TabsContent>
+          <TabsContent value="visitors" className="mt-0">
+            <VisitorPanel />
+          </TabsContent>
+        </div>
+      </Tabs>
     </div>
   );
 };

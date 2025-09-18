@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { workspaceApi } from "@/apis/workspace";
-import { userApi } from "@/apis/user";
 import useWorkspaceStore from "@/stores/workspace";
 import type { WorkspaceMember, WorkspaceMemberListResponse } from "@idea/contracts";
-import type { User } from "@idea/contracts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -11,186 +9,188 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, UserPlus, MoreHorizontal, UserMinus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { displayUserName } from "@/lib/auth";
+import useRequest from "@ahooksjs/use-request";
+import { useRefCallback } from "@/hooks/use-ref-callback";
+import { showAddWorkspaceMemberModal } from "./add-workspace-member-modal";
 
 const MemberManagementPanel = () => {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
   const workspaceId = currentWorkspace?.id;
-  const [members, setMembers] = useState<WorkspaceMemberListResponse>([]);
-  const [search, setSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [isAdding, setIsAdding] = useState(false);
-  const [addUser, setAddUser] = useState<User | null>(null);
-  const [addRole, setAddRole] = useState<WorkspaceMember["role"]>("MEMBER");
-  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [roleChanging, setRoleChanging] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    setLoading(true);
-    workspaceApi
-      .getWorkspaceMembers(workspaceId)
-      .then((res: any) => {
-        setMembers(res || []);
-      })
-      .finally(() => setLoading(false));
-  }, [workspaceId, setMembers]);
+  // Fetch members using useRequest
+  const {
+    data: members = [],
+    loading,
+    refresh: refreshMembers,
+  } = useRequest(
+    async () => {
+      if (!workspaceId) return [];
+      const res = await workspaceApi.getWorkspaceMembers(workspaceId);
+      return res || [];
+    },
+    {
+      ready: !!workspaceId,
+      refreshDeps: [workspaceId],
+    },
+  );
 
-  useEffect(() => {
-    if (!search) {
-      setSearchResults([]);
-      return;
+  // Filter members based on search query
+  const filteredMembers = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return members;
     }
-    userApi.search({ query: search, page: 1, limit: 10, sortBy: "createdAt" }).then((res) => {
-      setSearchResults((res.data as User[]) || []);
+
+    const query = searchQuery.toLowerCase();
+    return members.filter((member) => {
+      const displayName = displayUserName(member.user).toLowerCase();
+      const email = member.user?.email?.toLowerCase() || "";
+      return displayName.includes(query) || email.includes(query);
     });
-  }, [search]);
+  }, [members, searchQuery]);
 
-  const handleAdd = async () => {
-    if (!addUser || !workspaceId) return;
-    setIsAdding(true);
-    await workspaceApi.addWorkspaceMember(workspaceId, { userId: addUser.id, role: addRole });
-    const res = (await workspaceApi.getWorkspaceMembers(workspaceId)) as any;
-    setMembers(res || []);
-    setAddUser(null);
-    setAddRole("MEMBER");
-    setSearch("");
-    setIsAdding(false);
-  };
+  // Use useRefCallback for stable handler references
+  const handleAddMembers = useRefCallback(async () => {
+    if (!workspaceId) return;
 
-  const handleChangeRole = async (userId: string, newRole: WorkspaceMember["role"]) => {
+    const result = await showAddWorkspaceMemberModal({
+      workspaceId,
+      title: t("Add Members to Workspace"),
+      // description: t("Search and select users to add to this workspace"),
+    });
+
+    if (result?.success) {
+      // Refresh the member list
+      refreshMembers();
+    }
+  });
+
+  const handleChangeRole = useRefCallback(async (userId: string, newRole: WorkspaceMember["role"]) => {
     if (!workspaceId) return;
     setRoleChanging((r) => ({ ...r, [userId]: true }));
-    await workspaceApi.updateWorkspaceMember(workspaceId, userId, { role: newRole });
-    const res = (await workspaceApi.getWorkspaceMembers(workspaceId)) as any;
-    setMembers(res || []);
-    setRoleChanging((r) => ({ ...r, [userId]: false }));
-  };
+    try {
+      await workspaceApi.updateWorkspaceMember(workspaceId, userId, { role: newRole });
+      refreshMembers();
+    } finally {
+      setRoleChanging((r) => ({ ...r, [userId]: false }));
+    }
+  });
 
-  const handleRemove = async (userId: string) => {
+  const handleRemove = useRefCallback(async (userId: string) => {
     if (!workspaceId) return;
     setRoleChanging((r) => ({ ...r, [userId]: true }));
-    await workspaceApi.removeWorkspaceMember(workspaceId, userId);
-    const res = (await workspaceApi.getWorkspaceMembers(workspaceId)) as any;
-    setMembers(res || []);
-    setRoleChanging((r) => ({ ...r, [userId]: false }));
-  };
+    try {
+      await workspaceApi.removeWorkspaceMember(workspaceId, userId);
+      refreshMembers();
+    } finally {
+      setRoleChanging((r) => ({ ...r, [userId]: false }));
+    }
+  });
 
   return (
-    <div className="w-full mx-auto space-y-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Input placeholder={t("Search member nickname or ID")} value={search} onChange={(e) => setSearch(e.target.value)} className="w-60" />
-        <Button variant="default" onClick={() => setAddUser(null)}>
-          {t("Add member")}
-        </Button>
-      </div>
-      {addUser && (
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle>{t("Add member")}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-4">
-            <Avatar>
-              <AvatarImage src={addUser.imageUrl || undefined} alt={addUser.displayName || addUser.email} />
-              <AvatarFallback>{addUser.displayName?.[0] || addUser.email[0]}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="font-medium">{addUser.displayName || addUser.email}</div>
-              <div className="text-xs text-muted-foreground">{addUser.email}</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="add-role">{t("Role")}</Label>
-              <Select value={addRole} onValueChange={(v) => setAddRole(v as WorkspaceMember["role"])}>
-                <SelectTrigger id="add-role" className="w-28">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MEMBER">{t("Member")}</SelectItem>
-                  <SelectItem value="ADMIN">{t("Admin")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleAdd} disabled={isAdding} className="ml-2">
-              {t("Confirm add")}
-            </Button>
-            <Button variant="outline" onClick={() => setAddUser(null)} className="ml-2">
-              {t("Cancel")}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-      {search && searchResults.length > 0 && !addUser && (
-        <Card className="mb-4">
-          <CardContent className="p-2">
-            {searchResults.map((user) => (
-              <div key={user.id} className="flex items-center gap-2 p-2 cursor-pointer hover:bg-accent rounded" onClick={() => setAddUser(user)}>
-                <Avatar>
-                  <AvatarImage src={user.imageUrl || undefined} alt={user.displayName || user.email} />
-                  <AvatarFallback>{user.displayName?.[0] || user.email[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="font-medium">{user.displayName || user.email}</div>
-                  <div className="text-xs text-muted-foreground">{user.email}</div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t("Member list")}</CardTitle>
+          <CardTitle>
+            {t("Members")} ({searchQuery.trim() ? `${filteredMembers.length}/${members.length}` : members.length})
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("User")}</TableHead>
-                <TableHead>{t("Role")}</TableHead>
-                <TableHead>{t("Action")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Avatar>
-                        <AvatarImage src={member.user?.imageUrl || undefined} alt={member.user?.displayName || member.userId} />
-                        <AvatarFallback>{member.user?.displayName || member.user?.email || member.userId?.[0]}</AvatarFallback>
-                      </Avatar>
-                      <span>{member.user?.displayName || member.user?.email || member.userId}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={member.role}
-                      disabled={roleChanging[member.userId] || member.role === "OWNER"}
-                      onValueChange={(v) => handleChangeRole(member.userId, v as WorkspaceMember["role"])}
-                    >
-                      <SelectTrigger className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MEMBER">{t("Member")}</SelectItem>
-                        <SelectItem value="ADMIN">{t("Admin")}</SelectItem>
-                        <SelectItem value="OWNER">{t("Owner")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    {member.role !== "OWNER" && (
-                      <Button variant="destructive" onClick={() => handleRemove(member.userId)} disabled={roleChanging[member.userId]} size="sm">
-                        {t("Remove")}
-                      </Button>
-                    )}
-                  </TableCell>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder={t("Search members")} className="pl-10 pr-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            <Button variant="default" onClick={handleAddMembers}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              {t("Add member")}
+            </Button>
+          </div>
+
+          {/* Members list */}
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("User")}</TableHead>
+                  <TableHead>{t("Role")}</TableHead>
+                  <TableHead className="w-12 text-center">{t("Operations")}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredMembers.length > 0 ? (
+                  filteredMembers.map((member) => (
+                    <TableRow key={member.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={member.user?.imageUrl || undefined} alt={member.user?.displayName || member.userId} />
+                            <AvatarFallback>{displayUserName(member.user)[0].toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="font-medium">{displayUserName(member.user)}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={member.role}
+                          disabled={roleChanging[member.userId] || member.role === "OWNER"}
+                          onValueChange={(v) => handleChangeRole(member.userId, v as WorkspaceMember["role"])}
+                        >
+                          <SelectTrigger className="w-28">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MEMBER">{t("Member")}</SelectItem>
+                            <SelectItem value="ADMIN">{t("Admin")}</SelectItem>
+                            <SelectItem value="OWNER">{t("Owner")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={member.role === "OWNER" || roleChanging[member.userId]}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleRemove(member.userId)} className="text-destructive focus:text-destructive">
+                                <UserMinus className="h-4 w-4 mr-2" />
+                                {t("Remove user from workspace")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      {searchQuery.trim() ? t("No members found matching your search") : t("No members found")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
           {loading && <Spinner className="mt-4" text={t("Loading...")} />}
         </CardContent>
       </Card>

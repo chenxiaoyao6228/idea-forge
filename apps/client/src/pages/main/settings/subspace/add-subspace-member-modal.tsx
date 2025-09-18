@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useBatchAddSubspaceMembers } from "@/stores/subspace";
-import { MultiSelectOption } from "@/components/ui/multi-select";
+import { Option } from "@/components/ui/multi-selector";
 import { MemberAndGroupSelect } from "@/components/member-group-select";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
@@ -31,7 +31,7 @@ const AddSubspaceMemberModal = ({
   title,
   description,
 }: ConfirmDialogProps<AddSubspaceMemberModalProps, { success: boolean; addedCount: number; errors?: any[] } | null>) => {
-  const [selectedItems, setSelectedItems] = useState<MultiSelectOption[]>([]);
+  const [selectedItems, setSelectedItems] = useState<Option[]>([]);
   const [selectedRole, setSelectedRole] = useState<"MEMBER" | "ADMIN">("MEMBER");
   const { t } = useTranslation();
 
@@ -60,8 +60,8 @@ const AddSubspaceMemberModal = ({
       const response = await batchAddSubspaceMembers({
         subspaceId,
         items: selectedItems.map((item) => ({
-          id: item.id,
-          type: item.type,
+          id: item.id as string,
+          type: item.type as "user" | "group",
           role: selectedRole,
         })),
       });
@@ -92,7 +92,7 @@ const AddSubspaceMemberModal = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* MultiSelect for Users and Groups */}
+          {/* MultipleSelector for Users and Groups */}
           <div className="space-y-2">
             <Label>{t("Select member or member group")}</Label>
             <MemberAndGroupSelect

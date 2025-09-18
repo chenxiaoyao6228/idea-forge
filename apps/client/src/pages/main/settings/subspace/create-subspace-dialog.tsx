@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImageCropper } from "@/components/image-cropper";
-import { MultiSelectOption } from "@/components/ui/multi-select";
+import { Option } from "@/components/ui/multi-selector";
 import { SubspaceTypeSchema } from "@idea/contracts";
 import useSubSpaceStore, { useBatchAddSubspaceMembers } from "@/stores/subspace";
 import { uploadFile } from "@/lib/upload";
@@ -44,7 +44,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<SubspaceType>("WORKSPACE_WIDE");
-  const [selectedMembers, setSelectedMembers] = useState<MultiSelectOption[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<Option[]>([]);
 
   // Avatar upload states
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -182,8 +182,8 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
           await batchAddSubspaceMembers({
             subspaceId: subspace.id,
             items: selectedMembers.map((item) => ({
-              id: item.id,
-              type: item.type,
+              id: item.id as string,
+              type: item.type as "user" | "group",
               role: "MEMBER",
             })),
           });
@@ -234,7 +234,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
     <Dialog open={show} onOpenChange={(open) => !open && handleCancel()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-center">
             <DialogTitle>{t("Create Subspace")}</DialogTitle>
             <div className="flex-shrink-0 ml-4">
               <MoreAboutSubspaceTip className="mr-1" />

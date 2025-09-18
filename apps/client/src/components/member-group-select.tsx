@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
+import MultipleSelector, { Option } from "@/components/ui/multi-selector";
 import { Users, User } from "lucide-react";
 import useWorkspaceStore from "@/stores/workspace";
 import useGroupStore from "@/stores/group";
@@ -12,8 +12,8 @@ import { getInitialChar } from "@/lib/auth";
 interface SubspaceMemberSelectProps {
   workspaceId: string;
   subspaceId?: string; // Optional - if provided, will filter out existing members
-  selectedItems: MultiSelectOption[];
-  onSelectionChange: (items: MultiSelectOption[]) => void;
+  selectedItems: Option[];
+  onSelectionChange: (items: Option[]) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   disabled?: boolean;
@@ -124,88 +124,60 @@ export function MemberAndGroupSelect({
     fetchData();
   }, []);
 
-  // Transform users and groups to MultiSelectOption format
-  const userOptions: MultiSelectOption[] = users
+  // Transform users and groups to Option format
+  const userOptions: Option[] = users
     .map((user) => ({
       value: `user-${user.id}`,
       label: user.displayName || user.email,
       type: "user" as const,
       id: user.id,
-      avatar: user.imageUrl,
+      avatar: user.imageUrl || undefined,
+      icon: <User className="h-3 w-3" />,
     }))
     .filter((user) => !existingMembers.includes(user.id));
 
-  const groupOptions: MultiSelectOption[] = groups.map((group) => ({
+  const groupOptions: Option[] = groups.map((group) => ({
     value: `group-${group.id}`,
     label: group.name,
     type: "group" as const,
     id: group.id,
-    memberCount: group.memberCount,
+    memberCount: group.memberCount.toString(),
+    icon: <Users className="h-3 w-3" />,
   }));
 
   const hasUserOrGroupOptions = userOptions.length + groupOptions.length > 0;
 
-  const allOptions = [
-    { label: t("Members"), value: "separator-members", type: "separator" },
-    ...userOptions,
-    { label: t("Member Groups"), value: "separator-groups", type: "separator" },
-    ...groupOptions,
-  ];
+  // Flatten options for MultipleSelector (it supports grouping via groupBy prop)
+  const allOptions = [...userOptions, ...groupOptions];
 
-  // Custom render functions for MultiSelect
-  const renderOption = (option: MultiSelectOption) => {
-    if (option.type === "separator") {
-      return <div className="px-2 py-1.5 text-xs  bg-transparent">{option.label}</div>;
-    }
-
+  // Custom render functions for MultipleSelector
+  const renderOption = (option: Option) => {
     if (option.type === "user") {
       return (
-        <div className="flex items-center space-x-2">
-          <Avatar className="h-6 w-6">
-            <AvatarImage src={option.avatar || undefined} />
+        <div className="flex items-center space-x-2 min-w-0">
+          <Avatar className="h-6 w-6 flex-shrink-0">
+            <AvatarImage src={typeof option.avatar === "string" ? option.avatar : undefined} />
             <AvatarFallback className="text-xs bg-gray-500 text-white">{getInitialChar(option.label)}</AvatarFallback>
           </Avatar>
-          <span className="text-sm">{option.label}</span>
+          <span className="text-sm truncate">{option.label}</span>
         </div>
       );
     }
 
     return (
-      <div className="flex items-center space-x-2">
-        <div className="h-6 w-6 rounded bg-gray-500 flex items-center justify-center">
+      <div className="flex items-center space-x-2 min-w-0">
+        <div className="h-6 w-6 rounded bg-gray-500 flex items-center justify-center flex-shrink-0">
           <span className="text-xs text-white">{getInitialChar(option.label)}</span>
         </div>
-        <span className="text-sm">{option.label}</span>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-sm truncate">{option.label}</span>
+        <span className="text-xs text-muted-foreground flex-shrink-0">
           ({option.memberCount} {t("members")})
         </span>
       </div>
     );
   };
 
-  const renderBadge = (option: MultiSelectOption, onRemove: () => void) => {
-    return (
-      <div className="flex items-center space-x-1 bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-xs">
-        {option.type === "user" ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
-        <span>{option.label}</span>
-        <button
-          className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              onRemove();
-            }
-          }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onClick={onRemove}
-        >
-          <span className="h-3 w-3 text-muted-foreground hover:text-foreground">×</span>
-        </button>
-      </div>
-    );
-  };
+  // Using default badge rendering from MultipleSelector with icons
 
   if (loading) {
     return (
@@ -218,15 +190,15 @@ export function MemberAndGroupSelect({
   return (
     <div className="space-y-2">
       {hasUserOrGroupOptions ? (
-        <MultiSelect
+        <MultipleSelector
           options={allOptions}
-          selected={selectedItems}
-          onSelectionChange={onSelectionChange}
+          value={selectedItems}
+          onChange={onSelectionChange}
           placeholder={placeholder || t("Select member or member group")}
           searchPlaceholder={searchPlaceholder || t("Search members or groups...")}
           renderOption={renderOption}
-          renderBadge={renderBadge}
           disabled={disabled}
+          className="w-full"
         />
       ) : (
         <div className="text-sm text-muted-foreground p-3 border rounded-md">

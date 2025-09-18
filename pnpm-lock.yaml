@@ -5145,7 +5145,7 @@ packages:
       typescript:
         optional: true
     dependencies:
-      prisma: 6.10.1(typescript@5.9.2)
+      prisma: 6.10.1(typescript@5.8.2)
       typescript: 5.9.2
 
   /@prisma/config@6.10.1:
@@ -14808,7 +14808,7 @@ packages:
     dev: true
 
   /faker@6.6.6:
-    resolution: {integrity: sha512-wLTv2a28wjUyWkbnX7u/ABZBkUkIF2fCd73V6P2oFqEGEktDfzWx4UxrSqtPRw0xPRAcjeAOIiJWqZm3pP4u3g==}
+    resolution: {integrity: sha512-wLTv2a28wjUyWkbnX7u/ABZBkUkIF2fCd73V6P2oFqEGEktDfzWx4UxrSqtPRw0xPRAcjeAOIiJWqZm3pP4u3g==, tarball: https://registry.npmmirror.com/faker/-/faker-6.6.6.tgz}
     deprecated: '[WARNING] Use 5.5.3 instead of 6.6.6, reason: Please use https://github.com/MilosPaunovic/community-faker instead'
     dev: true
 
@@ -19576,7 +19576,6 @@ packages:
       '@prisma/config': 6.10.1
       '@prisma/engines': 6.10.1
       typescript: 5.8.2
-    dev: true
 
   /prisma@6.10.1(typescript@5.9.2):
     resolution: {integrity: sha512-khhlC/G49E4+uyA3T3H5PRBut486HD2bDqE2+rvkU0pwk9IAqGFacLFUyIx9Uw+W2eCtf6XGwsp+/strUwMNPw==}
