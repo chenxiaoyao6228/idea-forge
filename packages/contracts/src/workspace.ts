@@ -55,6 +55,37 @@ export const AddWorkspaceMemberRequestSchema = z.object({
 });
 export type AddWorkspaceMemberRequest = z.infer<typeof AddWorkspaceMemberRequestSchema>;
 
+// Batch add workspace members request
+export const BatchAddWorkspaceMemberRequestSchema = z.object({
+  items: z.array(
+    z.object({
+      userId: z.string(),
+      role: WorkspaceRoleSchema.default(WorkspaceRoleSchema.enum.MEMBER),
+    }),
+  ),
+});
+export type BatchAddWorkspaceMemberRequest = z.infer<typeof BatchAddWorkspaceMemberRequestSchema>;
+
+// Batch add workspace members response
+export const BatchAddWorkspaceMemberResponseSchema = z.object({
+  success: z.boolean(),
+  addedCount: z.number(),
+  skippedCount: z.number(),
+  errors: z.array(
+    z.object({
+      userId: z.string(),
+      error: z.string(),
+    }),
+  ),
+  skipped: z.array(
+    z.object({
+      userId: z.string(),
+      reason: z.string(),
+    }),
+  ),
+});
+export type BatchAddWorkspaceMemberResponse = z.infer<typeof BatchAddWorkspaceMemberResponseSchema>;
+
 export const UpdateWorkspaceMemberRequestSchema = z.object({
   role: WorkspaceRoleSchema,
 });

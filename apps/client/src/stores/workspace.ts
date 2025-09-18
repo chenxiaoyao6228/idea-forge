@@ -24,6 +24,8 @@ interface State {
   isLoading: boolean;
   isLoaded: boolean;
   currentWorkspace?: WorkspaceEntity;
+  workspaceMembers: Record<string, any[]>; // workspaceId -> members array
+  membersLoading: Record<string, boolean>; // workspaceId -> loading state
 }
 
 interface Action {
@@ -39,12 +41,18 @@ interface Action {
 
   // Workspace members
   fetchWorkspaceMembers: (workspaceId: string) => Promise<any[]>;
+  batchAddWorkspaceMembers: (workspaceId: string, members: Array<{ userId: string; role: any }>) => Promise<any>;
+  getWorkspaceMembers: (workspaceId: string) => any[];
+  isWorkspaceMembersLoading: (workspaceId: string) => boolean;
+  refreshWorkspaceMembers: (workspaceId: string) => Promise<any[]>;
 }
 
 const defaultState: State = {
   isLoading: false,
   isLoaded: false,
   currentWorkspace: undefined,
+  workspaceMembers: {},
+  membersLoading: {},
 };
 
 const workspaceEntitySlice = createEntitySlice<WorkspaceEntity>();
@@ -97,8 +105,9 @@ const useWorkspaceStore = create<StoreState>()(
                 } else {
                   get().setCurrentWorkspace(workspaceEntities.find((workspace) => workspace.id === currentWorkspaceId));
                 }
+                return workspaceEntities;
               }
-              return response;
+              return [];
             } catch (error) {
               console.error("Failed to fetch workspaces:", error);
               return [];
@@ -213,12 +222,55 @@ const useWorkspaceStore = create<StoreState>()(
           // Workspace members
           fetchWorkspaceMembers: async (workspaceId: string) => {
             try {
+              // Set loading state
+              set((state) => ({
+                membersLoading: { ...state.membersLoading, [workspaceId]: true },
+              }));
+
               const response = await workspaceApi.getWorkspaceMembers(workspaceId);
-              return response || [];
+              const members = response || [];
+
+              // Store members in global state
+              set((state) => ({
+                workspaceMembers: { ...state.workspaceMembers, [workspaceId]: members },
+                membersLoading: { ...state.membersLoading, [workspaceId]: false },
+              }));
+
+              return members;
             } catch (error) {
               console.error("Failed to fetch workspace members:", error);
+              // Clear loading state on error
+              set((state) => ({
+                membersLoading: { ...state.membersLoading, [workspaceId]: false },
+              }));
               return [];
             }
+          },
+
+          batchAddWorkspaceMembers: async (workspaceId: string, members: Array<{ userId: string; role: any }>) => {
+            try {
+              const response = await workspaceApi.batchAddWorkspaceMembers(workspaceId, { items: members });
+              return response;
+            } catch (error) {
+              console.error("Failed to batch add workspace members:", error);
+              throw error;
+            }
+          },
+
+          // Get workspace members from global state
+          getWorkspaceMembers: (workspaceId: string) => {
+            return get().workspaceMembers[workspaceId] || [];
+          },
+
+          // Check if workspace members are loading
+          isWorkspaceMembersLoading: (workspaceId: string) => {
+            return get().membersLoading[workspaceId] || false;
+          },
+
+          // Refresh workspace members (for WebSocket events)
+          refreshWorkspaceMembers: async (workspaceId: string) => {
+            console.log(`[workspace-store]: Refreshing members for workspace ${workspaceId}`);
+            return get().fetchWorkspaceMembers(workspaceId);
           },
         })),
         {

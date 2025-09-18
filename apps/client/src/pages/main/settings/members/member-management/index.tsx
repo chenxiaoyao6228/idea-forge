@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { workspaceApi } from "@/apis/workspace";
 import useWorkspaceStore from "@/stores/workspace";
-import type { WorkspaceMember, WorkspaceMemberListResponse } from "@idea/contracts";
+import type { WorkspaceMember } from "@idea/contracts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -13,7 +13,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Search, UserPlus, MoreHorizontal, UserMinus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { displayUserName } from "@/lib/auth";
-import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { showAddWorkspaceMemberModal } from "./add-workspace-member-modal";
 
@@ -24,22 +23,22 @@ const MemberManagementPanel = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleChanging, setRoleChanging] = useState<Record<string, boolean>>({});
 
-  // Fetch members using useRequest
-  const {
-    data: members = [],
-    loading,
-    refresh: refreshMembers,
-  } = useRequest(
-    async () => {
-      if (!workspaceId) return [];
-      const res = await workspaceApi.getWorkspaceMembers(workspaceId);
-      return res || [];
-    },
-    {
-      ready: !!workspaceId,
-      refreshDeps: [workspaceId],
-    },
-  );
+  // Get members from global store
+  const members = useWorkspaceStore((state) => (workspaceId ? state.getWorkspaceMembers(workspaceId) : []));
+  const loading = useWorkspaceStore((state) => (workspaceId ? state.isWorkspaceMembersLoading(workspaceId) : false));
+  const fetchWorkspaceMembers = useWorkspaceStore((state) => state.fetchWorkspaceMembers);
+
+  // Fetch members on component mount and when workspaceId changes
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    // Only fetch if we don't have members cached
+    const currentMembers = useWorkspaceStore.getState().getWorkspaceMembers(workspaceId);
+    if (currentMembers.length === 0) {
+      console.log(`[member-management]: Fetching members for workspace ${workspaceId}`);
+      fetchWorkspaceMembers(workspaceId);
+    }
+  }, [workspaceId, fetchWorkspaceMembers]);
 
   // Filter members based on search query
   const filteredMembers = useMemo(() => {
@@ -59,24 +58,20 @@ const MemberManagementPanel = () => {
   const handleAddMembers = useRefCallback(async () => {
     if (!workspaceId) return;
 
-    const result = await showAddWorkspaceMemberModal({
+    await showAddWorkspaceMemberModal({
       workspaceId,
       title: t("Add Members to Workspace"),
-      // description: t("Search and select users to add to this workspace"),
     });
-
-    if (result?.success) {
-      // Refresh the member list
-      refreshMembers();
-    }
   });
 
   const handleChangeRole = useRefCallback(async (userId: string, newRole: WorkspaceMember["role"]) => {
     if (!workspaceId) return;
     setRoleChanging((r) => ({ ...r, [userId]: true }));
     try {
+      // TODO: do we need to notify the user that the role has been changed, eg: promoted to admin?
       await workspaceApi.updateWorkspaceMember(workspaceId, userId, { role: newRole });
-      refreshMembers();
+      // Refresh members from store
+      await fetchWorkspaceMembers(workspaceId);
     } finally {
       setRoleChanging((r) => ({ ...r, [userId]: false }));
     }
@@ -87,7 +82,8 @@ const MemberManagementPanel = () => {
     setRoleChanging((r) => ({ ...r, [userId]: true }));
     try {
       await workspaceApi.removeWorkspaceMember(workspaceId, userId);
-      refreshMembers();
+      // Refresh members from store
+      await fetchWorkspaceMembers(workspaceId);
     } finally {
       setRoleChanging((r) => ({ ...r, [userId]: false }));
     }
@@ -102,6 +98,7 @@ const MemberManagementPanel = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Search bar and add button */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { WorkspaceService } from "./workspace.service";
-import { WorkspaceListResponse } from "@idea/contracts";
+import { WorkspaceListResponse, BatchAddWorkspaceMemberRequest } from "@idea/contracts";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
 import { Action } from "@/_shared/casl/ability.class";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
@@ -37,6 +37,12 @@ export class WorkspaceController {
   // @CheckPolicy(Action.ManageMembers, "Workspace")
   async addWorkspaceMember(@Param("id") workspaceId: string, @Body() dto: { userId: string; role: WorkspaceRole }, @GetUser("id") adminId: string) {
     return this.workspaceService.addWorkspaceMember(workspaceId, dto.userId, dto.role, adminId);
+  }
+
+  @Post(":id/members/batch")
+  // @CheckPolicy(Action.ManageMembers, "Workspace")
+  async batchAddWorkspaceMembers(@Param("id") workspaceId: string, @Body() dto: BatchAddWorkspaceMemberRequest, @GetUser("id") adminId: string) {
+    return this.workspaceService.batchAddWorkspaceMembers(workspaceId, dto, adminId);
   }
 
   @Get(":id/members")

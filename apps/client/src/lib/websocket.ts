@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import useUserStore from "@/stores/user";
 import useAbilityStore from "@/stores/ability";
 import useSharedWithMeStore from "@/stores/shared-with-me";
+import useWorkspaceStore from "@/stores/workspace";
 
 type SocketWithAuthentication = Socket & {
   authenticated?: boolean;
@@ -62,6 +63,10 @@ enum SocketEvents {
   SUBSPACE_MEMBER_ADDED = "subspace.member.added",
   SUBSPACE_MEMBERS_BATCH_ADDED = "subspace.members.batch.added",
   SUBSPACE_MEMBER_LEFT = "subspace.member.left",
+
+  // Workspace events
+  WORKSPACE_MEMBER_ADDED = "workspace.member.added",
+  WORKSPACE_MEMBERS_BATCH_ADDED = "workspace.members.batch.added",
 
   JOIN = "join",
   JOIN_SUCCESS = "join.success",
@@ -427,16 +432,71 @@ class WebsocketService {
     // Handle subspace members batch added events
     this.socket.on(SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED, (message: GatewayMessage) => {
       console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED}:`, message);
-      const { subspaceId, totalAdded, membersBatchAdded } = message;
+      const { subspaceId, totalAdded, membersBatchAdded, workspaceWideSubspaces } = message;
       if (!subspaceId) return;
 
       // Single refresh for batch operation instead of multiple individual refreshes
       if (membersBatchAdded) {
-        // Refresh subspace member list once for the entire batch
-        this.debouncedRefreshSubspaceMembers(subspaceId);
+        // If this is a workspace-wide batch operation affecting multiple subspaces
+        if (workspaceWideSubspaces && Array.isArray(workspaceWideSubspaces)) {
+          // Refresh all affected subspaces
+          workspaceWideSubspaces.forEach((subspaceId: string) => {
+            this.debouncedRefreshSubspaceMembers(subspaceId);
+          });
+        } else {
+          // Regular batch operation for a single subspace
+          this.debouncedRefreshSubspaceMembers(subspaceId);
+        }
 
         // Show single notification for batch operation
         // toast.success(`${totalAdded} members added to subspace`);
+      }
+    });
+
+    // Handle workspace member added events
+    this.socket.on(SocketEvents.WORKSPACE_MEMBER_ADDED, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.WORKSPACE_MEMBER_ADDED}:`, message);
+      const { workspaceId, member, memberAdded } = message;
+      if (!workspaceId) return;
+
+      const workspaceStore = useWorkspaceStore.getState();
+      const userInfo = useUserStore.getState().userInfo;
+
+      // If the current user was added to the workspace
+      if (member?.userId === userInfo?.id) {
+        // Refresh user's workspace list to include the new workspace
+        workspaceStore.fetchList();
+
+        // Join the workspace room for real-time updates
+        if (this.socket) {
+          this.joinRoom(`workspace:${workspaceId}`);
+        }
+
+        // Show notification
+        toast.success(`You've been added to a workspace`);
+      } else {
+        // Another user was added, refresh workspace member list
+        this.debouncedRefreshWorkspaceMembers(workspaceId);
+      }
+    });
+
+    // Handle workspace members batch added events
+    this.socket.on(SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED, (message: GatewayMessage) => {
+      console.log(`[websocket]: Received event ${SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED}:`, message);
+      const { workspaceId, totalAdded, membersBatchAdded } = message;
+      if (!workspaceId) {
+        console.warn(`[websocket]: WORKSPACE_MEMBERS_BATCH_ADDED event missing workspaceId:`, message);
+        return;
+      }
+
+      // Single refresh for batch operation instead of multiple individual refreshes
+      if (membersBatchAdded) {
+        console.log(`[websocket]: Refreshing workspace members for workspace ${workspaceId}, totalAdded: ${totalAdded}`);
+        // Refresh workspace member list once for the entire batch
+        this.debouncedRefreshWorkspaceMembers(workspaceId);
+
+        // Show single notification for batch operation
+        // toast.success(`${totalAdded} members added to workspace`);
       }
     });
 
@@ -666,6 +726,26 @@ class WebsocketService {
     }, 300); // 300ms debounce delay
 
     this.refreshTimeouts.set(subspaceId, timeout);
+  }
+
+  private debouncedRefreshWorkspaceMembers(workspaceId: string) {
+    console.log(`[websocket]: Scheduling debounced refresh for workspace ${workspaceId}`);
+    // Clear existing timeout for this workspace
+    const existingTimeout = this.refreshTimeouts.get(workspaceId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    // Set new timeout
+    const timeout = setTimeout(() => {
+      console.log(`[websocket]: Executing refresh for workspace ${workspaceId}`);
+      // Call the workspace store refresh method
+      const workspaceStore = useWorkspaceStore.getState();
+      workspaceStore.refreshWorkspaceMembers(workspaceId);
+      this.refreshTimeouts.delete(workspaceId);
+    }, 500); // 500ms debounce delay
+
+    this.refreshTimeouts.set(workspaceId, timeout);
   }
 
   // Public API methods

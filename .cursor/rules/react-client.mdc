@@ -385,8 +385,37 @@ showConfirmModal({
 
 #### Store Structure Pattern
 
+**MANDATORY: Stores should only contain state and a unified `changeState` method.
+**Store Rules:\*\*
+
+1. **Only State**: Store should only contain state properties
+2. **Unified changeState**: Single method to update any state property
+3. **No CRUD Methods**: No individual add/update/remove methods in store
+4. **Hook-based CRUD**: All CRUD operations implemented as hooks
+
 ```typescript
-// ✅ Minimal store - just state and basic mutations
+// ✅ Minimal store - only state and unified changeState method
+const useStarStore = create<{
+  stars: StarEntity[];
+  starsMap: Record<string, StarEntity>;
+  currentStar: StarEntity | null;
+  changeState: (
+    updates: Partial<{
+      stars: StarEntity[];
+      starsMap: Record<string, StarEntity>;
+      currentStar: StarEntity | null;
+    }>
+  ) => void;
+}>((set) => ({
+  stars: [],
+  starsMap: {},
+  currentStar: null,
+
+  // Unified state update method
+  changeState: (updates) => set((state) => ({ ...state, ...updates })),
+}));
+
+// ❌ Avoid: Individual CRUD methods in store
 const useStarStore = create<{
   stars: StarEntity[];
   setStars: (stars: StarEntity[]) => void;
@@ -394,44 +423,76 @@ const useStarStore = create<{
   updateStar: (id: string, changes: Partial<StarEntity>) => void;
   removeStar: (id: string) => void;
 }>((set) => ({
-  stars: [],
-
-  setStars: (stars) => set({ stars }),
-
-  addStar: (star) =>
-    set((state) => ({
-      stars: [...state.stars, star],
-    })),
-
-  updateStar: (id, changes) =>
-    set((state) => ({
-      stars: state.stars.map((star) =>
-        star.id === id ? { ...star, ...changes } : star
-      ),
-    })),
-
-  removeStar: (id) =>
-    set((state) => ({
-      stars: state.stars.filter((star) => star.id !== id),
-    })),
+  // ... individual methods
 }));
 ```
 
-#### Individual CRUD Hooks Pattern
+#### CRUD Operations with Direct Store Updates
+
+**MANDATORY: Use direct `changeState` calls for all CRUD operations instead of store methods.**
+
+**For CRUD operations, use direct store updates:**
+
+- **Fetch**: `changeState({ items: newItems })`
+- **Create**: `changeState({ items: [...items, newItem] })`
+- **Update**: `changeState({ items: items.map(item => item.id === id ? updatedItem : item) })`
+- **Delete**: `changeState({ items: items.filter(item => item.id !== id) })`
 
 ```typescript
-// ✅ Data access hook with computed values
+
+**Cleaner Approach:**
+- Update store state directly with `changeState` instead of syncing
+- No need for separate management hooks with `useEffect` sync
+- Simpler, more direct, and easier to understand
+
+// ✅ Split into focused hooks for better performance
+// Each hook only subscribes to what it actually needs
+
+// Benefits of splitting hooks:
+// 1. Components only re-render when their specific dependencies change
+// 2. Better performance through selective subscriptions
+// 3. Clearer intent - each hook has a single responsibility
+// 4. Easier to test and maintain
+// 5. More granular control over re-renders
+
+// Only subscribe to stars array
 export const useStars = () => {
-  const { stars } = useStarStore();
+  const stars = useStarStore((state) => state.stars);
+  return { stars };
+};
+
+// Only subscribe to currentStar
+export const useCurrentStar = () => {
+  const currentStar = useStarStore((state) => state.currentStar);
+  return { currentStar };
+};
+
+// Computed values that depend on stars
+export const useOrderedStars = () => {
+  const stars = useStarStore((state) => state.stars);
 
   const orderedStars = useMemo(
     () => stars.sort((a, b) => (a.index || "").localeCompare(b.index || "")),
     [stars]
   );
 
+  return { orderedStars };
+};
+
+// Grouped stars by subspace
+export const useStarsBySubspace = () => {
+  const stars = useStarStore((state) => state.stars);
+
   const starsBySubspace = useMemo(() => groupBy(stars, "subspaceId"), [stars]);
 
-  const isStarred = useCallback(
+  return { starsBySubspace };
+};
+
+// Star checking utility
+export const useIsStarred = () => {
+  const stars = useStarStore((state) => state.stars);
+
+  const isStarred = RefCallback(
     (docId?: string, subspaceId?: string) => {
       return stars.some(
         (star) =>
@@ -439,268 +500,43 @@ export const useStars = () => {
           (subspaceId && star.subspaceId === subspaceId)
       );
     },
-    [stars]
+
   );
 
-  return {
-    stars,
-    orderedStars,
-    starsBySubspace,
-    isStarred,
-  };
+  return { isStarred };
 };
 
-// ✅ Fetch operation
-export const useFetchStars = () => {
-  const { setStars } = useStarStore();
-  const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
-  const toast = useToast();
 
-  return useRequest(() => starApi.findAll(currentWorkspace.id), {
-    onSuccess: (response) => setStars(response.data.stars),
-    onError: (error) =>
-      toast.error("Failed to fetch stars", {
-        description: error.message,
-      }),
-    enabled: !!currentWorkspace,
-  });
-};
 
-// ✅ Create operation
+// ✅ Create operation - Direct store updates
 export const useCreateStar = () => {
-  const { addStar } = useStarStore();
-  const toast = useToast();
+  const { stars, changeState } = useStarStore();
 
-  return useRequest((params: CreateStarDto) => starApi.create(params), {
-    onSuccess: (response) => {
-      addStar(response.data);
-      toast.success("Star created");
+  return useRequest(
+    async (params: CreateStarDto) => {
+      try {
+        const response = await starApi.create(params);
+        // Update store directly
+        changeState({ stars: [...stars, response.data] });
+        toast.success("Star created");
+        return response;
+      } catch (error) {
+        console.error("Failed to create star:", error);
+        toast.error("Failed to create star", {
+          description: error.message,
+        });
+        throw error;
+      }
     },
-    onError: (error) =>
-      toast.error("Failed to create star", {
-        description: error.message,
-      }),
-  });
-};
-
-// ✅ High-level hook that combines operations
-export const useStarActions = (docId?: string, subspaceId?: string) => {
-  const { isStarred, findStar } = useStars();
-  const { execute: createStar, isLoading: isCreating } = useCreateStar();
-  const { execute: deleteStar, isLoading: isDeleting } = useDeleteStar();
-
-  const starred = isStarred(docId, subspaceId);
-
-  const toggleStar = useRefCallback(async () => {
-    if (starred) {
-      const star = findStar(docId, subspaceId);
-      if (star) await deleteStar(star.id);
-    } else {
-      await createStar({ docId, subspaceId });
+    {
+      manual: true,
     }
-  });
-
-  return {
-    isStarred: starred,
-    toggleStar,
-    isLoading: isCreating || isDeleting,
-  };
+  );
 };
+
+// ✅ Update operation - Direct store updates
+
 ```
-
-### Zustand Store Pattern
-
-**Only type the interface/type for store state and actions. Do NOT add explicit parameter types to the implementation of store functions.**
-
-For example, this is correct:
-
-```typescript
-interface UserStoreState {
-  loading: boolean;
-  userInfo: UserInfo | null;
-  setUserInfo: (userInfo: UserInfo) => void;
-}
-
-const useUserStore = create<UserStoreState>()((set) => ({
-  loading: false,
-  userInfo: null,
-  setUserInfo: (userInfo) => set({ userInfo }), // no explicit type here
-  logout: async () => {
-    set({ loading: true });
-    await authApi.logout();
-    localStorage.clear();
-    set({ userInfo: null, loading: false });
-  },
-}));
-```
-
-**Do NOT do this:**
-
-```typescript
-const useUserStore = create<UserStoreState>()((set) => ({
-  setUserInfo: (userInfo: UserInfo) => set({ userInfo }), // ❌ Don't type here
-}));
-```
-
-- Type the interface/type for state and actions.
-- Do NOT type the implementation parameters.
-- This keeps the implementation concise and leverages TypeScript inference from the interface.
-
-### State Management Best Practices
-
-#### DO ✅
-
-1. **Create minimal stores with only state and mutations**
-
-   ```typescript
-   // ✅ Good
-   const useStarStore = create<{
-     stars: StarEntity[];
-     setStars: (stars: StarEntity[]) => void;
-     addStar: (star: StarEntity) => void;
-   }>((set) => ({
-     /* ... */
-   }));
-   ```
-
-2. **Use individual hooks for each CRUD operation**
-
-   ```typescript
-   // ✅ Good
-   const useCreateStar = () => {
-     /* ... */
-   };
-   const useUpdateStar = () => {
-     /* ... */
-   };
-   const useDeleteStar = () => {
-     /* ... */
-   };
-   ```
-
-3. **Use useMemo for computed values**
-
-   ```typescript
-   // ✅ Good
-   const orderedStars = useMemo(
-     () => stars.sort((a, b) => a.index.localeCompare(b.index)),
-     [stars]
-   );
-   ```
-
-4. **Handle errors with toast in hooks**
-
-   ```typescript
-   // ✅ Good
-   return useRequest(apiCall, {
-     onError: (error) =>
-       toast.error("Operation failed", {
-         description: error.message,
-       }),
-   });
-   ```
-
-5. **Use `useRefCallback` for stable references**
-
-   ```typescript
-   // ✅ Good
-   const handleAction = useRefCallback(async () => {
-     // This always has latest closure values
-   });
-   ```
-
-6. **Separate UI from logic with action hooks**
-
-   ```typescript
-   // ✅ Good - Logic in hook
-   const useStarActions = (docId, subspaceId) => {
-     return { isStarred, toggleStar, isLoading };
-   };
-
-   // ✅ Good - UI only
-   function StarButton({ docId, subspaceId }) {
-     const { isStarred, toggleStar, isLoading } = useStarActions(
-       docId,
-       subspaceId
-     );
-     return (
-       <Button onClick={toggleStar}>{isStarred ? "Unstar" : "Star"}</Button>
-     );
-   }
-   ```
-
-#### DON'T ❌
-
-1. **Don't put API logic in stores**
-
-   ```typescript
-   // ❌ Bad
-   const useStore = create((set) => ({
-     fetchData: async () => {
-       set({ isLoading: true });
-       try {
-         const data = await api.fetch();
-         set({ data, isLoading: false });
-       } catch (error) {
-         // ... error handling
-       }
-     },
-   }));
-   ```
-
-2. **Don't use entity slice patterns**
-
-   ```typescript
-   // ❌ Bad
-   const entity = store.entities[id];
-   ```
-
-3. **Don't use createComputed for complex computations**
-
-   ```typescript
-   // ❌ Bad
-   createComputed((state) => ({
-     complexComputation: heavyCalculation(state),
-   }));
-   ```
-
-4. **Don't handle errors with console.log**
-
-   ```typescript
-   // ❌ Bad
-   catch (error) {
-     console.error("Something failed:", error);
-   }
-   ```
-
-5. **Don't use React Query with direct WebSocket mutations**
-
-   ```typescript
-   // ❌ Bad - creates cache conflicts
-   const query = useQuery(["data"], fetchData);
-   socket.on("update", (data) => {
-     // This conflicts with React Query cache
-     updateStore(data);
-   });
-   ```
-
-6. **Don't put business logic in components**
-
-   ```typescript
-   // ❌ Bad - Logic mixed with UI
-   function StarButton({ docId, subspaceId }) {
-     const [isLoading, setIsLoading] = useState(false);
-     const handleClick = async () => {
-       setIsLoading(true);
-       try {
-         // Complex business logic here...
-       } catch (error) {
-         toast.error("Failed");
-       }
-       setIsLoading(false);
-     };
-   }
-   ```
 
 ### Store Best Practices
 
@@ -739,12 +575,42 @@ export function useRefCallback<T extends (...args: any[]) => any>(fn: T): T {
 
 ### useRequest Pattern
 
-**MANDATORY: Use @ahooksjs/use-request for all async operations. It provides automatic loading states, error handling, and caching.**
+**MANDATORY: Use @ahooksjs/use-request for all async operations. It provides automatic loading states, error handling.**
+
+**PREFERRED: Use try-catch blocks within async functions instead of onSuccess/onError callbacks for better control flow and error handling.**
+
+**Benefits of try-catch pattern:**
+
+- Better error handling control
+- Cleaner code flow
+- Easier to add complex success logic
+- Better TypeScript support
+- Consistent with modern async/await patterns
 
 ```typescript
 import useRequest from "@ahooksjs/use-request";
 
-// ✅ Basic usage
+// ✅ Preferred: Try-catch style with manual execution
+const { data, loading, error, run } = useRequest(
+  async () => {
+    try {
+      const response = await api.getData();
+      toast.success("Data loaded successfully");
+      return response.data;
+    } catch (error) {
+      console.error("Failed to load data:", error);
+      toast.error("Failed to load data", {
+        description: error.message,
+      });
+      throw error;
+    }
+  },
+  {
+    manual: true, // Manual execution for better control
+  }
+);
+
+// ❌ Avoid: onSuccess/onError callbacks (legacy pattern)
 const { data, loading, error, run } = useRequest(
   async () => {
     const response = await api.getData();
@@ -1401,8 +1267,8 @@ describe("useDocuments", () => {
 9. **Optimize bundle size**
 10. **Use proper image optimization**
 
-## Testing Patterns
+## Unit Testing Patterns
 
-TODO:
+**MANDATORY: Use Vitest + React Testing Library for all unit tests. This is the standard testing stack for the project.**
 
 Use this guide as the definitive reference for all code generation and development work on this project.

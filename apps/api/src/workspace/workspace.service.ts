@@ -7,7 +7,18 @@ import { presentWorkspace } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
 import { PermissionService } from "@/permission/permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { ResourceType, WorkspaceRole, WorkspaceMember, SubspaceType, SubspaceRole, WorkspaceType } from "@idea/contracts";
+import {
+  ResourceType,
+  WorkspaceRole,
+  WorkspaceMember,
+  SubspaceType,
+  SubspaceRole,
+  WorkspaceType,
+  BatchAddWorkspaceMemberRequest,
+  BatchAddWorkspaceMemberResponse,
+} from "@idea/contracts";
+import { EventPublisherService } from "@/_shared/events/event-publisher.service";
+import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
 export class WorkspaceService {
@@ -34,6 +45,7 @@ export class WorkspaceService {
     private readonly prismaService: PrismaService,
     private readonly subspaceService: SubspaceService,
     private readonly permissionService: PermissionService,
+    private readonly eventPublisher: EventPublisherService,
   ) {}
 
   /**
@@ -406,8 +418,65 @@ export class WorkspaceService {
       where: { workspaceId, type: SubspaceType.WORKSPACE_WIDE },
     });
 
-    for (const subspace of workspaceWideSubspaces) {
-      await this.subspaceService.addSubspaceMember(subspace.id, { userId, role: SubspaceRole.MEMBER }, adminId);
+    // Add user to all workspace-wide subspaces efficiently
+    if (workspaceWideSubspaces.length > 0) {
+      // Create all subspace memberships in a single transaction
+      const subspaceMemberships = workspaceWideSubspaces.map((subspace) => ({
+        subspaceId: subspace.id,
+        userId,
+        role: SubspaceRole.MEMBER,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+
+      // Use createMany for better performance
+      await this.prismaService.subspaceMember.createMany({
+        data: subspaceMemberships,
+        skipDuplicates: true, // Skip if user is already a member
+      });
+
+      // TODO: Commented out permission assignment to fix performance issue
+      // The assignSubspaceTypePermissions method was creating permissions for ALL workspace members
+      // instead of just the new member, causing hundreds of database queries
+      //
+      // Assign permissions for each subspace
+      // for (const subspace of workspaceWideSubspaces) {
+      //   try {
+      //     await this.permissionService.assignSubspaceTypePermissions(subspace.id, SubspaceType.WORKSPACE_WIDE, workspaceId, adminId);
+      //   } catch (error) {
+      //     console.warn(`Failed to assign permissions for subspace ${subspace.id}:`, error);
+      //   }
+      // }
+
+      // Emit a single batch event for all workspace-wide subspace memberships
+      if (workspaceWideSubspaces.length > 0) {
+        const addedUsers = [
+          {
+            userId,
+            role: SubspaceRole.MEMBER,
+            member: {
+              id: `workspace-wide-${userId}`,
+              userId,
+              role: SubspaceRole.MEMBER,
+              createdAt: new Date().toISOString(),
+            },
+          },
+        ];
+
+        await this.eventPublisher.publishWebsocketEvent({
+          name: BusinessEvents.SUBSPACE_MEMBERS_BATCH_ADDED,
+          workspaceId,
+          actorId: adminId,
+          data: {
+            subspaceId: workspaceWideSubspaces[0].id, // Use first subspace ID for the event
+            addedUsers,
+            addedGroups: [],
+            totalAdded: workspaceWideSubspaces.length,
+            workspaceWideSubspaces: workspaceWideSubspaces.map((s) => s.id), // Include all affected subspaces
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     //  Propagate permissions to all child subspaces and documents
@@ -417,6 +486,107 @@ export class WorkspaceService {
     await this.subspaceService.createPersonalSubspace(userId, workspaceId);
 
     return member;
+  }
+
+  /**
+   * Batch add multiple members to workspace
+   * Processes each member individually and collects results
+   */
+  async batchAddWorkspaceMembers(workspaceId: string, dto: BatchAddWorkspaceMemberRequest, adminId: string): Promise<BatchAddWorkspaceMemberResponse> {
+    // Verify workspace exists
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
+    // Initialize result counters
+    const results: BatchAddWorkspaceMemberResponse = {
+      success: true,
+      addedCount: 0,
+      skippedCount: 0,
+      errors: [],
+      skipped: [],
+    };
+
+    // Track successfully added members for batch WebSocket notification
+    const addedMembers: Array<{ userId: string; member: any }> = [];
+
+    // Process each item in the batch
+    for (const item of dto.items) {
+      try {
+        // Check if user is already a workspace member
+        const existingMember = await this.prismaService.workspaceMember.findUnique({
+          where: { workspaceId_userId: { workspaceId, userId: item.userId } },
+        });
+
+        if (existingMember) {
+          results.skippedCount++;
+          results.skipped.push({
+            userId: item.userId,
+            reason: "User is already a member of this workspace",
+          });
+          continue;
+        }
+
+        // Verify target user exists
+        const user = await this.prismaService.user.findUnique({
+          where: { id: item.userId },
+        });
+
+        if (!user) {
+          results.errors.push({
+            userId: item.userId,
+            error: "User not found",
+          });
+          continue;
+        }
+
+        // Add the member using existing logic
+        const member = await this.addWorkspaceMember(workspaceId, item.userId, item.role, adminId);
+
+        results.addedCount++;
+        addedMembers.push({
+          userId: item.userId,
+          member: {
+            id: member.id,
+            userId: member.userId,
+            role: member.role,
+            createdAt: member.createdAt.toISOString(),
+            user: member.user,
+          },
+        });
+      } catch (error) {
+        results.errors.push({
+          userId: item.userId,
+          error: (error as Error).message || "Unknown error",
+        });
+      }
+    }
+
+    // Send single batch WebSocket notification instead of individual ones
+    if (addedMembers.length > 0) {
+      console.log(`[DEBUG] Publishing WORKSPACE_MEMBERS_BATCH_ADDED event for workspace ${workspaceId}, added ${results.addedCount} members`);
+
+      // Use queue system for WebSocket events
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.WORKSPACE_MEMBERS_BATCH_ADDED,
+        workspaceId,
+        actorId: adminId,
+        data: {
+          addedMembers,
+          totalAdded: results.addedCount,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Set overall success based on whether any members were added
+    results.success = results.addedCount > 0;
+
+    return results;
   }
 
   /**

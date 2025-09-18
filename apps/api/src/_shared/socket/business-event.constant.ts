@@ -48,6 +48,8 @@ export enum BusinessEvents {
   ENTITIES = "entities",
 
   // Workspace events
+  WORKSPACE_MEMBER_ADDED = "workspace.member.added",
+  WORKSPACE_MEMBERS_BATCH_ADDED = "workspace.members.batch.added",
   // WORKSPACE_UPDATE = "workspace.update",
   // WORKSPACE_MEMBER_UPDATE = "workspace.member.update",
 

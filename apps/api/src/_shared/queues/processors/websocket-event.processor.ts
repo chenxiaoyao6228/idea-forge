@@ -19,9 +19,15 @@ export class WebsocketEventProcessor extends WorkerHost {
   // Process incoming WebSocket events from the queue
   async process(job: Job<WebsocketEvent<any>>) {
     console.log("[websocket-event-processor]: Processing event:", job.data);
+    console.log("[websocket-event-processor]: Job ID:", job.id);
     const event = job.data;
     const { data, name, timestamp, actorId, workspaceId } = event;
     const server = this.realtimeGateway.server;
+
+    if (!server) {
+      console.error("[websocket-event-processor]: RealtimeGateway server is not available!");
+      return;
+    }
 
     try {
       switch (name) {
@@ -41,6 +47,10 @@ export class WebsocketEventProcessor extends WorkerHost {
 
         case BusinessEvents.SUBSPACE_MEMBERS_BATCH_ADDED:
           await this.handleSubspaceMembersBatchAddedEvent(event, server);
+          break;
+
+        case BusinessEvents.WORKSPACE_MEMBERS_BATCH_ADDED:
+          await this.handleWorkspaceMembersBatchAddedEvent(event, server);
           break;
 
         case BusinessEvents.SUBSPACE_MEMBER_LEFT:
@@ -343,6 +353,37 @@ export class WebsocketEventProcessor extends WorkerHost {
       totalAdded,
       membersBatchAdded: true,
     });
+  }
+
+  // Handle workspace members batch added events
+  private async handleWorkspaceMembersBatchAddedEvent(event: WebsocketEvent<any>, server: any) {
+    console.log(`[DEBUG] Processing WORKSPACE_MEMBERS_BATCH_ADDED event:`, event);
+    const { data, workspaceId } = event;
+    const { addedMembers, totalAdded } = data;
+
+    // Notify each added user individually about their workspace addition
+    for (const memberInfo of addedMembers) {
+      server.to(`user:${memberInfo.userId}`).emit(BusinessEvents.WORKSPACE_MEMBER_ADDED, {
+        workspaceId,
+        member: memberInfo.member,
+        memberAdded: true,
+      });
+
+      // Tell the added user to join the workspace room
+      server.to(`user:${memberInfo.userId}`).emit(BusinessEvents.JOIN, {
+        event: BusinessEvents.WORKSPACE_MEMBERS_BATCH_ADDED,
+        workspaceId,
+      });
+    }
+
+    // Send single batch notification to workspace members to avoid multiple refreshes
+    console.log(`[DEBUG] Emitting WORKSPACE_MEMBERS_BATCH_ADDED to workspace:${workspaceId}`);
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.WORKSPACE_MEMBERS_BATCH_ADDED, {
+      workspaceId,
+      totalAdded,
+      membersBatchAdded: true,
+    });
+    console.log(`[DEBUG] Successfully emitted WORKSPACE_MEMBERS_BATCH_ADDED event`);
   }
 
   // Handle subspace member left events

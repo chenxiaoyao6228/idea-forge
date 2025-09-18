@@ -8,6 +8,8 @@ import {
   UpdateWorkspaceMemberRequest,
   CreateWorkspaceRequest,
   Workspace,
+  BatchAddWorkspaceMemberRequest,
+  BatchAddWorkspaceMemberResponse,
 } from "@idea/contracts";
 
 export const workspaceApi = {
@@ -34,6 +36,9 @@ export const workspaceApi = {
 
   addWorkspaceMember: async (workspaceId: string, data: AddWorkspaceMemberRequest) =>
     request.post<AddWorkspaceMemberRequest, { member: any }>(`/api/workspaces/${workspaceId}/members`, data),
+
+  batchAddWorkspaceMembers: async (workspaceId: string, data: BatchAddWorkspaceMemberRequest) =>
+    request.post<BatchAddWorkspaceMemberRequest, BatchAddWorkspaceMemberResponse>(`/api/workspaces/${workspaceId}/members/batch`, data),
 
   updateWorkspaceMember: async (workspaceId: string, memberId: string, data: UpdateWorkspaceMemberRequest) =>
     request.patch<UpdateWorkspaceMemberRequest, { member: any }>(`/api/workspaces/${workspaceId}/members/${memberId}/role`, data),

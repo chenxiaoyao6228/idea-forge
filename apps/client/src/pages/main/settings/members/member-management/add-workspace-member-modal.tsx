@@ -93,44 +93,45 @@ const AddWorkspaceMemberModal = ({
     proceed?.(null);
   };
 
-  // Use useRequest for adding members
+  // Use useRequest for adding members with batch API
   const { loading: isAddingMembers, run: addMembers } = useRequest(
     async () => {
       if (selectedUsers.length === 0) {
         throw new Error(t("Please select at least one user"));
       }
 
-      let addedCount = 0;
-      const errors: any[] = [];
+      // Convert selected users to batch request format
+      const batchRequest = {
+        items: selectedUsers.map((userOption) => ({
+          userId: userOption.value,
+          role: selectedRole,
+        })),
+      };
 
-      // Add each selected user
-      for (const userOption of selectedUsers) {
-        try {
-          await workspaceApi.addWorkspaceMember(workspaceId, {
-            userId: userOption.value,
-            role: selectedRole,
-          });
-          addedCount++;
-        } catch (error: any) {
-          errors.push({
-            id: userOption.value,
-            email: userOption.email || userOption.label,
-            error: error?.response?.data?.message || error?.message || t("Failed to add member"),
-          });
-        }
-      }
+      // Call batch API
+      const response = await workspaceApi.batchAddWorkspaceMembers(workspaceId, batchRequest);
 
+      // Handle batch response
+      const { addedCount, skippedCount, errors, skipped } = response;
+
+      // Show success message
       if (addedCount > 0) {
         toast.success(t("Successfully added {{count}} member(s)", { count: addedCount }));
       }
 
+      // Show skipped message
+      if (skippedCount > 0) {
+        toast.info(t("{{count}} user(s) were already members", { count: skippedCount }));
+      }
+
+      // Show error message
       if (errors.length > 0) {
-        const errorMessages = errors.map((error) => `${error.email}: ${error.error}`).join(", ");
+        const errorMessages = errors.map((error) => `${error.userId}: ${error.error}`).join(", ");
         toast.error(t("Some users failed to add: {{errors}}", { errors: errorMessages }));
       }
 
       return {
-        success: true,
+        success: response.success,
         addedCount,
         errors: errors.length > 0 ? errors : undefined,
       };
