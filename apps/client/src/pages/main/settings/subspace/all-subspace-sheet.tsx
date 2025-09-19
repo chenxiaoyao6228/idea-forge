@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Layers, PlusIcon } from "lucide-react";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore, { useAllSubspaces, useJoinedSubspaces, useFetchSubspaces } from "@/stores/subspace-store";
 import useWorkspaceStore from "@/stores/workspace-store";
 import { showCreateSubspaceModal } from "./create-subspace-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,10 +19,10 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
   const [open, setOpen] = React.useState(false);
 
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const allSubspaces = useSubSpaceStore((state) => state.allSubspaces);
-  const joinedSubspaces = useSubSpaceStore((state) => state.joinedSubspaces);
+  const allSubspaces = useAllSubspaces();
+  const joinedSubspaces = useJoinedSubspaces();
   const isCreating = useSubSpaceStore((state) => state.isCreating);
-  const fetchList = useSubSpaceStore((state) => state.fetchList);
+  const { run: fetchList } = useFetchSubspaces();
   const otherSubspaces = useMemo(() => {
     if (!allSubspaces) return [];
     const joinedIds = new Set(joinedSubspaces?.map((s) => s.id) || []);

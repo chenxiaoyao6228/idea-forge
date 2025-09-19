@@ -1,4 +1,4 @@
-import { SubspaceEntity } from "@/stores/subspace";
+import { SubspaceEntity } from "@/stores/subspace-store";
 
 export interface DraggableItem {
   type: "subspace" | "document";

@@ -24,7 +24,7 @@ export function StarLink({ star, isDragging = false, isDraggingOverlay = false }
   const deleteStar = useDeleteStar();
   const { getNavigationNodeForStar } = useStarNavigation();
 
-  // ✅ Computed navigation node
+  // ✅ Computed navigation node - reactive to subspace changes
   const navigationNode = useMemo(() => {
     return getNavigationNodeForStar(star);
   }, [star, getNavigationNodeForStar]);

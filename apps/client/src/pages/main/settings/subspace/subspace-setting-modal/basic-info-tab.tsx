@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Home, Check, Archive, Trash2, ArrowLeft } from "lucide-react";
-import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin } from "@/stores/subspace";
+import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin, useUpdateSubspaceSettings } from "@/stores/subspace-store";
 
 interface BasicInfoTabProps {
   subspaceId: string;
@@ -17,7 +17,8 @@ interface BasicInfoTabProps {
 
 export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: BasicInfoTabProps) {
   const { t } = useTranslation();
-  const { subspaceSettings, updateSubspaceSettings } = useSubspaceStore();
+  const { subspaceSettings } = useSubspaceStore();
+  const { run: updateSubspaceSettings } = useUpdateSubspaceSettings();
   const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
   const isLastAdmin = useIsLastSubspaceAdmin(subspaceId);
   const [isSaving, setIsSaving] = useState(false);
@@ -49,9 +50,12 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
 
     setIsSaving(true);
     try {
-      await updateSubspaceSettings(subspaceId, {
-        name: localSettings.name,
-        description: localSettings.description,
+      await updateSubspaceSettings({
+        subspaceId,
+        settings: {
+          name: localSettings.name,
+          description: localSettings.description,
+        },
       });
     } catch (error) {
       console.error("Failed to save basic info:", error);

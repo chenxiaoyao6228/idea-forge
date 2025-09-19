@@ -10,7 +10,7 @@ import { SubspaceType } from "@idea/contracts";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { SubspaceMenu } from "./subspace-menu";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore, { useAllSubspaces } from "@/stores/subspace-store";
 import { showCreateSubspaceModal } from "./create-subspace-dialog";
 import { useTimeFormat } from "@/hooks/use-time-format";
 
@@ -31,7 +31,7 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
   const { t } = useTranslation();
   const { formatSmartRelative } = useTimeFormat();
 
-  const subspaces = useSubSpaceStore((state) => state.allSubspaces);
+  const subspaces = useAllSubspaces();
 
   // Get unique managers for filter (using admins)
   const admins = useMemo(() => {

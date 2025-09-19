@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Check, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import useSubspaceStore from "@/stores/subspace";
+import useSubspaceStore, { useJoinSubspace } from "@/stores/subspace-store";
 import useUserStore from "@/stores/user-store";
 import { SubspaceType } from "@idea/contracts";
 
@@ -28,7 +28,7 @@ export function SubspaceJoinButton({
 }: SubspaceJoinButtonProps) {
   const { t } = useTranslation();
   const [isJoining, setIsJoining] = useState(false);
-  const { joinSubspace } = useSubspaceStore();
+  const { run: joinSubspace } = useJoinSubspace();
   const { userInfo } = useUserStore();
 
   // Don't show button if user is not logged in
@@ -56,7 +56,7 @@ export function SubspaceJoinButton({
 
     setIsJoining(true);
     try {
-      await joinSubspace(subspaceId);
+      await joinSubspace({ subspaceId });
       toast.success(t("Joined subspace successfully"));
       onJoinSuccess?.();
     } catch (error) {

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { NavigationNode } from "@idea/contracts";
 import useDocumentStore, { useCreateDocument, useFetchDocumentChildren } from "@/stores/document-store";
 import { SidebarLink } from "./sidebar-link";
-import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
+import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace-store";
 import { useCheckStarred, useToggleStar, useCreateStar, useDeleteStar } from "@/stores/star-store";
 import { useEffect, useMemo, useState } from "react";
 import { useRefCallback } from "@/hooks/use-ref-callback";
@@ -68,7 +68,7 @@ export function DocumentLink(props: DocumentLinkProps) {
   }, [isActiveDocument, fetchChildrenData]);
 
   // auto expand state sync
-  const subspace = useSubSpaceStore((state) => (subspaceId ? state.entities[subspaceId] : undefined));
+  const subspace = useSubSpaceStore((state) => (subspaceId ? state.subspaces[subspaceId] : undefined));
 
   const showChildren = useMemo(() => {
     if (!hasChildren || !activeDocumentId) return false;

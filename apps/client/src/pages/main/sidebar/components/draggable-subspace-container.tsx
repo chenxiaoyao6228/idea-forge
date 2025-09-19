@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useCallback, useState } from "react";
-import { SubspaceEntity } from "@/stores/subspace";
+import { SubspaceEntity } from "@/stores/subspace-store";
 import { SubspaceLink } from "./subspace-link";
 import DropCursor from "./drop-cursor";
 import { DragOverlay, useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";

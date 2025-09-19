@@ -4,11 +4,54 @@ import { toast } from "sonner";
 import { starApi } from "@/apis/star";
 import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
-import useSubSpaceStore from "./subspace";
+import useSubSpaceStore, { useFindNavigationNodeInPersonalSubspace, useFindNavigationNodeInSubspace } from "./subspace-store";
 import { useFindNavigationNodeInSharedDocuments } from "./share-store";
 import useWorkspaceStore from "./workspace-store";
 import { NavigationNode, CreateStarDto } from "@idea/contracts";
 import { orderBy } from "lodash-es";
+
+// Direct functions for navigation node finding (can be called from within star store)
+const findNavigationNodeInPersonalSubspace = (documentId: string) => {
+  const subspaces = useSubSpaceStore.getState().subspaces;
+  const personalSubspace = Object.values(subspaces).find((s) => s.type === "PERSONAL");
+  if (!personalSubspace?.navigationTree) return null;
+
+  const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
+    for (const node of nodes) {
+      if (node.id === targetId) {
+        return node;
+      }
+      if (node.children && node.children.length > 0) {
+        const found = findNavigationNodeInTree(node.children, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  return findNavigationNodeInTree(personalSubspace.navigationTree, documentId);
+};
+
+const findNavigationNodeInSubspace = (subspaceId: string, documentId: string) => {
+  const subspaces = useSubSpaceStore.getState().subspaces;
+  const subspace = subspaces[subspaceId];
+  if (!subspace?.navigationTree) return null;
+
+  const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
+    for (const node of nodes) {
+      if (node.id === targetId) {
+        return node;
+      }
+      if (node.children && node.children.length > 0) {
+        const found = findNavigationNodeInTree(node.children, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  return findNavigationNodeInTree(subspace.navigationTree, documentId);
+};
 
 export interface StarEntity {
   id: string;
@@ -180,23 +223,23 @@ export const useToggleStar = () => {
 export const useStarNavigation = () => {
   const findNavigationNodeInSharedDocuments = useFindNavigationNodeInSharedDocuments();
 
+  // ✅ Make it reactive to subspace changes
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
+
   const getNavigationNodeForStar = useRefCallback((star: StarEntity): NavigationNode | null => {
     if (!star.docId) return null;
 
-    const subspaceStore = useSubSpaceStore.getState();
-
     // Check personal subspace
-    const personalNode = subspaceStore.findNavigationNodeInPersonalSubspace(star.docId);
+    const personalNode = findNavigationNodeInPersonalSubspace(star.docId);
     if (personalNode) return personalNode;
 
     // Check shared-with-me documents
     const sharedNode = findNavigationNodeInSharedDocuments(star.docId);
     if (sharedNode) return sharedNode;
 
-    // Check all subspaces
-    const allSubspaces = subspaceStore.entities;
-    for (const subspace of Object.values(allSubspaces)) {
-      const node = subspaceStore.findNavigationNodeInSubspace(subspace.id, star.docId);
+    // Check all subspaces - now reactive to subspace changes
+    for (const subspace of Object.values(subspaces)) {
+      const node = findNavigationNodeInSubspace(subspace.id, star.docId);
       if (node) return node;
     }
 

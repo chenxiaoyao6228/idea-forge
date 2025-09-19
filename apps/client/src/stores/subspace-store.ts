@@ -1,19 +1,21 @@
 import { create } from "zustand";
-import { subspaceApi } from "@/apis/subspace";
+import { useMemo } from "react";
+import useRequest from "@ahooksjs/use-request";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { orderBy, groupBy, uniqBy } from "lodash-es";
 import {
   CreateSubspaceRequest,
   NavigationNode,
   NavigationNodeType,
   SubspaceMember,
   SubspaceSettingsResponse,
+  SubspaceTypeSchema,
   UpdateSubspaceSettingsRequest,
 } from "@idea/contracts";
+import { subspaceApi } from "@/apis/subspace";
 import { DocumentEntity } from "./document-store";
 import useUserStore from "./user-store";
-import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
-import useRequest from "@ahooksjs/use-request";
-import { useMemo } from "react";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 
 export interface SubspaceEntity {
@@ -21,7 +23,7 @@ export interface SubspaceEntity {
   name: string;
   avatar?: string | null;
   workspaceId: string;
-  type: string;
+  type: keyof typeof SubspaceTypeSchema.enum;
   index: string;
   navigationTree: NavigationNode[];
   url?: string;
@@ -51,59 +53,52 @@ const useSubSpaceStore = create<{
   activeSubspaceId?: string;
   expandedKeys: Set<string>;
   subspaceSettings: SubspaceSettingsResponse | null;
+  isCreating: boolean;
 }>((set) => ({
   subspaces: {},
   activeSubspaceId: undefined,
   expandedKeys: new Set(),
   subspaceSettings: null,
+  isCreating: false,
 }));
 
-// Data Access Hooks
-export const useSubspaces = () => useSubSpaceStore((state) => state.subspaces);
-export const useActiveSubspaceId = () => useSubSpaceStore((state) => state.activeSubspaceId);
-export const useExpandedKeys = () => useSubSpaceStore((state) => state.expandedKeys);
-export const useSubspaceSettings = () => useSubSpaceStore((state) => state.subspaceSettings);
-
-// Computed Value Hooks
+// Computed values as hooks
 export const useAllSubspaces = () => {
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
   return useMemo(() => {
-    const subspaces = useSubSpaceStore.getState().subspaces;
-    return Object.values(subspaces)
-      .sort((a, b) => (a.index < b.index ? -1 : 1))
-      .filter((subspace) => subspace.type !== "PERSONAL");
-  }, [useSubSpaceStore((state) => state.subspaces)]);
+    return orderBy(Object.values(subspaces), ["index"], ["asc"]).filter((subspace) => subspace.type !== "PERSONAL");
+  }, [subspaces]);
 };
 
 export const useJoinedSubspaces = () => {
-  return useMemo(() => {
-    const subspaces = useSubSpaceStore.getState().subspaces;
-    const userInfo = useUserStore.getState().userInfo;
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
+  const { userInfo } = useUserStore();
 
-    return Object.values(subspaces)
-      .sort((a, b) => (a.index < b.index ? -1 : 1))
+  return useMemo(() => {
+    return orderBy(Object.values(subspaces), ["index"], ["asc"])
       .filter((subspace) => subspace?.members?.some((member) => member?.userId === userInfo?.id))
       .filter((subspace) => subspace.type !== "PERSONAL");
-  }, [useSubSpaceStore((state) => state.subspaces), useUserStore((state) => state.userInfo)]);
+  }, [subspaces, userInfo?.id]);
 };
 
 export const usePersonalSubspace = () => {
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
   return useMemo(() => {
-    const subspaces = useSubSpaceStore.getState().subspaces;
     return Object.values(subspaces).find((subspace) => subspace.type === "PERSONAL");
-  }, [useSubSpaceStore((state) => state.subspaces)]);
+  }, [subspaces]);
 };
 
 export const useActiveSubspace = () => {
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
+  const activeSubspaceId = useSubSpaceStore((state) => state.activeSubspaceId);
   return useMemo(() => {
-    const activeSubspaceId = useSubSpaceStore.getState().activeSubspaceId;
-    const subspaces = useSubSpaceStore.getState().subspaces;
     return activeSubspaceId ? subspaces[activeSubspaceId] : undefined;
-  }, [useSubSpaceStore((state) => state.activeSubspaceId), useSubSpaceStore((state) => state.subspaces)]);
+  }, [subspaces, activeSubspaceId]);
 };
 
 export const useSubspacesAsNavigationNodes = () => {
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
   return useMemo(() => {
-    const subspaces = useSubSpaceStore.getState().subspaces;
     return Object.values(subspaces).map((subspace) => ({
       type: NavigationNodeType.Subspace,
       id: subspace.id,
@@ -114,32 +109,35 @@ export const useSubspacesAsNavigationNodes = () => {
       url: subspace.url ?? `/subspace/${subspace.id}`,
       children: subspace.navigationTree ?? [],
     }));
-  }, [useSubSpaceStore((state) => state.subspaces)]);
+  }, [subspaces]);
 };
 
-export const useSubspaceById = () => {
-  return useRefCallback((subspaceId: string) => {
-    return useSubSpaceStore.getState().subspaces[subspaceId];
-  });
+export const useSubspaceById = (subspaceId?: string) => {
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
+  return useMemo(() => {
+    return subspaceId ? subspaces[subspaceId] : undefined;
+  }, [subspaces, subspaceId]);
 };
 
-export const useSubspaceMembers = () => {
-  return useRefCallback((subspaceId: string) => {
-    const subspace = useSubSpaceStore.getState().subspaces[subspaceId];
-    return subspace?.members || [];
-  });
+export const useSubspaceMembers = (subspaceId?: string) => {
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
+  return useMemo(() => {
+    return subspaceId ? subspaces[subspaceId]?.members : undefined;
+  }, [subspaces, subspaceId]);
 };
 
-export const useSubspaceNavigationTree = () => {
-  return useRefCallback((subspaceId: string) => {
-    const subspace = useSubSpaceStore.getState().subspaces[subspaceId];
-    return subspace?.navigationTree || [];
-  });
+export const useSubspaceNavigationTree = (subspaceId?: string) => {
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
+  return useMemo(() => {
+    return subspaceId ? subspaces[subspaceId]?.navigationTree : undefined;
+  }, [subspaces, subspaceId]);
 };
 
-export const useSubspaceDocumentCount = () => {
-  return useRefCallback((subspaceId: string) => {
-    const subspace = useSubSpaceStore.getState().subspaces[subspaceId];
+export const useSubspaceDocumentCount = (subspaceId?: string) => {
+  const subspaces = useSubSpaceStore((state) => state.subspaces);
+  return useMemo(() => {
+    if (!subspaceId) return 0;
+    const subspace = subspaces[subspaceId];
     if (!subspace?.navigationTree) return 0;
 
     const countNodes = (nodes: NavigationNode[]): number => {
@@ -149,12 +147,13 @@ export const useSubspaceDocumentCount = () => {
     };
 
     return countNodes(subspace.navigationTree);
-  });
+  }, [subspaces, subspaceId]);
 };
 
-export const useExpandedKeysForSubspace = () => {
-  return useRefCallback((subspaceId: string) => {
-    const expandedKeys = useSubSpaceStore.getState().expandedKeys;
+export const useExpandedKeysForSubspace = (subspaceId?: string) => {
+  const expandedKeys = useSubSpaceStore((state) => state.expandedKeys);
+  return useMemo(() => {
+    if (!subspaceId) return [];
     const keys: string[] = [];
     expandedKeys.forEach((key) => {
       if (key.startsWith(`${subspaceId}:`)) {
@@ -162,13 +161,14 @@ export const useExpandedKeysForSubspace = () => {
       }
     });
     return keys;
-  });
+  }, [expandedKeys, subspaceId]);
 };
 
-// Helper Function Hooks
+// Helper functions as hooks
 export const useIsSubspaceExpanded = () => {
+  const expandedKeys = useSubSpaceStore((state) => state.expandedKeys);
+
   return useRefCallback((subspaceId: string, nodeId: string) => {
-    const expandedKeys = useSubSpaceStore.getState().expandedKeys;
     return expandedKeys.has(`${subspaceId}:${nodeId}`);
   });
 };
@@ -193,7 +193,8 @@ export const useCollapseNode = () => {
 
 export const useExpandAll = () => {
   return useRefCallback((subspaceId: string) => {
-    const subspace = useSubSpaceStore.getState().subspaces[subspaceId];
+    const subspaces = useSubSpaceStore.getState().subspaces;
+    const subspace = subspaces[subspaceId];
     if (!subspace?.navigationTree) return;
 
     const collectNodeIds = (nodes: NavigationNode[]): string[] => {
@@ -236,7 +237,8 @@ export const useCollapseAll = () => {
 
 export const useGetPathToDocument = () => {
   return useRefCallback((subspaceId: string, documentId: string) => {
-    const subspace = useSubSpaceStore.getState().subspaces[subspaceId];
+    const subspaces = useSubSpaceStore.getState().subspaces;
+    const subspace = subspaces[subspaceId];
     if (!subspace?.navigationTree) return [];
 
     let path: NavigationNode[] = [];
@@ -263,16 +265,18 @@ export const useGetPathToDocument = () => {
 };
 
 export const useContainsDocument = () => {
+  const getPathToDocument = useGetPathToDocument();
+
   return useRefCallback((subspaceId: string, documentId: string) => {
-    const getPathToDocument = useGetPathToDocument();
     const path = getPathToDocument(subspaceId, documentId);
     return path.length > 0;
   });
 };
 
 export const useGetExpandedKeysForDocument = () => {
+  const getPathToDocument = useGetPathToDocument();
+
   return useRefCallback((subspaceId: string, documentId: string) => {
-    const getPathToDocument = useGetPathToDocument();
     const path = getPathToDocument(subspaceId, documentId);
     return path.slice(0, -1).map((node) => node.id);
   });
@@ -280,7 +284,8 @@ export const useGetExpandedKeysForDocument = () => {
 
 export const useFindNavigationNodeInSubspace = () => {
   return useRefCallback((subspaceId: string, documentId: string) => {
-    const subspace = useSubSpaceStore.getState().subspaces[subspaceId];
+    const subspaces = useSubSpaceStore.getState().subspaces;
+    const subspace = subspaces[subspaceId];
     if (!subspace?.navigationTree) return null;
 
     const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
@@ -302,7 +307,8 @@ export const useFindNavigationNodeInSubspace = () => {
 
 export const useFindNavigationNodeInPersonalSubspace = () => {
   return useRefCallback((documentId: string) => {
-    const personalSubspace = usePersonalSubspace();
+    const subspaces = useSubSpaceStore.getState().subspaces;
+    const personalSubspace = Object.values(subspaces).find((s) => s.type === "PERSONAL");
     if (!personalSubspace?.navigationTree) return null;
 
     const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
@@ -324,7 +330,8 @@ export const useFindNavigationNodeInPersonalSubspace = () => {
 
 export const useNeedsUpdate = () => {
   return useRefCallback((subspaceId: string, updatedAt: Date) => {
-    const existing = useSubSpaceStore.getState().subspaces[subspaceId];
+    const subspaces = useSubSpaceStore.getState().subspaces;
+    const existing = subspaces[subspaceId];
     if (!existing) return true;
 
     const existingDate = new Date(existing.updatedAt);
@@ -332,11 +339,11 @@ export const useNeedsUpdate = () => {
   });
 };
 
-export const useIsLastSubspaceAdmin = () => {
-  return useRefCallback((subspaceId: string) => {
-    const subspace = useSubSpaceStore.getState().subspaces[subspaceId];
-    const userInfo = useUserStore.getState().userInfo;
+export const useIsLastSubspaceAdmin = (subspaceId: string) => {
+  const subspace = useSubspaceById(subspaceId);
+  const { userInfo } = useUserStore();
 
+  return useMemo(() => {
     if (!userInfo?.id || !subspace?.members) {
       return false;
     }
@@ -344,36 +351,34 @@ export const useIsLastSubspaceAdmin = () => {
     const admins = subspace.members.filter((member) => member.role === "ADMIN");
     const currentUserIsAdmin = admins.some((admin) => admin.userId === userInfo.id);
     return currentUserIsAdmin && admins.length === 1;
-  });
+  }, [userInfo?.id, subspace?.members]);
 };
 
-// CRUD Operation Hooks
+// CRUD operation hooks
 export const useFetchSubspaces = () => {
   return useRequest(
     async (workspaceId: string) => {
       try {
-        const subspaces = await subspaceApi.getUserSubspacesIncludingPersonal(workspaceId);
-
-        const mappedSubspaces = subspaces.map((subspace) => ({
+        const response = await subspaceApi.getUserSubspacesIncludingPersonal(workspaceId);
+        const subspaces = response.map((subspace) => ({
           ...subspace,
           index: subspace.index || "0",
           navigationTree: (subspace.navigationTree as NavigationNode[]) ?? [],
-          description: subspace.description || undefined,
           updatedAt: new Date(subspace.updatedAt),
           createdAt: new Date(subspace.createdAt),
+          description: subspace.description || undefined,
         }));
 
-        // Convert to record format
-        const subspacesMap = mappedSubspaces.reduce(
-          (acc, subspace) => {
-            acc[subspace.id] = subspace;
-            return acc;
-          },
-          {} as Record<string, SubspaceEntity>,
-        );
+        // Update store using direct setState with vanilla JS
+        useSubSpaceStore.setState((state) => {
+          const newSubspaces = { ...state.subspaces };
+          subspaces.forEach((subspace) => {
+            newSubspaces[subspace.id] = subspace;
+          });
+          return { subspaces: newSubspaces };
+        });
 
-        useSubSpaceStore.setState({ subspaces: subspacesMap });
-        return mappedSubspaces;
+        return subspaces;
       } catch (error) {
         console.error("Failed to fetch subspaces:", error);
         throw error;
@@ -391,18 +396,16 @@ export const useFetchSubspace = () => {
         const subspace: SubspaceEntity = {
           ...response.subspace,
           index: response.subspace.index || "0",
-          navigationTree: (response.subspace.navigationTree as NavigationNode[]) || [],
+          navigationTree: response.subspace.navigationTree as NavigationNode[],
           members: response.subspace.members || [],
           memberCount: response.subspace.memberCount || 0,
           updatedAt: new Date(response.subspace.updatedAt),
           createdAt: new Date(response.subspace.createdAt),
         };
 
+        // Update store using direct setState
         useSubSpaceStore.setState((state) => ({
-          subspaces: {
-            ...state.subspaces,
-            [subspaceId]: subspace,
-          },
+          subspaces: { ...state.subspaces, [subspace.id]: subspace },
         }));
 
         return subspace;
@@ -416,9 +419,13 @@ export const useFetchSubspace = () => {
 };
 
 export const useCreateSubspace = () => {
+  const { t } = useTranslation();
+
   return useRequest(
     async (payload: CreateSubspaceRequest) => {
       try {
+        useSubSpaceStore.setState({ isCreating: true });
+
         const response = await subspaceApi.createSubspace(payload);
         const subspace: SubspaceEntity = {
           id: response.id,
@@ -432,25 +439,27 @@ export const useCreateSubspace = () => {
           createdAt: new Date(response.createdAt),
         };
 
+        // Update store using direct setState
         useSubSpaceStore.setState((state) => ({
-          subspaces: {
-            ...state.subspaces,
-            [subspace.id]: subspace,
-          },
+          subspaces: { ...state.subspaces, [subspace.id]: subspace },
         }));
 
         // Refresh the subspace list to ensure we have the latest data from server
         try {
-          const { run: fetchSubspaces } = useFetchSubspaces();
-          await fetchSubspaces(payload.workspaceId);
+          const subspaces = await useFetchSubspaces().run(payload.workspaceId);
+          // subspaces already updated in the hook above
         } catch (refreshError) {
           console.warn("Failed to refresh subspace list after creation:", refreshError);
         }
 
+        toast.success(t("Subspace created successfully"));
         return subspace;
       } catch (error) {
         console.error("Failed to create subspace:", error);
+        toast.error(t("Failed to create subspace"));
         throw error;
+      } finally {
+        useSubSpaceStore.setState({ isCreating: false });
       }
     },
     { manual: true },
@@ -458,26 +467,31 @@ export const useCreateSubspace = () => {
 };
 
 export const useUpdateSubspace = () => {
-  return useRequest(
-    async ({ subspaceId, updates }: { subspaceId: string; updates: Partial<SubspaceEntity> }) => {
-      try {
-        const { name, description, avatar } = updates;
-        const response = await subspaceApi.updateSubspace(subspaceId, { name, description, avatar });
+  const { t } = useTranslation();
 
+  return useRequest(
+    async (params: { subspaceId: string; updates: Partial<SubspaceEntity> }) => {
+      try {
+        const { name, description, avatar } = params.updates;
+        const response = await subspaceApi.updateSubspace(params.subspaceId, { name, description, avatar });
+
+        // Update store using direct setState
         useSubSpaceStore.setState((state) => ({
           subspaces: {
             ...state.subspaces,
-            [subspaceId]: {
-              ...state.subspaces[subspaceId],
-              ...updates,
+            [params.subspaceId]: {
+              ...state.subspaces[params.subspaceId],
+              ...params.updates,
               updatedAt: new Date(),
             },
           },
         }));
 
+        toast.success(t("Subspace updated successfully"));
         return response;
       } catch (error) {
         console.error("Failed to update subspace:", error);
+        toast.error(t("Failed to update subspace"));
         throw error;
       }
     },
@@ -486,20 +500,26 @@ export const useUpdateSubspace = () => {
 };
 
 export const useDeleteSubspace = () => {
+  const { t } = useTranslation();
+
   return useRequest(
-    async ({ subspaceId, permanent = false }: { subspaceId: string; permanent?: boolean }) => {
+    async (params: { subspaceId: string; options?: { permanent?: boolean } }) => {
       try {
-        if (permanent) {
-          await subspaceApi.deleteSubspace(subspaceId);
+        if (params.options?.permanent) {
+          await subspaceApi.deleteSubspace(params.subspaceId);
         }
 
+        // Update store using direct setState with vanilla JS
         useSubSpaceStore.setState((state) => {
           const newSubspaces = { ...state.subspaces };
-          delete newSubspaces[subspaceId];
+          delete newSubspaces[params.subspaceId];
           return { subspaces: newSubspaces };
         });
+
+        toast.success(t("Subspace deleted successfully"));
       } catch (error) {
         console.error("Failed to delete subspace:", error);
+        toast.error(t("Failed to delete subspace"));
         throw error;
       }
     },
@@ -508,23 +528,27 @@ export const useDeleteSubspace = () => {
 };
 
 export const useDuplicateSubspace = () => {
+  const { t } = useTranslation();
+  const createSubspace = useCreateSubspace();
+
   return useRequest(
-    async ({ subspaceId, newName }: { subspaceId: string; newName?: string }) => {
+    async (params: { subspaceId: string; newName?: string }) => {
       try {
-        const original = useSubSpaceStore.getState().subspaces[subspaceId];
+        const subspaces = useSubSpaceStore.getState().subspaces;
+        const original = subspaces[params.subspaceId];
         if (!original) throw new Error("Subspace not found");
 
         const duplicatePayload = {
-          name: newName || `${original.name} (Copy)`,
+          name: params.newName || `${original.name} (Copy)`,
           workspaceId: original.workspaceId,
           type: original.type as any,
           description: original.description,
         };
 
-        const { run: createSubspace } = useCreateSubspace();
-        return await createSubspace(duplicatePayload);
+        return await createSubspace.run(duplicatePayload);
       } catch (error) {
         console.error("Failed to duplicate subspace:", error);
+        toast.error(t("Failed to duplicate subspace"));
         throw error;
       }
     },
@@ -533,12 +557,16 @@ export const useDuplicateSubspace = () => {
 };
 
 export const useMoveSubspace = () => {
+  const { t } = useTranslation();
+
   return useRequest(
-    async ({ subspaceId, index }: { subspaceId: string; index: string }) => {
+    async (params: { subspaceId: string; index: string }) => {
       try {
-        await subspaceApi.moveSubspace(subspaceId, { index });
+        await subspaceApi.moveSubspace(params.subspaceId, { index: params.index });
+        toast.success(t("Subspace moved successfully"));
       } catch (error) {
         console.error("Failed to move subspace:", error);
+        toast.error(t("Failed to move subspace"));
         throw error;
       }
     },
@@ -547,12 +575,16 @@ export const useMoveSubspace = () => {
 };
 
 export const useJoinSubspace = () => {
+  const { t } = useTranslation();
+
   return useRequest(
-    async (subspaceId: string) => {
+    async (params: { subspaceId: string }) => {
       try {
-        await subspaceApi.joinSubspace(subspaceId);
+        await subspaceApi.joinSubspace(params.subspaceId);
+        toast.success(t("Successfully joined the subspace"));
       } catch (error) {
         console.error("Failed to join subspace:", error);
+        toast.error(t("Failed to join subspace"));
         throw error;
       }
     },
@@ -564,25 +596,22 @@ export const useLeaveSubspace = () => {
   const { t } = useTranslation();
 
   return useRequest(
-    async (subspaceId: string) => {
+    async (params: { subspaceId: string }) => {
       try {
-        await subspaceApi.leaveSubspace(subspaceId);
+        await subspaceApi.leaveSubspace(params.subspaceId);
 
         // Remove the subspace from the store after successful leave
         useSubSpaceStore.setState((state) => {
           const newSubspaces = { ...state.subspaces };
-          delete newSubspaces[subspaceId];
+          delete newSubspaces[params.subspaceId];
           return { subspaces: newSubspaces };
         });
 
-        // Show success toast
         toast.success(t("Successfully left the subspace"));
-
         return { success: true };
       } catch (error: any) {
         console.error("Failed to leave subspace:", error);
 
-        // Handle specific error cases
         const code = error?.response?.data?.code || error?.code;
         if (code === "cannot_leave_as_last_admin") {
           toast.error(t("You cannot leave this subspace because you are the last admin. Please assign another admin before leaving."));
@@ -630,7 +659,6 @@ export const useBatchAddSubspaceMembers = () => {
           toast.error(t("Some items failed to add: {{errors}}", { errors: errorMessages }));
         }
 
-        // If no members were added and no errors, show a message
         if (result.addedCount === 0 && (!result.errors || result.errors.length === 0)) {
           toast.info(t("All selected members are already part of this subspace"));
         }
@@ -647,13 +675,17 @@ export const useBatchAddSubspaceMembers = () => {
 };
 
 export const useBatchRemoveSubspaceMembers = () => {
+  const { t } = useTranslation();
+
   return useRequest(
-    async ({ subspaceId, memberIds }: { subspaceId: string; memberIds: string[] }) => {
+    async (params: { subspaceId: string; memberIds: string[] }) => {
       try {
-        const response = await subspaceApi.batchRemoveSubspaceMembers(subspaceId, memberIds);
+        const response = await subspaceApi.batchRemoveSubspaceMembers(params.subspaceId, params.memberIds);
+        toast.success(t("Successfully removed {{count}} member(s)", { count: params.memberIds.length }));
         return response;
       } catch (error) {
         console.error("Failed to batch remove subspace members:", error);
+        toast.error(t("Failed to remove members"));
         throw error;
       }
     },
@@ -662,14 +694,20 @@ export const useBatchRemoveSubspaceMembers = () => {
 };
 
 export const useFetchSubspaceSettings = () => {
+  const { t } = useTranslation();
+
   return useRequest(
     async (subspaceId: string) => {
       try {
         const response = await subspaceApi.getSubspaceSettings(subspaceId);
+
+        // Update store using direct setState
         useSubSpaceStore.setState({ subspaceSettings: response });
+
         return response;
       } catch (error) {
         console.error("Failed to fetch subspace settings:", error);
+        toast.error(t("Failed to fetch subspace settings"));
         throw error;
       }
     },
@@ -678,32 +716,62 @@ export const useFetchSubspaceSettings = () => {
 };
 
 export const useUpdateSubspaceSettings = () => {
+  const { t } = useTranslation();
+
   return useRequest(
-    async ({ subspaceId, settings }: { subspaceId: string; settings: UpdateSubspaceSettingsRequest }) => {
+    async (params: { subspaceId: string; settings: UpdateSubspaceSettingsRequest }) => {
+      const currentState = useSubSpaceStore.getState();
+      const currentSettings = currentState.subspaceSettings;
+
+      // Optimistic update
+      if (currentSettings) {
+        const optimisticSettings = {
+          ...currentSettings,
+          subspace: {
+            ...currentSettings.subspace,
+            ...params.settings,
+          },
+        };
+        useSubSpaceStore.setState({ subspaceSettings: optimisticSettings });
+      }
+
       try {
-        const response = await subspaceApi.updateSubspaceSettings(subspaceId, settings);
+        const response = await subspaceApi.updateSubspaceSettings(params.subspaceId, params.settings);
+
+        // Update store with actual response
         useSubSpaceStore.setState({ subspaceSettings: response });
 
         // Also update the subspace entity in the store
-        const currentSubspace = useSubSpaceStore.getState().subspaces[subspaceId];
-        if (currentSubspace) {
-          useSubSpaceStore.setState((state) => ({
-            subspaces: {
-              ...state.subspaces,
-              [subspaceId]: {
-                ...currentSubspace,
-                name: response.subspace.name,
-                description: response.subspace.description || undefined,
-                avatar: response.subspace.avatar,
-                type: response.subspace.type,
+        useSubSpaceStore.setState((state) => {
+          const currentSubspace = state.subspaces[params.subspaceId];
+          if (currentSubspace) {
+            return {
+              subspaces: {
+                ...state.subspaces,
+                [params.subspaceId]: {
+                  ...currentSubspace,
+                  name: response.subspace.name,
+                  description: response.subspace.description || undefined,
+                  avatar: response.subspace.avatar,
+                  type: response.subspace.type,
+                },
               },
-            },
-          }));
-        }
+            };
+          }
+          return state;
+        });
 
+        toast.success(t("Subspace settings updated successfully"));
         return response;
       } catch (error) {
         console.error("Failed to update subspace settings:", error);
+
+        // Revert optimistic update on error
+        if (currentSettings) {
+          useSubSpaceStore.setState({ subspaceSettings: currentSettings });
+        }
+
+        toast.error(t("Failed to update subspace settings"));
         throw error;
       }
     },
@@ -712,24 +780,31 @@ export const useUpdateSubspaceSettings = () => {
 };
 
 export const useFetchNavigationTree = () => {
-  return useRequest(
-    async ({ subspaceId, force = false }: { subspaceId: string; force?: boolean }) => {
-      try {
-        const subspace = useSubSpaceStore.getState().subspaces[subspaceId];
-        if (subspace.navigationTree?.length && !force) return;
+  const { t } = useTranslation();
 
-        const res = await subspaceApi.fetchNavigationTree(subspaceId);
+  return useRequest(
+    async (params: { subspaceId: string; options?: { force?: boolean } }) => {
+      try {
+        const subspaces = useSubSpaceStore.getState().subspaces;
+        const subspace = subspaces[params.subspaceId];
+
+        if (subspace.navigationTree?.[params.subspaceId] && !params.options?.force) return;
+
+        const res = await subspaceApi.fetchNavigationTree(params.subspaceId);
+
+        // Update store using direct setState
         useSubSpaceStore.setState((state) => ({
           subspaces: {
             ...state.subspaces,
-            [subspaceId]: {
-              ...state.subspaces[subspaceId],
-              navigationTree: Array.isArray(res) ? res : [res],
+            [params.subspaceId]: {
+              ...state.subspaces[params.subspaceId],
+              navigationTree: Array.isArray(res) ? res : ([res] as NavigationNode[]),
             },
           },
         }));
       } catch (error) {
         console.error("Failed to fetch navigation tree:", error);
+        toast.error(t("Failed to fetch navigation tree"));
         throw error;
       }
     },
@@ -738,25 +813,19 @@ export const useFetchNavigationTree = () => {
 };
 
 export const useRefreshNavigationTree = () => {
-  return useRequest(
-    async (subspaceId: string) => {
-      try {
-        const { run: fetchNavigationTree } = useFetchNavigationTree();
-        await fetchNavigationTree({ subspaceId, force: true });
-      } catch (error) {
-        console.error("Failed to refresh navigation tree:", error);
-        throw error;
-      }
-    },
-    { manual: true },
-  );
+  const fetchNavigationTree = useFetchNavigationTree();
+
+  return useRefCallback(async (subspaceId: string) => {
+    await fetchNavigationTree.run({ subspaceId, options: { force: true } });
+  });
 };
 
 export const useRefreshSubspaceMembers = () => {
+  const { t } = useTranslation();
+
   return useRequest(
     async (subspaceId: string) => {
       try {
-        // Fetch updated member list from API
         const response = await subspaceApi.getSubspaceMembers(subspaceId);
 
         const updatedMembers = response.members.map((member) => ({
@@ -767,7 +836,7 @@ export const useRefreshSubspaceMembers = () => {
           },
         }));
 
-        // Update store with new member list
+        // Update store using direct setState
         useSubSpaceStore.setState((state) => ({
           subspaces: {
             ...state.subspaces,
@@ -780,21 +849,25 @@ export const useRefreshSubspaceMembers = () => {
         }));
 
         // Also update subspaceSettings if it exists and matches the current subspace
-        const currentSettings = useSubSpaceStore.getState().subspaceSettings;
-        if (currentSettings && currentSettings.subspace.id === subspaceId) {
-          useSubSpaceStore.setState({
-            subspaceSettings: {
-              ...currentSettings,
-              subspace: {
-                ...currentSettings.subspace,
-                members: updatedMembers,
-                memberCount: response.members.length,
+        useSubSpaceStore.setState((state) => {
+          const currentSettings = state.subspaceSettings;
+          if (currentSettings && currentSettings.subspace.id === subspaceId) {
+            return {
+              subspaceSettings: {
+                ...currentSettings,
+                subspace: {
+                  ...currentSettings.subspace,
+                  members: updatedMembers,
+                  memberCount: response.members.length,
+                },
               },
-            },
-          });
-        }
+            };
+          }
+          return state;
+        });
       } catch (error) {
         console.error("Failed to refresh subspace members:", error);
+        toast.error(t("Failed to refresh subspace members"));
         throw error;
       }
     },
@@ -802,20 +875,13 @@ export const useRefreshSubspaceMembers = () => {
   );
 };
 
-// Helper Hooks
 export const useSetActiveSubspace = () => {
   return useRefCallback((id?: string) => {
     useSubSpaceStore.setState({ activeSubspaceId: id });
   });
 };
 
-export const useClearSubspaceSettings = () => {
-  return useRefCallback(() => {
-    useSubSpaceStore.setState({ subspaceSettings: null });
-  });
-};
-
-// Document Structure Management Hooks
+// Document structure management hooks
 export const useAddDocumentToStructure = () => {
   return useRefCallback((subspaceId: string, document: DocumentEntity, index = 0) => {
     try {
@@ -826,6 +892,9 @@ export const useAddDocumentToStructure = () => {
         if (!subspace) return state;
 
         const newSubspace = { ...subspace };
+        if (!newSubspace.navigationTree) {
+          newSubspace.navigationTree = [];
+        }
 
         if (document.parentId) {
           const findAndAddToParent = (nodes: NavigationNode[]): boolean => {
@@ -842,15 +911,8 @@ export const useAddDocumentToStructure = () => {
             return false;
           };
 
-          if (!newSubspace.navigationTree) {
-            newSubspace.navigationTree = [];
-          }
           findAndAddToParent(newSubspace.navigationTree);
         } else {
-          // Insert at specific index or append to end
-          if (!newSubspace.navigationTree) {
-            newSubspace.navigationTree = [];
-          }
           if (index >= 0 && index < newSubspace.navigationTree.length) {
             newSubspace.navigationTree.splice(index, 0, navigationNode);
           } else {
@@ -896,14 +958,12 @@ export const useRemoveDocumentFromStructure = () => {
       };
 
       removeFromTree(newNavigationTree);
+      newSubspace.navigationTree = newNavigationTree;
 
       return {
         subspaces: {
           ...state.subspaces,
-          [subspaceId]: {
-            ...newSubspace,
-            navigationTree: newNavigationTree,
-          },
+          [subspaceId]: newSubspace,
         },
       };
     });
@@ -934,14 +994,12 @@ export const useUpdateDocumentInStructure = () => {
       };
 
       updateNodeInTree(newNavigationTree);
+      newSubspace.navigationTree = newNavigationTree;
 
       return {
         subspaces: {
           ...state.subspaces,
-          [subspaceId]: {
-            ...newSubspace,
-            navigationTree: newNavigationTree,
-          },
+          [subspaceId]: newSubspace,
         },
       };
     });
@@ -1000,7 +1058,6 @@ export const useMoveDocumentInStructure = () => {
 
         findAndAddToParent(newNavigationTree);
       } else {
-        // Add to root level
         if (newIndex >= 0 && newIndex < newNavigationTree.length) {
           newNavigationTree.splice(newIndex, 0, nodeToMove);
         } else {
@@ -1009,13 +1066,12 @@ export const useMoveDocumentInStructure = () => {
         (nodeToMove as any).parent = null;
       }
 
+      newSubspace.navigationTree = newNavigationTree;
+
       return {
         subspaces: {
           ...state.subspaces,
-          [subspaceId]: {
-            ...newSubspace,
-            navigationTree: newNavigationTree,
-          },
+          [subspaceId]: newSubspace,
         },
       };
     });
@@ -1057,20 +1113,19 @@ export const useReorderDocuments = () => {
         }
       });
 
+      newSubspace.navigationTree = reorderedNodes;
+
       return {
         subspaces: {
           ...state.subspaces,
-          [subspaceId]: {
-            ...newSubspace,
-            navigationTree: reorderedNodes,
-          },
+          [subspaceId]: newSubspace,
         },
       };
     });
   });
 };
 
-// Utility function
+// Utility functions
 function convertDocEntityToNavigationNode(doc: DocumentEntity): NavigationNode {
   return {
     id: doc.id,
@@ -1081,5 +1136,39 @@ function convertDocEntityToNavigationNode(doc: DocumentEntity): NavigationNode {
     parent: null,
   };
 }
+
+// Legacy methods for backward compatibility
+export const useSetActiveSubspaceLegacy = () => {
+  return useRefCallback((id?: string) => {
+    useSubSpaceStore.setState({ activeSubspaceId: id });
+  });
+};
+
+export const useAddDocument = () => {
+  return useRefCallback((subspaceId: string, document: DocumentEntity) => {
+    const addDocumentToStructure = useAddDocumentToStructure();
+    addDocumentToStructure(subspaceId, document, 0);
+  });
+};
+
+export const useRemoveDocument = () => {
+  return useRefCallback((subspaceId: string, documentId: string) => {
+    const removeDocumentFromStructure = useRemoveDocumentFromStructure();
+    removeDocumentFromStructure(subspaceId, documentId);
+  });
+};
+
+export const useFetchNavigationTreeLegacy = () => {
+  const fetchNavigationTree = useFetchNavigationTree();
+
+  return useRefCallback(async (subspaceId: string, options?: { force?: boolean }) => {
+    await fetchNavigationTree.run({ subspaceId, options });
+  });
+};
+
+export const getPersonalSubspace = () => {
+  const subspaces = useSubSpaceStore.getState().subspaces;
+  return Object.values(subspaces).find((s) => s.type === "PERSONAL");
+};
 
 export default useSubSpaceStore;

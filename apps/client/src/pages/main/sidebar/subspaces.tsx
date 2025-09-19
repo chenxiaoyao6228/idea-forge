@@ -8,7 +8,7 @@ import { DraggableSubspaceContainer } from "./components/draggable-subspace-cont
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
 import useWorkspaceStore from "@/stores/workspace-store";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore, { useJoinedSubspaces, useFetchSubspaces } from "@/stores/subspace-store";
 import { AllSubspaceSheet } from "../settings/subspace/all-subspace-sheet";
 import { showCreateSubspaceModal } from "../settings/subspace/create-subspace-dialog";
 import { useWorkspaceType } from "@/hooks/use-workspace-type";
@@ -19,8 +19,8 @@ export default function SubspacesArea() {
 
   const { isPersonalWorkspace } = useWorkspaceType();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const joinedSubspaces = useSubSpaceStore((state) => state.joinedSubspaces);
-  const fetchList = useSubSpaceStore((state) => state.fetchList);
+  const joinedSubspaces = useJoinedSubspaces();
+  const { run: fetchList } = useFetchSubspaces();
   const isCreating = useSubSpaceStore((state) => state.isCreating);
 
   // drag target for drop to top

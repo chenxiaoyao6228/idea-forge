@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Home, Users, Shield, Loader2 } from "lucide-react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
-import useSubspaceStore from "@/stores/subspace";
+import useSubspaceStore, { useFetchSubspaceSettings, useUpdateSubspaceSettings, useJoinSubspace, useFetchSubspaces } from "@/stores/subspace-store";
 import useUserStore from "@/stores/user-store";
 import useWorkspaceStore from "@/stores/workspace-store";
 import { BasicInfoTab } from "./basic-info-tab";
@@ -40,16 +40,19 @@ const SubspaceSettingsModal = ({
 }: ConfirmDialogProps<SubspaceSettingsModalProps, boolean>) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("basic");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isJoining, setIsJoining] = useState(false);
 
-  const { subspaceSettings, isSettingsLoading, fetchSubspaceSettings, updateSubspaceSettings, clearSubspaceSettings, entities, joinSubspace, fetchList } =
-    useSubspaceStore();
+  const { subspaceSettings } = useSubspaceStore();
+  const { run: fetchSubspaceSettings, loading: isSettingsLoading } = useFetchSubspaceSettings();
+  const { run: updateSubspaceSettings } = useUpdateSubspaceSettings();
+  const { run: fetchList } = useFetchSubspaces();
+
+  const clearSubspaceSettings = () => useSubspaceStore.setState({ subspaceSettings: null });
+
   const { userInfo } = useUserStore();
   const { currentWorkspace } = useWorkspaceStore();
 
   // Get subspace name from store
-  const subspaceName = entities[subspaceId]?.name || "Subspace";
+  const subspaceName = useSubspaceStore((state) => state.subspaces[subspaceId]?.name) || "Subspace";
 
   // Check if current user is already a member of the subspace
   const isUserMember = React.useMemo(() => {
@@ -72,40 +75,19 @@ const SubspaceSettingsModal = ({
   }, [show, clearSubspaceSettings]);
 
   const loadSettings = async () => {
-    setIsLoading(true);
-    try {
-      await fetchSubspaceSettings(subspaceId);
-    } catch (error) {
-      console.error("Failed to load subspace settings:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    await fetchSubspaceSettings(subspaceId);
   };
 
   const handleSettingsChange = async (changes: Partial<SubspaceSettingsResponse["subspace"]>) => {
     if (!subspaceSettings) return;
 
-    // Update local state optimistically
-    const updatedSettings = {
-      ...subspaceSettings,
-      subspace: {
-        ...subspaceSettings.subspace,
-        ...changes,
-      },
-    };
-
-    // Update store state immediately for UI responsiveness
-    useSubspaceStore.setState({ subspaceSettings: updatedSettings });
-
-    // Sync to backend
     try {
-      const response = await updateSubspaceSettings(subspaceId, changes as UpdateSubspaceSettingsRequest);
-      // Update with the actual response from server
-      useSubspaceStore.setState({ subspaceSettings: response });
+      await updateSubspaceSettings({
+        subspaceId,
+        settings: changes as UpdateSubspaceSettingsRequest,
+      });
     } catch (error) {
       console.error("Failed to sync settings to backend:", error);
-      // Revert optimistic update on error
-      useSubspaceStore.setState({ subspaceSettings });
     }
   };
 
@@ -113,7 +95,7 @@ const SubspaceSettingsModal = ({
     proceed?.(null);
   };
 
-  if (isLoading || isSettingsLoading) {
+  if (isSettingsLoading) {
     return (
       <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0">

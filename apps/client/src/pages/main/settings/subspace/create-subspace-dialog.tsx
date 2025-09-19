@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ImageCropper } from "@/components/image-cropper";
 import { Option } from "@/components/ui/multi-selector";
 import { SubspaceTypeSchema } from "@idea/contracts";
-import useSubSpaceStore, { useBatchAddSubspaceMembers } from "@/stores/subspace";
+import useSubSpaceStore, { useCreateSubspace, useBatchAddSubspaceMembers } from "@/stores/subspace-store";
 import { uploadFile } from "@/lib/upload";
 import { dataURLtoFile } from "@/lib/file";
 import { MoreAboutSubspaceTip } from "./more-about-subspace-tip";
@@ -37,9 +37,6 @@ interface FileWithPreview extends File {
 
 const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProps, any>> = ({ show = false, proceed, workspaceId, onSuccess }) => {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
   // Form states
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -52,10 +49,14 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
   const [cropperDialogOpen, setCropperDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileWithPreview | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false); // Keep for file upload
 
-  // Get store methods
-  const createSubspace = useSubSpaceStore((state) => state.create);
-  const { run: batchAddSubspaceMembers } = useBatchAddSubspaceMembers();
+  // Get store methods with loading states
+  const { run: createSubspace, loading: creatingSubspace } = useCreateSubspace();
+  const { run: batchAddSubspaceMembers, loading: addingMembers } = useBatchAddSubspaceMembers();
+
+  // Combined loading state
+  const loading = creatingSubspace || addingMembers;
 
   // Auto-focus name input when dialog opens
   useEffect(() => {
@@ -76,7 +77,6 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
       setType("WORKSPACE_WIDE");
       setSelectedMembers([]);
       setAvatarUrl(null);
-      setLoading(false);
       setUploading(false);
     }
   }, [show]);
@@ -165,9 +165,8 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
       return;
     }
 
-    setLoading(true);
     try {
-      // Step 1: Create subspace
+      // Create subspace
       const subspace = await createSubspace({
         name: name.trim(),
         description: description.trim() || null,
@@ -176,7 +175,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
         workspaceId,
       });
 
-      // Step 2: Add members if any selected (skip for WORKSPACE_WIDE)
+      // Add members if any selected (skip for WORKSPACE_WIDE)
       if (type !== "WORKSPACE_WIDE" && selectedMembers.length > 0) {
         try {
           await batchAddSubspaceMembers({
@@ -201,8 +200,6 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
     } catch (error) {
       console.error("Failed to create subspace:", error);
       toast.error(t("Failed to create subspace"));
-    } finally {
-      setLoading(false);
     }
   };
 

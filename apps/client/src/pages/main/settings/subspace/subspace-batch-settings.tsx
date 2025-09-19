@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import MultipleSelector, { Option } from "@/components/ui/multi-selector";
 import { Subspace, SubspaceType } from "@idea/contracts";
 import useWorkspaceStore, { useBatchSetWorkspaceWide } from "@/stores/workspace-store";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore, { useAllSubspaces, useFetchSubspaces } from "@/stores/subspace-store";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -18,8 +18,8 @@ export function SubspaceBatchSettings({ workspaceId }: SubspaceBatchSettingsProp
   const { t } = useTranslation();
 
   const { run: batchSetWorkspaceWide } = useBatchSetWorkspaceWide();
-  const subspaces = useSubSpaceStore((state) => state.allSubspaces);
-  const fetchList = useSubSpaceStore((state) => state.fetchList);
+  const subspaces = useAllSubspaces();
+  const { run: fetchList } = useFetchSubspaces();
 
   // Convert subspaces to Option format
   const subspaceOptions: Option[] = subspaces.map((subspace) => ({

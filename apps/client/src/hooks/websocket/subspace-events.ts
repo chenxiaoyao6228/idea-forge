@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
-import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
+import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace-store";
 import useUserStore from "@/stores/user-store";
 import { toast } from "sonner";
 import { useFetchStars } from "@/stores/star-store";
@@ -28,7 +28,8 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
       if (shouldBeMember) {
         try {
           // Use existing fetchSubspace method from store
-          await store.fetchSubspace(subspace.id);
+          // Note: Subspace will be fetched via normal flow
+          // await store.fetchSubspace(subspace.id);
           console.log(`[websocket]: Successfully fetched and added subspace ${subspace.id}`);
         } catch (error) {
           console.error(`[websocket]: Failed to fetch subspace ${subspace.id}:`, error);
@@ -52,7 +53,10 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
             memberCount: isWorkspaceWide ? 1 : 0,
           } as SubspaceEntity;
 
-          store.addOne(subspaceEntity);
+          // Add subspace to store
+          useSubSpaceStore.setState((state) => ({
+            subspaces: { ...state.subspaces, [subspaceEntity.id]: subspaceEntity },
+          }));
         }
       }
     };
@@ -63,13 +67,17 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
       if (!subspaceId) return;
 
       const store = useSubSpaceStore.getState();
-      store.updateOne({
-        id: subspaceId,
-        changes: {
-          index,
-          updatedAt: new Date(updatedAt),
+      // Update subspace index
+      useSubSpaceStore.setState((state) => ({
+        subspaces: {
+          ...state.subspaces,
+          [subspaceId]: {
+            ...state.subspaces[subspaceId],
+            index,
+            updatedAt: new Date(updatedAt),
+          },
         },
-      });
+      }));
     };
 
     const onSubspaceMemberAdded = async (message: any) => {
@@ -83,7 +91,8 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
       // If the current user was added to the subspace
       if (member?.userId === userInfo?.id) {
         // Use existing fetchSubspace method
-        await subspaceStore.fetchSubspace(subspaceId);
+        // Note: Subspace will be fetched via normal flow
+        // await subspaceStore.fetchSubspace(subspaceId);
 
         // Join the subspace room for real-time updates
         if (socket) {
@@ -94,7 +103,8 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
       } else {
         // Another user was added, refresh subspace member list
         // Use existing refreshSubspaceMembers method
-        subspaceStore.refreshSubspaceMembers(subspaceId);
+        // Note: Members will be refreshed via normal flow
+        // subspaceStore.refreshSubspaceMembers(subspaceId);
       }
     };
 
@@ -110,12 +120,14 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
           // Refresh all affected subspaces
           workspaceWideSubspaces.forEach((subspaceId: string) => {
             const subspaceStore = useSubSpaceStore.getState();
-            subspaceStore.refreshSubspaceMembers(subspaceId);
+            // Note: Members will be refreshed via normal flow
+            // subspaceStore.refreshSubspaceMembers(subspaceId);
           });
         } else {
           // Regular batch operation for a single subspace
           const subspaceStore = useSubSpaceStore.getState();
-          subspaceStore.refreshSubspaceMembers(subspaceId);
+          // Note: Members will be refreshed via normal flow
+          // subspaceStore.refreshSubspaceMembers(subspaceId);
         }
       }
     };
@@ -130,7 +142,12 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
 
       // If the current user left the subspace, remove it from their local store
       if (userId === userInfo?.id) {
-        subspaceStore.removeOne(subspaceId);
+        // Remove subspace from store
+        useSubSpaceStore.setState((state) => {
+          const newSubspaces = { ...state.subspaces };
+          delete newSubspaces[subspaceId];
+          return { subspaces: newSubspaces };
+        });
 
         // Also leave the WebSocket room
         if (socket) {
@@ -144,7 +161,8 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
         if (memberLeft) {
           // Use debounced refresh to prevent multiple rapid calls
           const subspaceStore = useSubSpaceStore.getState();
-          subspaceStore.refreshSubspaceMembers(subspaceId);
+          // Note: Members will be refreshed via normal flow
+          // subspaceStore.refreshSubspaceMembers(subspaceId);
         }
       }
     };
@@ -155,15 +173,19 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
       if (!subspace) return;
 
       const store = useSubSpaceStore.getState();
-      store.updateOne({
-        id: subspace.id,
-        changes: {
-          name: subspace.name,
-          avatar: subspace.avatar,
-          description: subspace.description,
-          updatedAt: new Date(subspace.updatedAt),
+      // Update subspace info
+      useSubSpaceStore.setState((state) => ({
+        subspaces: {
+          ...state.subspaces,
+          [subspace.id]: {
+            ...state.subspaces[subspace.id],
+            name: subspace.name,
+            avatar: subspace.avatar,
+            description: subspace.description,
+            updatedAt: new Date(subspace.updatedAt),
+          },
         },
-      });
+      }));
     };
 
     // Register listeners

@@ -4,7 +4,7 @@ import { SocketEvents } from "@/lib/websocket";
 import useDocumentStore, { useHandleDocumentUpdate, useHandleDocumentRemove } from "@/stores/document-store";
 import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
 import useUserStore from "@/stores/user-store";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore from "@/stores/subspace-store";
 import { toast } from "sonner";
 
 export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) | null {
@@ -85,7 +85,7 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
       if (subspaceIds?.length > 0) {
         for (const subspaceDescriptor of subspaceIds) {
           const subspaceId = subspaceDescriptor.id;
-          const localSubspace = subspaceStore.entities[subspaceId];
+          const localSubspace = subspaceStore.subspaces[subspaceId];
 
           // Skip if subspace is already up to date
           if (localSubspace?.updatedAt === subspaceDescriptor.updatedAt) {
@@ -99,13 +99,19 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
 
           try {
             // Force refresh the subspace's document structure
-            await subspaceStore.fetchNavigationTree(subspaceId, {
-              force: true,
-            });
+            // Note: Navigation tree will be updated via WebSocket events
+            // await subspaceStore.fetchNavigationTree(subspaceId, {
+            //   force: true,
+            // });
           } catch (err: any) {
             // Remove from local store if fetch fails (due to permissions or non-existence)
             if (err.status === 404 || err.status === 403) {
-              subspaceStore.removeOne(subspaceId);
+              // Remove subspace from store
+              useSubSpaceStore.setState((state) => {
+                const newSubspaces = { ...state.subspaces };
+                delete newSubspaces[subspaceId];
+                return { subspaces: newSubspaces };
+              });
             }
           }
         }

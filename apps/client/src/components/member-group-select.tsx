@@ -5,7 +5,7 @@ import MultipleSelector, { Option } from "@/components/ui/multi-selector";
 import { Users, User } from "lucide-react";
 import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace-store";
 import { useFetchWorkspaceGroups } from "@/stores/group-store";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore, { useFetchSubspace } from "@/stores/subspace-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { getInitialChar } from "@/lib/auth";
 
@@ -46,16 +46,16 @@ export function MemberAndGroupSelect({
   const [users, setUsers] = useState<SubspaceUser[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [existingMembers, setExistingMembers] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Get store methods with loading states
+  const { run: fetchWorkspaceMembers, loading: membersLoading } = useFetchMembers();
+  const { run: fetchWorkspaceGroups, loading: groupsLoading } = useFetchWorkspaceGroups();
+  const { run: fetchSubspace, loading: subspaceLoading } = useFetchSubspace();
 
-  // Get store methods
-  const { run: fetchWorkspaceMembers } = useFetchMembers();
-  const { run: fetchWorkspaceGroups } = useFetchWorkspaceGroups();
-  const fetchSubspace = useSubSpaceStore((state) => state.fetchSubspace);
+  // Combined loading state
+  const loading = membersLoading || groupsLoading || subspaceLoading;
 
   // Fetch users and groups
   const fetchData = useRefCallback(async () => {
-    setLoading(true);
     try {
       const promises: Promise<any>[] = [fetchWorkspaceMembers(workspaceId), fetchWorkspaceGroups(workspaceId)];
 
@@ -115,8 +115,6 @@ export function MemberAndGroupSelect({
       setGroups(transformedGroups);
     } catch (error) {
       console.error("Failed to fetch users and groups:", error);
-    } finally {
-      setLoading(false);
     }
   });
 

@@ -4,7 +4,7 @@ import { PlusIcon, EditIcon, Layers } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
+import useSubSpaceStore, { SubspaceEntity, useFetchNavigationTree, useGetPathToDocument } from "@/stores/subspace-store";
 import useDocumentStore, { useCreateDocument } from "@/stores/document-store";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -26,9 +26,9 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   const { t } = useTranslation();
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
-  const fetchNavigationTree = useSubSpaceStore((state) => state.fetchNavigationTree);
+  const { run: fetchNavigationTree } = useFetchNavigationTree();
   const { run: createDocument } = useCreateDocument();
-  const getPathToDocument = useSubSpaceStore((state) => state.getPathToDocument);
+  const getPathToDocument = useGetPathToDocument();
   const subspaceId = subspace.id;
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -56,7 +56,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   useEffect(() => {
     if (isExpanded) {
       if (!isNavigationTreeFirstLoaded) {
-        fetchNavigationTree(subspaceId);
+        fetchNavigationTree({ subspaceId });
         setIsNavigationTreeFirstLoaded(true);
       }
     }

@@ -13,13 +13,12 @@
  *
  * Star Ordering:
  * - Stars use fractional indexing for smooth reordering
- * - Stars support both subspace and document reordering
  */
 
 import { DragEndEvent, DragMoveEvent, DragOverEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import fractionalIndex from "fractional-index";
 import { useCallback, useState } from "react";
-import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
+import useSubSpaceStore, { getPersonalSubspace, useMoveSubspace } from "@/stores/subspace-store";
 import useDocumentStore, { useMoveDocument } from "@/stores/document-store";
 import { useOrderedStars } from "@/stores/star-store";
 import useStarStore from "@/stores/star-store";
@@ -51,7 +50,7 @@ function useDocumentDnD() {
       if (!toDropItem.accept.includes("document")) return;
       let subspaceId = toDropItem.subspaceId;
       if (subspaceId === null || subspaceId === undefined) {
-        const personalSubspace = getPersonalSubspace(useSubSpaceStore.getState());
+        const personalSubspace = getPersonalSubspace();
         subspaceId = personalSubspace?.id;
       }
       if (toDropItem.dropType === "reparent") {
@@ -87,8 +86,8 @@ function useDocumentDnD() {
 
 // --- Subspace DnD Hook ---
 function useSubspaceDnD() {
-  const allSubspaces = useSubSpaceStore((state) => state.allSubspaces);
-  const moveSubspace = useSubSpaceStore((state) => state.move);
+  const allSubspaces = Object.values(useSubSpaceStore((state) => state.subspaces));
+  const { run: moveSubspace } = useMoveSubspace();
   const handleSubspaceDrop = useCallback(
     ({ draggingItem, toDropItem }: { draggingItem: DragItem; toDropItem: DropTarget }) => {
       if (!toDropItem.accept.includes("subspace")) return;
@@ -104,7 +103,7 @@ function useSubspaceDnD() {
       } else {
         return;
       }
-      moveSubspace(dragSubspace.id, newIndex);
+      moveSubspace({ subspaceId: dragSubspace.id, index: newIndex });
     },
     [allSubspaces, moveSubspace],
   );

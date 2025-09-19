@@ -531,6 +531,10 @@ export function useRefCallback<T extends (...args: any[]) => any>(fn: T): T {
 
 **MANDATORY: Use try-catch blocks within async functions instead of onSuccess/onError callbacks for better control flow and error handling.**
 
+**MANDATORY: Avoid duplicate loading states - Use the loading state provided by useRequest hooks instead of creating additional local loading states.**
+
+**MANDATORY: Move optimistic update logic to hooks - Business logic including optimistic updates should be encapsulated in hooks, not in components.**
+
 ```typescript
 import useRequest from "@ahooksjs/use-request";
 
@@ -601,6 +605,119 @@ const { data, loading, error, run } = useRequest(
     manual: true,
   }
 );
+
+// ✅ Optimistic updates in hook (not component)
+export const useUpdateSubspaceSettings = () => {
+  const { t } = useTranslation();
+
+  return useRequest(
+    async (params: {
+      subspaceId: string;
+      settings: UpdateSubspaceSettingsRequest;
+    }) => {
+      const currentState = useSubSpaceStore.getState();
+      const currentSettings = currentState.subspaceSettings;
+
+      // Optimistic update in hook
+      if (currentSettings) {
+        const optimisticSettings = {
+          ...currentSettings,
+          subspace: {
+            ...currentSettings.subspace,
+            ...params.settings,
+          },
+        };
+        useSubSpaceStore.setState({ subspaceSettings: optimisticSettings });
+      }
+
+      try {
+        const response = await subspaceApi.updateSubspaceSettings(
+          params.subspaceId,
+          params.settings
+        );
+        useSubSpaceStore.setState({ subspaceSettings: response });
+        toast.success(t("Settings updated successfully"));
+        return response;
+      } catch (error) {
+        // Revert optimistic update on error
+        if (currentSettings) {
+          useSubSpaceStore.setState({ subspaceSettings: currentSettings });
+        }
+        console.error("Failed to update settings:", error);
+        toast.error(t("Failed to update settings"));
+        throw error;
+      }
+    },
+    { manual: true }
+  );
+};
+
+// ❌ DON'T: Duplicate loading states
+export function BadComponent() {
+  const [isLoading, setIsLoading] = useState(false); // ❌ Duplicate loading
+  const { run: fetchData, loading } = useFetchData(); // ✅ Hook already provides loading
+
+  const handleFetch = async () => {
+    setIsLoading(true); // ❌ Unnecessary
+    try {
+      await fetchData();
+    } finally {
+      setIsLoading(false); // ❌ Unnecessary
+    }
+  };
+
+  return (
+    <div>
+      {(isLoading || loading) && <Spinner />} {/* ❌ Redundant check */}
+    </div>
+  );
+}
+
+// ✅ DO: Use hook's loading state
+export function GoodComponent() {
+  const { run: fetchData, loading } = useFetchData(); // ✅ Single source of truth
+
+  return (
+    <div>
+      {loading && <Spinner />} {/* ✅ Clean and simple */}
+      <Button onClick={fetchData} disabled={loading}>
+        Fetch Data
+      </Button>
+    </div>
+  );
+}
+
+// ❌ DON'T: Optimistic updates in component
+export function BadSettingsComponent() {
+  const { subspaceSettings } = useSubspaceStore();
+  const { run: updateSettings } = useUpdateSubspaceSettings();
+
+  const handleUpdate = async (changes) => {
+    // ❌ Optimistic update logic in component
+    const optimisticSettings = {
+      ...subspaceSettings,
+      subspace: { ...subspaceSettings.subspace, ...changes },
+    };
+    useSubspaceStore.setState({ subspaceSettings: optimisticSettings });
+
+    try {
+      await updateSettings({ subspaceId, settings: changes });
+    } catch (error) {
+      // ❌ Revert logic in component
+      useSubspaceStore.setState({ subspaceSettings });
+    }
+  };
+}
+
+// ✅ DO: Optimistic updates in hook
+export function GoodSettingsComponent() {
+  const { run: updateSettings } = useUpdateSubspaceSettings(); // ✅ Hook handles optimistic updates
+
+  const handleUpdate = async (changes) => {
+    // ✅ Simple call, hook handles the complexity
+    await updateSettings({ subspaceId, settings: changes });
+  };
+}
 ```
 
 ### Hook Best Practices
@@ -611,12 +728,62 @@ const { data, loading, error, run } = useRequest(
 - Always handle cleanup in `useEffect`.
 - **MANDATORY: Use direct Zustand selectors for simple data access** - Don't create wrapper hooks for basic state access.
 - **MANDATORY: Use direct `useStore.setState()` for simple state updates** - Don't create wrapper hooks for basic state mutations.
+- **MANDATORY: Hooks MUST be called at the top level of React components** - Never call hooks at module level, inside loops, conditions, or nested functions.
+- **MANDATORY: Store selectors MUST be used inside components** - Never call `useStore()` at module level.
 
 **Avoid:**
 
 - `useCallback` for refs, TanStack Query, `onSuccess/onError` in `useRequest`, custom `changeState` methods, forgetting cleanup, unstable refs, or using hooks in conditions/loops.
 - Creating unnecessary wrapper hooks for simple data access (use direct selectors instead).
 - Creating unnecessary wrapper hooks for simple state updates (use direct `setState` instead).
+- **Duplicate loading states** - Don't create local loading state when useRequest already provides it.
+- **Optimistic updates in components** - Move optimistic update logic to hooks, not components.
+- **Business logic in components** - Keep components focused on UI rendering only.
+- **Module-level hook calls** - Never call hooks at module level, only inside React components.
+- **Store selectors at module level** - Never call `useStore()` outside of components.
+
+```typescript
+// ❌ DON'T: Module-level hook calls
+import { useSubSpaceStore } from "./subspace-store";
+
+// ❌ This violates Rules of Hooks
+const subspaces = useSubSpaceStore((state) => state.subspaces);
+const activeSubspaceId = useSubSpaceStore((state) => state.activeSubspaceId);
+
+// ❌ This also violates Rules of Hooks
+export const getSubspaces = () => {
+  return useSubSpaceStore((state) => state.subspaces); // ❌ Hook in non-component function
+};
+
+// ✅ DO: Use hooks inside components only
+export function SubspaceList() {
+  const subspaces = useSubSpaceStore((state) => state.subspaces); // ✅ Inside component
+  const activeSubspaceId = useSubSpaceStore((state) => state.activeSubspaceId); // ✅ Inside component
+  
+  return (
+    <div>
+      {subspaces.map(subspace => (
+        <div key={subspace.id}>{subspace.name}</div>
+      ))}
+    </div>
+  );
+}
+
+// ✅ DO: Use getState() for non-component functions
+export const getSubspaces = () => {
+  return useSubSpaceStore.getState().subspaces; // ✅ getState() is fine outside components
+};
+
+// ✅ DO: Use direct setState for non-component functions
+export const updateSubspace = (id: string, updates: Partial<SubspaceEntity>) => {
+  useSubSpaceStore.setState((state) => ({
+    subspaces: {
+      ...state.subspaces,
+      [id]: { ...state.subspaces[id], ...updates },
+    },
+  }));
+};
+```
 
 ## Styling and UI
 

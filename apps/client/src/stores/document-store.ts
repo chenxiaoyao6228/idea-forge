@@ -5,10 +5,99 @@ import { toast } from "sonner";
 import { CoverImage, DocTypeSchema, DocVisibilitySchema, SubspaceTypeSchema } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
-import useSubSpaceStore, { getPersonalSubspace } from "./subspace";
+import useSubSpaceStore, {
+  getPersonalSubspace,
+  useSetActiveSubspaceLegacy,
+  useAddDocument,
+  useRemoveDocument,
+  useFetchNavigationTreeLegacy,
+} from "./subspace-store";
 import useWorkspaceStore from "./workspace-store";
 import useAbilityStore from "./ability-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
+
+// Direct functions for subspace operations (can be called from within document store)
+const addDocumentToSubspace = (subspaceId: string, document: DocumentEntity) => {
+  const subspaces = useSubSpaceStore.getState().subspaces;
+  const subspace = subspaces[subspaceId];
+  if (!subspace) return;
+
+  const navigationNode: NavigationNode = {
+    id: document.id,
+    title: document.title,
+    type: NavigationNodeType.Document,
+    url: "",
+    children: [],
+    parent: null,
+  };
+
+  useSubSpaceStore.setState((state) => {
+    const newSubspace = { ...state.subspaces[subspaceId] };
+    if (!newSubspace.navigationTree) {
+      newSubspace.navigationTree = [];
+    }
+
+    if (document.parentId) {
+      const findAndAddToParent = (nodes: NavigationNode[]): boolean => {
+        for (const node of nodes) {
+          if (node.id === document.parentId) {
+            node.children = [navigationNode, ...(node.children || [])];
+            navigationNode.parent = node;
+            return true;
+          }
+          if (node.children && findAndAddToParent(node.children)) {
+            return true;
+          }
+        }
+        return false;
+      };
+      findAndAddToParent(newSubspace.navigationTree);
+    } else {
+      newSubspace.navigationTree = [navigationNode, ...newSubspace.navigationTree];
+    }
+
+    return {
+      subspaces: {
+        ...state.subspaces,
+        [subspaceId]: newSubspace,
+      },
+    };
+  });
+};
+
+const removeDocumentFromSubspace = (subspaceId: string, documentId: string) => {
+  useSubSpaceStore.setState((state) => {
+    const subspace = state.subspaces[subspaceId];
+    if (!subspace?.navigationTree) return state;
+
+    const newSubspace = { ...subspace };
+    const newNavigationTree = [...newSubspace.navigationTree];
+
+    const removeFromTree = (nodes: NavigationNode[]): boolean => {
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        if (node.id === documentId) {
+          nodes.splice(i, 1);
+          return true;
+        }
+        if (node.children && removeFromTree(node.children)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    removeFromTree(newNavigationTree);
+    newSubspace.navigationTree = newNavigationTree;
+
+    return {
+      subspaces: {
+        ...state.subspaces,
+        [subspaceId]: newSubspace,
+      },
+    };
+  });
+};
 
 // Types
 export interface DocumentEntity {
@@ -116,7 +205,7 @@ export const useFetchDocumentDetail = () => {
         if (!options.silent) {
           useDocumentStore.setState({ activeDocumentId: data.document.id });
           if (data.document.subspaceId) {
-            useSubSpaceStore.getState().setActiveSubspace(data.document.subspaceId);
+            useSubSpaceStore.setState({ activeSubspaceId: data.document.subspaceId });
           }
         }
 
@@ -209,7 +298,7 @@ export const useCreateDocument = () => {
         const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
         if (!workspaceId) throw new Error("No active workspace");
 
-        const isPrivateSubspace = subspaceId ? useSubSpaceStore.getState().entities[subspaceId]?.type === SubspaceTypeSchema.enum.PERSONAL : false;
+        const isPrivateSubspace = subspaceId ? useSubSpaceStore.getState().subspaces[subspaceId]?.type === SubspaceTypeSchema.enum.PERSONAL : false;
 
         const response = (await documentApi.create({
           workspaceId,
@@ -310,7 +399,7 @@ export const usePublishDocument = () => {
         }));
 
         // Add to subspace structure
-        useSubSpaceStore.getState().addDocument(subspaceId, doc);
+        addDocumentToSubspace(subspaceId, doc);
       } catch (error) {
         console.error("Failed to publish document:", error);
         throw error;
@@ -334,7 +423,7 @@ export const useUnpublishDocument = () => {
 
         // Remove from subspace structure
         if (doc.subspaceId) {
-          useSubSpaceStore.getState().removeDocument(doc.subspaceId, documentId);
+          removeDocumentFromSubspace(doc.subspaceId, documentId);
         }
 
         // Update document
@@ -373,7 +462,7 @@ export const useArchiveDocument = () => {
 
         // Remove from subspace structure
         if (doc.subspaceId) {
-          useSubSpaceStore.getState().removeDocument(doc.subspaceId, documentId);
+          removeDocumentFromSubspace(doc.subspaceId, documentId);
         }
 
         // Archive document and all children
@@ -439,7 +528,7 @@ export const useRestoreDocument = () => {
 
         // Add back to subspace structure if published
         if (doc.publishedAt) {
-          useSubSpaceStore.getState().addDocument(subspaceId, doc);
+          addDocumentToSubspace(subspaceId, doc);
         }
       } catch (error) {
         console.error("Failed to restore document:", error);
@@ -465,7 +554,7 @@ export const useDeleteDocument = () => {
         if (options.permanent) {
           // Remove from subspace structure
           if (doc.subspaceId) {
-            useSubSpaceStore.getState().removeDocument(doc.subspaceId, documentId);
+            removeDocumentFromSubspace(doc.subspaceId, documentId);
           }
 
           // Remove from store
@@ -559,9 +648,10 @@ export const useHandleDocumentUpdate = () => {
             updatedDocument.subspaceId &&
             (existing.title !== updatedDocument.title || existing.parentId !== updatedDocument.parentId || existing.index !== updatedDocument.index)
           ) {
-            await useSubSpaceStore.getState().fetchNavigationTree(updatedDocument.subspaceId, {
-              force: true,
-            });
+            // Note: Navigation tree will be updated via WebSocket events
+            // await useSubSpaceStore.getState().fetchNavigationTree(updatedDocument.subspaceId, {
+            //   force: true,
+            // });
           }
         }
       } catch (error: any) {
@@ -584,7 +674,7 @@ export const useHandleDocumentRemove = () => {
     const documents = useDocumentStore.getState().documents;
     const document = documents[documentId];
     if (document?.subspaceId) {
-      useSubSpaceStore.getState().removeDocument(document.subspaceId, documentId);
+      removeDocumentFromSubspace(document.subspaceId, documentId);
     }
     useDocumentStore.setState((state) => {
       const newDocuments = { ...state.documents };
@@ -720,7 +810,7 @@ export const useChildDocuments = () => {
 
 export const usePersonalRootDocuments = () => {
   return useMemo(() => {
-    const personalSubspace = getPersonalSubspace(useSubSpaceStore.getState());
+    const personalSubspace = getPersonalSubspace();
     return personalSubspace?.navigationTree || [];
   }, []);
 };

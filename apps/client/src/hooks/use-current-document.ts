@@ -2,12 +2,55 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import useDocumentStore, { documentSelectors, useGetDocument } from "@/stores/document-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
-import useSubSpaceStore from "@/stores/subspace";
+import useSubSpaceStore from "@/stores/subspace-store";
 import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";
 import { NavigationNode } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useRequest from "@ahooksjs/use-request";
 import { useDebounce } from "react-use";
+
+// Direct functions for navigation node finding (can be called from within hooks)
+const findNavigationNodeInPersonalSubspace = (documentId: string) => {
+  const subspaces = useSubSpaceStore.getState().subspaces;
+  const personalSubspace = Object.values(subspaces).find((s) => s.type === "PERSONAL");
+  if (!personalSubspace?.navigationTree) return null;
+
+  const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
+    for (const node of nodes) {
+      if (node.id === targetId) {
+        return node;
+      }
+      if (node.children && node.children.length > 0) {
+        const found = findNavigationNodeInTree(node.children, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  return findNavigationNodeInTree(personalSubspace.navigationTree, documentId);
+};
+
+const findNavigationNodeInSubspace = (subspaceId: string, documentId: string) => {
+  const subspaces = useSubSpaceStore.getState().subspaces;
+  const subspace = subspaces[subspaceId];
+  if (!subspace?.navigationTree) return null;
+
+  const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
+    for (const node of nodes) {
+      if (node.id === targetId) {
+        return node;
+      }
+      if (node.children && node.children.length > 0) {
+        const found = findNavigationNodeInTree(node.children, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  return findNavigationNodeInTree(subspace.navigationTree, documentId);
+};
 
 // ✅ Custom hook to find navigation node for a document ID across all subspaces and shared documents
 export const useNavigationNodeForDocument = () => {
@@ -16,10 +59,8 @@ export const useNavigationNodeForDocument = () => {
   const getNavigationNodeForDocument = useRefCallback((documentId: string): NavigationNode | null => {
     if (!documentId) return null;
 
-    const subspaceStore = useSubSpaceStore.getState();
-
     // 1. Check personal subspace
-    const personalNode = subspaceStore.findNavigationNodeInPersonalSubspace(documentId);
+    const personalNode = findNavigationNodeInPersonalSubspace(documentId);
     if (personalNode) return personalNode;
 
     // 2. Check shared-with-me documents
@@ -27,9 +68,9 @@ export const useNavigationNodeForDocument = () => {
     if (sharedNode) return sharedNode;
 
     // 3. Check all subspaces
-    const allSubspaces = subspaceStore.entities;
+    const allSubspaces = useSubSpaceStore.getState().subspaces;
     for (const subspace of Object.values(allSubspaces)) {
-      const node = subspaceStore.findNavigationNodeInSubspace(subspace.id, documentId);
+      const node = findNavigationNodeInSubspace(subspace.id, documentId);
       if (node) return node;
     }
 

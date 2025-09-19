@@ -7,7 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import useDocumentStore, { useCreateDocument } from "@/stores/document-store";
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
-import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
+import useSubSpaceStore, { usePersonalSubspace } from "@/stores/subspace-store";
 import { DraggableDocumentContainer } from "./components/draggable-document-container";
 
 export default function MyDocsArea() {
@@ -15,7 +15,7 @@ export default function MyDocsArea() {
   const [isOpen, setIsOpen] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const { run: createMyDocsDocument } = useCreateDocument();
-  const personalSubspace = useSubSpaceStore(getPersonalSubspace);
+  const personalSubspace = usePersonalSubspace();
   const navigationTree = personalSubspace?.navigationTree || [];
 
   const handleCreateDocument = async () => {

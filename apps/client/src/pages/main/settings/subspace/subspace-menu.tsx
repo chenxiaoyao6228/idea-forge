@@ -5,7 +5,7 @@ import { MoreHorizontal, UserPlus, Settings, LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { showAddSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
 import { showSubspaceSettingsModal } from "@/pages/main/settings/subspace/subspace-setting-modal/subspace-settings-modal";
-import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin } from "@/stores/subspace";
+import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin, useFetchSubspace } from "@/stores/subspace-store";
 
 interface SubspaceMenuProps {
   subspaceId: string;
@@ -18,6 +18,7 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
   const { t } = useTranslation();
   const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
   const isLastAdmin = useIsLastSubspaceAdmin(subspaceId);
+  const { run: fetchSubspace } = useFetchSubspace();
 
   const handleAddMembers = async () => {
     const result = await showAddSubspaceMemberModal({
@@ -39,7 +40,7 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
 
     if (result) {
       // Refresh subspace data
-      await useSubspaceStore.getState().fetchSubspace(subspaceId);
+      await fetchSubspace(subspaceId);
     }
   };
 

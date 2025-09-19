@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { Emoji } from "emoji-picker-react";
 import { useCurrentDocumentId } from "@/hooks/use-current-document";
-import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
+import useSubSpaceStore, { getPersonalSubspace, useGetPathToDocument } from "@/stores/subspace-store";
 import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";
 
 interface BreadcrumbItemData {
@@ -18,6 +18,7 @@ interface BreadcrumbItemData {
 export default function DocumentBreadcrumb() {
   const activeDocumentId = useCurrentDocumentId();
   const findNavigationNodeInSharedDocuments = useFindNavigationNodeInSharedDocuments();
+  const getPathToDocument = useGetPathToDocument(); // ✅ Move hook call to top level
 
   const navigate = useNavigate();
 
@@ -30,9 +31,9 @@ export default function DocumentBreadcrumb() {
     let path: any[] = [];
 
     // 1. Check personal subspace first
-    const personalSubspace = getPersonalSubspace(subspaceStore);
+    const personalSubspace = getPersonalSubspace();
     if (personalSubspace) {
-      path = subspaceStore.getPathToDocument(personalSubspace.id, activeDocumentId);
+      path = getPathToDocument(personalSubspace.id, activeDocumentId);
       if (path.length > 0) {
         return path.map((node) => ({
           id: node.id,
@@ -55,11 +56,11 @@ export default function DocumentBreadcrumb() {
     }
 
     // 3. Check all other subspaces
-    const allSubspaces = subspaceStore.entities;
+    const allSubspaces = subspaceStore.subspaces;
     for (const subspace of Object.values(allSubspaces)) {
       if (subspace.id === personalSubspace?.id) continue; // Skip personal subspace (already checked)
 
-      path = subspaceStore.getPathToDocument(subspace.id, activeDocumentId);
+      path = getPathToDocument(subspace.id, activeDocumentId);
       if (path.length > 0) {
         return path.map((node) => ({
           id: node.id,
@@ -70,7 +71,7 @@ export default function DocumentBreadcrumb() {
     }
 
     return [];
-  }, [activeDocumentId]);
+  }, [activeDocumentId, getPathToDocument, findNavigationNodeInSharedDocuments]);
 
   const handleNavigate = (id: string) => {
     navigate(`/${id}`);
