@@ -4,7 +4,7 @@ import useDocumentStore, { documentSelectors } from "@/stores/document";
 import useUIStore from "@/stores/ui";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useSubSpaceStore from "@/stores/subspace";
-import useSharedWithMeStore from "@/stores/shared-with-me";
+import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";
 import { NavigationNode } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useRequest from "@ahooksjs/use-request";
@@ -12,18 +12,19 @@ import { useDebounce } from "react-use";
 
 // ✅ Custom hook to find navigation node for a document ID across all subspaces and shared documents
 export const useNavigationNodeForDocument = () => {
+  const findNavigationNodeInSharedDocuments = useFindNavigationNodeInSharedDocuments();
+
   const getNavigationNodeForDocument = useRefCallback((documentId: string): NavigationNode | null => {
     if (!documentId) return null;
 
     const subspaceStore = useSubSpaceStore.getState();
-    const sharedWithMeStore = useSharedWithMeStore.getState();
 
     // 1. Check personal subspace
     const personalNode = subspaceStore.findNavigationNodeInPersonalSubspace(documentId);
     if (personalNode) return personalNode;
 
     // 2. Check shared-with-me documents
-    const sharedNode = sharedWithMeStore.findNavigationNodeInSharedDocuments(documentId);
+    const sharedNode = findNavigationNodeInSharedDocuments(documentId);
     if (sharedNode) return sharedNode;
 
     // 3. Check all subspaces

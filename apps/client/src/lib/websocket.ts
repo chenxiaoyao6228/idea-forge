@@ -1,8 +1,5 @@
 import { io, Socket } from "socket.io-client";
 import { resolvablePromise } from "./async";
-import useSharedWithMeStore from "@/stores/shared-with-me";
-import useSubSpaceStore from "@/stores/subspace";
-import useWorkspaceStore from "@/stores/workspace";
 
 type SocketWithAuthentication = Socket & {
   authenticated?: boolean;
@@ -162,9 +159,6 @@ class WebsocketService {
         this.reconnectAttempts = 0;
         this.setStatus(WebsocketStatus.CONNECTED);
         console.log("[websocket]: Socket.IO connected");
-
-        // Handle websocket reconnection
-        useSharedWithMeStore.getState().handleWebsocketReconnect();
 
         // Emit reconnection event for backward compatibility
         window.dispatchEvent(new CustomEvent("websocket:reconnected"));

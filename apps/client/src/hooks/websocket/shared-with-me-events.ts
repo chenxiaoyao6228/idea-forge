@@ -1,10 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
-import useSharedWithMeStore from "@/stores/shared-with-me";
+import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
 import useUserStore from "@/stores/user";
 
 export function useSharedWithMeWebsocketEvents(socket: Socket | null): (() => void) | null {
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const { handleWebsocketAbilityChange, handleWebsocketDocumentShare, handleWebsocketReconnect } = useSharedWithMeWebsocketHandlers();
+
   useEffect(() => {
     if (!socket) return;
 
@@ -14,36 +17,36 @@ export function useSharedWithMeWebsocketEvents(socket: Socket | null): (() => vo
       const { userId, documentId, document, abilities, includeChildDocuments } = message;
       if (!documentId || !document) return;
 
-      const sharedWithMeStore = useSharedWithMeStore.getState();
       const userInfo = useUserStore.getState().userInfo;
 
       // If the current user was added to the document
       if (userId === userInfo?.id) {
-        // Update abilities and shared documents using existing store methods
-        sharedWithMeStore.handleWebsocketAbilityChange(abilities);
-        sharedWithMeStore.handleWebsocketDocumentShare(document);
+        // Update abilities and shared documents using new hook-based handlers
+        handleWebsocketAbilityChange(abilities);
+        handleWebsocketDocumentShare(document);
       }
     };
 
     const onReconnect = () => {
       console.log(`[websocket]: Handling reconnect for shared-with-me`);
-      const sharedWithMeStore = useSharedWithMeStore.getState();
-
       // Refetch shared documents when websocket reconnects
       // (user might have gained new abilities while offline)
-      sharedWithMeStore.handleWebsocketReconnect();
+      handleWebsocketReconnect();
     };
 
     // Register listeners
     socket.on(SocketEvents.DOCUMENT_ADD_USER, onDocumentAddUser);
     socket.on("connect", onReconnect);
 
-    // Return cleanup function
-    return () => {
+    // Create cleanup function
+    const cleanup = () => {
       socket.off(SocketEvents.DOCUMENT_ADD_USER, onDocumentAddUser);
       socket.off("connect", onReconnect);
     };
-  }, [socket]);
 
-  return null;
+    cleanupRef.current = cleanup;
+    return cleanup;
+  }, [socket, handleWebsocketAbilityChange, handleWebsocketDocumentShare, handleWebsocketReconnect]);
+
+  return cleanupRef.current;
 }

@@ -15,6 +15,8 @@ This document serves as the definitive guide for code style, patterns, and conve
 - [File and Directory Structure](mdc:#file-and-directory-structure)
 - [Component Architecture](mdc:#component-architecture)
 - [State Management](mdc:#state-management)
+  - [UI State Management](mdc:#ui-state-management)
+  - [Hook-Based Store Architecture](mdc:#hook-based-store-architecture)
 - [Hooks and Custom Hooks](mdc:#hooks-and-custom-hooks)
 - [Styling and UI](mdc:#styling-and-ui)
 - [Internationalization (i18n)](mdc:#internationalization-i18n)
@@ -326,6 +328,7 @@ export function StarLink({ star }: StarLinkProps) {
 12. **Encapsulate business logic in stores or custom hooks** - Keep components clean and focused on presentation
 13. **Avoid data fetching in components** - Use stores or custom hooks for data management
 14. **Minimize component complexity** - If a component has too much logic, extract it to a store or hook
+15. **MANDATORY: Keep UI state local** - UI state should only exist in components, never in global stores unless truly shared across multiple components
 
 ### Modal Management
 
@@ -369,6 +372,22 @@ showConfirmModal({
 ```
 
 ## State Management
+
+### UI State Management
+
+**MANDATORY: UI state MUST be kept local to components using `useState`. Global stores should only contain data that needs to be shared across components.**
+
+```typescript
+// ✅ Good: Local UI state
+const [isOpen, setIsOpen] = useState(false);
+const [isModalOpen, setIsModalOpen] = useState(false);
+
+// ✅ Good: Global data state
+const documents = useDocumentStore((state) => state.documents);
+
+// ❌ Bad: UI state in global store
+const useStore = create({ isOpen: false }); // Don't do this
+```
 
 ### Hook-Based Store Architecture
 

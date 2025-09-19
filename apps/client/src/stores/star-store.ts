@@ -5,7 +5,7 @@ import { starApi } from "@/apis/star";
 import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useSubSpaceStore from "./subspace";
-import useSharedWithMeStore from "./shared-with-me";
+import { useFindNavigationNodeInSharedDocuments } from "./share-store";
 import useWorkspaceStore from "./workspace";
 import { NavigationNode, CreateStarDto } from "@idea/contracts";
 import { orderBy } from "lodash-es";
@@ -178,18 +178,19 @@ export const useToggleStar = () => {
 
 // Navigation logic
 export const useStarNavigation = () => {
+  const findNavigationNodeInSharedDocuments = useFindNavigationNodeInSharedDocuments();
+
   const getNavigationNodeForStar = useRefCallback((star: StarEntity): NavigationNode | null => {
     if (!star.docId) return null;
 
     const subspaceStore = useSubSpaceStore.getState();
-    const sharedWithMeStore = useSharedWithMeStore.getState();
 
     // Check personal subspace
     const personalNode = subspaceStore.findNavigationNodeInPersonalSubspace(star.docId);
     if (personalNode) return personalNode;
 
     // Check shared-with-me documents
-    const sharedNode = sharedWithMeStore.findNavigationNodeInSharedDocuments(star.docId);
+    const sharedNode = findNavigationNodeInSharedDocuments(star.docId);
     if (sharedNode) return sharedNode;
 
     // Check all subspaces

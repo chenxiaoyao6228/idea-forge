@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Emoji } from "emoji-picker-react";
 import { useCurrentDocumentId } from "@/hooks/use-current-document";
 import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
-import useSharedWithMeStore from "@/stores/shared-with-me";
+import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";
 
 interface BreadcrumbItemData {
   id: string;
@@ -17,6 +17,7 @@ interface BreadcrumbItemData {
 
 export default function DocumentBreadcrumb() {
   const activeDocumentId = useCurrentDocumentId();
+  const findNavigationNodeInSharedDocuments = useFindNavigationNodeInSharedDocuments();
 
   const navigate = useNavigate();
 
@@ -25,7 +26,6 @@ export default function DocumentBreadcrumb() {
     if (!activeDocumentId) return [];
 
     const subspaceStore = useSubSpaceStore.getState();
-    const sharedWithMeStore = useSharedWithMeStore.getState();
 
     let path: any[] = [];
 
@@ -43,13 +43,13 @@ export default function DocumentBreadcrumb() {
     }
 
     // 2. Check shared-with-me documents
-    const sharedNode = sharedWithMeStore.findNavigationNodeInSharedDocuments(activeDocumentId);
+    const sharedNode = findNavigationNodeInSharedDocuments(activeDocumentId);
     if (sharedNode) {
       return [
         {
           id: sharedNode.id,
           title: sharedNode.title,
-          icon: sharedNode.icon ?? undefined,
+          icon: undefined,
         },
       ] as BreadcrumbItemData[];
     }

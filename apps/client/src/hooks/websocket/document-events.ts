@@ -2,12 +2,14 @@ import { useEffect } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
 import useDocumentStore from "@/stores/document";
-import useSharedWithMeStore from "@/stores/shared-with-me";
+import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
 import useUserStore from "@/stores/user";
 import useSubSpaceStore from "@/stores/subspace";
 import { toast } from "sonner";
 
 export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) | null {
+  const { handleWebsocketAbilityChange, handleWebsocketDocumentShare } = useSharedWithMeWebsocketHandlers();
+
   useEffect(() => {
     if (!socket) return;
 
@@ -35,14 +37,13 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
       const { userId, documentId, document, abilities, includeChildDocuments } = message;
       if (!documentId || !document) return;
 
-      const sharedWithMeStore = useSharedWithMeStore.getState();
       const userInfo = useUserStore.getState().userInfo;
 
       // If the current user was added to the document
       if (userId === userInfo?.id) {
-        // Update abilities and shared documents using existing store methods
-        sharedWithMeStore.handleWebsocketAbilityChange(abilities);
-        sharedWithMeStore.handleWebsocketDocumentShare(document);
+        // Update abilities and shared documents using new hook-based handlers
+        handleWebsocketAbilityChange(abilities);
+        handleWebsocketDocumentShare(document);
       }
     };
 
