@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MultipleSelector, { Option } from "@/components/ui/multi-selector";
 import { Users, User } from "lucide-react";
 import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace";
-import useGroupStore from "@/stores/group";
+import { useFetchWorkspaceGroups } from "@/stores/group-store";
 import useSubSpaceStore from "@/stores/subspace";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { getInitialChar } from "@/lib/auth";
@@ -50,7 +50,7 @@ export function MemberAndGroupSelect({
 
   // Get store methods
   const { run: fetchWorkspaceMembers } = useFetchMembers();
-  const fetchWorkspaceGroups = useGroupStore((state) => state.fetchWorkspaceGroups);
+  const { run: fetchWorkspaceGroups } = useFetchWorkspaceGroups();
   const fetchSubspace = useSubSpaceStore((state) => state.fetchSubspace);
 
   // Fetch users and groups

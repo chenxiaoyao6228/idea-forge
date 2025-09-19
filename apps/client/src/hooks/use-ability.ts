@@ -1,7 +1,7 @@
 import { useMemo, useEffect } from "react";
 import { createPrismaAbility } from "@casl/prisma";
 import { PureAbility } from "@casl/ability";
-import useAbilityStore from "@/stores/ability";
+import { useFetchResourceAbilities, useGetAbilities, useHasAbility } from "@/stores/ability-store";
 
 /**
  * Simple hook for boolean permission checks
@@ -13,22 +13,21 @@ import useAbilityStore from "@/stores/ability";
  * @returns Boolean indicating if the permission is granted
  */
 export function useAbilityCheck(entityId: string, action: string, resourceType: "DOCUMENT" | "WORKSPACE" | "SUBSPACE" = "DOCUMENT"): boolean {
-  const hasAbility = useAbilityStore((state) => state.hasAbility);
-  const getAbilities = useAbilityStore((state) => state.getAbilities);
-  const fetchResourceAbilities = useAbilityStore((state) => state.fetchResourceAbilities);
-  const isFetching = useAbilityStore((state) => state.isFetching);
+  const { run: fetchResourceAbilities, loading } = useFetchResourceAbilities();
+  const getAbilities = useGetAbilities();
+  const hasAbility = useHasAbility();
 
   // Auto-fetch permissions when not available (always enabled)
   useEffect(() => {
-    if (entityId && !isFetching) {
+    if (entityId && !loading) {
       const abilities = getAbilities(entityId);
       const hasNoAbilities = Object.keys(abilities).length === 0 || Object.values(abilities).every((value) => value === false);
 
-      if (hasNoAbilities && fetchResourceAbilities) {
-        fetchResourceAbilities(resourceType, entityId);
+      if (hasNoAbilities) {
+        fetchResourceAbilities({ resourceType, resourceId: entityId });
       }
     }
-  }, [entityId, resourceType, getAbilities, fetchResourceAbilities, isFetching]);
+  }, [entityId, resourceType, getAbilities, fetchResourceAbilities, loading]);
 
   return hasAbility(entityId, action);
 }
@@ -45,21 +44,20 @@ export function useAbilityCheck(entityId: string, action: string, resourceType: 
  * @returns CASL ability instance for the entity
  */
 export default function useCASLAbility(entityId: string, resourceType: "DOCUMENT" | "WORKSPACE" | "SUBSPACE" = "DOCUMENT"): PureAbility {
-  const getAbilities = useAbilityStore((state) => state.getAbilities);
-  const fetchResourcePermissions = useAbilityStore((state) => state.fetchResourceAbilities);
-  const isFetching = useAbilityStore((state) => state.isFetching);
+  const { run: fetchResourceAbilities, loading } = useFetchResourceAbilities();
+  const getAbilities = useGetAbilities();
 
   // Auto-fetch permissions when not available (always enabled)
   useEffect(() => {
-    if (entityId && !isFetching) {
+    if (entityId && !loading) {
       const abilities = getAbilities(entityId);
       const hasNoAbilities = Object.keys(abilities).length === 0 || Object.values(abilities).every((value) => value === false);
 
-      if (hasNoAbilities && fetchResourcePermissions) {
-        fetchResourcePermissions(resourceType, entityId);
+      if (hasNoAbilities) {
+        fetchResourceAbilities({ resourceType, resourceId: entityId });
       }
     }
-  }, [entityId, resourceType, getAbilities, fetchResourcePermissions, isFetching]);
+  }, [entityId, resourceType, getAbilities, fetchResourceAbilities, loading]);
 
   const ability = useMemo(() => {
     if (!entityId) {

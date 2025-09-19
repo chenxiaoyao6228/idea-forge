@@ -5,7 +5,7 @@ import { documentApi } from "@/apis/document";
 import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useDocumentStore, { DocumentEntity } from "./document";
-import useAbilityStore from "./ability";
+import useAbilityStore from "./ability-store";
 import useUserStore from "./user-store";
 import useWorkspaceStore from "./workspace";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
@@ -99,7 +99,18 @@ export const useFetchSharedDocuments = () => {
 
         // Update other stores
         useDocumentStore.getState().upsertMany(response.data.documents);
-        useAbilityStore.getState().setAbilities(response.abilities);
+        // Update ability store directly
+        const entities = Object.entries(response.abilities).map(([id, abilities]) => ({
+          id,
+          abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
+        }));
+        useAbilityStore.setState((state) => {
+          const newAbilities = { ...state.abilities };
+          entities.forEach((entity) => {
+            newAbilities[entity.id] = entity;
+          });
+          return { abilities: newAbilities };
+        });
 
         return response.data.documents;
       } catch (error: any) {
@@ -152,7 +163,18 @@ export const useLoadMoreSharedDocuments = () => {
 
         // Update other stores
         useDocumentStore.getState().upsertMany(response.data.documents);
-        useAbilityStore.getState().setAbilities({ ...state.allAbilities, ...response.abilities });
+        // Update ability store directly
+        const entities = Object.entries({ ...state.allAbilities, ...response.abilities }).map(([id, abilities]) => ({
+          id,
+          abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
+        }));
+        useAbilityStore.setState((abilityState) => {
+          const newAbilities = { ...abilityState.abilities };
+          entities.forEach((entity) => {
+            newAbilities[entity.id] = entity;
+          });
+          return { abilities: newAbilities };
+        });
 
         return response.data.documents;
       } catch (error: any) {

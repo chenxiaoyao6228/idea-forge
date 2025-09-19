@@ -60,7 +60,7 @@ request.interceptors.response.use(
         console.error("refresh token failed", err);
         // Clear user info and redirect to login on refresh token failure
         // Clear user data on auth failure
-        useUserStore.setState({ userInfo: null, loading: false });
+        useUserStore.setState({ userInfo: null });
         localStorage.clear();
         const currentPath = window.location.pathname;
         window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}`;

@@ -8,7 +8,7 @@ import useSubSpaceStore, { getPersonalSubspace } from "./subspace";
 import { useStars } from "./star-store";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
 import useWorkspaceStore from "./workspace";
-import useAbilityStore from "./ability";
+import useAbilityStore from "./ability-store";
 
 const STORE_NAME = "documentStore";
 
@@ -419,7 +419,18 @@ const useDocumentStore = create<StoreState>()(
             }
 
             if (res.permissions) {
-              useAbilityStore.getState().setAbilities(res.permissions);
+              // Convert permissions to ability entities and update store directly
+              const entities = Object.entries(res.permissions).map(([id, abilities]) => ({
+                id,
+                abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
+              }));
+              useAbilityStore.setState((state) => {
+                const newAbilities = { ...state.abilities };
+                entities.forEach((entity) => {
+                  newAbilities[entity.id] = entity;
+                });
+                return { abilities: newAbilities };
+              });
             }
           } finally {
             set({ movingDocumentId: null, isSaving: false });
@@ -455,7 +466,18 @@ const useDocumentStore = create<StoreState>()(
             }
 
             if (response.permissions) {
-              useAbilityStore.getState().setAbilities(response.permissions);
+              // Convert permissions to ability entities and update store directly
+              const entities = Object.entries(response.permissions).map(([id, abilities]) => ({
+                id,
+                abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
+              }));
+              useAbilityStore.setState((state) => {
+                const newAbilities = { ...state.abilities };
+                entities.forEach((entity) => {
+                  newAbilities[entity.id] = entity;
+                });
+                return { abilities: newAbilities };
+              });
             }
           } catch (error) {
             console.error("Failed to fetch children:", error);

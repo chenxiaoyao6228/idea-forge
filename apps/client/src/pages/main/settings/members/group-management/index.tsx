@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import useGroupStore from "@/stores/group";
+import {
+  useOrderedGroups,
+  useFetchGroups,
+  useCreateGroup,
+  useUpdateGroup,
+  useDeleteGroup,
+  useAddUserToGroup,
+  useRemoveUserFromGroup,
+} from "@/stores/group-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,18 +28,24 @@ const ManageGroupMembersModal = ({
   refreshGroup,
 }: { open: boolean; onClose: () => void; groupId: string | null; refreshGroup: () => Promise<void> }) => {
   const { t } = useTranslation();
-  const groupStore = useGroupStore();
+  const orderedGroups = useOrderedGroups();
+  const { run: fetchGroups } = useFetchGroups();
+  const { run: createGroup } = useCreateGroup();
+  const { run: updateGroup } = useUpdateGroup();
+  const { run: deleteGroup } = useDeleteGroup();
+  const { run: addUserToGroup } = useAddUserToGroup();
+  const { run: removeUserFromGroup } = useRemoveUserFromGroup();
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [group, setGroup] = useState<any | null>(null);
 
-  // Only update local group state when open, groupId, or groupStore.orderedGroups changes
+  // Only update local group state when open, groupId, or orderedGroups changes
   useEffect(() => {
     if (!open || !groupId) return;
-    const found = groupStore.orderedGroups.find((g) => g.id === groupId) || null;
+    const found = orderedGroups.find((g) => g.id === groupId) || null;
     setGroup(found);
-  }, [open, groupId, groupStore.orderedGroups]);
+  }, [open, groupId, orderedGroups]);
 
   useEffect(() => {
     if (!open) return;
@@ -45,13 +59,13 @@ const ManageGroupMembersModal = ({
   const isInGroup = (userId: string) => group?.members?.some((m: any) => m.userId === userId);
 
   const handleAdd = async (userId: string) => {
-    await groupStore.addUser(groupId!, userId);
+    await addUserToGroup({ groupId: groupId!, userId });
     await refreshGroup();
-    // setGroup will update automatically due to groupStore.orderedGroups change
+    // setGroup will update automatically due to orderedGroups change
   };
 
   const handleRemove = async (userId: string) => {
-    await groupStore.removeUser(groupId!, userId);
+    await removeUserFromGroup({ groupId: groupId!, userId });
     await refreshGroup();
   };
 
@@ -94,7 +108,12 @@ const ManageGroupMembersModal = ({
 
 const GroupManagementPanel = () => {
   const { t } = useTranslation();
-  const groupStore = useGroupStore();
+  const orderedGroups = useOrderedGroups();
+  const { run: fetchGroups } = useFetchGroups();
+  const { run: createGroup } = useCreateGroup();
+  const { run: updateGroup } = useUpdateGroup();
+  const { run: deleteGroup } = useDeleteGroup();
+  const { run: removeUserFromGroup } = useRemoveUserFromGroup();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
   const [renameId, setRenameId] = useState<string | null>(null);
@@ -102,10 +121,10 @@ const GroupManagementPanel = () => {
   const [manageGroupId, setManageGroupId] = useState<string | null>(null);
 
   useEffect(() => {
-    groupStore.fetch();
+    fetchGroups();
   }, []);
 
-  const groups = groupStore.orderedGroups.filter((g) => !search || g.name.toLowerCase().includes(search.toLowerCase()));
+  const groups = orderedGroups.filter((g) => !search || g.name.toLowerCase().includes(search.toLowerCase()));
 
   const handleExpand = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -117,7 +136,7 @@ const GroupManagementPanel = () => {
   };
 
   const handleRenameSubmit = async (id: string) => {
-    await groupStore.update(id, { name: renameValue });
+    await updateGroup({ id, data: { name: renameValue } });
     setRenameId(null);
     setRenameValue("");
   };
@@ -130,7 +149,7 @@ const GroupManagementPanel = () => {
       confirmVariant: "destructive",
       onConfirm: async () => {
         try {
-          await groupStore.delete(id);
+          await deleteGroup(id);
           return true;
         } catch (error) {
           return false;
@@ -140,12 +159,12 @@ const GroupManagementPanel = () => {
   };
 
   const handleCreate = async () => {
-    await groupStore.create({ name: t("Unnamed Group") });
+    await createGroup({ name: t("Unnamed Group") });
     await refreshGroup();
   };
 
   const refreshGroup = async () => {
-    await groupStore.fetch();
+    await fetchGroups();
   };
 
   return (
@@ -221,7 +240,7 @@ const GroupManagementPanel = () => {
                           variant="ghost"
                           size="icon"
                           onClick={async () => {
-                            await groupStore.removeUser(group.id, member.userId);
+                            await removeUserFromGroup({ groupId: group.id, userId: member.userId });
                             await refreshGroup();
                           }}
                           aria-label={t("Remove")}

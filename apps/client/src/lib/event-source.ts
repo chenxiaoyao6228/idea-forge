@@ -101,7 +101,7 @@ export class EventSourceService {
             } catch (err) {
               this.isRefreshing = false;
               // Clear user data on auth failure
-              useUserStore.setState({ userInfo: null, loading: false });
+              useUserStore.setState({ userInfo: null });
               localStorage.clear();
               const currentPath = window.location.pathname;
               window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}`;
