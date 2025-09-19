@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import useDocumentStore, { documentSelectors } from "@/stores/document";
+import useDocumentStore, { documentSelectors, useGetDocument } from "@/stores/document-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useSubSpaceStore from "@/stores/subspace";
 import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";
@@ -45,7 +45,8 @@ export const useCurrentDocument = () => {
   const [debouncedDocumentId, setDebouncedDocumentId] = useState<string | null>(null);
 
   // Get the full document from the document store (for cached data)
-  const cachedDocument = useDocumentStore((state) => (activeDocumentId ? documentSelectors.selectById(state, activeDocumentId) : null));
+  const getDocument = useGetDocument();
+  const cachedDocument = activeDocumentId ? getDocument(activeDocumentId) : null;
 
   // Debounce the document ID to prevent rapid API calls
   useDebounce(
@@ -80,7 +81,9 @@ export const useCurrentDocument = () => {
       console.log("✅ useCurrentDocument: API call successful", { documentId: data.document.id, title: data.document.title });
 
       // Update the store for caching
-      useDocumentStore.getState().upsertOne(data.document);
+      useDocumentStore.setState((state) => ({
+        documents: { ...state.documents, [data.document.id]: data.document },
+      }));
 
       return data.document;
     },

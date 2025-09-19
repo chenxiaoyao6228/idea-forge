@@ -13,7 +13,7 @@ import {
 import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
 import { EntityActions } from "./utils/entity-slice";
-import { DocumentEntity } from "./document";
+import { DocumentEntity } from "./document-store";
 import useUserStore from "./user-store";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";

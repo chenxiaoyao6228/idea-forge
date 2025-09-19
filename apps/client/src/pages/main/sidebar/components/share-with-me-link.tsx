@@ -4,10 +4,10 @@ import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCurrentDocumentId } from "@/hooks/use-current-document";
-import useDocumentStore from "@/stores/document";
+import useDocumentStore, { useFetchDocumentDetail, useFetchDocumentChildren, useGetDocumentAsNavigationNode } from "@/stores/document-store";
 import { useHasAbility } from "@/stores/ability-store";
 import { DocumentLink } from "./document-link";
-import type { DocumentEntity } from "@/stores/document";
+import type { DocumentEntity } from "@/stores/document-store";
 
 interface ShareWithMeLinkProps {
   document: DocumentEntity;
@@ -17,7 +17,9 @@ interface ShareWithMeLinkProps {
 export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareWithMeLinkProps) {
   const { t } = useTranslation();
   const activeDocumentId = useCurrentDocumentId();
-  const { fetchDetail, fetchChildren, getDocumentAsNavigationNode } = useDocumentStore();
+  const { run: fetchDetail } = useFetchDocumentDetail();
+  const { run: fetchChildren } = useFetchDocumentChildren();
+  const getDocumentAsNavigationNode = useGetDocumentAsNavigationNode();
   const hasPermission = useHasAbility();
   const [isExpanded, setIsExpanded] = useState(false);
   const [document, setDocument] = useState<DocumentEntity>(initialDocument);

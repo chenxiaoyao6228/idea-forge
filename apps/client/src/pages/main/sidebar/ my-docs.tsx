@@ -4,7 +4,7 @@ import { ChevronRight, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import useDocumentStore from "@/stores/document";
+import useDocumentStore, { useCreateDocument } from "@/stores/document-store";
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
 import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
@@ -14,14 +14,18 @@ export default function MyDocsArea() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const createMyDocsDocument = useDocumentStore((state) => state.createMyDocsDocument);
+  const { run: createMyDocsDocument } = useCreateDocument();
   const personalSubspace = useSubSpaceStore(getPersonalSubspace);
   const navigationTree = personalSubspace?.navigationTree || [];
 
   const handleCreateDocument = async () => {
     setIsCreating(true);
     try {
-      await createMyDocsDocument({ title: "Doc" + Math.random().toString().substring(2, 5) });
+      await createMyDocsDocument({
+        title: "Doc" + Math.random().toString().substring(2, 5),
+        parentId: null,
+        subspaceId: personalSubspace?.id || null,
+      });
     } catch (error) {
       console.error("Failed to create document:", error);
     } finally {

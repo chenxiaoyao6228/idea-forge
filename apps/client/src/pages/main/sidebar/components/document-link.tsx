@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { EditIcon, PlusIcon, StarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavigationNode } from "@idea/contracts";
-import useDocumentStore from "@/stores/document";
+import useDocumentStore, { useCreateDocument, useFetchDocumentChildren } from "@/stores/document-store";
 import { SidebarLink } from "./sidebar-link";
 import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
 import { useCheckStarred, useToggleStar, useCreateStar, useDeleteStar } from "@/stores/star-store";
@@ -31,8 +31,8 @@ export function DocumentLink(props: DocumentLinkProps) {
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
 
-  const createDocument = useDocumentStore((state) => state.createDocument);
-  const fetchChildren = useDocumentStore((state) => state.fetchChildren);
+  const { run: createDocument } = useCreateDocument();
+  const { run: fetchChildren } = useFetchDocumentChildren();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -51,7 +51,7 @@ export function DocumentLink(props: DocumentLinkProps) {
 
     try {
       // Check if children are already loaded to avoid unnecessary API calls
-      const existingDocs = useDocumentStore.getState().entities;
+      const existingDocs = useDocumentStore.getState().documents;
       const hasLoadedChildren = Object.values(existingDocs).some((doc) => doc.parentId === node.id);
 
       if (!hasLoadedChildren) {

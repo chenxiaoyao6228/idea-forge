@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
-import useDocumentStore from "@/stores/document";
+import useDocumentStore, { useHandleDocumentUpdate, useHandleDocumentRemove } from "@/stores/document-store";
 import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
 import useUserStore from "@/stores/user-store";
 import useSubSpaceStore from "@/stores/subspace";
@@ -9,6 +9,8 @@ import { toast } from "sonner";
 
 export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) | null {
   const { handleWebsocketAbilityChange, handleWebsocketDocumentShare } = useSharedWithMeWebsocketHandlers();
+  const { run: handleDocumentUpdate } = useHandleDocumentUpdate();
+  const handleDocumentRemove = useHandleDocumentRemove();
 
   useEffect(() => {
     if (!socket) return;
@@ -19,17 +21,18 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
       const { name, document, subspaceId } = message;
       if (!document) return;
 
-      const documentStore = useDocumentStore.getState();
-
-      // Update document in store using existing store methods
-      documentStore.updateOne({
-        id: document.id,
-        changes: {
-          title: document.title,
-          content: document.content,
-          updatedAt: new Date(document.updatedAt),
+      // Update document in store using new hook-based approach
+      useDocumentStore.setState((state) => ({
+        documents: {
+          ...state.documents,
+          [document.id]: {
+            ...state.documents[document.id],
+            title: document.title,
+            content: document.content,
+            updatedAt: new Date(document.updatedAt).toISOString(),
+          },
         },
-      });
+      }));
     };
 
     const onDocumentAddUser = (message: any) => {
@@ -51,14 +54,13 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
       console.log(`[websocket]: Received event ${SocketEvents.ENTITIES}:`, message);
       const { name, documentIds, subspaceIds, fetchIfMissing } = message;
 
-      const documentStore = useDocumentStore.getState();
       const subspaceStore = useSubSpaceStore.getState();
 
       // Handle document updates
       if (documentIds?.length > 0) {
         for (const documentDescriptor of documentIds) {
           const documentId = documentDescriptor.id;
-          const localDocument = documentStore.entities[documentId];
+          const localDocument = useDocumentStore.getState().documents[documentId];
 
           // Skip if document is already up to date
           if (localDocument?.updatedAt === documentDescriptor.updatedAt) {
@@ -70,9 +72,9 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
             continue;
           }
 
-          // Use handleDocumentUpdate instead of fetchDetail directly
+          // Use handleDocumentUpdate hook instead of store method
           try {
-            await documentStore.handleDocumentUpdate(documentId, documentDescriptor.updatedAt);
+            await handleDocumentUpdate(documentId, documentDescriptor.updatedAt);
           } catch (err: any) {
             console.error(`Failed to handle document update for ${documentId}:`, err);
           }
@@ -121,7 +123,7 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
       socket.off(SocketEvents.DOCUMENT_ADD_USER, onDocumentAddUser);
       socket.off(SocketEvents.ENTITIES, onEntities);
     };
-  }, [socket]);
+  }, [socket, handleWebsocketAbilityChange, handleWebsocketDocumentShare, handleDocumentUpdate, handleDocumentRemove]);
 
   return null;
 }

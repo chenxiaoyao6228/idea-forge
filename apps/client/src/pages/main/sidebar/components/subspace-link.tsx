@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
-import useDocumentStore from "@/stores/document";
+import useDocumentStore, { useCreateDocument } from "@/stores/document-store";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DraggableDocumentContainer } from "./draggable-document-container";
@@ -27,7 +27,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
   const fetchNavigationTree = useSubSpaceStore((state) => state.fetchNavigationTree);
-  const createDocument = useDocumentStore((state) => state.createDocument);
+  const { run: createDocument } = useCreateDocument();
   const getPathToDocument = useSubSpaceStore((state) => state.getPathToDocument);
   const subspaceId = subspace.id;
 

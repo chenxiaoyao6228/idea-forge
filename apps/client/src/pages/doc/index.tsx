@@ -11,7 +11,7 @@ import { getEnvVariable } from "@/lib/env";
 import { Toolbar } from "./toolbar";
 import TiptapEditor from "@/editor";
 import { TableOfContent } from "./components/table-of-content";
-import useDocumentStore from "@/stores/document";
+import useDocumentStore from "@/stores/document-store";
 
 export default function Doc() {
   const { t } = useTranslation();

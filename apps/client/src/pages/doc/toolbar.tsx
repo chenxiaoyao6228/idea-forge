@@ -7,7 +7,7 @@ import { Emoji } from "emoji-picker-react";
 import { DOCUMENT_TITLE_ID } from "../../editor/constant";
 import { debounce } from "lodash-es";
 import { useTranslation } from "react-i18next";
-import useDocumentStore, { DocumentEntity } from "@/stores/document";
+import useDocumentStore, { DocumentEntity } from "@/stores/document-store";
 import { PRESET_CATEGORIES } from "./constants";
 import { documentApi } from "@/apis/document";
 

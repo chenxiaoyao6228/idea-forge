@@ -20,7 +20,7 @@ import { DragEndEvent, DragMoveEvent, DragOverEvent, DragStartEvent, PointerSens
 import fractionalIndex from "fractional-index";
 import { useCallback, useState } from "react";
 import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace";
-import useDocumentStore from "@/stores/document";
+import useDocumentStore, { useMoveDocument } from "@/stores/document-store";
 import { useOrderedStars } from "@/stores/star-store";
 import useStarStore from "@/stores/star-store";
 
@@ -45,7 +45,7 @@ export interface DropTarget {
 
 // --- Document DnD Hook ---
 function useDocumentDnD() {
-  const moveDocument = useDocumentStore((state) => state.move);
+  const { run: moveDocument } = useMoveDocument();
   const handleDocumentDrop = useCallback(
     ({ draggingItem, toDropItem }: { draggingItem: DragItem; toDropItem: DropTarget }) => {
       if (!toDropItem.accept.includes("document")) return;

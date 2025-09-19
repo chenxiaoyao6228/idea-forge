@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { documentApi } from "@/apis/document";
 import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
-import useDocumentStore, { DocumentEntity } from "./document";
+import useDocumentStore, { DocumentEntity } from "./document-store";
 import useAbilityStore from "./ability-store";
 import useUserStore from "./user-store";
 import useWorkspaceStore from "./workspace";
@@ -98,7 +98,13 @@ export const useFetchSharedDocuments = () => {
         });
 
         // Update other stores
-        useDocumentStore.getState().upsertMany(response.data.documents);
+        useDocumentStore.setState((state) => {
+          const newDocuments = { ...state.documents };
+          response.data.documents.forEach((doc: DocumentEntity) => {
+            newDocuments[doc.id] = doc;
+          });
+          return { documents: newDocuments };
+        });
         // Update ability store directly
         const entities = Object.entries(response.abilities).map(([id, abilities]) => ({
           id,
@@ -162,7 +168,13 @@ export const useLoadMoreSharedDocuments = () => {
         });
 
         // Update other stores
-        useDocumentStore.getState().upsertMany(response.data.documents);
+        useDocumentStore.setState((state) => {
+          const newDocuments = { ...state.documents };
+          response.data.documents.forEach((doc: DocumentEntity) => {
+            newDocuments[doc.id] = doc;
+          });
+          return { documents: newDocuments };
+        });
         // Update ability store directly
         const entities = Object.entries({ ...state.allAbilities, ...response.abilities }).map(([id, abilities]) => ({
           id,
