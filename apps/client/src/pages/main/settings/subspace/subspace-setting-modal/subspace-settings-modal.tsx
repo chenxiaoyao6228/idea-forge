@@ -8,7 +8,7 @@ import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "
 import { SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
 import useSubspaceStore from "@/stores/subspace";
 import useUserStore from "@/stores/user-store";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore from "@/stores/workspace-store";
 import { BasicInfoTab } from "./basic-info-tab";
 import { MembersPermissionsTab } from "./members-permissions-tab";
 import { SecurityTab } from "./security-tab";

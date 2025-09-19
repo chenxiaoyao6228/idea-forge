@@ -4,7 +4,7 @@ import { Link, useSearchParams, useNavigate, useLocation } from "react-router-do
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import useUserStore from "@/stores/user-store";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore, { useFetchWorkspaces } from "@/stores/workspace-store";
 import { LoginRequestSchema, type LoginRequest } from "@idea/contracts";
 import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";
@@ -30,7 +30,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const userInfo = useUserStore((state) => state.userInfo);
-  const { fetchList } = useWorkspaceStore();
+  const { run: fetchWorkspaces } = useFetchWorkspaces();
   const [error, setError] = useState<string | null>(location.state?.error || null);
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
@@ -76,7 +76,7 @@ function LoginPage() {
 
       // Check if user has workspaces after successful login
       try {
-        const workspaces = await fetchList();
+        const workspaces = await fetchWorkspaces();
         if (workspaces.length === 0) {
           // User has no workspaces, redirect to create-workspace
           navigate("/create-workspace");

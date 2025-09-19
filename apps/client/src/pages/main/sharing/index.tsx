@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import React from "react";
 import { PermissionLevel } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore from "@/stores/workspace-store";
 import { useMemberSearch } from "@/hooks/use-member-search";
 
 type PendingId = {

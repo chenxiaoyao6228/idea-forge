@@ -6,7 +6,7 @@ import { CoverImage, DocTypeSchema, DocVisibilitySchema, SubspaceTypeSchema } fr
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useSubSpaceStore, { getPersonalSubspace } from "./subspace";
-import useWorkspaceStore from "./workspace";
+import useWorkspaceStore from "./workspace-store";
 import useAbilityStore from "./ability-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 

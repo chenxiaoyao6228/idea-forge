@@ -4,7 +4,7 @@ import useRequest from "@ahooksjs/use-request";
 import { toast } from "sonner";
 import { useMemo } from "react";
 import { useRefCallback } from "@/hooks/use-ref-callback";
-import useWorkspaceStore from "./workspace";
+import useWorkspaceStore from "./workspace-store";
 
 export interface GroupMember {
   userId: string;

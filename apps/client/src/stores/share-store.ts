@@ -7,7 +7,7 @@ import { useRefCallback } from "@/hooks/use-ref-callback";
 import useDocumentStore, { DocumentEntity } from "./document-store";
 import useAbilityStore from "./ability-store";
 import useUserStore from "./user-store";
-import useWorkspaceStore from "./workspace";
+import useWorkspaceStore from "./workspace-store";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 
 // Minimal store - only state

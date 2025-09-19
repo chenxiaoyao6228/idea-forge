@@ -7,7 +7,7 @@ import { documentApi } from "@/apis/document";
 import useSubSpaceStore, { getPersonalSubspace } from "./subspace";
 import { useStars } from "./star-store";
 import createEntitySlice, { EntityState, EntityActions } from "./utils/entity-slice";
-import useWorkspaceStore from "./workspace";
+import useWorkspaceStore from "./workspace-store";
 import useAbilityStore from "./ability-store";
 
 const STORE_NAME = "documentStore";

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import MultipleSelector, { Option } from "@/components/ui/multi-selector";
 import { Subspace, SubspaceType } from "@idea/contracts";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore, { useBatchSetWorkspaceWide } from "@/stores/workspace-store";
 import useSubSpaceStore from "@/stores/subspace";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -17,7 +17,7 @@ export function SubspaceBatchSettings({ workspaceId }: SubspaceBatchSettingsProp
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
 
-  const batchSetWorkspaceWide = useWorkspaceStore((state) => state.batchSetWorkspaceWide);
+  const { run: batchSetWorkspaceWide } = useBatchSetWorkspaceWide();
   const subspaces = useSubSpaceStore((state) => state.allSubspaces);
   const fetchList = useSubSpaceStore((state) => state.fetchList);
 

@@ -1,4 +1,4 @@
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore from "@/stores/workspace-store";
 
 /**
  * Custom hook to easily access workspace type throughout the application

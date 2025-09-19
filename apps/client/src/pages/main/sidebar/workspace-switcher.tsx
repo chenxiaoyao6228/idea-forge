@@ -9,7 +9,7 @@ import { Plus, ChevronDown, MoreHorizontal, User, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import useUserStore from "@/stores/user-store";
-import useWorkspaceStore, { workspaceSelectors } from "@/stores/workspace";
+import useWorkspaceStore, { useAllWorkspaces, useCurrentWorkspace, useSwitchWorkspace, useReorderWorkspaces } from "@/stores/workspace-store";
 import { SortableList } from "@/components/sortable-list";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";
 import { displayUserName } from "@/lib/auth";
@@ -19,10 +19,10 @@ export default function WorkspaceSwitcher() {
   const navigate = useNavigate();
   const userInfo = useUserStore((state) => state.userInfo);
 
-  const workspaces = useWorkspaceStore((state) => workspaceSelectors.selectAll(state));
-  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const switchWorkspace = useWorkspaceStore((state) => state.switchWorkspace);
-  const reorderWorkspaces = useWorkspaceStore((state) => state.reorderWorkspaces);
+  const workspaces = useAllWorkspaces();
+  const currentWorkspace = useCurrentWorkspace();
+  const { run: switchWorkspace, loading: isSwitching } = useSwitchWorkspace();
+  const { run: reorderWorkspaces, loading: isReordering } = useReorderWorkspaces();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const createWorkspace = async () => {
@@ -39,10 +39,12 @@ export default function WorkspaceSwitcher() {
   };
 
   const handleReorder = async (reorderedWorkspaces: typeof workspaces) => {
-    // optimistic update to avoid bounce back effect
-    useWorkspaceStore.getState().setAll(reorderedWorkspaces);
     // update the server
-    reorderWorkspaces(reorderedWorkspaces.map((w) => w.id));
+    try {
+      await reorderWorkspaces(reorderedWorkspaces.map((w) => w.id));
+    } catch (error) {
+      console.error("Failed to reorder workspaces:", error);
+    }
   };
 
   if (!currentWorkspace) {
@@ -120,7 +122,11 @@ export default function WorkspaceSwitcher() {
                 <div
                   key={workspace.id}
                   className={cn("flex flex-1 items-center gap-2 px-1 py-1 transition-colors group cursor-pointer")}
-                  onClick={() => switchWorkspace(workspace.id)}
+                  onClick={() => {
+                    if (!isSwitching) {
+                      switchWorkspace(workspace.id);
+                    }
+                  }}
                 >
                   <div className="flex items-center gap-2 w-full">
                     {/* <div className="flex items-center justify-center h-8 w-8 rounded bg-gray-200 text-gray-700 text-xs font-medium">

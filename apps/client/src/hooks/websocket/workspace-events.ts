@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
-import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace";
+import useWorkspaceStore, { useFetchMembers, useFetchWorkspaces } from "@/stores/workspace-store";
 import useUserStore from "@/stores/user-store";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void)
   const cleanupRef = useRef<(() => void) | null>(null);
   // Use the existing useFetchMembers hook
   const { run: fetchMembers } = useFetchMembers();
+  const { run: fetchWorkspaces } = useFetchWorkspaces();
 
   useEffect(() => {
     if (!socket) return;
@@ -24,12 +25,12 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void)
 
       // If the current user was added to the workspace
       if (member?.userId === userInfo?.id) {
-        // Refresh workspace members using existing store methods
-        workspaceStore.fetchList();
+        // Refresh workspace members using new hooks
+        fetchWorkspaces();
         toast.success(`You've been added to a workspace`);
       } else {
         // Another user was added, refresh workspace member list
-        workspaceStore.fetchList();
+        fetchWorkspaces();
       }
 
       // Also refresh workspace members if this is the current workspace
@@ -46,7 +47,7 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void)
       // Single refresh for batch operation instead of multiple individual refreshes
       if (membersBatchAdded) {
         const workspaceStore = useWorkspaceStore.getState();
-        workspaceStore.fetchList();
+        fetchWorkspaces();
 
         // Also refresh workspace members if this is the current workspace
         if (workspaceStore.currentWorkspace?.id === workspaceId) {
@@ -67,7 +68,7 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void)
 
     cleanupRef.current = cleanup;
     return cleanup;
-  }, [socket, fetchMembers]);
+  }, [socket, fetchMembers, fetchWorkspaces]);
 
   return cleanupRef.current;
 }

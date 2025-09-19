@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { workspaceApi } from "@/apis/workspace";
 import { useTranslation } from "react-i18next";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore, { useSwitchWorkspace, useSetCurrentWorkspace } from "@/stores/workspace-store";
 import { WorkspaceTypeEnum } from "@idea/contracts";
 import { Check, User, Users, Loader2 } from "lucide-react";
 
@@ -18,7 +18,8 @@ export default function CreateWorkspace() {
   const [workspaceType, setWorkspaceType] = useState<WorkspaceTypeEnum | null>(null);
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { switchWorkspace, setCurrentWorkspace } = useWorkspaceStore();
+  const { run: switchWorkspace } = useSwitchWorkspace();
+  const setCurrentWorkspace = useSetCurrentWorkspace();
 
   const handleTypeSelection = (type: WorkspaceTypeEnum) => {
     setWorkspaceType(type);

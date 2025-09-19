@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { HelpCircle, Plus } from "lucide-react";
 import { SubspaceBatchSettings } from "./subspace-batch-settings";
 import { WorkspaceSubspaceSettings } from "./workspace-subspace-settings";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore from "@/stores/workspace-store";
 import { SubspaceTable } from "./subspace-table";
 import { MoreAboutSubspaceTip } from "./more-about-subspace-tip";
 interface SubspaceProps {

@@ -6,7 +6,7 @@ import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useSubSpaceStore from "./subspace";
 import { useFindNavigationNodeInSharedDocuments } from "./share-store";
-import useWorkspaceStore from "./workspace";
+import useWorkspaceStore from "./workspace-store";
 import { NavigationNode, CreateStarDto } from "@idea/contracts";
 import { orderBy } from "lodash-es";
 

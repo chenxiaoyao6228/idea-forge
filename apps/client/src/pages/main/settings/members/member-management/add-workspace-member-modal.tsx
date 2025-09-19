@@ -12,7 +12,7 @@ import MultipleSelector, { Option } from "@/components/ui/multi-selector";
 import type { User } from "@idea/contracts";
 import { displayUserName } from "@/lib/auth";
 import useRequest from "@ahooksjs/use-request";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore, { useWorkspaceMembers, useBatchAddWorkspaceMembers } from "@/stores/workspace-store";
 
 export interface AddWorkspaceMemberModalProps {
   workspaceId: string;
@@ -36,7 +36,7 @@ const AddWorkspaceMemberModal = ({
   const { t } = useTranslation();
 
   // Get existing members from workspace store
-  const workspaceMembers = useWorkspaceStore((state) => state.workspaceMembers);
+  const workspaceMembers = useWorkspaceMembers();
   const existingMemberIds = useMemo(() => {
     return new Set(workspaceMembers.map((member: any) => member.userId));
   }, [workspaceMembers]);
@@ -112,64 +112,36 @@ const AddWorkspaceMemberModal = ({
     proceed?.(null);
   };
 
-  // Use useRequest for adding members with batch API
-  const { loading: isAddingMembers, run: addMembers } = useRequest(
-    async () => {
-      if (selectedUsers.length === 0) {
-        throw new Error(t("Please select at least one user"));
-      }
+  // Use the new batch add hook
+  const { loading: isAddingMembers, run: addMembers } = useBatchAddWorkspaceMembers();
 
-      // Convert selected users to batch request format
-      const batchRequest = {
-        items: selectedUsers.map((userOption) => ({
+  const handleSubmit = async () => {
+    if (selectedUsers.length === 0) {
+      toast.error(t("Please select at least one user"));
+      return;
+    }
+
+    try {
+      const result = await addMembers({
+        workspaceId,
+        members: selectedUsers.map((userOption) => ({
           userId: userOption.value,
           role: selectedRole,
         })),
-      };
+      });
 
-      // Call batch API
-      const response = await workspaceApi.batchAddWorkspaceMembers(workspaceId, batchRequest);
-
-      // Handle batch response
-      const { addedCount, skippedCount, errors, skipped } = response;
-
-      // Show success message
-      if (addedCount > 0) {
-        toast.success(t("Successfully added {{count}} member(s)", { count: addedCount }));
-      }
-
-      // Show skipped message
-      if (skippedCount > 0) {
-        toast.info(t("{{count}} user(s) were already members", { count: skippedCount }));
-      }
-
-      // Show error message
-      if (errors.length > 0) {
-        const errorMessages = errors.map((error) => `${error.userId}: ${error.error}`).join(", ");
-        toast.error(t("Some users failed to add: {{errors}}", { errors: errorMessages }));
-      }
-
-      return {
-        success: response.success,
-        addedCount,
-        errors: errors.length > 0 ? errors : undefined,
-      };
-    },
-    {
-      manual: true,
-      onSuccess: (result) => {
+      // Check if the result indicates success
+      if (result && result.success !== false) {
         proceed?.(result);
-      },
-      onError: (error) => {
-        console.error("Error adding members:", error);
-        toast.error(error.message || t("Failed to add members"));
+      } else {
+        toast.error(t("Failed to add members"));
         proceed?.(null);
-      },
-    },
-  );
-
-  const handleSubmit = () => {
-    addMembers();
+      }
+    } catch (error) {
+      console.error("Error adding members:", error);
+      toast.error(t("Failed to add members"));
+      proceed?.(null);
+    }
   };
 
   return (

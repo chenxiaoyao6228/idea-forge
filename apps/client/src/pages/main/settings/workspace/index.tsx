@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImageCropper } from "@/components/image-cropper";
 import { workspaceApi } from "@/apis/workspace";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore, { useSetCurrentWorkspace, useUpdateWorkspace } from "@/stores/workspace-store";
 import { uploadFile } from "@/lib/upload";
 import { dataURLtoFile } from "@/lib/file";
 import type { UpdateWorkspaceRequest, WorkspaceSettings } from "@idea/contracts";
@@ -47,7 +47,9 @@ const DATE_FORMAT_OPTIONS = [
 
 export const Workspace = () => {
   const { t } = useTranslation();
-  const { currentWorkspace, setCurrentWorkspace, updateWorkspace } = useWorkspaceStore();
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  const setCurrentWorkspace = useSetCurrentWorkspace();
+  const { run: updateWorkspace } = useUpdateWorkspace();
 
   // Form states
   const [workspaceName, setWorkspaceName] = useState("");
@@ -98,7 +100,7 @@ export const Workspace = () => {
           settings: currentWorkspace.settings as WorkspaceSettings,
         };
 
-        await updateWorkspace(currentWorkspace.id, updateData);
+        await updateWorkspace({ workspaceId: currentWorkspace.id, workspace: updateData });
         toast.success(t("Workspace name updated successfully"));
       } catch (error) {
         console.error("Failed to update workspace name:", error);
@@ -133,7 +135,7 @@ export const Workspace = () => {
           settings: updatedSettings,
         };
 
-        await updateWorkspace(currentWorkspace.id, updateData);
+        await updateWorkspace({ workspaceId: currentWorkspace.id, workspace: updateData });
         toast.success(t("Settings updated successfully"));
       } catch (error) {
         console.error("Failed to update settings:", error);
@@ -212,7 +214,7 @@ export const Workspace = () => {
           settings: currentWorkspace.settings as WorkspaceSettings,
         };
 
-        await updateWorkspace(currentWorkspace.id, updateData);
+        await updateWorkspace({ workspaceId: currentWorkspace.id, workspace: updateData });
 
         // Clean up
         setSelectedFile(null);

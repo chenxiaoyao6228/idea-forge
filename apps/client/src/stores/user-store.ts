@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { UserResponseData } from "@idea/contracts";
 import useRequest from "@ahooksjs/use-request";
 import { toast } from "sonner";
-import useWorkspaceStore from "./workspace";
+import useWorkspaceStore from "./workspace-store";
 
 export interface UserInfo extends UserResponseData {}
 
@@ -24,7 +24,11 @@ export const useLogout = () => {
 
         // FIXME: better way to do this
         // Clear workspace store
-        useWorkspaceStore.getState().clear();
+        useWorkspaceStore.setState({
+          currentWorkspace: undefined,
+          workspaceMembers: [],
+          workspaces: {},
+        });
 
         // Reset user store
         useUserStore.setState({ userInfo: null });

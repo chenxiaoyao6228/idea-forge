@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { workspaceApi } from "@/apis/workspace";
-import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace";
+import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace-store";
 import type { WorkspaceMember, WorkspaceMemberListResponse } from "@idea/contracts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

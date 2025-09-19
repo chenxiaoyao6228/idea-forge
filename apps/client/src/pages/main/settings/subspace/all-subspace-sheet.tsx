@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Layers, PlusIcon } from "lucide-react";
 import useSubSpaceStore from "@/stores/subspace";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore from "@/stores/workspace-store";
 import { showCreateSubspaceModal } from "./create-subspace-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

@@ -7,7 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DraggableSubspaceContainer } from "./components/draggable-subspace-container";
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore from "@/stores/workspace-store";
 import useSubSpaceStore from "@/stores/subspace";
 import { AllSubspaceSheet } from "../settings/subspace/all-subspace-sheet";
 import { showCreateSubspaceModal } from "../settings/subspace/create-subspace-dialog";

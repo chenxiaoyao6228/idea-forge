@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MultipleSelector, { Option } from "@/components/ui/multi-selector";
 import { Users, User } from "lucide-react";
-import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace";
+import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace-store";
 import { useFetchWorkspaceGroups } from "@/stores/group-store";
 import useSubSpaceStore from "@/stores/subspace";
 import { useRefCallback } from "@/hooks/use-ref-callback";

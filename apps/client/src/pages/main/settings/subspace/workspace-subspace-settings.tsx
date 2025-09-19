@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import useWorkspaceStore from "@/stores/workspace";
+import useWorkspaceStore, { useUpdateWorkspace } from "@/stores/workspace-store";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -15,7 +15,7 @@ export function WorkspaceSubspaceSettings({ workspaceId }: WorkspaceSubspaceSett
   const { t } = useTranslation();
 
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const updateWorkspace = useWorkspaceStore((state) => state.updateWorkspace);
+  const { run: updateWorkspace } = useUpdateWorkspace();
 
   /*
    * Logic explanation:
@@ -33,8 +33,11 @@ export function WorkspaceSubspaceSettings({ workspaceId }: WorkspaceSubspaceSett
       // checked being true means "prevent members from creating subspaces"
       // memberSubspaceCreate being false means "prevent members from creating subspaces"
       // so checked and memberSubspaceCreate have an inverse relationship
-      await updateWorkspace(workspaceId, {
-        memberSubspaceCreate: !currentWorkspace.memberSubspaceCreate, // when switch is on, prevent member creation
+      await updateWorkspace({
+        workspaceId,
+        workspace: {
+          memberSubspaceCreate: !currentWorkspace.memberSubspaceCreate, // when switch is on, prevent member creation
+        },
       });
       toast.success(t("Settings updated"));
     } catch (error) {
