@@ -14,7 +14,7 @@ import createEntitySlice, { EntityState } from "./utils/entity-slice";
 import { produce } from "immer";
 import { EntityActions } from "./utils/entity-slice";
 import { DocumentEntity } from "./document";
-import useUserStore from "./user";
+import useUserStore from "./user-store";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import useRequest from "@ahooksjs/use-request";

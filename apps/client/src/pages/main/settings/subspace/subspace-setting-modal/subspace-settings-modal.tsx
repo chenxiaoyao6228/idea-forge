@@ -7,7 +7,7 @@ import { Home, Users, Shield, Loader2 } from "lucide-react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
 import useSubspaceStore from "@/stores/subspace";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import useWorkspaceStore from "@/stores/workspace";
 import { BasicInfoTab } from "./basic-info-tab";
 import { MembersPermissionsTab } from "./members-permissions-tab";

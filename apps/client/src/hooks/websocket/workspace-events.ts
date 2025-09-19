@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
 import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { toast } from "sonner";
 
 export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void) | null {

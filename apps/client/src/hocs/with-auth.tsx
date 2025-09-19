@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import useUserStore, { UserInfo } from "@/stores/user";
+import useUserStore, { UserInfo } from "@/stores/user-store";
 import Loading from "@/components/ui/loading";
 
 /**
@@ -21,7 +21,7 @@ function getUserInfoAndDestroyFromLocal(): UserInfo | undefined {
 
 export default function WithAuth(WrappedComponent: React.ComponentType<any>) {
   return function EnhancedComponent(props: any) {
-    const { userInfo, setUserInfo } = useUserStore();
+    const userInfo = useUserStore((state) => state.userInfo);
 
     useEffect(() => {
       if (window.location.pathname === "/auth-callback") {
@@ -30,7 +30,7 @@ export default function WithAuth(WrappedComponent: React.ComponentType<any>) {
 
       const userInfo = getUserInfoAndDestroyFromLocal();
       if (userInfo) {
-        setUserInfo(userInfo);
+        useUserStore.setState({ userInfo });
       }
     }, []);
 

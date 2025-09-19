@@ -1,4 +1,4 @@
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import axios from "axios";
 
@@ -100,7 +100,9 @@ export class EventSourceService {
               await startEventSource(options);
             } catch (err) {
               this.isRefreshing = false;
-              useUserStore.getState().logout();
+              // Clear user data on auth failure
+              useUserStore.setState({ userInfo: null, loading: false });
+              localStorage.clear();
               const currentPath = window.location.pathname;
               window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}`;
               throw err;

@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, ChevronDown, MoreHorizontal, User, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import useWorkspaceStore, { workspaceSelectors } from "@/stores/workspace";
 import { SortableList } from "@/components/sortable-list";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";

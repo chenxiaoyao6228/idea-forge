@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import useUserStore, { UserInfo } from "@/stores/user";
+import useUserStore, { UserInfo } from "@/stores/user-store";
 import type { AuthResponseType, AuthResponseData } from "@idea/contracts";
 import { useTranslation } from "react-i18next";
 
@@ -8,7 +8,7 @@ export default function AuthCallbackPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const setUserInfo = useUserStore((state) => state.setUserInfo);
+  // Use direct setState for simple state updates
   const type = searchParams.get("type") as AuthResponseType;
   const data = JSON.parse(searchParams.get("data") ?? "{}") as AuthResponseData;
 
@@ -18,7 +18,7 @@ export default function AuthCallbackPage() {
     switch (type) {
       case "NEW_USER":
       case "EXISTING_USER": {
-        setUserInfo(data.user as UserInfo);
+        useUserStore.setState({ userInfo: data.user as UserInfo });
         navigate("/");
         break;
       }

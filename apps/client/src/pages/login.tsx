@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import useWorkspaceStore from "@/stores/workspace";
 import { LoginRequestSchema, type LoginRequest } from "@idea/contracts";
 import { providerNames } from "@/components/connections";
@@ -29,7 +29,7 @@ type LoginFormData = z.infer<typeof LoginFormSchema>;
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userInfo, setUserInfo } = useUserStore();
+  const userInfo = useUserStore((state) => state.userInfo);
   const { fetchList } = useWorkspaceStore();
   const [error, setError] = useState<string | null>(location.state?.error || null);
   const [searchParams] = useSearchParams();
@@ -72,7 +72,7 @@ function LoginPage() {
         setError(t("User not found"));
         return;
       }
-      setUserInfo(res.user);
+      useUserStore.setState({ userInfo: res.user });
 
       // Check if user has workspaces after successful login
       try {

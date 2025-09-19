@@ -15,7 +15,7 @@ import { displayUserName } from "@/lib/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { subspaceApi } from "@/apis/subspace";
 import { toast } from "sonner";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { showAddSubspaceMemberModal } from "../add-subspace-member-modal";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 

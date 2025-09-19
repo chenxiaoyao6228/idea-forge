@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
 import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { toast } from "sonner";
 import { useFetchStars } from "@/stores/star-store";
 

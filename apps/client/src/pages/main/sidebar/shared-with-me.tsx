@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShareWithMeLink } from "./components/share-with-me-link";
 import { useSharedDocuments, useSharedWithMePagination, useFetchSharedDocuments, useLoadMoreSharedDocuments } from "@/stores/share-store";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";

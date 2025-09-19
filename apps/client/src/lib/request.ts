@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig } from "axios";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { RESPONSE_SUCCESS_CODE } from "@api/_shared/constants/api-response-constant";
 import { generateUuid } from "./uuid";
 
@@ -59,7 +59,9 @@ request.interceptors.response.use(
       } catch (err) {
         console.error("refresh token failed", err);
         // Clear user info and redirect to login on refresh token failure
-        useUserStore.getState().logout();
+        // Clear user data on auth failure
+        useUserStore.setState({ userInfo: null, loading: false });
+        localStorage.clear();
         const currentPath = window.location.pathname;
         window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}`;
       }

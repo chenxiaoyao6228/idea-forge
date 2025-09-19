@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
 import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 
 export function useSharedWithMeWebsocketEvents(socket: Socket | null): (() => void) | null {
   const cleanupRef = useRef<(() => void) | null>(null);

@@ -6,7 +6,7 @@ import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useDocumentStore, { DocumentEntity } from "./document";
 import useAbilityStore from "./ability";
-import useUserStore from "./user";
+import useUserStore from "./user-store";
 import useWorkspaceStore from "./workspace";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 

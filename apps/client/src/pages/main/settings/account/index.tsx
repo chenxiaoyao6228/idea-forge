@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { userApi } from "@/apis/user";
 import { uploadFile } from "@/lib/upload";
 import { UserAvatar } from "@/components/user-avatar";
@@ -101,7 +101,7 @@ const ChangePasswordDialog: React.FC<{ children: React.ReactNode }> = ({ childre
 
 export const Account = () => {
   const { t } = useTranslation();
-  const { userInfo, setUserInfo } = useUserStore();
+  const userInfo = useUserStore((state) => state.userInfo);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
@@ -116,7 +116,7 @@ export const Account = () => {
     return userApi
       .update(userInfo.id, data)
       .then((response: any) => {
-        setUserInfo(response);
+        useUserStore.setState({ userInfo: response });
       })
       .catch((error) => {
         console.error("Failed to update user:", error);
@@ -136,7 +136,7 @@ export const Account = () => {
       const response = (await userApi.update(userInfo.id, { imageUrl: uploadResult.downloadUrl })) as any;
 
       // Handle the API response
-      setUserInfo(response);
+      useUserStore.setState({ userInfo: response });
 
       // Clean up the selected file and close cropper
       setSelectedFile(null);

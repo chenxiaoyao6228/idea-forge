@@ -439,8 +439,11 @@ const useStarStore = create<{
   stars: [],
 }));
 
-// for simple store access, just use selector
+// ✅ Direct Zustand selector for simple data access
 const stars = useStarStore((state) => state.stars);
+
+// ❌ Don't create unnecessary wrapper hooks
+// export const useStars = () => useStarStore((state) => state.stars);
 
 // Computed values that depend on stars
 export const useOrderedStars = () => {
@@ -606,10 +609,14 @@ const { data, loading, error, run } = useRequest(
 - Update state via store actions or `setState`.
 - Keep hooks focused, single-purpose, and return stable refs.
 - Always handle cleanup in `useEffect`.
+- **MANDATORY: Use direct Zustand selectors for simple data access** - Don't create wrapper hooks for basic state access.
+- **MANDATORY: Use direct `useStore.setState()` for simple state updates** - Don't create wrapper hooks for basic state mutations.
 
 **Avoid:**
 
 - `useCallback` for refs, TanStack Query, `onSuccess/onError` in `useRequest`, custom `changeState` methods, forgetting cleanup, unstable refs, or using hooks in conditions/loops.
+- Creating unnecessary wrapper hooks for simple data access (use direct selectors instead).
+- Creating unnecessary wrapper hooks for simple state updates (use direct `setState` instead).
 
 ## Styling and UI
 

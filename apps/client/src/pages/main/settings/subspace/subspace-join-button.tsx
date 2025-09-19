@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Check, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import useSubspaceStore from "@/stores/subspace";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { SubspaceType } from "@idea/contracts";
 
 interface SubspaceJoinButtonProps {

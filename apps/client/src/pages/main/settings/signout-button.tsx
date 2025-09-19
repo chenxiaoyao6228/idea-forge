@@ -2,12 +2,13 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LogOut } from "lucide-react";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
-import useUserStore from "@/stores/user";
+import { useLogout } from "@/stores/user-store";
 import { Button } from "@/components/ui/button";
 
 export function SignOutButton() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { run: logout } = useLogout();
 
   const handleSignOut = async () => {
     await showConfirmModal({
@@ -17,7 +18,7 @@ export function SignOutButton() {
       cancelText: t("Cancel"),
       confirmVariant: "destructive",
       async onConfirm() {
-        await useUserStore.getState().logout();
+        await logout();
         navigate("/login");
         return false;
       },

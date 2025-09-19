@@ -1,7 +1,7 @@
 import DocHome from "./home";
 import Loading from "@/components/ui/loading";
 import Cover from "./cover";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import { useTranslation } from "react-i18next";
 import { useTitle } from "react-use";
 import DocumentHeader from "./components/doc-header";
@@ -12,7 +12,6 @@ import { Toolbar } from "./toolbar";
 import TiptapEditor from "@/editor";
 import { TableOfContent } from "./components/table-of-content";
 import useDocumentStore from "@/stores/document";
-import useUIStore from "@/stores/ui";
 
 export default function Doc() {
   const { t } = useTranslation();

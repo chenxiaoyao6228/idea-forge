@@ -3,7 +3,7 @@ import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
 import useDocumentStore from "@/stores/document";
 import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
-import useUserStore from "@/stores/user";
+import useUserStore from "@/stores/user-store";
 import useSubSpaceStore from "@/stores/subspace";
 import { toast } from "sonner";
 
