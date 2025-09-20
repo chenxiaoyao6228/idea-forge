@@ -122,7 +122,7 @@ export function useMemberSearch({ workspaceId, query, enabled = true, existingMe
   const loading = membersLoading || groupsLoading || searchUsersLoading || searchGroupsLoading;
 
   return {
-    availableMembers,
+    availableMembers: availableMembers || [],
     loading,
   };
 }

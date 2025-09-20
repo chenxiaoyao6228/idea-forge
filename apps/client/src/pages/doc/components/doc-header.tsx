@@ -15,7 +15,7 @@ import ImportMarkdownButton from "./import-markdown";
 import { Separator } from "@/components/ui/separator";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useCurrentDocumentId } from "@/hooks/use-current-document";
-import { ShareButton } from "@/pages/main/sharing";
+import { SharePopover } from "@/pages/main/sharing";
 
 export default function DocumentHeader() {
   const activeDocumentId = useCurrentDocumentId();
@@ -52,7 +52,7 @@ export default function DocumentHeader() {
       {/* right */}
       <div className="flex items-center mr-2 sm:mr-4 ">
         <CollabUsers className="mr-2" />
-        {activeDocumentId && <ShareButton documentId={activeDocumentId}></ShareButton>}
+        {activeDocumentId && <SharePopover documentId={activeDocumentId}></SharePopover>}
         <TopBarHandlers />
       </div>
     </header>
