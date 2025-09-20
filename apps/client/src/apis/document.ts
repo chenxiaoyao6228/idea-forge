@@ -28,6 +28,7 @@ export const documentApi = {
   getSharedWithMe: async (query) => {
     return request.get<null, SharedWithMeResponse>(`/api/documents/shared-with-me`, { params: query });
   },
+  getDocumentShares: (id: string) => request.get<null, DocSharesResponse>(`/api/share-documents/${id}`),
 
   // ================ others ========================
 

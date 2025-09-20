@@ -8,6 +8,7 @@ import { CheckPolicy } from "@/_shared/casl/policy.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
 import { SearchDocumentService } from "./search-document.service";
 import { DocumentTrashService } from "./trash-document.service";
+import { ShareDocumentService } from "./share-document.services";
 import { UpdateCoverDto } from "@idea/contracts";
 import { PermissionListRequestDto } from "@/permission/permission.dto";
 
@@ -19,6 +20,7 @@ export class DocumentController {
     private readonly moveDocumentService: MoveDocumentService,
     private readonly searchDocumentService: SearchDocumentService,
     private readonly documentTrashService: DocumentTrashService,
+    private readonly shareDocumentService: ShareDocumentService,
   ) {}
 
   @Post()
@@ -86,7 +88,7 @@ export class DocumentController {
 
   @Post(":id/share")
   async shareDocument(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: ShareDocumentDto) {
-    return this.documentService.shareDocument(userId, id, dto);
+    return this.shareDocumentService.shareDocument(userId, id, dto);
   }
 
   // ============== public doc share ==========================================

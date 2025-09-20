@@ -143,7 +143,7 @@ export const shareDocumentSchema = z.object({
   workspaceId: z.string(),
   targetUserIds: z.array(z.string()).optional(),
   targetGroupIds: z.array(z.string()).optional(),
-  permission: z.enum(["READ", "EDIT"]),
+  permission: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE", "OWNER"]),
   includeChildDocuments: z.boolean().optional(),
 });
 
@@ -155,7 +155,7 @@ export const docShareUserSchema = z.object({
   email: z.string(),
   displayName: z.string().nullable(),
   permission: z.object({
-    level: z.enum(["READ", "EDIT"]),
+    level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE", "OWNER"]),
   }),
 });
 

@@ -1,17 +1,24 @@
-"use client";
-
-import React from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Link, X, Plus } from "lucide-react";
-import { documentApi } from "@/apis/document";
+import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "@/stores/workspace-store";
-import { AddMembersDialog } from "./add-members-dialog";
+import useUserStore from "@/stores/user-store";
+import { showAddMembersModal } from "./add-members-dialog";
+import {
+  useDocumentShares,
+  useFetchDocumentShares,
+  useAddDocumentShare,
+  useUpdateDocumentSharePermission,
+  useRemoveDocumentShare,
+} from "@/stores/document-shares-store";
+import { PermissionLevel } from "@idea/contracts";
 
 interface MemberSharingTabProps {
   documentId: string;
@@ -22,25 +29,87 @@ interface SharedUser {
   name: string;
   email?: string;
   avatar?: string;
-  permission: "READ" | "EDIT";
+  permission: PermissionLevel;
   type: "user" | "group";
   memberCount?: number;
 }
 
 export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const { t } = useTranslation();
-  const [sharedUsers, setSharedUsers] = React.useState<SharedUser[]>([]);
-  const [pendingUsers, setPendingUsers] = React.useState<SharedUser[]>([]);
-  const [dialogOpen, setDialogOpen] = React.useState(false);
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
+  const currentUserId = useUserStore((s) => s.userInfo?.id);
   const workspaceId = currentWorkspace?.id;
 
-  const removeUser = (userId: string) => {
-    setSharedUsers((prev) => prev.filter((user) => user.id !== userId));
+  // Use store hooks
+  const sharedUsers = useDocumentShares(documentId);
+  const { run: fetchShares } = useFetchDocumentShares(documentId);
+  const { run: addShare } = useAddDocumentShare(documentId);
+  const { run: updatePermission } = useUpdateDocumentSharePermission(documentId);
+  const { run: removeShare } = useRemoveDocumentShare(documentId);
+
+  // Fetch shares when component mounts
+  useEffect(() => {
+    if (documentId) {
+      fetchShares();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentId]); // Only depend on documentId, not fetchShares
+
+  const handleRemoveUser = async (userId: string) => {
+    // Check if user is trying to remove their own permission
+    if (currentUserId && userId === currentUserId) {
+      // Show confirmation modal
+      const confirmed = await showConfirmModal({
+        title: t("Remove Your Access"),
+        description: t(
+          "You are about to remove your own access to this document. After removal, you will no longer be able to view or edit this document. Do you want to continue?",
+        ),
+        confirmText: t("Remove Access"),
+        cancelText: t("Cancel"),
+        confirmVariant: "destructive",
+        type: "alert",
+      });
+
+      if (!confirmed) {
+        return; // User cancelled, don't proceed with the removal
+      }
+    }
+
+    await removeShare({ targetUserId: userId });
   };
 
-  const updatePermission = (userId: string, permission: "READ" | "EDIT") => {
-    setSharedUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, permission } : user)));
+  const handleUpdatePermission = async (userId: string, permission: PermissionLevel) => {
+    // Check if user is trying to change their own permission
+    if (currentUserId && userId === currentUserId) {
+      // Get current permission level
+      const currentUser = sharedUsers.find((user) => user.id === userId);
+      const currentPermission = currentUser?.permission.level;
+
+      // Check if they're downgrading from a high permission level
+      const currentPermissionLevel = currentPermission;
+      const isDowngrading =
+        (currentPermissionLevel === "OWNER" && permission !== "OWNER") || (currentPermissionLevel === "EDIT" && !["EDIT", "OWNER"].includes(permission));
+
+      if (isDowngrading) {
+        // Show custom confirmation modal
+        const confirmed = await showConfirmModal({
+          title: t("Change Permission Level"),
+          description: t(
+            "You are changing your permission level. After the change, you will lose your current high-level permissions. Do you want to continue?",
+          ),
+          confirmText: t("Continue"),
+          cancelText: t("Cancel"),
+          confirmVariant: "destructive",
+          type: "alert",
+        });
+
+        if (!confirmed) {
+          return; // User cancelled, don't proceed with the change
+        }
+      }
+    }
+
+    await updatePermission({ userId, permission });
   };
 
   const copyPageAccessLink = () => {
@@ -49,28 +118,20 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
     toast.success(t("Link copied to clipboard"));
   };
 
-  const handleAddUsers = async () => {
-    try {
-      if (workspaceId && pendingUsers.length > 0) {
-        // Share the document with pending users
-        await documentApi.shareDocument(documentId, {
-          targetUserIds: pendingUsers.filter(({ type }) => type === "user").map(({ id }) => id),
-          targetGroupIds: pendingUsers.filter(({ type }) => type === "group").map(({ id }) => id),
-          permission: pendingUsers[0]?.permission as "READ" | "EDIT",
-          includeChildDocuments: true,
-          workspaceId,
-        });
-
-        // Move pending users to shared users for display
-        setSharedUsers((prev) => [...prev, ...pendingUsers]);
-        setPendingUsers([]);
-        setDialogOpen(false);
-
-        toast.success(t("Document shared successfully"));
-      }
-    } catch (error) {
-      toast.error(t("Failed to share document"));
-    }
+  const handleAddMembers = () => {
+    showAddMembersModal({
+      onAddUsers: async (users: SharedUser[]) => {
+        if (workspaceId && users.length > 0) {
+          await addShare({
+            targetUserIds: users.filter(({ type }) => type === "user").map(({ id }) => id),
+            targetGroupIds: users.filter(({ type }) => type === "group").map(({ id }) => id),
+            permission: users[0]?.permission as "READ" | "EDIT",
+            includeChildDocuments: true,
+            workspaceId,
+          });
+        }
+      },
+    });
   };
 
   if (!workspaceId) {
@@ -84,7 +145,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
         <div className="flex items-center justify-between">
           <Label className="text-sm font-medium flex items-center gap-2">{t("workspace members' permissions")}</Label>
 
-          <Button variant="outline" size="sm" className="h-8 bg-transparent" onClick={() => setDialogOpen(true)}>
+          <Button variant="outline" size="sm" className="h-8 bg-transparent" onClick={handleAddMembers}>
             <Plus className="h-4 w-4 mr-1" />
             {t("Add")}
           </Button>
@@ -94,28 +155,22 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
       {/* Shared Users List */}
       {sharedUsers.length > 0 && (
         <div className="space-y-3">
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="space-y-2 max-h-72 overflow-y-auto">
             {sharedUsers.map((user) => (
-              <div key={user.id} className="flex items-center gap-3 p-2 rounded-md border bg-card">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.avatar || ""} />
-                  <AvatarFallback className="text-sm">{user.type === "group" ? "👥" : user.name.charAt(0)}</AvatarFallback>
+              <div key={user.id} className="flex items-center gap-2 p-2 rounded-md border bg-card">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarFallback className="text-sm">{user.displayName?.charAt(0) || user.email.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className=" text-sm truncate">{user.name}</div>
+                <div className="flex-1 min-w-0 mr-2">
+                  <div className="font-medium text-sm truncate">{user.displayName || user.email}</div>
                   <div className="text-xs text-muted-foreground truncate">{user.email}</div>
-                  {user.memberCount && <div className="text-xs text-muted-foreground">{t("{{count}} members", { count: user.memberCount })}</div>}
                 </div>
-                <Select value={user.permission} onValueChange={(value: "READ" | "EDIT") => updatePermission(user.id, value)}>
-                  <SelectTrigger className="w-20 h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="READ">{t("View")}</SelectItem>
-                    <SelectItem value="EDIT">{t("Edit")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="ghost" size="sm" onClick={() => removeUser(user.id)} className="h-8 w-8 p-0">
+                <PermissionLevelSelector
+                  value={user.permission.level}
+                  onChange={(value) => handleUpdatePermission(user.id, value)}
+                  className="h-8 text-xs flex-shrink-0"
+                />
+                <Button variant="ghost" size="sm" onClick={() => handleRemoveUser(user.id)} className="h-8 w-8 p-0 flex-shrink-0">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -135,14 +190,6 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
           </div>
         </div>
       </div>
-
-      <AddMembersDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        pendingUsers={pendingUsers}
-        onPendingUsersChange={setPendingUsers}
-        onAddUsers={handleAddUsers}
-      />
     </div>
   );
 }

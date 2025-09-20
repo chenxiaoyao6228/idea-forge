@@ -1,4 +1,3 @@
-import { useBoolean } from "react-use";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -13,10 +12,9 @@ interface ShareButtonProps {
 
 export function SharePopover({ documentId }: ShareButtonProps) {
   const { t } = useTranslation();
-  const [open, setOpen] = useBoolean(false);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm">
           <UserPlus className="h-4 w-4" />

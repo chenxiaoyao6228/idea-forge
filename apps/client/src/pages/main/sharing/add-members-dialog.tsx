@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -9,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { useMemberSearch } from "@/hooks/use-member-search";
 import useWorkspaceStore from "@/stores/workspace-store";
+import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
 interface SharedUser {
   id: string;
@@ -25,33 +24,33 @@ interface SharedUser {
 }
 
 interface AddMembersDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  pendingUsers: SharedUser[];
-  onPendingUsersChange: (users: SharedUser[]) => void;
-  onAddUsers: () => void;
+  // react-confirm props
+  show?: boolean;
+  proceed?: (value: any) => void;
+  onAddUsers?: (users: SharedUser[]) => void;
 }
 
-export function AddMembersDialog({ open, onOpenChange, pendingUsers = [], onPendingUsersChange, onAddUsers }: AddMembersDialogProps) {
+const AddMembersDialog = ({ show = false, proceed, onAddUsers }: ConfirmDialogProps<AddMembersDialogProps, boolean>) => {
   const { t } = useTranslation();
   const [searchValue, setSearchValue] = React.useState("");
   const [notifyUsers, setNotifyUsers] = React.useState(true);
   const [showDropdown, setShowDropdown] = React.useState(false);
+  const [pendingUsers, setPendingUsers] = React.useState<SharedUser[]>([]);
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
   const workspaceId = currentWorkspace?.id;
 
-  // Show dropdown when dialog opens
+  // Show dropdown when component mounts
   React.useEffect(() => {
-    if (open) {
+    if (show) {
       setShowDropdown(true);
     }
-  }, [open]);
+  }, [show]);
 
-  // Use the member search hook - always enabled to show suggestions on open
+  // Use the member search hook - always enabled to show suggestions
   const { availableMembers, loading } = useMemberSearch({
     workspaceId,
     query: searchValue,
-    enabled: open && !!workspaceId,
+    enabled: !!workspaceId,
   });
 
   const addUser = (member: any) => {
@@ -64,17 +63,17 @@ export function AddMembersDialog({ open, onOpenChange, pendingUsers = [], onPend
       type: member.type,
       memberCount: member.memberCount,
     };
-    onPendingUsersChange([newUser, ...pendingUsers]);
+    setPendingUsers([newUser, ...pendingUsers]);
     setSearchValue("");
     setShowDropdown(false);
   };
 
   const removePendingUser = (userId: string) => {
-    onPendingUsersChange(pendingUsers.filter((user) => user.id !== userId));
+    setPendingUsers(pendingUsers.filter((user) => user.id !== userId));
   };
 
   const updatePendingPermission = (userId: string, permission: "READ" | "EDIT") => {
-    onPendingUsersChange(pendingUsers.map((user) => (user.id === userId ? { ...user, permission } : user)));
+    setPendingUsers(pendingUsers.map((user) => (user.id === userId ? { ...user, permission } : user)));
   };
 
   const filteredUsers = React.useMemo(() => {
@@ -88,9 +87,20 @@ export function AddMembersDialog({ open, onOpenChange, pendingUsers = [], onPend
     );
   }, [availableMembers, pendingUsers, searchValue]);
 
+  const handleConfirm = () => {
+    if (pendingUsers.length > 0) {
+      onAddUsers?.(pendingUsers);
+    }
+    proceed?.(true);
+  };
+
+  const handleCancel = () => {
+    proceed?.(false);
+  };
+
   if (!workspaceId) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={show} onOpenChange={(open) => !open && handleCancel()}>
         <DialogContent className="sm:max-w-lg w-full max-w-[90vw]">
           <DialogHeader>
             <DialogTitle>{t("Add people from workspace")}</DialogTitle>
@@ -102,7 +112,7 @@ export function AddMembersDialog({ open, onOpenChange, pendingUsers = [], onPend
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={show} onOpenChange={(open) => !open && handleCancel()}>
       <DialogContent className="sm:max-w-lg w-full max-w-[90vw]">
         <DialogHeader>
           <DialogTitle>{t("Add people from workspace")}</DialogTitle>
@@ -137,7 +147,7 @@ export function AddMembersDialog({ open, onOpenChange, pendingUsers = [], onPend
                           <AvatarFallback className="text-xs">{member.type === "group" ? "👥" : member.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
-                          <div className=" text-sm">{member.name}</div>
+                          <div className="font-medium text-sm">{member.name}</div>
                           <div className="text-xs text-muted-foreground">{member.email}</div>
                           {member.memberCount && <div className="text-xs text-muted-foreground">{t("{{count}} members", { count: member.memberCount })}</div>}
                         </div>
@@ -167,7 +177,7 @@ export function AddMembersDialog({ open, onOpenChange, pendingUsers = [], onPend
                       <AvatarFallback className="text-sm">{user.type === "group" ? "👥" : user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className=" text-sm truncate">{user.name}</div>
+                      <div className="font-medium text-sm truncate">{user.name}</div>
                       <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                       {user.memberCount && <div className="text-xs text-muted-foreground">{t("{{count}} members", { count: user.memberCount })}</div>}
                     </div>
@@ -198,10 +208,10 @@ export function AddMembersDialog({ open, onOpenChange, pendingUsers = [], onPend
             </Label>
           </div>
           <div className="flex gap-2 w-full">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button variant="outline" onClick={handleCancel} className="flex-1">
               {t("Cancel")}
             </Button>
-            <Button onClick={onAddUsers} disabled={pendingUsers.length === 0} className="flex-1">
+            <Button onClick={handleConfirm} disabled={pendingUsers.length === 0} className="flex-1">
               {t("Confirm Add")}
             </Button>
           </div>
@@ -209,4 +219,6 @@ export function AddMembersDialog({ open, onOpenChange, pendingUsers = [], onPend
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export const showAddMembersModal = ContextAwareConfirmation.createConfirmation(confirmable(AddMembersDialog));

@@ -18,8 +18,8 @@ export class ShareDocumentController {
   }
 
   @Post()
-  async shareDocument(@GetUser("id") userId: string, @Body() dto: ShareDocumentDto) {
-    return this.shareDocumentService.shareDocument(userId, dto);
+  async shareDocument(@GetUser("id") userId: string, @Body() dto: ShareDocumentDto & { docId: string }) {
+    return this.shareDocumentService.shareDocumentWithDocId(userId, dto);
   }
 
   @Patch(":id")

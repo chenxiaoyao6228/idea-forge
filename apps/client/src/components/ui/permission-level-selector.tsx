@@ -59,11 +59,11 @@ export function PermissionLevelSelector({ value, onChange, disabled = false, cla
 
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className={cx("w-auto min-w-[200px]", className)} id={id}>
+      <SelectTrigger className={cx("w-auto px-2", className)} id={id}>
         <SelectValue placeholder={t("Select permission level")}>
           {selectedPermission && (
             <div className="flex items-center gap-2">
-              <span>{selectedPermission.label}</span>
+              <span className="mr-1">{selectedPermission.label}</span>
               {selectedPermission.color === "destructive" && (
                 <Badge variant="destructive" className="text-xs">
                   {t("Restricted")}
