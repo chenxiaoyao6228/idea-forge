@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import GroupManagementPanel from "./group-management";
+import { GroupManagementPanel } from "./group-management";
 import VisitorPanel from "./visistor-management";
 import MemberManagementPanel from "./member-management";
 
