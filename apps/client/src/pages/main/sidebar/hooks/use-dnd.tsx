@@ -18,8 +18,12 @@
 import { DragEndEvent, DragMoveEvent, DragOverEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import fractionalIndex from "fractional-index";
 import { useCallback, useState } from "react";
-import useSubSpaceStore, { getPersonalSubspace, useMoveSubspace } from "@/stores/subspace-store";
-import useDocumentStore, { useMoveDocument } from "@/stores/document-store";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { Trash2 } from "lucide-react";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
+import useSubSpaceStore, { getPersonalSubspace, useMoveSubspace, useRemoveDocumentFromStructure } from "@/stores/subspace-store";
+import useDocumentStore, { useMoveDocument, useDeleteDocument } from "@/stores/document-store";
 import { useOrderedStars } from "@/stores/star-store";
 import useStarStore from "@/stores/star-store";
 
@@ -34,7 +38,7 @@ export interface DragItem {
 
 export interface DropTarget {
   accept: string[];
-  dropType: "reparent" | "reorder-top" | "reorder-bottom";
+  dropType: "reparent" | "reorder-top" | "reorder-bottom" | "trash";
   subspaceId?: string | null;
   parentId?: string | null;
   starId?: string;
@@ -44,10 +48,60 @@ export interface DropTarget {
 
 // --- Document DnD Hook ---
 function useDocumentDnD() {
+  const { t } = useTranslation();
   const { run: moveDocument } = useMoveDocument();
+  const { run: deleteDocument } = useDeleteDocument();
+  const documents = useDocumentStore((state) => state.documents);
+  const removeDocumentFromStructure = useRemoveDocumentFromStructure();
+
   const handleDocumentDrop = useCallback(
-    ({ draggingItem, toDropItem }: { draggingItem: DragItem; toDropItem: DropTarget }) => {
+    async ({ draggingItem, toDropItem }: { draggingItem: DragItem; toDropItem: DropTarget }) => {
       if (!toDropItem.accept.includes("document")) return;
+
+      // Handle trash drop
+      if (toDropItem.dropType === "trash") {
+        try {
+          // Get document info from drag item or documents store
+          const document = documents[draggingItem.id] || {
+            id: draggingItem.id,
+            title: draggingItem.title,
+            subspaceId: draggingItem.subspaceId,
+            deletedAt: null,
+          };
+
+          if (document.deletedAt) {
+            toast.error(t("Document is already deleted"));
+            return;
+          }
+
+          // Show confirmation dialog
+          const confirmed = await showConfirmModal({
+            title: t("Delete Document"),
+            description: t('Are you sure you want to move "{{title}}" to trash?', { title: document.title || t("Untitled") }),
+            confirmText: t("Move to Trash"),
+            cancelText: t("Cancel"),
+            confirmVariant: "destructive",
+            icon: <Trash2 className="h-5 w-5 text-destructive" />,
+            type: "alert",
+          });
+
+          if (confirmed) {
+            // Remove from subspace navigation tree first (for both personal and regular subspaces)
+            if (draggingItem.subspaceId) {
+              removeDocumentFromStructure(draggingItem.subspaceId, draggingItem.id);
+            }
+
+            // Perform soft delete
+            await deleteDocument(draggingItem.id, { permanent: false });
+            toast.success(t("Document moved to trash"));
+          }
+        } catch (error) {
+          console.error("Failed to delete document:", error);
+          toast.error(t("Failed to delete document"));
+        }
+        return;
+      }
+
       let subspaceId = toDropItem.subspaceId;
       if (subspaceId === null || subspaceId === undefined) {
         const personalSubspace = getPersonalSubspace();
@@ -79,7 +133,7 @@ function useDocumentDnD() {
         });
       }
     },
-    [moveDocument],
+    [moveDocument, deleteDocument, documents, t, removeDocumentFromStructure],
   );
   return { handleDocumentDrop };
 }

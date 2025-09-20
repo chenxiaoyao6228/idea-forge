@@ -178,8 +178,6 @@ export const useFetchDocumentDetail = () => {
   return useRequest(
     async (id: string, options: FetchOptions = {}) => {
       try {
-        // Note: Loading state is handled by useRequest
-
         const { data, permissions } = (await documentApi.getDocument(id)) as FetchDetailResult;
 
         if (!data.document) {
@@ -219,8 +217,6 @@ export const useFetchDocumentDetail = () => {
       } catch (error) {
         console.error("Failed to fetch document detail:", error);
         throw error;
-      } finally {
-        // Note: Loading state is handled by useRequest
       }
     },
     { manual: true },
@@ -236,8 +232,6 @@ export const useFetchDocumentChildren = () => {
           const hasChildren = Object.values(existingDocs).some((doc) => doc.parentId === parentId);
           if (hasChildren) return;
         }
-
-        // Note: Loading state is handled by useRequest
 
         const response = await documentApi.list({
           parentId: parentId,
@@ -281,8 +275,6 @@ export const useFetchDocumentChildren = () => {
       } catch (error) {
         console.error("Failed to fetch children:", error);
         throw error;
-      } finally {
-        // Note: Loading state is handled by useRequest
       }
     },
     { manual: true },
@@ -293,8 +285,6 @@ export const useCreateDocument = () => {
   return useRequest(
     async ({ title, parentId, subspaceId }: CreateDocumentParams) => {
       try {
-        // Note: Loading state is handled by useRequest
-
         const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
         if (!workspaceId) throw new Error("No active workspace");
 
@@ -318,8 +308,6 @@ export const useCreateDocument = () => {
       } catch (error) {
         console.error("Failed to create document:", error);
         throw error;
-      } finally {
-        // Note: Loading state is handled by useRequest
       }
     },
     { manual: true },
@@ -382,8 +370,6 @@ export const usePublishDocument = () => {
         const doc = documents[documentId];
         if (!doc) throw new Error("Document not found");
 
-        // Note: Loading state is handled by useRequest
-
         // Update document
         useDocumentStore.setState((state) => ({
           documents: {
@@ -403,8 +389,6 @@ export const usePublishDocument = () => {
       } catch (error) {
         console.error("Failed to publish document:", error);
         throw error;
-      } finally {
-        // Note: Loading state is handled by useRequest
       }
     },
     { manual: true },
@@ -418,8 +402,6 @@ export const useUnpublishDocument = () => {
         const documents = useDocumentStore.getState().documents;
         const doc = documents[documentId];
         if (!doc) throw new Error("Document not found");
-
-        // Note: Loading state is handled by useRequest
 
         // Remove from subspace structure
         if (doc.subspaceId) {
@@ -442,8 +424,6 @@ export const useUnpublishDocument = () => {
       } catch (error) {
         console.error("Failed to unpublish document:", error);
         throw error;
-      } finally {
-        // Note: Loading state is handled by useRequest
       }
     },
     { manual: true },
@@ -457,8 +437,6 @@ export const useArchiveDocument = () => {
         const documents = useDocumentStore.getState().documents;
         const doc = documents[documentId];
         if (!doc) throw new Error("Document not found");
-
-        // Note: Loading state is handled by useRequest
 
         // Remove from subspace structure
         if (doc.subspaceId) {
@@ -487,8 +465,6 @@ export const useArchiveDocument = () => {
       } catch (error) {
         console.error("Failed to archive document:", error);
         throw error;
-      } finally {
-        // Note: Loading state is handled by useRequest
       }
     },
     { manual: true },
@@ -502,8 +478,6 @@ export const useRestoreDocument = () => {
         const documents = useDocumentStore.getState().documents;
         const doc = documents[documentId];
         if (!doc) throw new Error("Document not found");
-
-        // Note: Loading state is handled by useRequest
 
         // Restore document and all children
         const findAllChildDocumentIds = useFindAllChildDocumentIds();
@@ -533,8 +507,6 @@ export const useRestoreDocument = () => {
       } catch (error) {
         console.error("Failed to restore document:", error);
         throw error;
-      } finally {
-        // Note: Loading state is handled by useRequest
       }
     },
     { manual: true },
@@ -547,41 +519,46 @@ export const useDeleteDocument = () => {
       try {
         const documents = useDocumentStore.getState().documents;
         const doc = documents[documentId];
-        if (!doc) throw new Error("Document not found");
-
-        // Note: Loading state is handled by useRequest
 
         if (options.permanent) {
-          // Remove from subspace structure
-          if (doc.subspaceId) {
+          // Call API for permanent delete
+          await documentApi.permanentDelete(documentId);
+
+          // Remove from subspace structure if document exists in store
+          if (doc?.subspaceId) {
             removeDocumentFromSubspace(doc.subspaceId, documentId);
           }
 
-          // Remove from store
-          useDocumentStore.setState((state) => {
-            const newDocuments = { ...state.documents };
-            delete newDocuments[documentId];
-            return { documents: newDocuments };
-          });
+          // Remove from store if document exists there
+          if (doc) {
+            useDocumentStore.setState((state) => {
+              const newDocuments = { ...state.documents };
+              delete newDocuments[documentId];
+              return { documents: newDocuments };
+            });
+          }
         } else {
-          // Soft delete
-          useDocumentStore.setState((state) => ({
-            documents: {
-              ...state.documents,
-              [documentId]: {
-                ...state.documents[documentId],
-                deletedAt: new Date().toISOString(),
-                lastModifiedById: options.user?.id || doc.lastModifiedById,
-                updatedAt: new Date().toISOString(),
+          // Call API for soft delete
+          await documentApi.delete(documentId);
+
+          // Soft delete - update store if document exists there
+          if (doc) {
+            useDocumentStore.setState((state) => ({
+              documents: {
+                ...state.documents,
+                [documentId]: {
+                  ...state.documents[documentId],
+                  deletedAt: new Date().toISOString(),
+                  lastModifiedById: options.user?.id || doc.lastModifiedById,
+                  updatedAt: new Date().toISOString(),
+                },
               },
-            },
-          }));
+            }));
+          }
         }
       } catch (error) {
         console.error("Failed to delete document:", error);
         throw error;
-      } finally {
-        // Note: Loading state is handled by useRequest
       }
     },
     { manual: true },
@@ -837,7 +814,6 @@ export const usePathToDocumentInMyDocs = () => {
         return true;
       }
 
-      // 查找子文档
       const children = myDocs.filter((d) => d.parentId === doc.id);
       for (const child of children) {
         if (findPath(child.id, newPath)) {

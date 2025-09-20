@@ -9,6 +9,7 @@ import { showTemplateModal } from "./template-dialog";
 import { showSearchModal } from "./search-doc-dialog";
 import { showImportFilesModal } from "./import-files-dialog";
 import { MoreOptionsDropdown } from "./more-options-dropdown";
+import { TrashDropZone } from "./components/trash-drop-zone";
 import StarsArea from "./stars";
 import SharedWithMe from "./shared-with-me";
 import SubspacesArea from "./subspaces";
@@ -139,20 +140,8 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
           <SidebarFooter className="p-0 gap-0">
             {/* Two-column footer with trash and template */}
             <div className="grid grid-cols-2 gap-0 border-t">
-              {/* Trash button */}
-              <button
-                onClick={() => showTrashModal()}
-                className={cn(
-                  "group/tree-node relative flex w-full items-center justify-center py-2 px-2",
-                  "transition-colors",
-                  "hover:bg-accent/50 dark:hover:bg-accent/25",
-                  "text-sm font-normal",
-                  "border-r border-border", // Add right border for separation
-                )}
-              >
-                <Trash2 className="h-4 w-4 mr-2 shrink-0" />
-                <span className="truncate">{t("Trash")}</span>
-              </button>
+              {/* Trash drop zone */}
+              <TrashDropZone />
 
               {/* Template button */}
               <button
