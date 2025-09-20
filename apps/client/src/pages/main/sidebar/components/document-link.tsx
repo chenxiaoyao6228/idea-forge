@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { NavigationNode } from "@idea/contracts";
 import useDocumentStore, { useCreateDocument, useFetchDocumentChildren } from "@/stores/document-store";
 import { SidebarLink } from "./sidebar-link";
-import useSubSpaceStore, { getPersonalSubspace } from "@/stores/subspace-store";
+import useSubSpaceStore from "@/stores/subspace-store";
 import { useCheckStarred, useToggleStar, useCreateStar, useDeleteStar } from "@/stores/star-store";
 import { useEffect, useMemo, useState } from "react";
 import { useRefCallback } from "@/hooks/use-ref-callback";

@@ -5,13 +5,7 @@ import { toast } from "sonner";
 import { CoverImage, DocTypeSchema, DocVisibilitySchema, SubspaceTypeSchema } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
-import useSubSpaceStore, {
-  getPersonalSubspace,
-  useSetActiveSubspaceLegacy,
-  useAddDocument,
-  useRemoveDocument,
-  useFetchNavigationTreeLegacy,
-} from "./subspace-store";
+import useSubSpaceStore, { usePersonalSubspace } from "./subspace-store";
 import useWorkspaceStore from "./workspace-store";
 import useAbilityStore from "./ability-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
@@ -786,10 +780,10 @@ export const useChildDocuments = () => {
 };
 
 export const usePersonalRootDocuments = () => {
+  const personalSubspace = usePersonalSubspace();
   return useMemo(() => {
-    const personalSubspace = getPersonalSubspace();
     return personalSubspace?.navigationTree || [];
-  }, []);
+  }, [personalSubspace]);
 };
 
 export const usePathToDocumentInMyDocs = () => {
@@ -906,12 +900,6 @@ export const useFindDescendants = () => {
     findChildren(documentId);
     return result;
   });
-};
-
-// Legacy compatibility - keep for backward compatibility during transition
-export const documentSelectors = {
-  selectAll: (state: any) => Object.values(state.documents || {}),
-  selectById: (state: any, id: string) => state.documents?.[id] || null,
 };
 
 export default useDocumentStore;

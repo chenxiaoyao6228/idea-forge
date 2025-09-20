@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import useDocumentStore, { documentSelectors, useGetDocument } from "@/stores/document-store";
+import useDocumentStore, { useGetDocument } from "@/stores/document-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useSubSpaceStore from "@/stores/subspace-store";
 import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";

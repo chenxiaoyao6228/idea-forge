@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { Emoji } from "emoji-picker-react";
 import { useCurrentDocumentId } from "@/hooks/use-current-document";
-import useSubSpaceStore, { getPersonalSubspace, useGetPathToDocument } from "@/stores/subspace-store";
+import useSubSpaceStore, { useGetPathToDocument, usePersonalSubspace } from "@/stores/subspace-store";
 import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";
 
 interface BreadcrumbItemData {
@@ -18,7 +18,8 @@ interface BreadcrumbItemData {
 export default function DocumentBreadcrumb() {
   const activeDocumentId = useCurrentDocumentId();
   const findNavigationNodeInSharedDocuments = useFindNavigationNodeInSharedDocuments();
-  const getPathToDocument = useGetPathToDocument(); // ✅ Move hook call to top level
+  const getPathToDocument = useGetPathToDocument();
+  const personalSubspace = usePersonalSubspace();
 
   const navigate = useNavigate();
 
@@ -31,7 +32,6 @@ export default function DocumentBreadcrumb() {
     let path: any[] = [];
 
     // 1. Check personal subspace first
-    const personalSubspace = getPersonalSubspace();
     if (personalSubspace) {
       path = getPathToDocument(personalSubspace.id, activeDocumentId);
       if (path.length > 0) {

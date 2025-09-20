@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
-import useSubSpaceStore, { getPersonalSubspace, useMoveSubspace, useRemoveDocumentFromStructure } from "@/stores/subspace-store";
+import useSubSpaceStore, { useMoveSubspace, usePersonalSubspace, useRemoveDocumentFromStructure } from "@/stores/subspace-store";
 import useDocumentStore, { useMoveDocument, useDeleteDocument } from "@/stores/document-store";
 import { useOrderedStars } from "@/stores/star-store";
 import useStarStore from "@/stores/star-store";
@@ -53,6 +53,7 @@ function useDocumentDnD() {
   const { run: deleteDocument } = useDeleteDocument();
   const documents = useDocumentStore((state) => state.documents);
   const removeDocumentFromStructure = useRemoveDocumentFromStructure();
+  const personalSubspace = usePersonalSubspace();
 
   const handleDocumentDrop = useCallback(
     async ({ draggingItem, toDropItem }: { draggingItem: DragItem; toDropItem: DropTarget }) => {
@@ -104,7 +105,6 @@ function useDocumentDnD() {
 
       let subspaceId = toDropItem.subspaceId;
       if (subspaceId === null || subspaceId === undefined) {
-        const personalSubspace = getPersonalSubspace();
         subspaceId = personalSubspace?.id;
       }
       if (toDropItem.dropType === "reparent") {

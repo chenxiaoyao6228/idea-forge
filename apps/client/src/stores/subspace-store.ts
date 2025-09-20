@@ -1137,38 +1137,4 @@ function convertDocEntityToNavigationNode(doc: DocumentEntity): NavigationNode {
   };
 }
 
-// Legacy methods for backward compatibility
-export const useSetActiveSubspaceLegacy = () => {
-  return useRefCallback((id?: string) => {
-    useSubSpaceStore.setState({ activeSubspaceId: id });
-  });
-};
-
-export const useAddDocument = () => {
-  return useRefCallback((subspaceId: string, document: DocumentEntity) => {
-    const addDocumentToStructure = useAddDocumentToStructure();
-    addDocumentToStructure(subspaceId, document, 0);
-  });
-};
-
-export const useRemoveDocument = () => {
-  return useRefCallback((subspaceId: string, documentId: string) => {
-    const removeDocumentFromStructure = useRemoveDocumentFromStructure();
-    removeDocumentFromStructure(subspaceId, documentId);
-  });
-};
-
-export const useFetchNavigationTreeLegacy = () => {
-  const fetchNavigationTree = useFetchNavigationTree();
-
-  return useRefCallback(async (subspaceId: string, options?: { force?: boolean }) => {
-    await fetchNavigationTree.run({ subspaceId, options });
-  });
-};
-
-export const getPersonalSubspace = () => {
-  const subspaces = useSubSpaceStore.getState().subspaces;
-  return Object.values(subspaces).find((s) => s.type === "PERSONAL");
-};
-
 export default useSubSpaceStore;
