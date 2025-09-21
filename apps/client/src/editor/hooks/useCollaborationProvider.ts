@@ -4,6 +4,8 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
 import { CollabUser, useEditorStore } from "../../stores/editor-store";
 import { useTranslation } from "react-i18next";
+import { useCollaborationPermissionWebsocket } from "@/hooks/use-permission-websocket";
+import { getWebsocketService } from "@/lib/websocket";
 
 const CONNECTION_TIMEOUT = 10000;
 
@@ -22,6 +24,27 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
   const setCurrentDocument = useEditorStore((state) => state.setCurrentDocument);
   const { t } = useTranslation();
   const timeoutRef = useRef<any>();
+
+  // WebSocket service for permission events
+  const websocketService = getWebsocketService();
+
+  // Provider ref to access in callbacks
+  const providerRef = useRef<HocuspocusProvider | null>(null);
+
+  // Handle permission revocation during collaboration
+  const handlePermissionRevoked = () => {
+    console.log("[collaboration]: Permission revoked, disconnecting...");
+    if (providerRef.current) {
+      providerRef.current.disconnect();
+      setCollaborationState(documentId, {
+        status: "unauthorized",
+        error: "Access to this document has been revoked",
+      });
+    }
+  };
+
+  // Set up permission WebSocket events for this document
+  useCollaborationPermissionWebsocket(websocketService.socket, documentId, handlePermissionRevoked);
 
   useEffect(() => {
     if (!editable) {
@@ -111,6 +134,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
     });
 
     setProvider(documentId, provider);
+    providerRef.current = provider;
     return provider;
   }, [documentId, editable]);
 

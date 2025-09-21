@@ -17,6 +17,8 @@ import { presentDocument } from "./document.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PermissionService } from "@/permission/permission.service";
+import { EnhancedPermissionService } from "@/permission/enhanced-permission.service";
+import { PermissionContextService } from "@/permission/permission-context.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionListRequestDto } from "@/permission/permission.dto";
 
@@ -26,6 +28,8 @@ export class DocumentService {
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionService: PermissionService,
+    private readonly enhancedPermissionService: EnhancedPermissionService,
+    private readonly permissionContextService: PermissionContextService,
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
@@ -120,11 +124,15 @@ export class DocumentService {
 
     const data = items.map((doc) => presentDocument(doc, { isPublic: false }));
 
-    // Generate permissions for each doc
+    // Use batch permission context resolution for better performance with caching
+    const docIds = items.map((doc) => doc.id);
+    const batchPermissionContexts = await this.permissionContextService.getBatchPermissionContexts(userId, ResourceType.DOCUMENT, docIds);
+
+    // Extract abilities from permission contexts
     const permissions: Record<string, Record<string, boolean>> = {};
     for (const doc of items) {
-      const abilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", doc.id, userId);
-      permissions[doc.id] = abilities as Record<string, boolean>;
+      const context = batchPermissionContexts[doc.id];
+      permissions[doc.id] = context ? context.abilities : this.getDefaultAbilities();
     }
 
     return {
@@ -286,23 +294,75 @@ export class DocumentService {
       workspace: document.workspace,
     };
 
+    // Get real permission context for the user using the cached service
+    const permissionContext = await this.permissionContextService.getPermissionContext(userId, ResourceType.DOCUMENT, document.id);
+
     return {
       data,
-      // Placeholder for permissions
-      permissions: isPublic ? undefined : this.presentPoliciesPlaceholder(userId, document),
+      permissions: isPublic ? undefined : { [document.id]: permissionContext.abilities },
     };
   }
 
-  private presentPoliciesPlaceholder(userId: string, document: any) {
-    // Placeholder for permissions
+  private getDefaultAbilities() {
     return {
-      [document.id]: {
-        read: true,
-        update: document.authorId === userId,
-        delete: document.authorId === userId,
-        share: document.authorId === userId,
-      },
+      read: false,
+      update: false,
+      delete: false,
+      share: false,
+      comment: false,
     };
+  }
+
+  private mapPermissionToAbilities(permission: PermissionLevel, isAuthor: boolean) {
+    // Authors always have full permissions regardless of calculated permission
+    if (isAuthor) {
+      return {
+        read: true,
+        update: true,
+        delete: true,
+        share: true,
+        comment: true,
+      };
+    }
+
+    // Map permission levels to abilities
+    switch (permission) {
+      case PermissionLevel.OWNER:
+      case PermissionLevel.MANAGE:
+        return {
+          read: true,
+          update: true,
+          delete: true,
+          share: true,
+          comment: true,
+        };
+      case PermissionLevel.EDIT:
+        return {
+          read: true,
+          update: true,
+          delete: false,
+          share: false,
+          comment: true,
+        };
+      case PermissionLevel.COMMENT:
+        return {
+          read: true,
+          update: false,
+          delete: false,
+          share: false,
+          comment: true,
+        };
+      case PermissionLevel.READ:
+        return {
+          read: true,
+          update: false,
+          delete: false,
+          share: false,
+          comment: false,
+        };
+      default:
+        return this.getDefaultAbilities();
+    }
   }
 
   private docToNavigationNode(doc: any): NavigationNode {

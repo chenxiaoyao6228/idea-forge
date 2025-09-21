@@ -11,6 +11,7 @@ import { HttpStatus } from "@nestjs/common";
 import { Transactional, TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
+import { PermissionEventService } from "@/permission/permission-event.service";
 
 /*
 This service supports the following document move features:
@@ -28,6 +29,7 @@ export class MoveDocumentService {
   constructor(
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionService: PermissionService,
+    private readonly permissionEventService: PermissionEventService,
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma<ExtendedPrismaClient>>,
   ) {}
 
@@ -136,7 +138,10 @@ export class MoveDocumentService {
       include: { subspace: true },
     });
 
-    // TODO: update permissions
+    // Handle permission updates for document move
+    if (subspaceChanged) {
+      await this.permissionEventService.handleDocumentMove(id, document.subspaceId, targetSubspaceId || null);
+    }
 
     // 6. If subspace changed, recursively update all children subspaceId
     if (subspaceChanged) {

@@ -9,6 +9,9 @@ import { TiptapTransformer } from "@hocuspocus/transformer";
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionLevel } from "@idea/contracts";
+import { PermissionContextService } from "@/permission/permission-context.service";
+import { PermissionWebsocketService } from "@/permission/permission-websocket.service";
+import { ResourceType } from "@prisma/client";
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -31,46 +34,54 @@ export class CollaborationService implements OnModuleInit {
     private readonly prismaService: PrismaService,
     private configService: ConfigService,
     private userService: UserService,
+    private readonly permissionContextService: PermissionContextService,
+    private readonly permissionWebsocketService: PermissionWebsocketService,
   ) {
     const secret = this.configService.get("COLLAB_SECRET_KEY");
     this.secretKey = createHash("sha256").update(secret).digest();
   }
 
-  // Check document access and permissions
+  // Check document access and permissions using the unified permission system
   private async validateDocumentAccess(
     documentId: string,
     userId: string,
   ): Promise<{
     permission: PermissionLevel;
+    canCollaborate: boolean;
   }> {
-    // FIXME: use the new unified permission service to handle this
-    // 1. Check if user is the owner
+    // Use the unified permission context service
+    const permissionContext = await this.permissionContextService.getPermissionContext(userId, ResourceType.DOCUMENT, documentId);
+
+    // Check if user has at least READ permission to collaborate
+    const canCollaborate = permissionContext.permission !== PermissionLevel.NONE;
+
+    if (!canCollaborate) {
+      throw new UnauthorizedException(`User ${userId} does not have access to document ${documentId}`);
+    }
+
+    // Get document info for additional validation
     const doc = await this.prismaService.doc.findUnique({
       where: { id: documentId },
+      select: { id: true, deletedAt: true, archivedAt: true },
     });
 
     if (!doc) {
       throw new UnauthorizedException("Document not found");
     }
 
-    // Return owner permission if user is the owner
-    if (doc.authorId === userId) {
-      return { permission: "EDIT" };
+    // Check if document is deleted or archived
+    if (doc.deletedAt) {
+      throw new UnauthorizedException("Document has been deleted");
     }
 
-    // 2. Check shared permissions
-    const share = await this.prismaService.docShare.findFirst({
-      where: {
-        docId: documentId,
-        userId: userId,
-      },
-    });
-
-    if (!share) {
-      throw new UnauthorizedException("No access to this document");
+    if (doc.archivedAt) {
+      throw new UnauthorizedException("Document has been archived");
     }
 
-    return { permission: share.permission as any };
+    return {
+      permission: permissionContext.permission,
+      canCollaborate,
+    };
   }
 
   async generateCollabToken(userId: string): Promise<string> {
@@ -112,6 +123,119 @@ export class CollaborationService implements OnModuleInit {
       return payload.userId;
     } catch (error) {
       throw new UnauthorizedException("Invalid collaboration token");
+    }
+  }
+
+  /**
+   * Handle permission changes for users currently collaborating
+   * Called when permissions are updated during active collaboration
+   */
+  async handleCollaborationPermissionChange(documentId: string, userId: string, newPermission: PermissionLevel, actorId: string): Promise<void> {
+    try {
+      // Check if user is currently connected to this document
+      const isConnected = await this.isUserConnectedToDocument(userId, documentId);
+
+      if (!isConnected) {
+        console.log(`User ${userId} not connected to document ${documentId}, skipping collaboration handling`);
+        return;
+      }
+
+      // If access is completely revoked, disconnect the user
+      if (newPermission === PermissionLevel.NONE) {
+        await this.disconnectUserFromDocument(userId, documentId);
+        console.log(`User ${userId} disconnected from document ${documentId} due to access revocation`);
+      } else {
+        // Update the user's collaboration context with new permission
+        await this.updateUserCollaborationContext(userId, documentId, newPermission);
+        console.log(`User ${userId} collaboration context updated for document ${documentId}: ${newPermission}`);
+      }
+
+      // Notify via WebSocket about the permission change
+      await this.permissionWebsocketService.handleCollaborationPermissionChange(
+        userId,
+        documentId,
+        PermissionLevel.READ, // We don't track old permission in this context
+        newPermission,
+        actorId,
+      );
+    } catch (error) {
+      console.error(`Error handling collaboration permission change:`, error);
+    }
+  }
+
+  /**
+   * Check if user is currently connected to a document collaboration session
+   */
+  private async isUserConnectedToDocument(userId: string, documentId: string): Promise<boolean> {
+    try {
+      // This would check active Hocuspocus connections
+      // For now, we'll implement a placeholder
+      // In a real implementation, you might:
+      // 1. Check active WebSocket connections
+      // 2. Query Hocuspocus for active connections
+      // 3. Check a Redis cache of active sessions
+
+      return false; // Placeholder - implement based on your needs
+    } catch (error) {
+      console.error(`Error checking user connection status:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Disconnect user from document collaboration
+   */
+  private async disconnectUserFromDocument(userId: string, documentId: string): Promise<void> {
+    try {
+      // This would forcefully disconnect the user from the Hocuspocus session
+      // Implementation depends on your WebSocket infrastructure
+      console.log(`Disconnecting user ${userId} from document ${documentId}`);
+
+      // You might implement this by:
+      // 1. Finding the WebSocket connection
+      // 2. Sending a disconnect message
+      // 3. Closing the connection
+    } catch (error) {
+      console.error(`Error disconnecting user from document:`, error);
+    }
+  }
+
+  /**
+   * Update user's collaboration context with new permission level
+   */
+  private async updateUserCollaborationContext(userId: string, documentId: string, newPermission: PermissionLevel): Promise<void> {
+    try {
+      // This would update the user's collaboration context
+      // For example, updating what operations they can perform
+      console.log(`Updating collaboration context for user ${userId} on document ${documentId}: ${newPermission}`);
+
+      // You might implement this by:
+      // 1. Updating the user's session data
+      // 2. Sending updated capabilities to the client
+      // 3. Updating awareness information
+    } catch (error) {
+      console.error(`Error updating user collaboration context:`, error);
+    }
+  }
+
+  /**
+   * Validate permission for specific collaboration operations
+   */
+  async validateCollaborationOperation(userId: string, documentId: string, operation: "READ" | "EDIT" | "COMMENT"): Promise<boolean> {
+    try {
+      const permissionContext = await this.permissionContextService.getPermissionContext(userId, ResourceType.DOCUMENT, documentId);
+
+      // Map collaboration operations to required permission levels
+      const requiredPermissions = {
+        READ: [PermissionLevel.READ, PermissionLevel.COMMENT, PermissionLevel.EDIT, PermissionLevel.MANAGE, PermissionLevel.OWNER],
+        COMMENT: [PermissionLevel.COMMENT, PermissionLevel.EDIT, PermissionLevel.MANAGE, PermissionLevel.OWNER],
+        EDIT: [PermissionLevel.EDIT, PermissionLevel.MANAGE, PermissionLevel.OWNER],
+      };
+
+      return requiredPermissions[operation].includes(permissionContext.permission as any);
+    } catch (error) {
+      console.error(`Error validating collaboration operation:`, error);
+      return false;
     }
   }
 

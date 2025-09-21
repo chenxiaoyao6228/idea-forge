@@ -3,18 +3,28 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { CommonSharedDocumentResponse, RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "@idea/contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { EnhancedPermissionService } from "@/permission/enhanced-permission.service";
+import { PermissionContextService } from "@/permission/permission-context.service";
+import { PermissionWebsocketService } from "@/permission/permission-websocket.service";
+import { ResourceType, SourceType, PermissionLevel } from "@idea/contracts";
 
 @Injectable()
 export class ShareDocumentService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly enhancedPermissionService: EnhancedPermissionService,
+    private readonly permissionContextService: PermissionContextService,
+    private readonly permissionWebsocketService: PermissionWebsocketService,
+  ) {}
 
   async getSharedDocuments(userId: string): Promise<CommonSharedDocumentResponse[]> {
-    // Get all documents shared with this user through UnifiedPermission
+    // Get all documents shared with this user through UnifiedPermission (direct shares only)
     const permissions = await this.prismaService.unifiedPermission.findMany({
       where: {
         userId: userId,
-        resourceType: "DOCUMENT",
-        sourceType: "DIRECT", // Only direct permissions, not inherited ones
+        resourceType: ResourceType.DOCUMENT,
+        sourceType: SourceType.DIRECT, // Only direct permissions, not inherited ones
+        createdById: { not: userId }, // Exclude self-created permissions
       },
       orderBy: {
         createdAt: "desc",
@@ -24,10 +34,15 @@ export class ShareDocumentService {
     // Get the document IDs
     const documentIds = permissions.map((p) => p.resourceId);
 
+    if (documentIds.length === 0) {
+      return [];
+    }
+
     // Fetch documents with their details
     const documents = await this.prismaService.doc.findMany({
       where: {
         id: { in: documentIds },
+        deletedAt: null, // Exclude deleted documents
       },
       include: {
         author: {
@@ -40,28 +55,32 @@ export class ShareDocumentService {
       },
     });
 
-    // Create a map of document ID to permission
-    const permissionMap = new Map();
-    permissions.forEach((perm) => {
-      permissionMap.set(perm.resourceId, perm.permission);
-    });
+    // Get comprehensive permission contexts for all documents
+    const permissionContexts = await this.permissionContextService.getBatchPermissionContexts(
+      userId,
+      ResourceType.DOCUMENT,
+      documents.map((doc) => doc.id),
+    );
 
-    return documents.map((doc) => ({
-      id: doc.id,
-      title: doc.title,
-      content: doc.content,
-      createdById: doc.authorId,
-      workspaceId: doc.workspaceId,
-      parentId: doc.parentId,
-      archivedAt: null,
-      deletedAt: null,
-      icon: null,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      owner: doc.author,
-      coverImage: doc.coverImage,
-      permission: permissionMap.get(doc.id),
-    }));
+    return documents.map((doc) => {
+      const context = permissionContexts[doc.id];
+      return {
+        id: doc.id,
+        title: doc.title,
+        content: doc.content,
+        createdById: doc.authorId,
+        workspaceId: doc.workspaceId,
+        parentId: doc.parentId,
+        archivedAt: null,
+        deletedAt: null,
+        icon: null,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
+        owner: doc.author,
+        coverImage: doc.coverImage,
+        permission: context ? { level: context.permission as any } : undefined,
+      };
+    });
   }
 
   async shareDocument(userId: string, docId: string, dto: ShareDocumentDto) {
@@ -104,6 +123,9 @@ export class ShareDocumentService {
           },
         });
         createdPermissions.push(perm);
+
+        // Invalidate permission cache for the target user
+        this.permissionContextService.invalidatePermissionCache(targetUserId, ResourceType.DOCUMENT, docId);
       }
     }
 
@@ -139,6 +161,9 @@ export class ShareDocumentService {
             },
           });
           createdPermissions.push(perm);
+
+          // Invalidate permission cache for the group member
+          this.permissionContextService.invalidatePermissionCache(member.userId, ResourceType.DOCUMENT, docId);
         }
       }
     }
@@ -166,6 +191,22 @@ export class ShareDocumentService {
           });
         }
       }
+    }
+
+    // 7. Send WebSocket notifications to newly shared users
+    const allSharedUserIds = new Set<string>();
+
+    // Collect all users who received new permissions
+    for (const permission of createdPermissions) {
+      if (permission.userId) {
+        allSharedUserIds.add(permission.userId);
+      }
+    }
+
+    // Send notifications to each newly shared user
+    for (const sharedUserId of allSharedUserIds) {
+      const shareType = dto.targetGroupIds && dto.targetGroupIds.length > 0 ? "GROUP" : "DIRECT";
+      await this.permissionWebsocketService.notifyDocumentShared(docId, sharedUserId, dto.permission, userId, shareType);
     }
 
     return this.getDocShares(docId, userId);
@@ -246,12 +287,18 @@ export class ShareDocumentService {
     // Remove ALL permissions for this user from UnifiedPermission table (handles duplicates)
     await this.prismaService.unifiedPermission.deleteMany({
       where: {
-        resourceType: "DOCUMENT",
+        resourceType: ResourceType.DOCUMENT,
         resourceId: id,
         userId: dto.targetUserId,
-        sourceType: "DIRECT",
+        sourceType: SourceType.DIRECT,
       },
     });
+
+    // Invalidate permission cache for the user
+    this.permissionContextService.invalidatePermissionCache(dto.targetUserId, ResourceType.DOCUMENT, id);
+
+    // Send WebSocket notification about access revocation
+    await this.permissionWebsocketService.revokeUserAccess(id, dto.targetUserId, userId, "Document sharing has been removed");
 
     return this.getDocShares(id, userId);
   }
@@ -266,26 +313,38 @@ export class ShareDocumentService {
     // First, remove all existing permissions for this user to avoid duplicates
     await this.prismaService.unifiedPermission.deleteMany({
       where: {
-        resourceType: "DOCUMENT",
+        resourceType: ResourceType.DOCUMENT,
         resourceId: id,
         userId: dto.userId,
-        sourceType: "DIRECT",
+        sourceType: SourceType.DIRECT,
       },
     });
 
     // Then create a single new permission with the updated level
     await this.prismaService.unifiedPermission.create({
       data: {
-        resourceType: "DOCUMENT",
+        resourceType: ResourceType.DOCUMENT,
         resourceId: id,
         userId: dto.userId,
         permission: dto.permission,
-        sourceType: "DIRECT",
+        sourceType: SourceType.DIRECT,
         priority: 1,
         sourceId: null,
         createdById: userId,
       },
     });
+
+    // Invalidate permission cache for the user
+    this.permissionContextService.invalidatePermissionCache(dto.userId, ResourceType.DOCUMENT, id);
+
+    // Send WebSocket notification about permission change
+    await this.permissionWebsocketService.broadcastPermissionChange(
+      id,
+      dto.userId,
+      dto.permission,
+      userId,
+      `Your permission level has been updated to ${dto.permission}`,
+    );
 
     return this.getDocShares(id, userId);
   }

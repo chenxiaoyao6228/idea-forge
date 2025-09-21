@@ -6,6 +6,7 @@ import { SubspaceService } from "@/subspace/subspace.service";
 import { presentWorkspace } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
 import { PermissionService } from "@/permission/permission.service";
+import { PermissionEventService } from "@/permission/permission-event.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import {
   ResourceType,
@@ -46,6 +47,7 @@ export class WorkspaceService {
     private readonly subspaceService: SubspaceService,
     private readonly permissionService: PermissionService,
     private readonly eventPublisher: EventPublisherService,
+    private readonly permissionEventService: PermissionEventService,
   ) {}
 
   /**
@@ -755,6 +757,8 @@ export class WorkspaceService {
       }
     }
 
+    const oldRole = member.role;
+
     // 1. Update member role
     const updatedMember = await this.prismaService.workspaceMember.update({
       where: { workspaceId_userId: { workspaceId, userId } },
@@ -769,8 +773,8 @@ export class WorkspaceService {
     // 2. Update unified permissions based on new role
     const permission = await this.permissionService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
 
-    // 3. Propagate permission changes to all child resources
-    // TODO:
+    // 3. Propagate permission changes to all child resources using event service
+    await this.permissionEventService.handleWorkspaceRoleChange(userId, workspaceId, oldRole, newRole);
 
     return updatedMember;
   }

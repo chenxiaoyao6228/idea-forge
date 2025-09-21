@@ -9,6 +9,7 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { presentSubspace, presentSubspaceMember, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PermissionService } from "@/permission/permission.service";
+import { PermissionEventService } from "@/permission/permission-event.service";
 import { SourceType, ResourceType, SubspaceType, PermissionLevel } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
@@ -18,6 +19,7 @@ export class SubspaceService {
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionService: PermissionService,
+    private readonly permissionEventService: PermissionEventService,
   ) {}
 
   async joinSubspace(subspaceId: string, userId: string) {
@@ -1168,12 +1170,29 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
     }
 
+    // Get current member to track role change
+    const currentMember = await this.prismaService.subspaceMember.findUnique({
+      where: { id: memberId },
+    });
+
+    if (!currentMember) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    const oldRole = currentMember.role;
+    const newRole = dto.role;
+
     const member = await this.prismaService.subspaceMember.update({
       where: { id: memberId },
       data: {
         role: dto.role,
       },
     });
+
+    // Handle permission changes for role update
+    if (oldRole !== newRole) {
+      await this.permissionEventService.handleSubspaceRoleChange(member.userId, subspaceId, oldRole, newRole);
+    }
 
     return {
       member: {
@@ -1225,14 +1244,8 @@ export class SubspaceService {
       where: { id: memberId },
     });
 
-    // Delete related permissions
-    await this.prismaService.unifiedPermission.deleteMany({
-      where: {
-        userId: memberToRemove.userId,
-        resourceType: ResourceType.SUBSPACE,
-        resourceId: subspaceId,
-      },
-    });
+    // Handle permission cleanup for removed user using event service
+    await this.permissionEventService.handleUserRemovedFromSubspace(memberToRemove.userId, subspaceId);
 
     // Publish WebSocket event to notify other users
     await this.eventPublisher.publishWebsocketEvent({

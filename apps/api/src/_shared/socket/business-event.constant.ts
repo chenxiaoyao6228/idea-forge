@@ -35,6 +35,10 @@ export enum BusinessEvents {
   // Permission events
   PERMISSION_ADD_USER = "permission.addUser",
   PERMISSION_REMOVE_USER = "permission.removeUser",
+  PERMISSION_UPDATED = "permission.updated",
+  ACCESS_REVOKED = "permission.access.revoked",
+  DOCUMENT_SHARED = "permission.document.shared",
+  SUBSPACE_PERMISSION_UPDATED = "permission.subspace.updated",
 
   // Document collaboration events
   DOCUMENT_CREATE = "document.create",

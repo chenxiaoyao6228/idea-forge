@@ -5,6 +5,7 @@ import { CheckPolicy } from "@/_shared/casl/policy.decorator";
 import { AddUserPermissionDto, AddGroupPermissionDto, UpdatePermissionDto, PermissionListRequestDto } from "./permission.dto";
 import { Action } from "@/_shared/casl/ability.class";
 import { PermissionService } from "./permission.service";
+import { EnhancedPermissionService } from "./enhanced-permission.service";
 
 interface AssignPermissionDto {
   userId?: string;
@@ -15,7 +16,10 @@ interface AssignPermissionDto {
 
 @Controller("api/permissions")
 export class PermissionController {
-  constructor(private readonly permissionService: PermissionService) {}
+  constructor(
+    private readonly permissionService: PermissionService,
+    private readonly enhancedPermissionService: EnhancedPermissionService,
+  ) {}
 
   @Post("users")
   @CheckPolicy(Action.ManagePermissions, "UnifiedPermission")
@@ -102,5 +106,37 @@ export class PermissionController {
   @CheckPolicy(Action.ManagePermissions, "UnifiedPermission")
   async removePermission(@Param("permissionId") permissionId: string) {
     return this.permissionService.removePermission(permissionId);
+  }
+
+  /**
+   * Get enhanced document permission with inheritance and context
+   * GET /api/permissions/documents/{documentId}/enhanced?includeInheritance=true&includeContext=true
+   */
+  @Get("documents/:documentId/enhanced")
+  async getEnhancedDocumentPermission(
+    @Param("documentId") documentId: string,
+    @GetUser("id") userId: string,
+    @Query("includeInheritance") includeInheritance?: boolean,
+    @Query("includeContext") includeContext?: boolean,
+  ) {
+    return await this.enhancedPermissionService.getEnhancedDocumentPermission(userId, documentId, {
+      includeInheritance: includeInheritance === true,
+      includeContext: includeContext === true,
+    });
+  }
+
+  /**
+   * Get batch document permissions with inheritance and context
+   * POST /api/permissions/documents/batch
+   */
+  @Post("documents/batch")
+  async getBatchDocumentPermissions(
+    @Body() dto: { documentIds: string[]; includeInheritance?: boolean; includeContext?: boolean },
+    @GetUser("id") userId: string,
+  ) {
+    return await this.enhancedPermissionService.getBatchDocumentPermissions(userId, dto.documentIds, {
+      includeInheritance: dto.includeInheritance === true,
+      includeContext: dto.includeContext === true,
+    });
   }
 }

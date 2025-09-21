@@ -68,6 +68,13 @@ export enum SocketEvents {
   STAR_DELETE = "stars.delete",
 
   DOCUMENT_ADD_USER = "document.addUser",
+
+  // Permission events
+  PERMISSION_CHANGED = "permission.changed",
+  ACCESS_REVOKED = "permission.access_revoked",
+  DOCUMENT_SHARED = "permission.document_shared",
+  SUBSPACE_PERMISSION_UPDATED = "permission.subspace_updated",
+  PERMISSION_INHERITANCE_CHANGED = "permission.inheritance_changed",
 }
 
 // Interface for gateway message structure
