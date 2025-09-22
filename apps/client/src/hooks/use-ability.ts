@@ -1,90 +1,27 @@
-import { useMemo, useEffect } from "react";
-import { createPrismaAbility } from "@casl/prisma";
-import { PureAbility } from "@casl/ability";
-import { useFetchResourceAbilities, useGetAbilities, useHasAbility } from "@/stores/ability-store";
+import { useMemo } from "react";
+import type { PureAbility } from "@casl/ability";
+import { subject as buildSubject } from "@casl/ability";
+import { Action } from "@idea/contracts";
+import { useSubjectAbility } from "@/stores/ability-store";
 
-/**
- * Simple hook for boolean permission checks
- * Use this hook for straightforward permission validation
- *
- * @param entityId The entity ID (document, workspace, etc.)
- * @param action The action to check permission for
- * @param options Hook options containing required resourceType
- * @returns Boolean indicating if the permission is granted
- */
-export function useAbilityCheck(entityId: string, action: string, resourceType: "DOCUMENT" | "WORKSPACE" | "SUBSPACE" = "DOCUMENT"): boolean {
-  const { run: fetchResourceAbilities, loading } = useFetchResourceAbilities();
-  const getAbilities = useGetAbilities();
-  const hasAbility = useHasAbility();
+export { Action } from "@idea/contracts";
 
-  // Auto-fetch permissions when not available (always enabled)
-  useEffect(() => {
-    if (entityId && !loading) {
-      const abilities = getAbilities(entityId);
-      const hasNoAbilities = Object.keys(abilities).length === 0 || Object.values(abilities).every((value) => value === false);
-
-      if (hasNoAbilities) {
-        fetchResourceAbilities({ resourceType, resourceId: entityId });
-      }
-    }
-  }, [entityId, resourceType, getAbilities, fetchResourceAbilities, loading]);
-
-  return hasAbility(entityId, action);
+export function useAbility(subject: string): PureAbility {
+  return useSubjectAbility(subject);
 }
 
-/**
- * Retrieve the abilities for a given entity and convert them to a CASL ability instance
- * Use this hook when:
- *  - Complex Permission Logic: When you need to check multiple permissions or combine them with complex logic
- *  - CASL Integration: When using @casl/react's <Can> component, which requires a CASL ability instance
- *  - Conditional Rendering with Multiple Actions: When you need to render UI based on combinations of permissions
- *
- * @param entityId The entity ID (document, workspace, etc.)
- * @param options Hook options containing required resourceType
- * @returns CASL ability instance for the entity
- */
-export default function useCASLAbility(entityId: string, resourceType: "DOCUMENT" | "WORKSPACE" | "SUBSPACE" = "DOCUMENT"): PureAbility {
-  const { run: fetchResourceAbilities, loading } = useFetchResourceAbilities();
-  const getAbilities = useGetAbilities();
+const resolveSubject = (subject: string, object?: Record<string, unknown>) => {
+  if (!object) return subject;
+  return buildSubject(subject, object);
+};
 
-  // Auto-fetch permissions when not available (always enabled)
-  useEffect(() => {
-    if (entityId && !loading) {
-      const abilities = getAbilities(entityId);
-      const hasNoAbilities = Object.keys(abilities).length === 0 || Object.values(abilities).every((value) => value === false);
+export function useAbilityCheck(subject: string, action: Action, object?: Record<string, unknown>): boolean {
+  const ability = useSubjectAbility(subject);
+  return ability.can(action, resolveSubject(subject, object));
+}
 
-      if (hasNoAbilities) {
-        fetchResourceAbilities({ resourceType, resourceId: entityId });
-      }
-    }
-  }, [entityId, resourceType, getAbilities, fetchResourceAbilities, loading]);
-
-  const ability = useMemo(() => {
-    if (!entityId) {
-      return createPrismaAbility([]);
-    }
-
-    const abilities = getAbilities(entityId);
-
-    // Map resource type to Prisma model name
-    const subjectMap = {
-      DOCUMENT: "Doc",
-      WORKSPACE: "Workspace",
-      SUBSPACE: "Subspace",
-    };
-
-    const subject = subjectMap[resourceType];
-
-    const rules = Object.entries(abilities)
-      .filter(([, allowed]) => allowed)
-      .map(([action]) => ({
-        action,
-        subject,
-        conditions: { id: entityId },
-      }));
-
-    return createPrismaAbility(rules);
-  }, [entityId, getAbilities, resourceType]);
-
-  return ability;
+export function useAbilityCan(subject: string, action: Action, object?: Record<string, unknown>): { can: boolean; ability: PureAbility } {
+  const ability = useSubjectAbility(subject);
+  const can = useMemo(() => ability.can(action, resolveSubject(subject, object)), [ability, action, subject, object]);
+  return { can, ability };
 }

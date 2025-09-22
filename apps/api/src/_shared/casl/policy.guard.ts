@@ -33,7 +33,7 @@ export class PolicyGuard implements CanActivate {
     const id = getRequestItemId(request);
 
     try {
-      const ability = await this.abilityService.abilityMap[model].createForUser(user);
+      const ability = await this.abilityService.createAbilityForUser(model, user);
 
       if (id) {
         const item = await this.prismaService[model].findUniqueOrThrow({ where: { id } });

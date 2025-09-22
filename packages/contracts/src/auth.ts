@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PermissionLevelSchema, UserStatusSchema } from "./prisma-type-generated";
+import type { SerializedAbilityMap } from "./ability";
 
 // ===== Database Models =====
 
@@ -38,6 +39,7 @@ export interface UserResponseData {
   imageUrl?: string;
   collabToken?: string;
   currentWorkspaceId?: string;
+  abilities?: SerializedAbilityMap;
 }
 
 export interface LoginResponseData {

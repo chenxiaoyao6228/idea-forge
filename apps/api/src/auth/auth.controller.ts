@@ -15,6 +15,8 @@ import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
 import { UserResponseData } from "@idea/contracts";
 import * as requestIp from "request-ip";
 import { UserService } from "@/user/user.service";
+import { AbilityService } from "@/_shared/casl/casl.service";
+import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 
 @Controller("/api/auth")
 export class AuthController {
@@ -22,6 +24,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UserService,
     private readonly verificationService: VerificationService,
+    private readonly abilityService: AbilityService,
   ) {}
 
   @Public()
@@ -109,10 +112,22 @@ export class AuthController {
         throw new ApiException(ErrorCodeEnum.UserNotFound);
       }
 
+      const workspaceModel = "Workspace" as ModelName;
+      const abilities = await this.abilityService.serializeAbilitiesForUser(
+        {
+          id: user.id,
+          currentWorkspaceId: user.currentWorkspaceId,
+        },
+        [workspaceModel],
+      );
+
       return {
         id: user.id,
         email: user.email,
-        ...(user.displayName ? { displayName: user.displayName } : {}),
+        displayName: user.displayName || "",
+        imageUrl: user.imageUrl || "",
+        currentWorkspaceId: user.currentWorkspaceId || "",
+        abilities,
       };
     } catch (error) {
       console.error(error);

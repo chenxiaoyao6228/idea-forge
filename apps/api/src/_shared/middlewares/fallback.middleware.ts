@@ -10,6 +10,8 @@ import { clearAuthCookies, setAuthCookies } from "@/_shared/utils/cookie";
 import { ClientEnv } from "@/_shared/config/config-validation";
 import { UserResponseData } from "@idea/contracts";
 import { CollaborationService } from "@/collaboration/collaboration.service";
+import { AbilityService } from "@/_shared/casl/casl.service";
+import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 
 const REDIRECTED = Symbol("REDIRECTED");
 
@@ -33,6 +35,7 @@ export class FallbackMiddleware implements NestMiddleware {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
     private readonly collaborationService: CollaborationService,
+    private readonly abilityService: AbilityService,
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -252,6 +255,7 @@ export class FallbackMiddleware implements NestMiddleware {
 
   private async getUserInfo(req: Request, res: Response): Promise<UserResponseData | typeof REDIRECTED | null> {
     const { accessToken, refreshToken } = req.cookies;
+    const workspaceModel = "Workspace" as ModelName;
 
     if (!accessToken || !refreshToken) {
       this.redirectToLoginOrMarketing(req, res, false);
@@ -271,12 +275,21 @@ export class FallbackMiddleware implements NestMiddleware {
         return REDIRECTED;
       }
 
+      const abilities = await this.abilityService.serializeAbilitiesForUser(
+        {
+          id: user.id,
+          currentWorkspaceId: user.currentWorkspaceId,
+        },
+        [workspaceModel],
+      );
+
       return {
         id: user.id,
         email: user.email,
         displayName: user.displayName || "",
         imageUrl: user.imageUrl || "",
         currentWorkspaceId: user.currentWorkspaceId || "",
+        abilities,
       };
     } catch (error) {
       console.log("====getUserInfo==== error", error);
@@ -294,12 +307,21 @@ export class FallbackMiddleware implements NestMiddleware {
 
             setAuthCookies(res, newAccessToken, newRefreshToken);
 
+            const abilities = await this.abilityService.serializeAbilitiesForUser(
+              {
+                id: user.id,
+                currentWorkspaceId: user.currentWorkspaceId,
+              },
+              [workspaceModel],
+            );
+
             return {
               id: user.id,
               email: user.email,
               displayName: user.displayName || "",
               imageUrl: user.imageUrl || "",
               currentWorkspaceId: user.currentWorkspaceId || "",
+              abilities,
             };
           }
 

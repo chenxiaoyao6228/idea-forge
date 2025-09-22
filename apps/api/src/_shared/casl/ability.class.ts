@@ -1,49 +1,9 @@
 import { createPrismaAbility } from "@casl/prisma";
 import { AbilityBuilder, AbilityClass, PureAbility } from "@casl/ability";
-import { User } from "@idea/contracts";
+import { Action } from "@idea/contracts";
 import { ModelName } from "../database/prisma/prisma.extension";
 
-export enum Action {
-  // Basic CRUD operations
-  Create = "create",
-  Read = "read",
-  Update = "update",
-  Delete = "delete",
-  Manage = "manage", // highest permission
-
-  // Permission management operations, for document and subspace, workspace, group, and etc
-  ManagePermissions = "managePermissions",
-  ViewPermissions = "viewPermissions",
-
-  // Workspace/Subspace operations
-  InviteMember = "inviteMember",
-  RemoveMember = "removeMember",
-  ManageMembers = "manageMembers",
-  ViewMembers = "viewMembers",
-
-  // Workspace operations
-  ManageWorkspaceSettings = "manageWorkspaceSettings",
-  TransferOwnership = "transferOwnership",
-  ManageSubspaces = "manageSubspaces",
-
-  // Subspace operations
-  ManageSubspaceSettings = "manageSubspaceSettings",
-  ManageNavigationTree = "manageNavigationTree",
-
-  // Document specific operations
-  Comment = "comment",
-  Edit = "edit",
-  Share = "share",
-  Move = "move",
-  BulkMove = "bulkMove", // need MANAGE permission
-  BulkDelete = "bulkDelete", // need MANAGE permission
-  BulkShare = "bulkShare", // need SHARE permission
-  BulkExport = "bulkExport", // need READ permission
-
-  // Import and export operations
-  Export = "export",
-  Import = "import",
-}
+export { Action } from "@idea/contracts";
 
 export type Subjects = ModelName | "all";
 export type AppAbility = PureAbility<[Action, Subjects]>;

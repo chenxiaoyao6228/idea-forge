@@ -7,6 +7,7 @@ export * from "./types";
 // Export API contracts
 export * from "./_base";
 export * from "./auth";
+export * from "./ability";
 export * from "./ai";
 export * from "./file";
 export * from "./workspace";

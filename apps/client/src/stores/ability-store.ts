@@ -4,10 +4,13 @@ import useRequest from "@ahooksjs/use-request";
 import { toast } from "sonner";
 import { useMemo } from "react";
 import { useRefCallback } from "@/hooks/use-ref-callback";
+import { createPrismaAbility } from "@casl/prisma";
+import { unpackRules } from "@casl/ability/extra";
+import type { PureAbility } from "@casl/ability";
+import type { SerializedAbility, SerializedAbilityMap } from "@idea/contracts";
 
 /*
- * we don't need the UnifiedPermission Entity on the client
- * but the converted abilities
+ * Resource-level permission entry (legacy boolean maps per entity).
  */
 export interface AbilityEntity {
   id: string; // resourceId (document, workspace, etc.)
@@ -21,6 +24,11 @@ interface PermissionInput {
   resourceType?: string;
 }
 
+interface SubjectAbilityEntry {
+  ability: PureAbility;
+  serialized: SerializedAbility;
+}
+
 const defaultAbilities = Object.freeze({
   read: false,
   update: false,
@@ -29,20 +37,78 @@ const defaultAbilities = Object.freeze({
   comment: false,
 } as Record<string, boolean>);
 
-// Minimal store - only state
-const useAbilityStore = create<{
+const emptyAbility = createPrismaAbility([]);
+
+const deserializeAbility = (serialized: SerializedAbility): PureAbility => {
+  return createPrismaAbility(unpackRules(serialized.rules));
+};
+
+interface AbilityStoreState {
   abilities: Record<string, AbilityEntity>;
-}>((set) => ({
+  subjectAbilities: Record<string, SubjectAbilityEntry>;
+}
+
+const useAbilityStore = create<AbilityStoreState>(() => ({
   abilities: {},
+  subjectAbilities: {},
 }));
 
-// Fetch resource abilities hook
+// ==== Subject-level helpers ==================================================
+
+export const useInitializeSubjectAbilities = () => {
+  return useRefCallback((abilities: SerializedAbilityMap | null | undefined) => {
+    if (!abilities) return;
+
+    useAbilityStore.setState((state) => {
+      const nextSubjectAbilities = { ...state.subjectAbilities };
+
+      Object.entries(abilities).forEach(([subject, serialized]) => {
+        nextSubjectAbilities[subject] = {
+          serialized,
+          ability: deserializeAbility(serialized),
+        };
+      });
+
+      return {
+        ...state,
+        subjectAbilities: nextSubjectAbilities,
+      };
+    });
+  });
+};
+
+export const useSetSubjectAbility = () => {
+  return useRefCallback((subject: string, serialized: SerializedAbility) => {
+    useAbilityStore.setState((state) => ({
+      ...state,
+      subjectAbilities: {
+        ...state.subjectAbilities,
+        [subject]: {
+          serialized,
+          ability: deserializeAbility(serialized),
+        },
+      },
+    }));
+  });
+};
+
+export const useSubjectAbility = (subject: string): PureAbility => {
+  return useAbilityStore((state) => state.subjectAbilities[subject]?.ability ?? emptyAbility);
+};
+
+export const useSubjectAbilities = () => {
+  return useAbilityStore((state) => state.subjectAbilities);
+};
+
+// ==== Resource-level helpers (legacy boolean maps) ===========================
+
 export const useFetchResourceAbilities = () => {
   return useRequest(
     async (params: { resourceType: string; resourceId: string }) => {
       try {
         const response = await permissionApi.getResourcePermissions(params.resourceType, params.resourceId);
         useAbilityStore.setState((state) => ({
+          ...state,
           abilities: {
             ...state.abilities,
             [params.resourceId]: {
@@ -65,7 +131,6 @@ export const useFetchResourceAbilities = () => {
   );
 };
 
-// Set abilities hook
 export const useSetAbilities = () => {
   return useRequest(
     async (permissions: Record<string, Record<string, boolean>>) => {
@@ -80,7 +145,7 @@ export const useSetAbilities = () => {
           entities.forEach((entity) => {
             newAbilities[entity.id] = entity;
           });
-          return { abilities: newAbilities };
+          return { ...state, abilities: newAbilities };
         });
 
         return entities;
@@ -96,12 +161,12 @@ export const useSetAbilities = () => {
   );
 };
 
-// Update ability hook
 export const useUpdateAbility = () => {
   return useRequest(
     async (params: { id: string; abilities: Record<string, boolean> }) => {
       try {
         useAbilityStore.setState((state) => ({
+          ...state,
           abilities: {
             ...state.abilities,
             [params.id]: {
@@ -123,7 +188,6 @@ export const useUpdateAbility = () => {
   );
 };
 
-// Add many abilities hook
 export const useAddManyAbilities = () => {
   return useRequest(
     async (permissions: PermissionInput[]) => {
@@ -139,7 +203,7 @@ export const useAddManyAbilities = () => {
           entities.forEach((entity) => {
             newAbilities[entity.id] = entity;
           });
-          return { abilities: newAbilities };
+          return { ...state, abilities: newAbilities };
         });
 
         return entities;
@@ -155,7 +219,6 @@ export const useAddManyAbilities = () => {
   );
 };
 
-// Get abilities hook - returns memoized function
 export const useGetAbilities = () => {
   const abilities = useAbilityStore((state) => state.abilities);
   return useRefCallback((id: string) => {
@@ -164,7 +227,6 @@ export const useGetAbilities = () => {
   });
 };
 
-// Has ability hook - returns memoized function
 export const useHasAbility = () => {
   const getAbilities = useGetAbilities();
   return useRefCallback((id: string, action: string) => {
@@ -173,19 +235,35 @@ export const useHasAbility = () => {
   });
 };
 
-// Clear abilities hook
 export const useClearAbilities = () => {
   return useRefCallback(() => {
-    useAbilityStore.setState({ abilities: {} });
+    useAbilityStore.setState({ abilities: {}, subjectAbilities: {} });
   });
 };
 
-// All abilities hook - returns memoized list
+export const useInitializeAbilities = () => {
+  return useRefCallback((abilities: Record<string, Record<string, boolean>>, resourceType = "WORKSPACE") => {
+    const entities = Object.entries(abilities).map(([id, abilityMap]) => ({
+      id,
+      abilities: { ...defaultAbilities, ...abilityMap },
+      resourceType,
+    }));
+
+    useAbilityStore.setState((state) => {
+      const newAbilities = { ...state.abilities };
+      entities.forEach((entity) => {
+        newAbilities[entity.id] = entity;
+      });
+      return { ...state, abilities: newAbilities };
+    });
+
+    return entities;
+  });
+};
+
 export const useAllAbilities = () => {
   const abilities = useAbilityStore((state) => state.abilities);
-  return useMemo(() => {
-    return Object.values(abilities);
-  }, [abilities]);
+  return useMemo(() => Object.values(abilities), [abilities]);
 };
 
 export default useAbilityStore;

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import useUserStore, { UserInfo } from "@/stores/user-store";
 import Loading from "@/components/ui/loading";
+import { useInitializeSubjectAbilities } from "@/stores/ability-store";
 
 /**
  * Get userInfo from local window object and destroy local storage
@@ -22,6 +22,7 @@ function getUserInfoAndDestroyFromLocal(): UserInfo | undefined {
 export default function WithAuth(WrappedComponent: React.ComponentType<any>) {
   return function EnhancedComponent(props: any) {
     const userInfo = useUserStore((state) => state.userInfo);
+    const initializeSubjectAbilities = useInitializeSubjectAbilities();
 
     useEffect(() => {
       if (window.location.pathname === "/auth-callback") {
@@ -31,6 +32,8 @@ export default function WithAuth(WrappedComponent: React.ComponentType<any>) {
       const userInfo = getUserInfoAndDestroyFromLocal();
       if (userInfo) {
         useUserStore.setState({ userInfo });
+
+        initializeSubjectAbilities(userInfo.abilities);
       }
     }, []);
 
