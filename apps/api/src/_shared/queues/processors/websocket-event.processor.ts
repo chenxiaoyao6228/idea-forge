@@ -52,6 +52,9 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.WORKSPACE_MEMBERS_BATCH_ADDED:
           await this.handleWorkspaceMembersBatchAddedEvent(event, server);
           break;
+        case BusinessEvents.WORKSPACE_MEMBER_ROLE_UPDATED:
+          await this.handleWorkspaceMemberRoleUpdatedEvent(event, server);
+          break;
 
         case BusinessEvents.SUBSPACE_MEMBER_LEFT:
           await this.handleSubspaceMemberLeftEvent(event, server);
@@ -384,6 +387,28 @@ export class WebsocketEventProcessor extends WorkerHost {
       membersBatchAdded: true,
     });
     console.log(`[DEBUG] Successfully emitted WORKSPACE_MEMBERS_BATCH_ADDED event`);
+  }
+
+  private async handleWorkspaceMemberRoleUpdatedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { userId, role, member, abilities } = data;
+
+    if (userId) {
+      server.to(`user:${userId}`).emit(BusinessEvents.WORKSPACE_MEMBER_ROLE_UPDATED, {
+        workspaceId,
+        userId,
+        role,
+        member,
+        abilities,
+      });
+    }
+
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.WORKSPACE_MEMBER_ROLE_UPDATED, {
+      workspaceId,
+      userId,
+      role,
+      member,
+    });
   }
 
   // Handle subspace member left events

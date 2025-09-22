@@ -20,6 +20,8 @@ import {
 } from "@idea/contracts";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
+import { AbilityService } from "@/_shared/casl/casl.service";
+import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 
 @Injectable()
 export class WorkspaceService {
@@ -48,6 +50,7 @@ export class WorkspaceService {
     private readonly permissionService: PermissionService,
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionEventService: PermissionEventService,
+    private readonly abilityService: AbilityService,
   ) {}
 
   /**
@@ -771,10 +774,37 @@ export class WorkspaceService {
     });
 
     // 2. Update unified permissions based on new role
-    const permission = await this.permissionService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
+    await this.permissionService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
 
     // 3. Propagate permission changes to all child resources using event service
     await this.permissionEventService.handleWorkspaceRoleChange(userId, workspaceId, oldRole, newRole);
+
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { currentWorkspaceId: true },
+    });
+
+    const abilities = await this.abilityService.serializeAbilitiesForUser(
+      {
+        id: userId,
+        currentWorkspaceId: user?.currentWorkspaceId ?? null,
+      },
+      ["Workspace" as ModelName],
+    );
+
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.WORKSPACE_MEMBER_ROLE_UPDATED,
+      workspaceId,
+      actorId: adminId,
+      data: {
+        workspaceId,
+        userId,
+        role: newRole,
+        member: updatedMember,
+        abilities,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     return updatedMember;
   }
