@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImageCropper } from "@/components/image-cropper";
-import { workspaceApi } from "@/apis/workspace";
-import useWorkspaceStore, { useSetCurrentWorkspace, useUpdateWorkspace } from "@/stores/workspace-store";
+import useWorkspaceStore, { useUpdateWorkspace } from "@/stores/workspace-store";
 import { uploadFile } from "@/lib/upload";
 import { dataURLtoFile } from "@/lib/file";
-import type { UpdateWorkspaceRequest, WorkspaceSettings } from "@idea/contracts";
+import { Action, type UpdateWorkspaceRequest, type WorkspaceSettings } from "@idea/contracts";
+import { useAbilityCan } from "@/hooks/use-ability";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface FileWithPreview extends File {
   preview: string;
@@ -48,8 +49,12 @@ const DATE_FORMAT_OPTIONS = [
 export const Workspace = () => {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const setCurrentWorkspace = useSetCurrentWorkspace();
   const { run: updateWorkspace } = useUpdateWorkspace();
+  const workspaceId = currentWorkspace?.id;
+  const workspaceSubject = useMemo(() => (workspaceId ? { id: workspaceId } : undefined), [workspaceId]);
+  const { can: canManageSettings } = useAbilityCan("Workspace", Action.ManageWorkspaceSettings, workspaceSubject);
+  const { can: canManage } = useAbilityCan("Workspace", Action.Manage, workspaceSubject);
+  const canEditWorkspace = canManageSettings || canManage;
 
   // Form states
   const [workspaceName, setWorkspaceName] = useState("");
@@ -86,7 +91,7 @@ export const Workspace = () => {
   // Update workspace name
   const handleNameUpdate = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
-      if (!currentWorkspace) return;
+      if (!currentWorkspace || !canEditWorkspace) return;
       const newName = e.target.value.trim();
       if (!newName || newName === currentWorkspace.name) return;
 
@@ -111,13 +116,13 @@ export const Workspace = () => {
         setIsUpdating(false);
       }
     },
-    [currentWorkspace, t, setCurrentWorkspace],
+    [currentWorkspace, t, canEditWorkspace],
   );
 
   // Update workspace settings
   const handleSettingsUpdate = useCallback(
     async (newSettings: Partial<WorkspaceSettings>) => {
-      if (!currentWorkspace) return;
+      if (!currentWorkspace || !canEditWorkspace) return;
 
       try {
         setIsUpdating(true);
@@ -144,29 +149,36 @@ export const Workspace = () => {
         setIsUpdating(false);
       }
     },
-    [currentWorkspace, t, setCurrentWorkspace],
+    [currentWorkspace, t, canEditWorkspace],
   );
 
   // Handle timezone change
   const handleTimezoneChange = useCallback(
     (newTimezone: string) => {
+      if (!canEditWorkspace) return;
       setTimezone(newTimezone);
       handleSettingsUpdate({ timezone: newTimezone });
     },
-    [handleSettingsUpdate],
+    [handleSettingsUpdate, canEditWorkspace],
   );
 
   // Handle date format change
   const handleDateFormatChange = useCallback(
     (newDateFormat: string) => {
+      if (!canEditWorkspace) return;
       setDateFormat(newDateFormat);
       handleSettingsUpdate({ dateFormat: newDateFormat as WorkspaceSettings["dateFormat"] });
     },
-    [handleSettingsUpdate],
+    [handleSettingsUpdate, canEditWorkspace],
   );
 
   // Handle avatar upload
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canEditWorkspace) {
+      e.target.value = "";
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -198,7 +210,7 @@ export const Workspace = () => {
   // Update avatar after cropping
   const updateAvatar = useCallback(
     async (file: File) => {
-      if (!currentWorkspace) return;
+      if (!currentWorkspace || !canEditWorkspace) return;
 
       try {
         setIsUploading(true);
@@ -227,13 +239,13 @@ export const Workspace = () => {
         setIsUploading(false);
       }
     },
-    [currentWorkspace, t, setCurrentWorkspace],
+    [currentWorkspace, t, canEditWorkspace],
   );
 
   // Handle cropped image
   const handleCroppedImage = useCallback(
     (croppedImageDataUrl: string) => {
-      if (!croppedImageDataUrl) {
+      if (!croppedImageDataUrl || !canEditWorkspace) {
         toast.error(t("Failed to crop image. Please try again."));
         return;
       }
@@ -247,11 +259,11 @@ export const Workspace = () => {
         toast.error(t("Failed to process image. Please try again."));
       }
     },
-    [updateAvatar, t],
+    [updateAvatar, t, canEditWorkspace],
   );
 
   const triggerFileInput = () => {
-    if (isUploading) return;
+    if (isUploading || !canEditWorkspace) return;
     fileInputRef.current?.click();
   };
 
@@ -265,7 +277,7 @@ export const Workspace = () => {
   }
 
   const avatarComponent = (
-    <div className="group relative flex h-fit items-center justify-center cursor-pointer">
+    <div className={`group relative flex h-fit items-center justify-center ${canEditWorkspace ? "cursor-pointer" : "cursor-default"}`}>
       <Avatar className="size-14">
         <AvatarImage src={currentWorkspace.avatar || ""} />
         <AvatarFallback className="text-lg">{currentWorkspace.name?.slice(0, 2).toUpperCase() || "WS"}</AvatarFallback>
@@ -287,6 +299,12 @@ export const Workspace = () => {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">{t("Workspace")}</h3>
+      {!canEditWorkspace && (
+        <Alert>
+          <AlertTitle>{t("You have read-only access")}</AlertTitle>
+          <AlertDescription>{t("Only workspace admins or owners can update settings and profile details.")}</AlertDescription>
+        </Alert>
+      )}
       <Separator />
       {/* Profile Section */}
       <div className="flex">
@@ -294,7 +312,7 @@ export const Workspace = () => {
           <Tooltip>
             <TooltipTrigger asChild>{avatarComponent}</TooltipTrigger>
             <TooltipContent>
-              <p>{t("Click to upload and crop workspace logo")}</p>
+              <p>{canEditWorkspace ? t("Click to upload and crop workspace logo") : t("You don't have permission to update the workspace logo")}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -305,7 +323,7 @@ export const Workspace = () => {
             defaultValue={currentWorkspace.name || ""}
             onBlur={handleNameUpdate}
             placeholder={t("Enter workspace name")}
-            disabled={isUpdating}
+            disabled={isUpdating || !canEditWorkspace}
           />
           <Label className="text-xs text-muted-foreground">{t("This is your workspace name that members will see")}</Label>
         </div>
@@ -324,7 +342,7 @@ export const Workspace = () => {
               <div className="text-xs text-muted-foreground">{t("This setting applies to the current workspace")}</div>
             </div>
             <div className="w-80">
-              <Select value={timezone} onValueChange={handleTimezoneChange} disabled={isUpdating}>
+              <Select value={timezone} onValueChange={handleTimezoneChange} disabled={isUpdating || !canEditWorkspace}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("Select timezone")} />
                 </SelectTrigger>
@@ -346,7 +364,7 @@ export const Workspace = () => {
               <div className="text-xs text-muted-foreground">{t("This format will be used throughout the workspace")}</div>
             </div>
             <div className="w-80">
-              <Select value={dateFormat} onValueChange={handleDateFormatChange} disabled={isUpdating}>
+              <Select value={dateFormat} onValueChange={handleDateFormatChange} disabled={isUpdating || !canEditWorkspace}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("Select date format")} />
                 </SelectTrigger>
@@ -368,7 +386,7 @@ export const Workspace = () => {
 
       {/* Image Cropper Dialog */}
       <ImageCropper
-        dialogOpen={cropperDialogOpen}
+        dialogOpen={cropperDialogOpen && canEditWorkspace}
         setDialogOpen={setCropperDialogOpen}
         selectedFile={selectedFile}
         setSelectedFile={setSelectedFile}
