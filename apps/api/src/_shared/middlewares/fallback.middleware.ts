@@ -276,6 +276,7 @@ export class FallbackMiddleware implements NestMiddleware {
         email: user.email,
         displayName: user.displayName || "",
         imageUrl: user.imageUrl || "",
+        currentWorkspaceId: user.currentWorkspaceId || "",
       };
     } catch (error) {
       console.log("====getUserInfo==== error", error);
@@ -298,6 +299,7 @@ export class FallbackMiddleware implements NestMiddleware {
               email: user.email,
               displayName: user.displayName || "",
               imageUrl: user.imageUrl || "",
+              currentWorkspaceId: user.currentWorkspaceId || "",
             };
           }
 

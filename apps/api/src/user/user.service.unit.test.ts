@@ -37,6 +37,7 @@ describe("UserService with @suites", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       hashedRefreshToken: null,
+      currentWorkspaceId: null,
     };
 
     // Setup the mock implementation

@@ -48,10 +48,10 @@ export enum Action {
 export type Subjects = ModelName | "all";
 export type AppAbility = PureAbility<[Action, Subjects]>;
 export const AppAbility = PureAbility as AbilityClass<AppAbility>;
-export type AbilityFactory = (user: User) => AppAbility;
+export type AbilityFactory = (user: any) => AppAbility;
 
 export abstract class BaseAbility {
-  abstract createForUser(user: User): Promise<AppAbility>;
+  abstract createForUser(user: any): Promise<AppAbility>;
 
   protected async createAbilityAsync(defineRules: (builder: AbilityBuilder<AppAbility>) => Promise<void>): Promise<AppAbility> {
     const builder = new AbilityBuilder<AppAbility>(createPrismaAbility);

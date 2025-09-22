@@ -118,6 +118,10 @@ model User {
   password           Password? // Hashed password
   connections        Connection[] // OAuth connections
 
+  // Current workspace context
+  currentWorkspaceId String? // Currently active workspace ID
+  currentWorkspace   Workspace? @relation("UserCurrentWorkspace", fields: [currentWorkspaceId], references: [id])
+
   // Document relationships
   authoredDocs     Doc[]      @relation("DocAuthor") // Documents created by user
   createdDocs      Doc[]      @relation("DocCreator") // Documents created by user
@@ -179,6 +183,9 @@ model Workspace {
   guests       GuestCollaborator[]
   memberGroups MemberGroup[]
   docs         Doc[]
+
+  // Current workspace users
+  currentUsers User[] @relation("UserCurrentWorkspace")
 }
 
 enum DocVisibility {

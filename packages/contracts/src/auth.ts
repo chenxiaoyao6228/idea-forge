@@ -37,6 +37,7 @@ export interface UserResponseData {
   displayName?: string;
   imageUrl?: string;
   collabToken?: string;
+  currentWorkspaceId?: string;
 }
 
 export interface LoginResponseData {

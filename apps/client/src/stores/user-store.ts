@@ -25,7 +25,6 @@ export const useLogout = () => {
         // FIXME: better way to do this
         // Clear workspace store
         useWorkspaceStore.setState({
-          currentWorkspace: undefined,
           workspaceMembers: [],
           workspaces: {},
         });

@@ -4,6 +4,7 @@ import { subspaceApi } from "@/apis/subspace";
 import { UpdateWorkspaceRequest, WorkspaceSettings, WorkspaceMemberListResponse } from "@idea/contracts";
 import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
+import useUserStore from "./user-store";
 
 export interface WorkspaceEntity {
   id: string;
@@ -30,7 +31,22 @@ const useWorkspaceStore = create<{
 }));
 
 // Data Access Hooks
-export const useCurrentWorkspace = () => useWorkspaceStore((state) => state.currentWorkspace);
+export const useCurrentWorkspace = () => {
+  const userInfo = useUserStore((state) => state.userInfo);
+  const workspaces = useWorkspaceStore((state) => state.workspaces);
+
+  if (userInfo?.currentWorkspaceId) {
+    return workspaces[userInfo.currentWorkspaceId];
+  }
+
+  // Fallback: get from localStorage for backward compatibility
+  const workspaceId = localStorage.getItem("workspaceId");
+  if (workspaceId) {
+    return workspaces[workspaceId];
+  }
+
+  return undefined;
+};
 export const useWorkspaceMembers = () => useWorkspaceStore((state) => state.workspaceMembers);
 export const useAllWorkspaces = () => {
   const workspaces = useWorkspaceStore((state) => state.workspaces);
@@ -86,7 +102,10 @@ export const useFetchWorkspaces = () => {
 
           useWorkspaceStore.setState({ workspaces: workspacesMap });
 
-          const currentWorkspaceId = localStorage.getItem("workspaceId");
+          // Get current workspace from user info first, then fallback to localStorage
+          const userInfo = useUserStore.getState().userInfo;
+          const currentWorkspaceId = userInfo?.currentWorkspaceId || localStorage.getItem("workspaceId");
+
           // If no current workspace, set the first one as the current workspace
           // remove the current workspace if not matching the new workspace list in case the user have been removed from the workspace
           if (!currentWorkspaceId || !workspaceEntities.find((workspace) => workspace.id === currentWorkspaceId)) {
@@ -94,11 +113,18 @@ export const useFetchWorkspaces = () => {
             if (firstWorkspace) {
               useWorkspaceStore.setState({ currentWorkspace: firstWorkspace });
               localStorage.setItem("workspaceId", firstWorkspace.id);
+
+              // Update user info with current workspace
+              if (userInfo) {
+                userInfo.currentWorkspaceId = firstWorkspace.id;
+                useUserStore.setState({ userInfo });
+              }
             }
           } else {
             const currentWorkspace = workspaceEntities.find((workspace) => workspace.id === currentWorkspaceId);
             if (currentWorkspace) {
               useWorkspaceStore.setState({ currentWorkspace });
+              localStorage.setItem("workspaceId", currentWorkspace.id);
             }
           }
           return workspaceEntities;
@@ -117,8 +143,27 @@ export const useSwitchWorkspace = () => {
   return useRequest(
     async (workspaceId: string) => {
       try {
-        localStorage.clear();
+        // Call the new API to switch workspace
+        await workspaceApi.switchWorkspace(workspaceId);
+
+        // Update user store with new currentWorkspaceId
+        const userInfo = useUserStore.getState().userInfo;
+        if (userInfo) {
+          userInfo.currentWorkspaceId = workspaceId;
+          useUserStore.setState({ userInfo });
+        }
+
+        // Update workspace store current workspace
+        const workspaces = useWorkspaceStore.getState().workspaces;
+        const newCurrentWorkspace = workspaces[workspaceId];
+        if (newCurrentWorkspace) {
+          useWorkspaceStore.setState({ currentWorkspace: newCurrentWorkspace });
+        }
+
+        // Keep localStorage for backward compatibility
         localStorage.setItem("workspaceId", workspaceId);
+
+        // Refresh the page to ensure all components get the new workspace context
         window.location.href = "/";
       } catch (error) {
         console.error("Failed to switch workspace:", error);
@@ -334,7 +379,11 @@ export const useBatchSetWorkspaceWide = () => {
 // Helper Hooks
 export const useSetCurrentWorkspace = () => {
   return useRefCallback((workspace?: WorkspaceEntity) => {
-    useWorkspaceStore.setState({ currentWorkspace: workspace });
+    const userInfo = useUserStore.getState().userInfo;
+    if (userInfo) {
+      userInfo.currentWorkspaceId = workspace?.id;
+      useUserStore.setState({ userInfo });
+    }
   });
 };
 

@@ -1043,4 +1043,58 @@ export class WorkspaceService {
 
   //   return member;
   // }
+
+  /**
+   * Switch user's current workspace
+   * Validates user has access to the workspace before switching
+   */
+  async switchWorkspace(userId: string, workspaceId: string) {
+    // Verify user has access to the workspace
+    const hasAccess = await this.hasWorkspaceAccess(userId, workspaceId);
+    if (!hasAccess) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    // Update user's current workspace
+    await this.prismaService.user.update({
+      where: { id: userId },
+      data: { currentWorkspaceId: workspaceId },
+    });
+
+    return { success: true, currentWorkspaceId: workspaceId };
+  }
+
+  /**
+   * Get user's current workspace
+   */
+  async getCurrentWorkspace(userId: string) {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { currentWorkspaceId: true },
+    });
+
+    if (!user?.currentWorkspaceId) {
+      return null;
+    }
+
+    return this.getWorkspace(user.currentWorkspaceId, userId);
+  }
+
+  /**
+   * Set user's default workspace (first workspace they're a member of)
+   */
+  async setDefaultWorkspace(userId: string) {
+    const firstWorkspace = await this.prismaService.workspaceMember.findFirst({
+      where: { userId },
+      select: { workspaceId: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (firstWorkspace) {
+      await this.prismaService.user.update({
+        where: { id: userId },
+        data: { currentWorkspaceId: firstWorkspace.workspaceId },
+      });
+    }
+  }
 }

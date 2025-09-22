@@ -298,6 +298,7 @@ export class AuthService {
 
     const currentUser = {
       id: user.id,
+      currentWorkspaceId: user.currentWorkspaceId,
     };
 
     return currentUser;

@@ -45,4 +45,10 @@ export const workspaceApi = {
 
   removeWorkspaceMember: async (workspaceId: string, memberId: string) =>
     request.delete<void, { success: boolean }>(`/api/workspaces/${workspaceId}/members/${memberId}`),
+
+  // Workspace switching
+  switchWorkspace: async (workspaceId: string) =>
+    request.patch<{ workspaceId: string }, { success: boolean; currentWorkspaceId: string }>("/api/workspaces/switch", { workspaceId }),
+
+  getCurrentWorkspace: async () => request.get<void, Workspace>("/api/workspaces/current"),
 };

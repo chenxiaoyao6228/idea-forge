@@ -1,6 +1,6 @@
 import Loading from "@/components/ui/loading";
 import Doc from "../doc";
-import useWorkspaceStore, { useAllWorkspaces, useFetchWorkspaces } from "@/stores/workspace-store";
+import { useAllWorkspaces, useFetchWorkspaces } from "@/stores/workspace-store";
 import SidebarContainer from "./sidebar";
 import { useCurrentDocument } from "@/hooks/use-current-document";
 import { WebSocketProvider } from "@/components/websocket-provider";
