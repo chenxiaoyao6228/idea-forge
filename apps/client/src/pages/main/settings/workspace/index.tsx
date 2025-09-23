@@ -52,7 +52,7 @@ export const Workspace = () => {
   const { run: updateWorkspace } = useUpdateWorkspace();
   const workspaceId = currentWorkspace?.id;
   const workspaceSubject = useMemo(() => (workspaceId ? { id: workspaceId } : undefined), [workspaceId]);
-  const { can: canManageSettings } = useAbilityCan("Workspace", Action.ManageWorkspaceSettings, workspaceSubject);
+  const { can: canManageSettings } = useAbilityCan("Workspace", Action.ManageSettings, workspaceSubject);
   const { can: canManage } = useAbilityCan("Workspace", Action.Manage, workspaceSubject);
   const canEditWorkspace = canManageSettings || canManage;
 
@@ -299,12 +299,6 @@ export const Workspace = () => {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">{t("Workspace")}</h3>
-      {!canEditWorkspace && (
-        <Alert>
-          <AlertTitle>{t("You have read-only access")}</AlertTitle>
-          <AlertDescription>{t("Only workspace admins or owners can update settings and profile details.")}</AlertDescription>
-        </Alert>
-      )}
       <Separator />
       {/* Profile Section */}
       <div className="flex">

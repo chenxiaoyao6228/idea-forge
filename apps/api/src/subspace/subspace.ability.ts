@@ -1,69 +1,123 @@
 import { Action, AppAbility, BaseAbility } from "@/_shared/casl/ability.class";
 import { DefineAbility } from "@/_shared/casl/ability.decorator";
 import { Injectable } from "@nestjs/common";
-import { PermissionService } from "@/permission/permission.service";
-import { PermissionLevel, ResourceType, User } from "@idea/contracts";
+import { SubspaceRole } from "@idea/contracts";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { Prisma } from "@prisma/client";
+
+// Extended user interface with subspace context
+interface UserWithSubspace {
+  id: string;
+  currentWorkspaceId?: string | null;
+}
 
 @Injectable()
 @DefineAbility("Subspace" as Prisma.ModelName)
 export class SubspaceAbility extends BaseAbility {
-  constructor(private readonly permissionService: PermissionService) {
+  constructor(private readonly prismaService: PrismaService) {
     super();
   }
-  async createForUser(user: User): Promise<AppAbility> {
+  // Will be called on each request that triggers a policy check
+  async createForUser(user: UserWithSubspace): Promise<AppAbility> {
     return this.createAbilityAsync(async (builder) => {
-      const { can } = builder;
-      // Only get permissions related to subspaces
-      const subspacePermissions = await this.permissionService.getUserSubspacePermissions(user.id);
-      const subspaceIds = subspacePermissions.map((p) => p.resourceId);
-      const uniqueSubspaceIds = Array.from(new Set(subspaceIds));
+      const { can } = builder; // Destructure here instead
 
-      for (const subspaceId of uniqueSubspaceIds) {
-        const level = await this.permissionService.resolveUserPermission(user.id, ResourceType.SUBSPACE, subspaceId);
-        this.defineSubspacePermissions(can, subspaceId, level);
-      }
+      // Get current workspace from user object
+      const currentWorkspaceId = user.currentWorkspaceId;
 
-      // Still check workspace permissions for creating subspaces
-      const workspacePermissions = await this.permissionService.getUserWorkspacePermissions(user.id);
-      const workspaceIds = workspacePermissions.map((p) => p.resourceId);
-      const uniqueWorkspaceIds = Array.from(new Set(workspaceIds));
+      if (currentWorkspaceId) {
+        // Get permissions for subspaces in current workspace only (optimized for workspace switching)
+        const subspaceMembers = await this.prismaService.subspaceMember.findMany({
+          where: {
+            userId: user.id,
+            subspace: {
+              workspaceId: currentWorkspaceId,
+            },
+          },
+          select: {
+            subspaceId: true,
+            role: true,
+            subspace: {
+              select: { id: true, workspaceId: true },
+            },
+          },
+        });
 
-      for (const workspaceId of uniqueWorkspaceIds) {
-        const level = await this.permissionService.resolveUserPermission(user.id, ResourceType.WORKSPACE, workspaceId);
-        this.defineWorkspaceBasedSubspacePermissions(can, workspaceId, level);
+        for (const member of subspaceMembers) {
+          this.defineSubspacePermissions(can, member.subspaceId, member.role);
+        }
+
+        // Also check workspace permissions for creating subspaces
+        const workspaceMember = await this.prismaService.workspaceMember.findUnique({
+          where: {
+            workspaceId_userId: {
+              workspaceId: currentWorkspaceId,
+              userId: user.id,
+            },
+          },
+          select: { role: true },
+        });
+
+        if (workspaceMember) {
+          this.defineWorkspaceBasedSubspacePermissions(can, currentWorkspaceId, workspaceMember.role);
+        }
+      } else {
+        // Fallback: Get permissions for all subspaces (existing behavior)
+        const subspaceMembers = await this.prismaService.subspaceMember.findMany({
+          where: { userId: user.id },
+          select: {
+            subspaceId: true,
+            role: true,
+            subspace: {
+              select: { id: true, workspaceId: true },
+            },
+          },
+        });
+
+        for (const member of subspaceMembers) {
+          this.defineSubspacePermissions(can, member.subspaceId, member.role);
+        }
+
+        // Get workspace permissions for creating subspaces
+        const workspaceMembers = await this.prismaService.workspaceMember.findMany({
+          where: { userId: user.id },
+          select: { workspaceId: true, role: true },
+        });
+
+        for (const member of workspaceMembers) {
+          this.defineWorkspaceBasedSubspacePermissions(can, member.workspaceId, member.role);
+        }
       }
     });
   }
 
-  private defineSubspacePermissions(can: any, subspaceId: string, level: PermissionLevel) {
-    switch (level) {
-      case PermissionLevel.OWNER:
-      case PermissionLevel.MANAGE:
+  private defineSubspacePermissions(can: any, subspaceId: string, role: SubspaceRole) {
+    switch (role) {
+      case SubspaceRole.ADMIN:
+        // ADMIN: Can manage subspace settings, add/remove members, manage all documents in the subspace
         can([Action.Read, Action.Update, Action.Delete, Action.Manage], "Subspace", { id: subspaceId });
-        can(Action.ManageMembers, "Subspace", { id: subspaceId });
-        can(Action.ViewMembers, "Subspace", { id: subspaceId });
+        can([Action.ManageMembers, Action.ViewMembers], "SubspaceMember", { subspaceId });
         can(Action.ManagePermissions, "Subspace", { id: subspaceId });
-        can(Action.ViewPermissions, "Subspace", { id: subspaceId });
-        can(Action.ManageSubspaceSettings, "Subspace", { id: subspaceId });
-        can(Action.ManageNavigationTree, "Subspace", { id: subspaceId });
+        can(Action.ManageSettings, "Subspace", { id: subspaceId });
+        can(Action.ManageStructure, "Subspace", { id: subspaceId });
         break;
-      case PermissionLevel.EDIT:
+
+      case SubspaceRole.MEMBER:
+        // MEMBER: Can read subspace and manage navigation tree
         can([Action.Read, Action.Update], "Subspace", { id: subspaceId });
-        can(Action.ViewMembers, "Subspace", { id: subspaceId });
-        can(Action.ManageNavigationTree, "Subspace", { id: subspaceId });
+        can(Action.ViewMembers, "SubspaceMember", { subspaceId });
+        can(Action.ManageStructure, "Subspace", { id: subspaceId });
         break;
-      case PermissionLevel.COMMENT:
-        can([Action.Read, Action.Comment], "Subspace", { id: subspaceId });
-        break;
-      case PermissionLevel.READ:
-        can(Action.Read, "Subspace", { id: subspaceId });
+
+      default:
+        // No permissions for unknown roles
         break;
     }
   }
 
-  private defineWorkspaceBasedSubspacePermissions(can: any, workspaceId: string, level: PermissionLevel) {
-    if (level === PermissionLevel.OWNER || level === PermissionLevel.MANAGE) {
+  private defineWorkspaceBasedSubspacePermissions(can: any, workspaceId: string, role: any) {
+    // Only workspace OWNER and ADMIN can create subspaces
+    if (role === "OWNER" || role === "ADMIN") {
       can(Action.Create, "Subspace", { workspaceId });
     }
   }

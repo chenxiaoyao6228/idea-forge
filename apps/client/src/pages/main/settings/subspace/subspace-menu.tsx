@@ -79,8 +79,11 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
           <Settings className="mr-2 h-4 w-4" />
           {t("Subspace settings...")}
         </DropdownMenuItem>
-        <TooltipWrapper disabled={isLastAdmin} tooltip={t("Cannot leave as the only admin")}>
-          <DropdownMenuItem onClick={handleLeaveSubspace} disabled={isLeavingSubspace || isLastAdmin}>
+        <TooltipWrapper
+          disabled={isLastAdmin || subspaceType === "WORKSPACE_WIDE"}
+          tooltip={isLastAdmin ? t("Cannot leave as the only admin") : subspaceType === "WORKSPACE_WIDE" ? t("Cannot leave workspace-wide subspaces") : ""}
+        >
+          <DropdownMenuItem onClick={handleLeaveSubspace} disabled={isLeavingSubspace || isLastAdmin || subspaceType === "WORKSPACE_WIDE"}>
             <LogOut className="mr-2 h-4 w-4" />
             {isLeavingSubspace ? t("Leaving...") : t("Leave subspace")}
           </DropdownMenuItem>

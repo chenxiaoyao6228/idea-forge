@@ -615,6 +615,8 @@ export const useLeaveSubspace = () => {
         const code = error?.response?.data?.code || error?.code;
         if (code === "cannot_leave_as_last_admin") {
           toast.error(t("You cannot leave this subspace because you are the last admin. Please assign another admin before leaving."));
+        } else if (code === "cannot_leave_workspace_wide_subspace") {
+          toast.error(t("You cannot leave workspace-wide subspaces. All workspace members are automatically members of this space."));
         } else {
           const errorMessage = error?.response?.data?.message || error?.message || t("Failed to leave subspace");
           toast.error(errorMessage);
@@ -693,11 +695,11 @@ export const useBatchRemoveSubspaceMembers = () => {
   );
 };
 
-export const useFetchSubspaceSettings = () => {
+export const useFetchSubspaceSettings = (subspaceId: string) => {
   const { t } = useTranslation();
 
   return useRequest(
-    async (subspaceId: string) => {
+    async () => {
       try {
         const response = await subspaceApi.getSubspaceSettings(subspaceId);
 
@@ -715,11 +717,11 @@ export const useFetchSubspaceSettings = () => {
   );
 };
 
-export const useUpdateSubspaceSettings = () => {
+export const useUpdateSubspaceSettings = (subspaceId: string) => {
   const { t } = useTranslation();
 
   return useRequest(
-    async (params: { subspaceId: string; settings: UpdateSubspaceSettingsRequest }) => {
+    async (params: { settings: UpdateSubspaceSettingsRequest }) => {
       const currentState = useSubSpaceStore.getState();
       const currentSettings = currentState.subspaceSettings;
 
@@ -736,19 +738,19 @@ export const useUpdateSubspaceSettings = () => {
       }
 
       try {
-        const response = await subspaceApi.updateSubspaceSettings(params.subspaceId, params.settings);
+        const response = await subspaceApi.updateSubspaceSettings(subspaceId, params.settings);
 
         // Update store with actual response
         useSubSpaceStore.setState({ subspaceSettings: response });
 
         // Also update the subspace entity in the store
         useSubSpaceStore.setState((state) => {
-          const currentSubspace = state.subspaces[params.subspaceId];
+          const currentSubspace = state.subspaces[subspaceId];
           if (currentSubspace) {
             return {
               subspaces: {
                 ...state.subspaces,
-                [params.subspaceId]: {
+                [subspaceId]: {
                   ...currentSubspace,
                   name: response.subspace.name,
                   description: response.subspace.description || undefined,

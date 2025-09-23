@@ -352,6 +352,11 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.CannotLeavePersonalSubspace);
     }
 
+    // check if the subspace is a workspace-wide subspace (workspace-wide subspaces cannot be left)
+    if (subspace.type === SubspaceType.WORKSPACE_WIDE) {
+      throw new ApiException(ErrorCodeEnum.CannotLeaveWorkspaceWideSubspace);
+    }
+
     // check if the user is the last admin
     if (userMember.role === "ADMIN") {
       const adminCount = await this.prismaService.subspaceMember.count({

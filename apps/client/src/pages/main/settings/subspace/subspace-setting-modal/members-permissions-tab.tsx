@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import useUserStore from "@/stores/user-store";
 import { showAddSubspaceMemberModal } from "../add-subspace-member-modal";
 import { useRefCallback } from "@/hooks/use-ref-callback";
+import { useAbilityCan, Action } from "@/hooks/use-ability";
 
 interface MembersPermissionsTabProps {
   settings: SubspaceSettingsResponse;
@@ -27,6 +28,9 @@ interface MembersPermissionsTabProps {
 export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPermissionsTabProps) {
   const { t } = useTranslation();
   const userInfo = useUserStore((state) => state.userInfo);
+  const subspaceSubject = { id: settings.subspace.id };
+  const { can: canManageMembers } = useAbilityCan("Subspace", Action.ManageMembers, subspaceSubject);
+  const { can: canManageSubspaceSettings } = useAbilityCan("Subspace", Action.ManageSettings, subspaceSubject);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter members based on search query
@@ -174,12 +178,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
             <label htmlFor="subspace-type" className="text-sm font-medium">
               {t("Subspace Type")}
             </label>
-            <SubspaceTypeSelector
-              id="subspace-type"
-              value={settings.subspace.type}
-              onChange={handleTypeChange}
-              disabled={!settings.permissions.canChangeType}
-            />
+            <SubspaceTypeSelector id="subspace-type" value={settings.subspace.type} onChange={handleTypeChange} disabled={!canManageSubspaceSettings} />
           </div>
 
           {/* Role-based permissions display */}
@@ -206,7 +205,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
               <PermissionLevelSelector
                 value={settings.subspace.subspaceMemberPermission}
                 onChange={(value) => handlePermissionChange("subspaceMemberPermission", value)}
-                disabled={!settings.permissions.canEditSettings}
+                disabled={!canManageSubspaceSettings}
               />
             </div>
 
@@ -219,7 +218,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
               <PermissionLevelSelector
                 value={settings.subspace.nonSubspaceMemberPermission}
                 onChange={(value) => handlePermissionChange("nonSubspaceMemberPermission", value)}
-                disabled={!settings.permissions.canEditSettings || settings.subspace.type === "WORKSPACE_WIDE"}
+                disabled={!canManageSubspaceSettings || settings.subspace.type === "WORKSPACE_WIDE"}
               />
             </div>
           </div>
@@ -262,11 +261,16 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={handleAddMember} disabled={settings.subspace.type === "WORKSPACE_WIDE"}>
+                  <Button onClick={handleAddMember} disabled={!canManageMembers || settings.subspace.type === "WORKSPACE_WIDE"}>
                     <UserPlus className="h-4 w-4 mr-2" />
                     {t("Add Member")}
                   </Button>
                 </TooltipTrigger>
+                {!canManageMembers && (
+                  <TooltipContent>
+                    <p>{t("Only subspace admins can add members")}</p>
+                  </TooltipContent>
+                )}
                 {settings.subspace.type === "WORKSPACE_WIDE" && (
                   <TooltipContent>
                     <p>{t("Workspace-wide subspaces automatically include all workspace members")}</p>
@@ -311,7 +315,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
                             <Select
                               value={member.role}
                               onValueChange={(value: SubspaceRole) => handleMemberRoleChange(member.id, value)}
-                              disabled={isCurrentUser}
+                              disabled={isCurrentUser || !canManageMembers}
                             >
                               <SelectTrigger className="w-40 h-8 text-sm">
                                 <SelectValue />
@@ -327,12 +331,16 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
                           <div className="flex justify-center">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isCurrentUser}>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isCurrentUser || !canManageMembers}>
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleRemoveMember(member.id)} className="text-destructive focus:text-destructive">
+                                <DropdownMenuItem
+                                  onClick={() => handleRemoveMember(member.id)}
+                                  className="text-destructive focus:text-destructive"
+                                  disabled={!canManageMembers}
+                                >
                                   <UserMinus className="h-4 w-4 mr-2" />
                                   {t("Remove user from subspace")}
                                 </DropdownMenuItem>

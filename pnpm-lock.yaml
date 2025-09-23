@@ -983,7 +983,14 @@ importers:
         specifier: ^5.1.3
         version: 5.1.3(typescript@5.9.2)(vite@5.4.20)
 
-  packages/contracts: {}
+  packages/contracts:
+    dependencies:
+      '@casl/ability':
+        specifier: ^6.7.3
+        version: 6.7.3
+      extra:
+        specifier: link:@casl/ability/extra
+        version: link:@casl/ability/extra
 
 packages:
 
@@ -5145,7 +5152,7 @@ packages:
       typescript:
         optional: true
     dependencies:
-      prisma: 6.10.1(typescript@5.8.2)
+      prisma: 6.10.1(typescript@5.9.2)
       typescript: 5.9.2
 
   /@prisma/config@6.10.1:
@@ -19576,6 +19583,7 @@ packages:
       '@prisma/config': 6.10.1
       '@prisma/engines': 6.10.1
       typescript: 5.8.2
+    dev: true
 
   /prisma@6.10.1(typescript@5.9.2):
     resolution: {integrity: sha512-khhlC/G49E4+uyA3T3H5PRBut486HD2bDqE2+rvkU0pwk9IAqGFacLFUyIx9Uw+W2eCtf6XGwsp+/strUwMNPw==}

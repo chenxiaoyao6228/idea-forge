@@ -8,7 +8,8 @@ import { Subspace } from "@/pages/main/settings/subspace";
 import { Workspace } from "@/pages/main/settings/workspace";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
-import { useWorkspaceType } from "@/hooks/use-workspace-type";
+import { useAbilityCan, Action } from "@/hooks/use-ability";
+import useWorkspaceStore from "@/stores/workspace-store";
 
 export interface SettingModalProps {
   // basic info
@@ -35,7 +36,10 @@ const SettingModal = ({
   content,
 }: ConfirmDialogProps<SettingModalProps, boolean>) => {
   const { t } = useTranslation();
-  const { isPersonalWorkspace } = useWorkspaceType();
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  const workspaceSubject = currentWorkspace ? { id: currentWorkspace.id } : undefined;
+  const { can: canManageSubspaces } = useAbilityCan("Workspace", Action.ManageSubspaces, workspaceSubject);
+
   const [activeTab, setActiveTab] = useState(tab);
   const [activeSubspaceId, setActiveSubspaceId] = useState<string | undefined>(subspaceId);
 
@@ -69,9 +73,13 @@ const SettingModal = ({
       },
     ];
 
-    // Filter out subspaces tab for personal workspaces
-    return isPersonalWorkspace ? baseTabs.filter((tab) => tab.key !== "subspaces") : baseTabs;
-  }, [t, isPersonalWorkspace]);
+    // Filter out subspaces tab for users without ManageSubspaces permission
+    if (!canManageSubspaces) {
+      return baseTabs.filter((tab) => tab.key !== "subspaces");
+    }
+
+    return baseTabs;
+  }, [t, canManageSubspaces]);
 
   const handleClose = () => {
     proceed?.(null);
@@ -98,7 +106,7 @@ const SettingModal = ({
             <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
               <Members />
             </TabsContent>
-            {!isPersonalWorkspace && (
+            {canManageSubspaces && (
               <TabsContent tabIndex={-1} value="subspaces" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
                 <Subspace activeSubspaceId={activeSubspaceId} />
               </TabsContent>

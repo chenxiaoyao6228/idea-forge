@@ -35,40 +35,61 @@ export class WorkspaceAbility extends BaseAbility {
               userId: user.id,
             },
           },
-          select: { role: true },
+          select: {
+            role: true,
+            workspace: {
+              select: { type: true },
+            },
+          },
         });
 
         if (workspaceMember) {
-          this.defineWorkspacePermissions(can, currentWorkspaceId, workspaceMember.role);
+          this.defineWorkspacePermissions(can, currentWorkspaceId, workspaceMember.role, workspaceMember.workspace.type);
         }
       } else {
         // Fallback: Get permissions for all workspaces (existing behavior)
         const workspaceMembers = await this.prismaService.workspaceMember.findMany({
           where: { userId: user.id },
-          select: { workspaceId: true, role: true },
+          select: {
+            workspaceId: true,
+            role: true,
+            workspace: {
+              select: { type: true },
+            },
+          },
         });
 
         for (const member of workspaceMembers) {
-          this.defineWorkspacePermissions(can, member.workspaceId, member.role);
+          this.defineWorkspacePermissions(can, member.workspaceId, member.role, member.workspace.type);
         }
       }
     });
   }
 
-  private defineWorkspacePermissions(can: any, workspaceId: string, role: WorkspaceRole) {
+  private defineWorkspacePermissions(can: any, workspaceId: string, role: WorkspaceRole, workspaceType: string) {
     switch (role) {
       case WorkspaceRole.OWNER:
         // OWNER: Can delete workspace/transfer ownership/has all ADMIN permissions
         can([Action.Read, Action.Update, Action.Delete, Action.Manage], "Workspace", { id: workspaceId });
-        can([Action.Manage, Action.InviteMember, Action.RemoveMember, Action.TransferOwnership], "WorkspaceMember", { workspaceId });
-        can([Action.ManageWorkspaceSettings, Action.ManageSubspaces], "Workspace", { id: workspaceId });
+        can([Action.ManageMembers, Action.TransferOwnership], "WorkspaceMember", { workspaceId });
+        can(Action.ManageSettings, "Workspace", { id: workspaceId });
+
+        // Only grant ManageSubspaces permission for team workspaces
+        if (workspaceType === "TEAM") {
+          can(Action.ManageSubspaces, "Workspace", { id: workspaceId });
+        }
         break;
 
       case WorkspaceRole.ADMIN:
         // ADMIN: Can manage workspace settings, add/remove members, manage all documents
         can([Action.Read, Action.Update, Action.Manage], "Workspace", { id: workspaceId });
-        can([Action.InviteMember, Action.RemoveMember, Action.ManageMembers], "WorkspaceMember", { workspaceId });
-        can([Action.ManageWorkspaceSettings, Action.ManageSubspaces], "Workspace", { id: workspaceId });
+        can(Action.ManageMembers, "WorkspaceMember", { workspaceId });
+        can(Action.ManageSettings, "Workspace", { id: workspaceId });
+
+        // Only grant ManageSubspaces permission for team workspaces
+        if (workspaceType === "TEAM") {
+          can(Action.ManageSubspaces, "Workspace", { id: workspaceId });
+        }
         break;
 
       case WorkspaceRole.MEMBER:

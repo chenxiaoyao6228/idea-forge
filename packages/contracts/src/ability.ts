@@ -5,44 +5,29 @@ import { z } from "zod";
 // Shared enumerations for CASL actions across API and client
 export enum AbilityAction {
   // Basic CRUD operations
+  Manage = "manage", // highest permission
   Create = "create",
   Read = "read",
   Update = "update",
   Delete = "delete",
-  Manage = "manage", // highest permission
 
-  // Permission management operations for workspace, subspace, document, etc.
-  ManagePermissions = "managePermissions",
-  ViewPermissions = "viewPermissions",
-
-  // Workspace/Subspace operations
-  InviteMember = "inviteMember",
-  RemoveMember = "removeMember",
-  ManageMembers = "manageMembers",
-  ViewMembers = "viewMembers",
-
-  // Workspace operations
-  ManageWorkspaceSettings = "manageWorkspaceSettings",
-  TransferOwnership = "transferOwnership",
-  ManageSubspaces = "manageSubspaces",
-
-  // Subspace operations
-  ManageSubspaceSettings = "manageSubspaceSettings",
-  ManageNavigationTree = "manageNavigationTree",
-
-  // Document specific operations
-  Comment = "comment",
-  Edit = "edit",
+  // Cross-cutting document operations
   Share = "share",
+  Comment = "comment",
   Move = "move",
-  BulkMove = "bulkMove",
-  BulkDelete = "bulkDelete",
-  BulkShare = "bulkShare",
-  BulkExport = "bulkExport",
-
-  // Import and export operations
   Export = "export",
   Import = "import",
+
+  // Membership & permission management
+  ManageMembers = "manageMembers",
+  ViewMembers = "viewMembers",
+  ManagePermissions = "managePermissions",
+
+  // Workspace/Subspace configuration
+  ManageSettings = "manageSettings",
+  ManageStructure = "manageStructure",
+  ManageSubspaces = "manageSubspaces",
+  TransferOwnership = "transferOwnership",
 }
 
 export const AbilityActionSchema = z.nativeEnum(AbilityAction);

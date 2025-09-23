@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Home, Users, Shield, Loader2 } from "lucide-react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
-import useSubspaceStore, { useFetchSubspaceSettings, useUpdateSubspaceSettings, useJoinSubspace, useFetchSubspaces } from "@/stores/subspace-store";
+import useSubspaceStore, { useFetchSubspaceSettings, useUpdateSubspaceSettings, useFetchSubspaces } from "@/stores/subspace-store";
 import useUserStore from "@/stores/user-store";
 import useWorkspaceStore from "@/stores/workspace-store";
 import { BasicInfoTab } from "./basic-info-tab";
 import { MembersPermissionsTab } from "./members-permissions-tab";
 import { SecurityTab } from "./security-tab";
 import { SubspaceJoinButton } from "@/pages/main/settings/subspace/subspace-join-button";
+import { useRefCallback } from "@/hooks/use-ref-callback";
 
 export interface SubspaceSettingsModalProps {
   // basic info
@@ -42,11 +43,13 @@ const SubspaceSettingsModal = ({
   const [activeTab, setActiveTab] = useState("basic");
 
   const { subspaceSettings } = useSubspaceStore();
-  const { run: fetchSubspaceSettings, loading: isSettingsLoading } = useFetchSubspaceSettings();
-  const { run: updateSubspaceSettings } = useUpdateSubspaceSettings();
+  const { run: fetchSubspaceSettings, loading: isSettingsLoading } = useFetchSubspaceSettings(subspaceId);
+  const { run: updateSubspaceSettings } = useUpdateSubspaceSettings(subspaceId);
   const { run: fetchList } = useFetchSubspaces();
 
-  const clearSubspaceSettings = () => useSubspaceStore.setState({ subspaceSettings: null });
+  const clearSubspaceSettings = useRefCallback(() => {
+    useSubspaceStore.setState({ subspaceSettings: null });
+  });
 
   const { userInfo } = useUserStore();
   const { currentWorkspace } = useWorkspaceStore();
@@ -55,7 +58,7 @@ const SubspaceSettingsModal = ({
   const subspaceName = useSubspaceStore((state) => state.subspaces[subspaceId]?.name) || "Subspace";
 
   // Check if current user is already a member of the subspace
-  const isUserMember = React.useMemo(() => {
+  const isUserMember = useMemo(() => {
     if (!subspaceSettings || !userInfo) return false;
     return subspaceSettings.subspace.members?.some((member) => member.userId === userInfo.id) || false;
   }, [subspaceSettings, userInfo]);
@@ -63,7 +66,7 @@ const SubspaceSettingsModal = ({
   // Load settings when modal opens
   useEffect(() => {
     if (show && subspaceId) {
-      loadSettings();
+      fetchSubspaceSettings();
     }
   }, [show, subspaceId]);
 
@@ -72,18 +75,13 @@ const SubspaceSettingsModal = ({
     if (!show) {
       clearSubspaceSettings();
     }
-  }, [show, clearSubspaceSettings]);
-
-  const loadSettings = async () => {
-    await fetchSubspaceSettings(subspaceId);
-  };
+  }, [show]);
 
   const handleSettingsChange = async (changes: Partial<SubspaceSettingsResponse["subspace"]>) => {
     if (!subspaceSettings) return;
 
     try {
       await updateSubspaceSettings({
-        subspaceId,
         settings: changes as UpdateSubspaceSettingsRequest,
       });
     } catch (error) {
@@ -145,7 +143,7 @@ const SubspaceSettingsModal = ({
                     isUserMember={isUserMember}
                     onJoinSuccess={async () => {
                       // Refresh the settings to update member status
-                      await loadSettings();
+                      await fetchSubspaceSettings();
                       // Also refresh the full subspace list
                       if (currentWorkspace?.id) {
                         await fetchList(currentWorkspace.id);

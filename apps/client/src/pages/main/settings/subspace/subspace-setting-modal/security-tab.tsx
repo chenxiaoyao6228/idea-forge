@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SubspaceSettingsResponse } from "@idea/contracts";
+import { useAbilityCan, Action } from "@/hooks/use-ability";
 
 interface SecurityTabProps {
   settings: SubspaceSettingsResponse;
@@ -12,6 +13,10 @@ interface SecurityTabProps {
 
 export function SecurityTab({ settings, onSettingsChange }: SecurityTabProps) {
   const { t } = useTranslation();
+
+  // Permission checks
+  const subspaceSubject = { id: settings.subspace.id };
+  const { can: canManageSubspaceSettings } = useAbilityCan("Subspace", Action.ManageSettings, subspaceSubject);
 
   const handleBooleanSettingChange = (key: keyof SubspaceSettingsResponse["subspace"], value: boolean) => {
     onSettingsChange({ [key]: value });
@@ -40,7 +45,7 @@ export function SecurityTab({ settings, onSettingsChange }: SecurityTabProps) {
                     <Select
                       value={settings.subspace.memberInvitePermission}
                       onValueChange={(value) => handlePermissionChange("memberInvitePermission", value)}
-                      disabled={settings.subspace.type !== "INVITE_ONLY" && settings.subspace.type !== "PRIVATE"}
+                      disabled={!canManageSubspaceSettings || (settings.subspace.type !== "INVITE_ONLY" && settings.subspace.type !== "PRIVATE")}
                     >
                       <SelectTrigger className="w-48">
                         <SelectValue />
@@ -70,7 +75,11 @@ export function SecurityTab({ settings, onSettingsChange }: SecurityTabProps) {
               <label htmlFor="topLevelEditPermission" className="text-sm font-medium">
                 {t("Who can edit subspace top-level directory")}
               </label>
-              <Select value={settings.subspace.topLevelEditPermission} onValueChange={(value) => handlePermissionChange("topLevelEditPermission", value)}>
+              <Select
+                value={settings.subspace.topLevelEditPermission}
+                onValueChange={(value) => handlePermissionChange("topLevelEditPermission", value)}
+                disabled={!canManageSubspaceSettings}
+              >
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -101,6 +110,7 @@ export function SecurityTab({ settings, onSettingsChange }: SecurityTabProps) {
                   id="allowPublicSharing"
                   checked={!settings.subspace.allowPublicSharing}
                   onCheckedChange={(checked) => handleBooleanSettingChange("allowPublicSharing", !checked)}
+                  disabled={!canManageSubspaceSettings}
                 />
               </div>
             </div>
@@ -117,6 +127,7 @@ export function SecurityTab({ settings, onSettingsChange }: SecurityTabProps) {
                   id="allowGuestCollaborators"
                   checked={!settings.subspace.allowGuestCollaborators}
                   onCheckedChange={(checked) => handleBooleanSettingChange("allowGuestCollaborators", !checked)}
+                  disabled={!canManageSubspaceSettings}
                 />
               </div>
             </div>
@@ -135,6 +146,7 @@ export function SecurityTab({ settings, onSettingsChange }: SecurityTabProps) {
                   id="allowExport"
                   checked={!settings.subspace.allowExport}
                   onCheckedChange={(checked) => handleBooleanSettingChange("allowExport", !checked)}
+                  disabled={!canManageSubspaceSettings}
                 />
               </div>
             </div>

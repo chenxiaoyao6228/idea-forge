@@ -256,6 +256,7 @@ export class FallbackMiddleware implements NestMiddleware {
   private async getUserInfo(req: Request, res: Response): Promise<UserResponseData | typeof REDIRECTED | null> {
     const { accessToken, refreshToken } = req.cookies;
     const workspaceModel = "Workspace" as ModelName;
+    const subspaceModel = "Subspace" as ModelName;
 
     if (!accessToken || !refreshToken) {
       this.redirectToLoginOrMarketing(req, res, false);
@@ -280,7 +281,7 @@ export class FallbackMiddleware implements NestMiddleware {
           id: user.id,
           currentWorkspaceId: user.currentWorkspaceId,
         },
-        [workspaceModel],
+        [workspaceModel, subspaceModel],
       );
 
       return {
@@ -312,7 +313,7 @@ export class FallbackMiddleware implements NestMiddleware {
                 id: user.id,
                 currentWorkspaceId: user.currentWorkspaceId,
               },
-              [workspaceModel],
+              [workspaceModel, "Subspace" as ModelName],
             );
 
             return {

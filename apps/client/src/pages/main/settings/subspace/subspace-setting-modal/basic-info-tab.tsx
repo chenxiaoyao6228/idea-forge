@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Home, Check, Archive, Trash2, ArrowLeft } from "lucide-react";
 import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin, useUpdateSubspaceSettings } from "@/stores/subspace-store";
+import { useAbilityCan, Action } from "@/hooks/use-ability";
 
 interface BasicInfoTabProps {
   subspaceId: string;
@@ -18,9 +19,16 @@ interface BasicInfoTabProps {
 export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: BasicInfoTabProps) {
   const { t } = useTranslation();
   const { subspaceSettings } = useSubspaceStore();
-  const { run: updateSubspaceSettings } = useUpdateSubspaceSettings();
+  const { run: updateSubspaceSettings } = useUpdateSubspaceSettings(subspaceId);
   const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
   const isLastAdmin = useIsLastSubspaceAdmin(subspaceId);
+
+  // Permission checks
+  const subspaceSubject = { id: subspaceId };
+  const { can: canUpdateSubspace } = useAbilityCan("Subspace", Action.Update, subspaceSubject);
+  const { can: canDeleteSubspace } = useAbilityCan("Subspace", Action.Delete, subspaceSubject);
+  const { can: canManageSubspaceSettings } = useAbilityCan("Subspace", Action.ManageSettings, subspaceSubject);
+
   const [isSaving, setIsSaving] = useState(false);
   const [localSettings, setLocalSettings] = useState({
     name: "",
@@ -51,7 +59,6 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
     setIsSaving(true);
     try {
       await updateSubspaceSettings({
-        subspaceId,
         settings: {
           name: localSettings.name,
           description: localSettings.description,
@@ -130,6 +137,7 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder={t("Enter subspace name")}
                 className="flex-1"
+                disabled={!canUpdateSubspace}
               />
             </div>
           </div>
@@ -145,11 +153,12 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
               onChange={(e) => handleDescriptionChange(e.target.value)}
               placeholder={t("Please enter subspace description")}
               rows={3}
+              disabled={!canUpdateSubspace}
             />
           </div>
 
           {/* Save Button */}
-          <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
+          <Button onClick={handleSave} disabled={!hasChanges || isSaving || !canUpdateSubspace}>
             {isSaving ? t("Saving...") : t("Save")}
           </Button>
         </CardContent>
@@ -168,7 +177,7 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
               </div>
               <p className="text-sm text-muted-foreground">{t("All members can actively join")}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleSetPermissions}>
+            <Button variant="outline" size="sm" onClick={handleSetPermissions} disabled={!canManageSubspaceSettings}>
               {t("Set Permissions")}
             </Button>
           </div>
@@ -200,13 +209,22 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
               <div className="text-sm font-medium">{t("Leave Subspace")}</div>
               <div className="text-xs text-muted-foreground">{t("Remove this subspace from my sidebar")}</div>
             </div>
-            <TooltipWrapper disabled={isLastAdmin} tooltip={t("Cannot leave as the only admin")}>
+            <TooltipWrapper
+              disabled={isLastAdmin || subspaceSettings?.subspace.type === "WORKSPACE_WIDE"}
+              tooltip={
+                isLastAdmin
+                  ? t("Cannot leave as the only admin")
+                  : subspaceSettings?.subspace.type === "WORKSPACE_WIDE"
+                    ? t("Cannot leave workspace-wide subspaces")
+                    : ""
+              }
+            >
               <Button
                 variant="outline"
                 size="sm"
                 className="text-destructive border-destructive/20 hover:bg-destructive/10"
                 onClick={handleLeaveSubspace}
-                disabled={isLeavingSubspace || isLastAdmin}
+                disabled={isLeavingSubspace || isLastAdmin || subspaceSettings?.subspace.type === "WORKSPACE_WIDE"}
               >
                 {isLeavingSubspace ? t("Leaving...") : t("Leave")}
               </Button>
@@ -228,7 +246,7 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
               variant="outline"
               size="sm"
               className="text-destructive border-destructive/20 hover:bg-destructive/10"
-              disabled
+              disabled={!canDeleteSubspace}
               onClick={handleArchiveSubspace}
             >
               {t("Archive")}
@@ -248,7 +266,7 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
               variant="outline"
               size="sm"
               className="text-destructive border-destructive/20 hover:bg-destructive/10"
-              disabled
+              disabled={!canDeleteSubspace}
               onClick={handleDeleteSubspace}
             >
               {t("Delete")}

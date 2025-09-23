@@ -9,7 +9,7 @@ import { Plus, ChevronDown, MoreHorizontal, User, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import useUserStore from "@/stores/user-store";
-import useWorkspaceStore, { useAllWorkspaces, useCurrentWorkspace, useSwitchWorkspace, useReorderWorkspaces } from "@/stores/workspace-store";
+import { useAllWorkspaces, useCurrentWorkspace, useSwitchWorkspace, useReorderWorkspaces } from "@/stores/workspace-store";
 import { SortableList } from "@/components/sortable-list";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";
 import { displayUserName } from "@/lib/auth";
@@ -134,7 +134,7 @@ export default function WorkspaceSwitcher() {
                     </div> */}
                     <div className="flex flex-col flex-1">
                       <span className="text-sm truncate">{workspace.name}</span>
-                      <span className="text-xs text-muted-foreground">Personal Workspace</span>
+                      <span className="text-xs text-muted-foreground">{t(workspace.type === "PERSONAL" ? "Personal Workspace" : "Team Workspace")}</span>
                     </div>
                     {currentWorkspace?.id === workspace.id && (
                       <div className="flex items-center justify-center h-4 w-4 rounded-full bg-gray-200">
