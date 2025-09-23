@@ -74,6 +74,12 @@ function LoginPage() {
       }
       useUserStore.setState({ userInfo: res.user });
 
+      // Handle public invitation redirects
+      if (redirectTo?.includes("public-invitation")) {
+        navigate(redirectTo);
+        return;
+      }
+
       // Check if user has workspaces after successful login
       try {
         const workspaces = await fetchWorkspaces();

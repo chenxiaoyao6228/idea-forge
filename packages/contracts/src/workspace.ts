@@ -120,6 +120,31 @@ export const WorkspaceMemberListResponseSchema = z.array(
 );
 export type WorkspaceMemberListResponse = z.infer<typeof WorkspaceMemberListResponseSchema>;
 
+export const WorkspacePublicInviteLinkSchema = z.object({
+  workspaceId: z.string(),
+  token: z.string(),
+  url: z.string(),
+  expiresAt: z.string(),
+});
+export type WorkspacePublicInviteLink = z.infer<typeof WorkspacePublicInviteLinkSchema>;
+
+export const WorkspacePublicInvitationStatusSchema = z.object({
+  status: z.enum(["active", "expired", "invalid"]),
+  workspaceId: z.string().optional(),
+  workspaceName: z.string().optional(),
+  workspaceAvatar: z.string().nullable().optional(),
+  expiresAt: z.string().optional(),
+  alreadyMember: z.boolean().optional(),
+  token: z.string().optional(),
+});
+export type WorkspacePublicInvitationStatus = z.infer<typeof WorkspacePublicInvitationStatusSchema>;
+
+export const AcceptWorkspaceInvitationResponseSchema = z.object({
+  workspaceId: z.string(),
+  alreadyMember: z.boolean(),
+});
+export type AcceptWorkspaceInvitationResponse = z.infer<typeof AcceptWorkspaceInvitationResponseSchema>;
+
 // Workspace Settings API responses
 export const WorkspaceSettingsResponseSchema = WorkspaceSettingsSchema;
 export type WorkspaceSettingsResponse = z.infer<typeof WorkspaceSettingsResponseSchema>;

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { workspaceApi } from "@/apis/workspace";
 import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace-store";
-import type { WorkspaceMember, WorkspaceMemberListResponse } from "@idea/contracts";
+import type { WorkspaceMember, WorkspacePublicInviteLink } from "@idea/contracts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,8 @@ import { useTranslation } from "react-i18next";
 import { displayUserName } from "@/lib/auth";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { showAddWorkspaceMemberModal } from "./add-workspace-member-modal";
+import { useAbilityCan, Action } from "@/hooks/use-ability";
+import { toast } from "sonner";
 
 const MemberManagementPanel = () => {
   const { t } = useTranslation();
@@ -22,16 +24,38 @@ const MemberManagementPanel = () => {
   const workspaceId = currentWorkspace?.id;
   const [searchQuery, setSearchQuery] = useState("");
   const [roleChanging, setRoleChanging] = useState<Record<string, boolean>>({});
+  const [invite, setInvite] = useState<WorkspacePublicInviteLink | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   // Get members from global store using new structure
   const members = useWorkspaceStore((state) => state.workspaceMembers);
   const { run: fetchMembers, loading: fetchMembersLoading } = useFetchMembers();
 
+  const workspaceSubject = workspaceId ? { id: workspaceId } : undefined;
+  const { can: canManageMembers } = useAbilityCan("Workspace", Action.ManageMembers, workspaceSubject);
+
+  const fetchInvite = useRefCallback(async () => {
+    if (!workspaceId || !canManageMembers) return;
+    setInviteLoading(true);
+    try {
+      const response = await workspaceApi.getPublicInviteLink(workspaceId);
+      setInvite(response);
+    } catch (error) {
+      console.error("Failed to load public invite link", error);
+      toast.error(t("Failed to load invitation link"));
+    } finally {
+      setInviteLoading(false);
+    }
+  });
+
   // Fetch members on component mount and when workspaceId changes
   useEffect(() => {
     if (!workspaceId) return;
     fetchMembers(workspaceId);
-  }, []);
+    if (canManageMembers) {
+      fetchInvite();
+    }
+  }, [workspaceId, canManageMembers, fetchInvite, fetchMembers]);
 
   // Filter members based on search query
   const filteredMembers = useMemo(() => {
@@ -82,8 +106,71 @@ const MemberManagementPanel = () => {
     }
   });
 
+  const invitationUrl = useMemo(() => {
+    if (invite?.url) return invite.url;
+    if (invite?.token && typeof window !== "undefined") {
+      return `${window.location.origin}/public-invitation/${invite.token}`;
+    }
+    return "";
+  }, [invite]);
+
+  const handleCopyInvite = useRefCallback(async () => {
+    if (!invitationUrl) return;
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      toast.success(t("Invitation link copied"));
+    } catch (error) {
+      console.error("Failed to copy invite link", error);
+      toast.error(t("Failed to copy link"));
+    }
+  });
+
+  const handleResetInvite = useRefCallback(async () => {
+    if (!workspaceId || !canManageMembers) return;
+    setInviteLoading(true);
+    try {
+      const response = await workspaceApi.resetPublicInviteLink(workspaceId);
+      setInvite(response);
+      toast.success(t("Invitation link reset"));
+    } catch (error) {
+      console.error("Failed to reset invite link", error);
+      toast.error(t("Failed to reset invitation link"));
+    } finally {
+      setInviteLoading(false);
+    }
+  });
+
   return (
     <div className="space-y-6">
+      {canManageMembers && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("Public invitation link")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">{t("Anyone with this link can join the workspace. Reset the link to invalidate previous copies.")}</p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex-1">
+                <Input value={invitationUrl} readOnly placeholder={t("Invitation link will appear here") as string} disabled={inviteLoading} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleResetInvite} disabled={inviteLoading}>
+                  {t("Reset link")}
+                </Button>
+                <Button onClick={handleCopyInvite} disabled={!invitationUrl || inviteLoading}>
+                  {t("Copy link")}
+                </Button>
+              </div>
+            </div>
+            {invite?.expiresAt && (
+              <div className="text-xs text-muted-foreground">
+                {t("Link expires at")}: {new Date(invite.expiresAt).toLocaleString()}
+              </div>
+            )}
+            {inviteLoading && <Spinner text={t("Loading...")} />}
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>
@@ -108,7 +195,7 @@ const MemberManagementPanel = () => {
                 </Button>
               )}
             </div>
-            <Button variant="default" onClick={handleAddMembers}>
+            <Button variant="default" onClick={handleAddMembers} disabled={!canManageMembers}>
               <UserPlus className="h-4 w-4 mr-2" />
               {t("Add member")}
             </Button>
@@ -138,26 +225,34 @@ const MemberManagementPanel = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={member.role}
-                          disabled={roleChanging[member.userId] || member.role === "OWNER"}
-                          onValueChange={(v) => handleChangeRole(member.userId, v as WorkspaceMember["role"])}
-                        >
-                          <SelectTrigger className="w-28">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MEMBER">{t("Member")}</SelectItem>
-                            <SelectItem value="ADMIN">{t("Admin")}</SelectItem>
-                            <SelectItem value="OWNER">{t("Owner")}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {member.role === "OWNER" || !canManageMembers ? (
+                          <div className="px-3 py-2 text-sm font-medium text-muted-foreground">{t("Owner")}</div>
+                        ) : (
+                          <Select
+                            value={member.role}
+                            disabled={roleChanging[member.userId] || !canManageMembers}
+                            onValueChange={(v) => handleChangeRole(member.userId, v as WorkspaceMember["role"])}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MEMBER">{t("Member")}</SelectItem>
+                              <SelectItem value="ADMIN">{t("Admin")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-center">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={member.role === "OWNER" || roleChanging[member.userId]}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                disabled={member.role === "OWNER" || roleChanging[member.userId] || !canManageMembers}
+                              >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>

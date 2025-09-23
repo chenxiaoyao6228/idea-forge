@@ -15,7 +15,7 @@ import { useWorkspaceType } from "@/hooks/use-workspace-type";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const { isPersonalWorkspace } = useWorkspaceType();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);

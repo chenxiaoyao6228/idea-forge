@@ -115,6 +115,7 @@ export class AuthService {
         displayName: userInfo.displayName ?? undefined,
         imageUrl: userInfo.imageUrl ?? undefined,
         collabToken,
+        currentWorkspaceId: userInfo.currentWorkspaceId ?? undefined,
       },
       accessToken, // return to controller to set cookie
       refreshToken,

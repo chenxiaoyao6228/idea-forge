@@ -19,6 +19,7 @@ export default function Main() {
     return <Loading />;
   }
 
+  // TODO: handle when user is first login, no active docs
   let content = <Loading />;
   if (currentDocument) {
     content = <Doc />;

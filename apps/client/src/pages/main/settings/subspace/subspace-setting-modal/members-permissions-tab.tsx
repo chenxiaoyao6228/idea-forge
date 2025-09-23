@@ -92,7 +92,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
         return {
           subspaceAdminPermission: "OWNER" as PermissionLevel,
           subspaceMemberPermission: "OWNER" as PermissionLevel,
-          // Non-subspace member permissions are not applicable for WORKSPACE_WIDE
+          // Non-Member permissions are not applicable for WORKSPACE_WIDE
         };
       case "PUBLIC":
         return {
@@ -136,16 +136,16 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
   const validatePermissionChange = useRefCallback((permissionType: string, newValue: PermissionLevel) => {
     const currentSettings = settings.subspace;
 
-    // Subspace Admins should always have OWNER permissions
+    // Admins should always have OWNER permissions
     if (permissionType === "subspaceAdminPermission" && newValue !== "OWNER") {
-      console.warn("Subspace Admins must have OWNER permissions");
+      console.warn("Admins must have OWNER permissions");
       return false;
     }
 
     // Non-members should not have higher permissions than members
     if (permissionType === "nonSubspaceMemberPermission") {
       if (newValue === "OWNER" || newValue === "MANAGE") {
-        console.warn("Non-subspace members cannot have higher permissions than subspace members");
+        console.warn("Non-Members cannot have higher permissions than Members");
         return false;
       }
     }
@@ -154,7 +154,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
     if (permissionType === "subspaceMemberPermission") {
       const nonMemberPermission = currentSettings.nonSubspaceMemberPermission;
       if (nonMemberPermission !== "NONE" && newValue === "NONE") {
-        console.warn("Subspace members should have at least READ permissions");
+        console.warn("Members should have at least READ permissions");
         return false;
       }
     }
@@ -184,11 +184,11 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
 
           {/* Role-based permissions display */}
           <div className="space-y-3">
-            {/* Subspace Admin */}
+            {/* Admin */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span className="text-sm font-medium">{t("Subspace Admin")}</span>
+                <span className="text-sm font-medium">{t("Admin")}</span>
               </div>
               <PermissionLevelSelector
                 value={settings.subspace.subspaceAdminPermission}
@@ -197,11 +197,11 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
               />
             </div>
 
-            {/* Subspace Member */}
+            {/* Member */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span className="text-sm font-medium">{t("Subspace Member")}</span>
+                <span className="text-sm font-medium">{t("Member")}</span>
               </div>
               <PermissionLevelSelector
                 value={settings.subspace.subspaceMemberPermission}
@@ -317,8 +317,8 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="MEMBER">{t("Subspace Member")}</SelectItem>
-                                <SelectItem value="ADMIN">{t("Subspace Admin")}</SelectItem>
+                                <SelectItem value="MEMBER">{t("Member")}</SelectItem>
+                                <SelectItem value="ADMIN">{t("Admin")}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>

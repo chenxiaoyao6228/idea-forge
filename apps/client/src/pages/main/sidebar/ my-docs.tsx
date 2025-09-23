@@ -12,7 +12,7 @@ import { DraggableDocumentContainer } from "./components/draggable-document-cont
 
 export default function MyDocsArea() {
   const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { run: createMyDocsDocument } = useCreateDocument();
   const personalSubspace = usePersonalSubspace();

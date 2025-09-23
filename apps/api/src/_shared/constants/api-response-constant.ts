@@ -58,6 +58,8 @@ export enum ErrorCodeEnum {
   UserNotInWorkspace = "user_not_in_workspace",
   CannotRemoveLastOwner = "cannot_remove_last_owner",
   GuestNotFound = "guest_not_found",
+  WorkspaceInvitationNotFound = "workspace_invitation_not_found",
+  WorkspaceInvitationExpired = "workspace_invitation_expired",
 
   // Subspace related errors (using subspace prefix for subspaces)
   SubspaceNotFound = "subspace_not_found",

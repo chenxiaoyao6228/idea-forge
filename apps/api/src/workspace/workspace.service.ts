@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable, BadRequestException, HttpStatus } from "@nestjs/common";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
@@ -22,6 +22,8 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { AbilityService } from "@/_shared/casl/casl.service";
 import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
+import { ConfigService } from "@nestjs/config";
+import { randomBytes } from "node:crypto";
 
 @Injectable()
 export class WorkspaceService {
@@ -51,7 +53,47 @@ export class WorkspaceService {
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionEventService: PermissionEventService,
     private readonly abilityService: AbilityService,
+    private readonly configService: ConfigService,
   ) {}
+
+  private readonly PUBLIC_INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+  private buildPublicInviteUrl(token: string) {
+    const baseUrl = this.configService.get<string>("CLIENT_APP_URL") ?? "";
+    const normalized = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    return `${normalized}/public-invitation/${token}`;
+  }
+
+  private isInviteActive(invite: { revokedAt: Date | null; expiresAt: Date }) {
+    if (invite.revokedAt) return false;
+    return invite.expiresAt.getTime() > Date.now();
+  }
+
+  private generateInviteToken() {
+    return randomBytes(18).toString("base64url");
+  }
+
+  private async upsertWorkspaceInvite(workspaceId: string, adminId: string) {
+    const expiresAt = new Date(Date.now() + this.PUBLIC_INVITE_TTL_MS);
+    const token = this.generateInviteToken();
+
+    return this.prismaService.workspacePublicInvite.upsert({
+      where: { workspaceId },
+      update: {
+        token,
+        createdById: adminId,
+        createdAt: new Date(),
+        expiresAt,
+        revokedAt: null,
+      },
+      create: {
+        workspaceId,
+        token,
+        createdById: adminId,
+        expiresAt,
+      },
+    });
+  }
 
   /**
    * Validates workspace settings
@@ -807,6 +849,135 @@ export class WorkspaceService {
     });
 
     return updatedMember;
+  }
+
+  async getPublicInviteLink(workspaceId: string, adminId: string) {
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
+    let invite = await this.prismaService.workspacePublicInvite.findUnique({
+      where: { workspaceId },
+    });
+
+    if (!invite || !this.isInviteActive(invite)) {
+      invite = await this.upsertWorkspaceInvite(workspaceId, adminId);
+    }
+
+    return {
+      workspaceId,
+      token: invite.token,
+      expiresAt: invite.expiresAt.toISOString(),
+      url: this.buildPublicInviteUrl(invite.token),
+    };
+  }
+
+  async resetPublicInviteLink(workspaceId: string, adminId: string) {
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
+    const invite = await this.upsertWorkspaceInvite(workspaceId, adminId);
+
+    return {
+      workspaceId,
+      token: invite.token,
+      expiresAt: invite.expiresAt.toISOString(),
+      url: this.buildPublicInviteUrl(invite.token),
+    };
+  }
+
+  async getPublicInvitation(token: string, userId?: string) {
+    const invite = await this.prismaService.workspacePublicInvite.findUnique({
+      where: { token },
+      include: {
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    if (!invite) {
+      return {
+        status: "invalid" as const,
+      };
+    }
+
+    if (!this.isInviteActive(invite)) {
+      return {
+        status: "expired" as const,
+        workspaceId: invite.workspace.id,
+        workspaceName: invite.workspace.name,
+        workspaceAvatar: invite.workspace.avatar,
+        expiresAt: invite.expiresAt.toISOString(),
+      };
+    }
+
+    let alreadyMember = false;
+    if (userId) {
+      const member = await this.prismaService.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: invite.workspaceId,
+            userId,
+          },
+        },
+      });
+      alreadyMember = Boolean(member);
+    }
+
+    return {
+      status: "active" as const,
+      workspaceId: invite.workspace.id,
+      workspaceName: invite.workspace.name,
+      workspaceAvatar: invite.workspace.avatar,
+      expiresAt: invite.expiresAt.toISOString(),
+      alreadyMember,
+      token,
+    };
+  }
+
+  async acceptPublicInvitation(token: string, userId: string) {
+    const invite = await this.prismaService.workspacePublicInvite.findUnique({
+      where: { token },
+    });
+
+    if (!invite) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceInvitationNotFound, HttpStatus.NOT_FOUND);
+    }
+
+    if (!this.isInviteActive(invite)) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceInvitationExpired, HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      await this.addWorkspaceMember(invite.workspaceId, userId, WorkspaceRole.MEMBER, userId);
+    } catch (error) {
+      if (error instanceof ApiException && error.gerErrorCode() === ErrorCodeEnum.UserAlreadyInWorkspace) {
+        return {
+          workspaceId: invite.workspaceId,
+          alreadyMember: true,
+        };
+      }
+      throw error;
+    }
+
+    return {
+      workspaceId: invite.workspaceId,
+      alreadyMember: false,
+    };
   }
 
   /**

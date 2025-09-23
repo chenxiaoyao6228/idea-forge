@@ -22,6 +22,7 @@ const Main = React.lazy(() => import(/* webpackChunkName: "Doc" */ "@/pages/main
 const CreateWorkspace = React.lazy(() => import(/* webpackChunkName: "CreateWorkspace" */ "@/pages/create-workspace"));
 const TokenUsage = React.lazy(() => import(/* webpackChunkName: "TokenUsage" */ "@/pages/admin/token-usage"));
 const TestSentry = React.lazy(() => import(/* webpackChunkName: "TestSentry" */ "@/pages/test-sentry"));
+const PublicInvitation = React.lazy(() => import(/* webpackChunkName: "PublicInvitation" */ "@/pages/public-invitation"));
 
 // Routes that require authentication
 const AuthRouteConfig: IRouteObject = {
@@ -52,6 +53,10 @@ const AuthRouteConfig: IRouteObject = {
     {
       path: "/test-sentry",
       element: LazyBoundary(TestSentry),
+    },
+    {
+      path: "/public-invitation/:token",
+      element: LazyBoundary(PublicInvitation),
     },
   ],
 };

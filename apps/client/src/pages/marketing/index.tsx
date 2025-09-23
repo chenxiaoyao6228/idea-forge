@@ -19,7 +19,7 @@ export default function Marketing() {
           <Slogan />
         </div>
         <section className="mt-6 flex justify-center space-x-4">
-          <Link to={`/login${location.search}`}>
+          <Link to={`/register${location.search}`}>
             <Button className="text-base" size="lg">
               <User className="h-4 w-4" />
               &nbsp;{t("Login / Register")}

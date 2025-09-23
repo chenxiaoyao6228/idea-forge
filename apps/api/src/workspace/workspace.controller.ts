@@ -73,6 +73,20 @@ export class WorkspaceController {
     return this.workspaceService.removeWorkspaceMember(workspaceId, userId, adminId);
   }
 
+  @Get(":id/invite/public")
+  @UseGuards(PolicyGuard)
+  @CheckPolicy(Action.ManageMembers, "Workspace")
+  async getPublicInviteLink(@Param("id") workspaceId: string, @GetUser("id") adminId: string) {
+    return this.workspaceService.getPublicInviteLink(workspaceId, adminId);
+  }
+
+  @Post(":id/invite/public/reset")
+  @UseGuards(PolicyGuard)
+  @CheckPolicy(Action.ManageMembers, "Workspace")
+  async resetPublicInviteLink(@Param("id") workspaceId: string, @GetUser("id") adminId: string) {
+    return this.workspaceService.resetPublicInviteLink(workspaceId, adminId);
+  }
+
   @Patch(":id/members/:userId/role")
   @UseGuards(PolicyGuard)
   @CheckPolicy(Action.ManageMembers, "Workspace")

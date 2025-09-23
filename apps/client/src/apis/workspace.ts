@@ -10,6 +10,9 @@ import {
   Workspace,
   BatchAddWorkspaceMemberRequest,
   BatchAddWorkspaceMemberResponse,
+  WorkspacePublicInviteLink,
+  WorkspacePublicInvitationStatus,
+  AcceptWorkspaceInvitationResponse,
 } from "@idea/contracts";
 
 export const workspaceApi = {
@@ -45,6 +48,14 @@ export const workspaceApi = {
 
   removeWorkspaceMember: async (workspaceId: string, memberId: string) =>
     request.delete<void, { success: boolean }>(`/api/workspaces/${workspaceId}/members/${memberId}`),
+
+  getPublicInviteLink: async (workspaceId: string) => request.get<void, WorkspacePublicInviteLink>(`/api/workspaces/${workspaceId}/invite/public`),
+
+  resetPublicInviteLink: async (workspaceId: string) => request.post<void, WorkspacePublicInviteLink>(`/api/workspaces/${workspaceId}/invite/public/reset`, {}),
+
+  getPublicInvitationStatus: async (token: string) => request.get<void, WorkspacePublicInvitationStatus>(`/api/public-invitations/${token}`),
+
+  acceptPublicInvitation: async (token: string) => request.post<void, AcceptWorkspaceInvitationResponse>(`/api/public-invitations/${token}/accept`, {}),
 
   // Workspace switching
   switchWorkspace: async (workspaceId: string) =>

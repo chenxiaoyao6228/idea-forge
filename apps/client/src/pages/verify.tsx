@@ -113,7 +113,9 @@ function VerifyPage() {
 
       switch (data.type) {
         case "register":
-          navigate(redirectTo || "/login");
+          navigate(`/login?redirectTo=${redirectTo ? encodeURIComponent(redirectTo) : "/"}`, {
+            state: { email: email },
+          });
           break;
         case "reset-password":
           navigate(redirectTo || `/reset-password?email=${encodeURIComponent(email)}`);

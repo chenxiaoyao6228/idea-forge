@@ -485,6 +485,14 @@ If you want, I can generate a similar example for another module or help automat
 
 ## Configuration and Environment
 
+### Database Connection
+
+**Current Development Database:**
+
+```
+DATABASE_URL=postgresql://postgres:123456@localhost:5432/ideaforge?schema=public
+```
+
 ### Environment Variables Pattern
 
 ```typescript
