@@ -18,7 +18,7 @@ export class SubspaceAbility extends BaseAbility {
     super();
   }
   // Will be called on each request that triggers a policy check
-  async createForUser(user: UserWithSubspace): Promise<AppAbility> {
+  async createForUser(user: UserWithSubspace, _context?: Record<string, unknown>): Promise<AppAbility> {
     return this.createAbilityAsync(async (builder) => {
       const { can } = builder; // Destructure here instead
 

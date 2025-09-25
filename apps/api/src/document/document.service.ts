@@ -14,16 +14,18 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { presentDocument } from "./document.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
-import { PermissionService } from "@/permission/permission.service";
+import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionListRequestDto } from "@/permission/permission.dto";
+import { AbilityService } from "@/_shared/casl/casl.service";
 
 @Injectable()
 export class DocumentService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
-    private readonly permissionService: PermissionService,
+    private readonly docPermissionResolveService: DocPermissionResolveService,
+    private readonly abilityService: AbilityService,
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
@@ -285,13 +287,27 @@ export class DocumentService {
     const isPublic = document.visibility === "PUBLIC";
 
     // Present document data (similar to presentDocument)
-    const data = presentDocument(document, { isPublic });
+    const doc = presentDocument(document, { isPublic });
 
-    // TODO: Get real permission context for the user using the cached service
+    // Get and serialize document abilities for the user scoped to this document
+    const serializedAbility = await this.abilityService.serializeAbilityForUser(
+      "Doc",
+      { id: userId },
+      {
+        doc: {
+          id: document.id,
+          workspaceId: document.workspaceId,
+          subspaceId: document.subspaceId,
+          authorId: document.authorId,
+        },
+      },
+    );
 
     return {
-      data,
-      permissions: {},
+      doc,
+      permissions: {
+        Doc: serializedAbility,
+      },
     };
   }
 
@@ -492,7 +508,7 @@ export class DocumentService {
     // For each affected user, publish a websocket event with their new abilities for this document
     for (const affectedUserId of affectedUserIds) {
       // Get abilities for the shared document for this user
-      const userAbilities = await this.permissionService.getResourcePermissionAbilities(docId, affectedUserId);
+      const userAbilities = await this.docPermissionResolveService.getResourcePermissionAbilities(docId, affectedUserId);
 
       await this.eventPublisher.publishWebsocketEvent({
         name: BusinessEvents.DOCUMENT_ADD_USER,
@@ -586,7 +602,7 @@ export class DocumentService {
     for (const docId of finalDocIds) {
       const ability = resolvedPermissions.get(docId);
       if (ability) {
-        abilitiesObj[docId] = this.permissionService.mapDocPermissionLevelToAbilities(ability.permission);
+        abilitiesObj[docId] = this.docPermissionResolveService.mapDocPermissionLevelToAbilities(ability.permission);
       }
     }
 
@@ -877,7 +893,7 @@ export class DocumentService {
     const docs = await this.prismaService.doc.findMany({
       where: filter,
     });
-    const permissions = await this.permissionService.batchResolveUserPermissionsForDocuments(
+    const permissions = await this.docPermissionResolveService.batchResolveUserPermissionsForDocuments(
       userId,
       docs.map((doc) => ({ id: doc.id, subspaceId: doc.subspaceId, workspaceId: doc.workspaceId })),
     );

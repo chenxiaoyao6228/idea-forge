@@ -19,7 +19,7 @@ export class WorkspaceAbility extends BaseAbility {
   }
 
   // Will be called on each request that triggers a policy check
-  async createForUser(user: UserWithWorkspace): Promise<AppAbility> {
+  async createForUser(user: UserWithWorkspace, _context?: Record<string, unknown>): Promise<AppAbility> {
     return this.createAbilityAsync(async (builder) => {
       const { can } = builder; // Destructure here instead
 

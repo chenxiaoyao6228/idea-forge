@@ -6,7 +6,7 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { PermissionService } from "@/permission/permission.service";
+import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { HttpStatus } from "@nestjs/common";
 import { Transactional, TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
@@ -28,7 +28,7 @@ This service supports the following document move features:
 export class MoveDocumentService {
   constructor(
     private readonly eventPublisher: EventPublisherService,
-    private readonly permissionService: PermissionService,
+    private readonly docPermissionResolveService: DocPermissionResolveService,
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma<ExtendedPrismaClient>>,
   ) {}
 
@@ -162,7 +162,7 @@ export class MoveDocumentService {
       },
     });
     // 8. Permissions
-    const abilities = await this.permissionService.getResourcePermissionAbilities(updatedDoc.id, authorId);
+    const abilities = await this.docPermissionResolveService.getResourcePermissionAbilities(updatedDoc.id, authorId);
     return { data: { documents: [presentDocument(updatedDoc, { isPublic: true })] }, permissions: { [updatedDoc.id]: abilities } };
   }
 

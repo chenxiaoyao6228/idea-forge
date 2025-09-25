@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { MoveDocumentService } from "./move-document.service";
 import { EventPublisherService } from "../_shared/events/event-publisher.service";
-import { PermissionService } from "../permission/permission.service";
+import { DocPermissionResolveService } from "../permission/document-permission.service";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PrismaClient } from "@prisma/client";
@@ -179,7 +179,7 @@ describe("MoveDocumentService (integration)", () => {
       providers: [
         MoveDocumentService,
         { provide: EventPublisherService, useValue: eventPublisherMock },
-        { provide: PermissionService, useValue: permissionMock },
+        { provide: DocPermissionResolveService, useValue: permissionMock },
       ],
     }).compile();
 
@@ -1032,7 +1032,10 @@ describe("MoveDocumentService (integration)", () => {
         providers: [
           MoveDocumentService,
           { provide: EventPublisherService, useValue: { publishWebsocketEvent: vi.fn() } },
-          { provide: PermissionService, useValue: { getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }) } },
+          {
+            provide: DocPermissionResolveService,
+            useValue: { getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }) },
+          },
         ],
       }).compile();
       service = module.get(MoveDocumentService);

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import DocHome from "./home";
 import Loading from "@/components/ui/loading";
 import Cover from "./cover";
@@ -11,7 +12,7 @@ import { getEnvVariable } from "@/lib/env";
 import { Toolbar } from "./toolbar";
 import TiptapEditor from "@/editor";
 import { TableOfContent } from "./components/table-of-content";
-import useDocumentStore from "@/stores/document-store";
+import { Action, useAbilityCan } from "@/hooks/use-ability";
 
 export default function Doc() {
   const { t } = useTranslation();
@@ -28,13 +29,17 @@ export default function Doc() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   useTitle(`Idea Forge ${isDocumentLoaded && currentDocument?.title ? `- ${currentDocument.title}` : ""}`);
 
-  console.log("currentDocument", currentDocument);
-
   // Move these up, use optional chaining to avoid errors
-  const permission = isDocumentLoaded ? currentDocument?.permission : undefined;
-  const hasNoPermission = permission === "NONE";
-  const hasEditPermission = permission === "EDIT";
-  const isMyDoc = isDocumentLoaded ? currentDocument?.createdById === userId : false;
+  const docAbilitySubject = useMemo(() => {
+    if (!isDocumentLoaded || !currentDocument) return undefined;
+    return {
+      id: currentDocument.id,
+      authorId: currentDocument.createdById,
+    };
+  }, [isDocumentLoaded, currentDocument?.id, currentDocument?.createdById]);
+
+  const { can: canReadDoc } = useAbilityCan("Doc", Action.Read, docAbilitySubject);
+  const { can: canUpdateDoc } = useAbilityCan("Doc", Action.Update, docAbilitySubject);
 
   // Handle loading state
   if (currentDocument?.isLoading) {
@@ -53,7 +58,7 @@ export default function Doc() {
     return null;
   }
 
-  if (hasNoPermission) {
+  if (!canReadDoc) {
     return <div>{t("You have no permission to view this document")}</div>;
   }
 
@@ -61,10 +66,10 @@ export default function Doc() {
     <>
       <DocumentHeader />
       <div className="flex-auto overflow-y-auto">
-        {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={true} />}
+        {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={canUpdateDoc} />}
         <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative">
-          <Toolbar doc={currentDocument} editable={true} />
-          <TiptapEditor id={currentDocument.id!} editable={true} collabToken={collabToken} collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")} />
+          <Toolbar doc={currentDocument} editable={canUpdateDoc} />
+          <TiptapEditor id={currentDocument.id!} editable={canUpdateDoc} collabToken={collabToken} collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")} />
           <TableOfContent />
         </div>
       </div>

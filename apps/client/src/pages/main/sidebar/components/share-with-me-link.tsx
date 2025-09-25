@@ -68,8 +68,8 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
   useEffect(() => {
     if (document?.id && !document?.title) {
       fetchDetail(document.id).then((result) => {
-        if (result?.data?.document) {
-          setDocument(result.data.document);
+        if (result?.document) {
+          setDocument(result.document);
         }
       });
     }

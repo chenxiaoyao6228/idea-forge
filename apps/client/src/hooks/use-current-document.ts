@@ -9,6 +9,7 @@ import { documentApi } from "@/apis/document";
 import useRequest from "@ahooksjs/use-request";
 import { useDebounce } from "react-use";
 import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
+import { useInitializeSubjectAbilities } from "@/stores/ability-store";
 
 // Direct functions for navigation node finding (can be called from within hooks)
 const findNavigationNodeInPersonalSubspace = (documentId: string) => {
@@ -85,6 +86,7 @@ export const useNavigationNodeForDocument = () => {
 export const useCurrentDocument = () => {
   const { docId: activeDocumentId } = useParams();
   const [debouncedDocumentId, setDebouncedDocumentId] = useState<string | null>(null);
+  const initializeSubjectAbilities = useInitializeSubjectAbilities();
 
   // Get the full document from the document store (for cached data)
   const getDocument = useGetDocument();
@@ -114,20 +116,26 @@ export const useCurrentDocument = () => {
       }
 
       const response = (await documentApi.getDocument(debouncedDocumentId)) as any;
-      const { data } = response;
+      const { doc, permissions } = response;
 
-      if (!data) {
+      if (!doc) {
         throw new Error(ErrorCodeEnum.DocumentNotFound);
       }
 
-      console.log("✅ useCurrentDocument: API call successful", { documentId: data.id, title: data.title });
+      console.log("✅ useCurrentDocument: API call successful", { documentId: doc.id, title: doc.title });
 
       // Update the store for caching
       useDocumentStore.setState((state) => ({
-        documents: { ...state.documents, [data.id]: data },
+        documents: { ...state.documents, [doc.id]: doc },
       }));
 
-      return data;
+      // Deserialize and store document abilities
+      if (permissions && Object.keys(permissions).length > 0) {
+        console.log("🔄 useCurrentDocument: Initializing subject abilities", { permissions });
+        initializeSubjectAbilities(permissions);
+      }
+
+      return doc;
     },
     {
       ready: !!debouncedDocumentId && !cachedDocument, // Only run if we have a debounced ID and no cached data

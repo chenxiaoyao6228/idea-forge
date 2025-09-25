@@ -5,7 +5,7 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
 import { presentWorkspace } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
-import { PermissionService } from "@/permission/permission.service";
+import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import {
   WorkspaceRole,
@@ -47,7 +47,7 @@ export class WorkspaceService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly subspaceService: SubspaceService,
-    private readonly permissionService: PermissionService,
+    private readonly docPermissionResolveService: DocPermissionResolveService,
     private readonly eventPublisher: EventPublisherService,
     private readonly abilityService: AbilityService,
     private readonly configService: ConfigService,
@@ -197,7 +197,7 @@ export class WorkspaceService {
     });
 
     // Assign workspace permissions to creator with full ownership
-    const permission = await this.permissionService.assignWorkspacePermissions(userId, workspace.id, WorkspaceRole.OWNER, userId);
+    const permission = await this.docPermissionResolveService.assignWorkspacePermissions(userId, workspace.id, WorkspaceRole.OWNER, userId);
 
     // Create subspaces based on workspace type
     if (dto.type === WorkspaceType.TEAM) {
@@ -446,7 +446,7 @@ export class WorkspaceService {
     });
 
     //  Assign workspace permissions based on role
-    await this.permissionService.assignWorkspacePermissions(userId, workspaceId, role, adminId);
+    await this.docPermissionResolveService.assignWorkspacePermissions(userId, workspaceId, role, adminId);
 
     // Invite user to all workspace-wide subspaces
     const workspaceWideSubspaces = await this.prismaService.subspace.findMany({
@@ -477,7 +477,7 @@ export class WorkspaceService {
       // Assign permissions for each subspace
       // for (const subspace of workspaceWideSubspaces) {
       //   try {
-      //     await this.permissionService.assignSubspaceTypePermissions(subspace.id, SubspaceType.WORKSPACE_WIDE, workspaceId, adminId);
+      //     await this.docPermissionResolveService.assignSubspaceTypePermissions(subspace.id, SubspaceType.WORKSPACE_WIDE, workspaceId, adminId);
       //   } catch (error) {
       //     console.warn(`Failed to assign permissions for subspace ${subspace.id}:`, error);
       //   }
@@ -794,7 +794,7 @@ export class WorkspaceService {
     });
 
     // 2. Update unified permissions based on new role
-    await this.permissionService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
+    await this.docPermissionResolveService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
 
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },

@@ -48,13 +48,13 @@ export class AbilityService implements OnModuleInit {
     return factory;
   }
 
-  async createAbilityForUser(model: ModelName, user: Record<string, any>): Promise<AppAbility> {
+  async createAbilityForUser(model: ModelName, user: Record<string, any>, context?: Record<string, unknown>): Promise<AppAbility> {
     const factory = this.getFactory(model);
-    return factory.createForUser(user);
+    return factory.createForUser(user, context);
   }
 
-  async serializeAbilityForUser(model: ModelName, user: Record<string, any>): Promise<SerializedAbility> {
-    const ability = await this.createAbilityForUser(model, user);
+  async serializeAbilityForUser(model: ModelName, user: Record<string, any>, context?: Record<string, unknown>): Promise<SerializedAbility> {
+    const ability = await this.createAbilityForUser(model, user, context);
 
     return {
       subject: model,
@@ -62,12 +62,16 @@ export class AbilityService implements OnModuleInit {
     };
   }
 
-  async serializeAbilitiesForUser(user: Record<string, any>, models?: ModelName[]): Promise<SerializedAbilityMap> {
+  async serializeAbilitiesForUser(
+    user: Record<string, any>,
+    models?: ModelName[],
+    contextMap?: Partial<Record<ModelName, Record<string, unknown>>>,
+  ): Promise<SerializedAbilityMap> {
     const targets = models ?? Array.from(this.abilityFactories.keys());
 
     const entries = await Promise.all(
       targets.map(async (model) => {
-        const serialized = await this.serializeAbilityForUser(model, user);
+        const serialized = await this.serializeAbilityForUser(model, user, contextMap?.[model]);
         return [model, serialized] as const;
       }),
     );

@@ -4,7 +4,7 @@ import { GuestStatus, PermissionLevel, PermissionInheritanceType, SubspaceRole, 
 import { PermissionListRequest, SharedWithMeResponse } from "@idea/contracts";
 
 @Injectable()
-export class PermissionService {
+export class DocPermissionResolveService {
   constructor(private readonly prismaService: PrismaService) {}
 
   /**
@@ -113,17 +113,6 @@ export class PermissionService {
   }
 
   // ================================================================================================================
-
-  // 获取用户所有权限
-  async getUserAllPermissions(userId: string): Promise<DocumentPermission[]> {
-    // 获取按优先级排序的权限
-    const userPermissions = await this.prismaService.documentPermission.findMany({
-      where: { userId },
-      orderBy: { priority: "asc" },
-    });
-
-    return userPermissions;
-  }
 
   async getResourcePermissionAbilities(docId: string, userId: string) {
     const permissions = await this.prismaService.documentPermission.findMany({

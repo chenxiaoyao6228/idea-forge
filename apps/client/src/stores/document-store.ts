@@ -2,13 +2,13 @@ import { create } from "zustand";
 import { useMemo } from "react";
 import useRequest from "@ahooksjs/use-request";
 import { toast } from "sonner";
-import { CoverImage, DocTypeSchema, DocVisibilitySchema, PermissionLevel, SubspaceTypeSchema } from "@idea/contracts";
+import { CoverImage, DocTypeSchema, DocVisibilitySchema, PermissionLevel, SubspaceTypeSchema, SerializedAbilityMap } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useSubSpaceStore, { usePersonalSubspace } from "./subspace-store";
 import useWorkspaceStore from "./workspace-store";
-import useAbilityStore from "./ability-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
+import { useInitializeSubjectAbilities } from "@/stores/ability-store";
 
 // Direct functions for subspace operations (can be called from within document store)
 const addDocumentToSubspace = (subspaceId: string, document: DocumentEntity) => {
@@ -123,8 +123,8 @@ interface FetchOptions {
 }
 
 interface FetchDetailResult {
-  data: { document: DocumentEntity; workspace?: any; sharedTree?: any };
-  permissions?: any;
+  doc: DocumentEntity;
+  permissions?: SerializedAbilityMap | null;
 }
 
 interface CreateDocumentParams {
@@ -170,59 +170,37 @@ export const useMovingDocumentId = () => useDocumentStore((state) => state.movin
 
 // CRUD operation hooks
 export const useFetchDocumentDetail = () => {
+  const initializeSubjectAbilities = useInitializeSubjectAbilities();
+
   return useRequest(
     async (id: string, options: FetchOptions = {}) => {
       try {
-        const { data, permissions } = (await documentApi.getDocument(id)) as FetchDetailResult;
+        const { doc, permissions } = (await documentApi.getDocument(id)) as FetchDetailResult;
 
-        if (!data.document) {
+        if (!doc) {
           throw new Error("Document not available");
         }
 
         // Update store with document payload (includes resolved permission)
         useDocumentStore.setState((state) => ({
-          documents: { ...state.documents, [data.document.id]: data.document },
+          documents: { ...state.documents, [doc.id]: doc },
         }));
 
-        // Update shared cache if needed
-        if (data.sharedTree || data.workspace) {
-          useDocumentStore.setState((state) => ({
-            sharedCache: {
-              ...state.sharedCache,
-              [id]: { sharedTree: data.sharedTree, workspace: data.workspace },
-            },
-          }));
+        if (permissions && Object.keys(permissions).length > 0) {
+          initializeSubjectAbilities(permissions);
         }
 
         // Only set active states if not in silent mode
         if (!options.silent) {
-          useDocumentStore.setState({ activeDocumentId: data.document.id });
-          if (data.document.subspaceId) {
-            useSubSpaceStore.setState({ activeSubspaceId: data.document.subspaceId });
+          useDocumentStore.setState({ activeDocumentId: doc.id });
+          if (doc.subspaceId) {
+            useSubSpaceStore.setState({ activeSubspaceId: doc.subspaceId });
           }
         }
 
-        // Legacy ability store functionality removed - using CASL instead
-        // if (permissions) {
-        //   const entities = Object.entries(permissions).map(([id, abilities]) => ({
-        //     id,
-        //     abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
-        //   }));
-        //   useAbilityStore.setState((state) => {
-        //     const newAbilities = { ...state.abilities };
-        //     entities.forEach((entity) => {
-        //       newAbilities[entity.id] = entity;
-        //     });
-        //     return { abilities: newAbilities };
-        //   });
-        // }
-
         return {
-          data: {
-            document: data.document,
-            sharedTree: data.sharedTree,
-            workspace: data.workspace,
-          },
+          document: doc,
+          permissions,
         };
       } catch (error) {
         console.error("Failed to fetch document detail:", error);

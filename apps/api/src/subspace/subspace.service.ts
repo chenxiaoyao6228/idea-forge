@@ -8,7 +8,7 @@ import fractionalIndex from "fractional-index";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { presentSubspace, presentSubspaceMember, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
-import { PermissionService } from "@/permission/permission.service";
+import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { PermissionInheritanceType, SubspaceType, PermissionLevel } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
@@ -17,7 +17,7 @@ export class SubspaceService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
-    private readonly permissionService: PermissionService,
+    private readonly docPermissionResolveService: DocPermissionResolveService,
   ) {}
 
   async joinSubspace(subspaceId: string, userId: string) {
@@ -136,7 +136,7 @@ export class SubspaceService {
     });
 
     // Assign permissions
-    await this.permissionService.assignSubspacePermissions(userId, personalSubspace.id, "ADMIN", userId);
+    await this.docPermissionResolveService.assignSubspacePermissions(userId, personalSubspace.id, "ADMIN", userId);
 
     return personalSubspace;
   }
@@ -254,14 +254,14 @@ export class SubspaceService {
       // Assign subspace permissions for each member (keep creator as ADMIN)
       await Promise.all(
         workspaceMembers.map(({ userId }) =>
-          this.permissionService.assignSubspacePermissions(userId, subspace.id, userId === creatorId ? "ADMIN" : "MEMBER", creatorId),
+          this.docPermissionResolveService.assignSubspacePermissions(userId, subspace.id, userId === creatorId ? "ADMIN" : "MEMBER", creatorId),
         ),
       );
     }
 
     // Assign subspace type permissions
     // FIXME: ts type optimization
-    await this.permissionService.assignSubspaceTypePermissions(subspace.id, subspaceType, dto.workspaceId, creatorId);
+    await this.docPermissionResolveService.assignSubspaceTypePermissions(subspace.id, subspaceType, dto.workspaceId, creatorId);
 
     // Emit create event
     await this.eventPublisher.publishWebsocketEvent({
@@ -947,7 +947,7 @@ export class SubspaceService {
     });
 
     // Only assign subspace-level permission
-    await this.permissionService.assignSubspacePermissions(dto.userId, subspaceId, dto.role, adminId);
+    await this.docPermissionResolveService.assignSubspacePermissions(dto.userId, subspaceId, dto.role, adminId);
 
     return {
       member: {
@@ -1025,7 +1025,7 @@ export class SubspaceService {
           });
 
           // Assign permissions
-          await this.permissionService.assignSubspacePermissions(item.id, subspaceId, item.role, adminId);
+          await this.docPermissionResolveService.assignSubspacePermissions(item.id, subspaceId, item.role, adminId);
 
           // Track for batch notification
           addedUsers.push({
@@ -1099,7 +1099,7 @@ export class SubspaceService {
               });
 
               // Assign permissions
-              await this.permissionService.assignSubspacePermissions(userId, subspaceId, item.role || "MEMBER", adminId);
+              await this.docPermissionResolveService.assignSubspacePermissions(userId, subspaceId, item.role || "MEMBER", adminId);
 
               groupAddedMembers.push(memberWithUser);
 
@@ -1798,19 +1798,6 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
     }
 
-    // Get user permissions
-    const userPermission = (await this.permissionService.resolveUserPermission(currentUserId, subspaceId)) as PermissionLevel;
-
-    const isSubspaceAdmin = subspace.members.find((member) => member.userId === currentUserId)?.role === "ADMIN";
-    const isWorkspaceAdmin = subspace.workspace.members[0]?.role === "ADMIN" || subspace.workspace.members[0]?.role === "OWNER";
-
-    const permissions = {
-      canEditSettings: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE,
-      canManageMembers: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE,
-      canChangeType: isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE,
-      canManageSecurity: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE,
-    };
-
     return {
       subspace: {
         ...subspace,
@@ -1824,7 +1811,7 @@ export class SubspaceService {
         subspaceMemberPermission: subspace.subspaceMemberPermission,
         nonSubspaceMemberPermission: subspace.nonSubspaceMemberPermission,
       } as any,
-      permissions,
+      permissions: {} as any,
     };
   }
 

@@ -34,7 +34,11 @@ export const useInitializeSubjectAbilities = () => {
       const nextSubjectAbilities = { ...state.subjectAbilities };
 
       Object.entries(abilities).forEach(([subject, serialized]) => {
-        nextSubjectAbilities[subject] = {
+        const subjectKey = serialized?.subject ?? subject;
+        if (subject !== subjectKey && subject in nextSubjectAbilities) {
+          delete nextSubjectAbilities[subject];
+        }
+        nextSubjectAbilities[subjectKey] = {
           serialized,
           ability: deserializeAbility(serialized),
         };
@@ -50,15 +54,20 @@ export const useInitializeSubjectAbilities = () => {
 
 export const useSetSubjectAbility = () => {
   return useRefCallback((subject: string, serialized: SerializedAbility) => {
+    const subjectKey = serialized?.subject ?? subject;
     useAbilityStore.setState((state) => ({
       ...state,
-      subjectAbilities: {
-        ...state.subjectAbilities,
-        [subject]: {
+      subjectAbilities: (() => {
+        const next = { ...state.subjectAbilities };
+        if (subject !== subjectKey && subject in next) {
+          delete next[subject];
+        }
+        next[subjectKey] = {
           serialized,
           ability: deserializeAbility(serialized),
-        },
-      },
+        };
+        return next;
+      })(),
     }));
   });
 };

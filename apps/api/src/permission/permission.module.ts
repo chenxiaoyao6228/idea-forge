@@ -1,12 +1,10 @@
 import { Module } from "@nestjs/common";
-import { PermissionService } from "./permission.service";
-import { PermissionController } from "./permission.controller";
+import { DocPermissionResolveService } from "./document-permission.service";
 import { EventsModule } from "@/_shared/events/events.module";
-
 @Module({
   imports: [EventsModule],
-  controllers: [PermissionController],
-  providers: [PermissionService],
-  exports: [PermissionService],
+  controllers: [],
+  providers: [DocPermissionResolveService],
+  exports: [DocPermissionResolveService],
 })
 export class PermissionModule {}
