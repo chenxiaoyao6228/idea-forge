@@ -3,10 +3,8 @@ import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto, ShareDocumentDt
 import {
   NavigationNode,
   NavigationNodeType,
-  PermissionListRequest,
-  SourceType,
-  ResourceType,
-  UnifiedPermission,
+  PermissionInheritanceType,
+  DocumentPermission,
   UpdateCoverDto,
   SharedWithMeResponse,
   PermissionLevel,
@@ -17,8 +15,6 @@ import { presentDocument } from "./document.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PermissionService } from "@/permission/permission.service";
-import { EnhancedPermissionService } from "@/permission/enhanced-permission.service";
-import { PermissionContextService } from "@/permission/permission-context.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionListRequestDto } from "@/permission/permission.dto";
 
@@ -28,8 +24,6 @@ export class DocumentService {
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionService: PermissionService,
-    private readonly enhancedPermissionService: EnhancedPermissionService,
-    private readonly permissionContextService: PermissionContextService,
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
@@ -44,20 +38,19 @@ export class DocumentService {
     });
 
     // Create direct OWNER permission for the document author
-    await this.prismaService.unifiedPermission.create({
+    await this.prismaService.documentPermission.create({
       data: {
         userId: authorId,
-        resourceType: "DOCUMENT",
-        resourceId: doc.id,
-        permission: "OWNER",
-        sourceType: "DIRECT",
+        docId: doc.id,
+        permission: "MANAGE",
+        inheritedFromType: "DIRECT",
         priority: 1,
         createdById: authorId,
       },
     });
 
     if (doc.parentId) {
-      await this.copyUnifiedPermissionsFromAncestors(doc.id, doc.parentId);
+      // await this.copyDocumentPermissionsFromAncestors(doc.id, doc.parentId);
     }
 
     if (doc.publishedAt && doc.subspaceId) {
@@ -70,7 +63,7 @@ export class DocumentService {
       workspaceId: doc.workspaceId,
       actorId: doc.createdById.toString(),
       data: {
-        documentId: doc.id,
+        docId: doc.id,
         subspaceId: doc.subspaceId,
       },
       timestamp: new Date().toISOString(),
@@ -100,11 +93,10 @@ export class DocumentService {
     }
 
     if (!hasAccess) {
-      const perm = await this.prismaService.unifiedPermission.findFirst({
+      const perm = await this.prismaService.documentPermission.findFirst({
         where: {
           userId,
-          resourceType: "DOCUMENT",
-          resourceId: parentId,
+          docId: parentId,
         },
       });
       hasAccess = !!perm && perm.permission !== PermissionLevel.NONE;
@@ -126,19 +118,11 @@ export class DocumentService {
 
     // Use batch permission context resolution for better performance with caching
     const docIds = items.map((doc) => doc.id);
-    const batchPermissionContexts = await this.permissionContextService.getBatchPermissionContexts(userId, ResourceType.DOCUMENT, docIds);
-
-    // Extract abilities from permission contexts
-    const permissions: Record<string, Record<string, boolean>> = {};
-    for (const doc of items) {
-      const context = batchPermissionContexts[doc.id];
-      permissions[doc.id] = context ? context.abilities : this.getDefaultAbilities();
-    }
 
     return {
       pagination,
       data,
-      permissions,
+      permissions: {},
     };
   }
 
@@ -280,89 +264,35 @@ export class DocumentService {
     });
 
     if (!document) {
-      throw new Error("Document not found");
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Check if user has permission to access this document
+    if (document.visibility === "PRIVATE") {
+      const userPermission = await this.prismaService.documentPermission.findFirst({
+        where: {
+          docId: id,
+          userId: userId,
+        },
+      });
+
+      if (!userPermission) {
+        throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+      }
     }
 
     // Check basic visibility (simplified, no complex permissions yet)
     const isPublic = document.visibility === "PUBLIC";
 
     // Present document data (similar to presentDocument)
-    const serializedDocument = presentDocument(document, { isPublic });
+    const data = presentDocument(document, { isPublic });
 
-    const data = {
-      document: serializedDocument,
-      workspace: document.workspace,
-    };
-
-    // Get real permission context for the user using the cached service
-    const permissionContext = await this.permissionContextService.getPermissionContext(userId, ResourceType.DOCUMENT, document.id);
+    // TODO: Get real permission context for the user using the cached service
 
     return {
       data,
-      permissions: isPublic ? undefined : { [document.id]: permissionContext.abilities },
+      permissions: {},
     };
-  }
-
-  private getDefaultAbilities() {
-    return {
-      read: false,
-      update: false,
-      delete: false,
-      share: false,
-      comment: false,
-    };
-  }
-
-  private mapPermissionToAbilities(permission: PermissionLevel, isAuthor: boolean) {
-    // Authors always have full permissions regardless of calculated permission
-    if (isAuthor) {
-      return {
-        read: true,
-        update: true,
-        delete: true,
-        share: true,
-        comment: true,
-      };
-    }
-
-    // Map permission levels to abilities
-    switch (permission) {
-      case PermissionLevel.OWNER:
-      case PermissionLevel.MANAGE:
-        return {
-          read: true,
-          update: true,
-          delete: true,
-          share: true,
-          comment: true,
-        };
-      case PermissionLevel.EDIT:
-        return {
-          read: true,
-          update: true,
-          delete: false,
-          share: false,
-          comment: true,
-        };
-      case PermissionLevel.COMMENT:
-        return {
-          read: true,
-          update: false,
-          delete: false,
-          share: false,
-          comment: true,
-        };
-      case PermissionLevel.READ:
-        return {
-          read: true,
-          update: false,
-          delete: false,
-          share: false,
-          comment: false,
-        };
-      default:
-        return this.getDefaultAbilities();
-    }
   }
 
   private docToNavigationNode(doc: any): NavigationNode {
@@ -481,25 +411,24 @@ export class DocumentService {
 
     // 2. Base permission template
     const permissionBase: any = {
-      resourceType: "DOCUMENT",
-      resourceId: docId,
+      docId: docId,
       permission: dto.permission,
       createdById: userId,
     };
 
     // 3. Track all created permissions with full data
-    const createdPermissions: UnifiedPermission[] = [];
+    const createdPermissions: DocumentPermission[] = [];
 
     // 4. Batch grant permissions to users
     if (dto.targetUserIds && dto.targetUserIds.length > 0) {
       for (const targetUserId of dto.targetUserIds) {
-        const perm = await this.prismaService.unifiedPermission.create({
+        const perm = await this.prismaService.documentPermission.create({
           data: {
             ...permissionBase,
             userId: targetUserId,
-            sourceType: "DIRECT",
+            inheritedFromType: "DIRECT",
             priority: 1,
-            sourceId: null,
+            inheritedFromId: null,
           },
         });
         createdPermissions.push(perm);
@@ -517,13 +446,13 @@ export class DocumentService {
 
         // Create permissions for each group member
         for (const member of groupMembers) {
-          const perm = await this.prismaService.unifiedPermission.create({
+          const perm = await this.prismaService.documentPermission.create({
             data: {
               ...permissionBase,
               userId: member.userId,
-              sourceType: "GROUP",
+              inheritedFromType: "GROUP",
               priority: 2,
-              sourceId: null,
+              inheritedFromId: null,
             },
           });
           createdPermissions.push(perm);
@@ -536,14 +465,14 @@ export class DocumentService {
       const allChildren = await this.findAllDescendantDocuments(docId);
       for (const child of allChildren) {
         for (const parentPerm of createdPermissions) {
-          const childPerm = await this.prismaService.unifiedPermission.create({
+          const childPerm = await this.prismaService.documentPermission.create({
             data: {
               ...permissionBase,
-              resourceId: child.id,
+              docId: child.id,
               userId: parentPerm.userId,
-              sourceType: parentPerm.sourceType,
+              inheritedFromType: parentPerm.inheritedFromType,
               priority: parentPerm.priority,
-              sourceId: parentPerm.id,
+              inheritedFromId: parentPerm.id,
             },
           });
           createdPermissions.push(childPerm);
@@ -563,7 +492,7 @@ export class DocumentService {
     // For each affected user, publish a websocket event with their new abilities for this document
     for (const affectedUserId of affectedUserIds) {
       // Get abilities for the shared document for this user
-      const userAbilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", docId, affectedUserId);
+      const userAbilities = await this.permissionService.getResourcePermissionAbilities(docId, affectedUserId);
 
       await this.eventPublisher.publishWebsocketEvent({
         name: BusinessEvents.DOCUMENT_ADD_USER,
@@ -571,7 +500,7 @@ export class DocumentService {
         actorId: userId,
         data: {
           userId: affectedUserId,
-          documentId: docId,
+          docId: docId,
           document: doc,
           abilities: userAbilities,
           includeChildDocuments: dto.includeChildDocuments || false,
@@ -587,19 +516,18 @@ export class DocumentService {
     const { page = 1, limit = 10, workspaceId } = query;
 
     // Get all direct permissions for documents (excluding user's own docs)
-    const directPermissions = await this.prismaService.unifiedPermission.findMany({
+    const directPermissions = await this.prismaService.documentPermission.findMany({
       where: {
         userId,
-        resourceType: ResourceType.DOCUMENT,
-        sourceType: { in: [SourceType.DIRECT, SourceType.GROUP] },
-        sourceId: null,
+        inheritedFromType: { in: [PermissionInheritanceType.DIRECT, PermissionInheritanceType.GROUP] },
+        inheritedFromId: null,
         createdById: { not: userId },
       },
-      orderBy: [{ resourceId: "asc" }, { priority: "asc" }],
+      orderBy: [{ docId: "asc" }, { priority: "asc" }],
     });
 
     // Get document IDs from permissions
-    const docIds = directPermissions.map((perm) => perm.resourceId);
+    const docIds = directPermissions.map((perm) => perm.docId);
 
     // Filter documents by workspace if specified
     let filteredDocIds = docIds;
@@ -620,30 +548,29 @@ export class DocumentService {
     const paginatedDocIds = filteredDocIds.slice(startIndex, endIndex);
 
     // Get permissions for paginated documents
-    const paginatedPermissions = directPermissions.filter((perm) => paginatedDocIds.includes(perm.resourceId));
+    const paginatedPermissions = directPermissions.filter((perm) => paginatedDocIds.includes(perm.docId));
 
     // For page 1, fetch all GROUP permissions (not paginated)
-    let groupPermissions: UnifiedPermission[] = [];
+    let groupPermissions: DocumentPermission[] = [];
     if (page === 1) {
-      groupPermissions = await this.prismaService.unifiedPermission.findMany({
+      groupPermissions = await this.prismaService.documentPermission.findMany({
         where: {
           userId,
-          resourceType: ResourceType.DOCUMENT,
-          sourceType: SourceType.GROUP,
+          inheritedFromType: PermissionInheritanceType.GROUP,
           createdById: { not: userId },
-          resourceId: { in: filteredDocIds },
+          docId: { in: filteredDocIds },
         },
-        orderBy: [{ resourceId: "asc" }, { priority: "asc" }],
+        orderBy: [{ docId: "asc" }, { priority: "asc" }],
       });
     }
 
-    // Merge permissions, deduplicate by resourceId, keep highest priority
+    // Merge permissions, deduplicate by docId, keep highest priority
     const allPermissions = [...paginatedPermissions, ...groupPermissions];
-    const resolvedPermissions = new Map<string, UnifiedPermission>();
+    const resolvedPermissions = new Map<string, DocumentPermission>();
     for (const perm of allPermissions) {
-      const existing = resolvedPermissions.get(perm.resourceId);
+      const existing = resolvedPermissions.get(perm.docId);
       if (!existing || perm.priority < existing.priority) {
-        resolvedPermissions.set(perm.resourceId, perm);
+        resolvedPermissions.set(perm.docId, perm);
       }
     }
 
@@ -691,7 +618,7 @@ export class DocumentService {
     return all;
   }
 
-  private async copyUnifiedPermissionsFromAncestors(documentId: string, parentDocumentId: string) {
+  private async copyDocumentPermissionsFromAncestors(docId: string, parentDocumentId: string) {
     // Find all ancestor IDs
     const ancestorIds: string[] = [];
     let currentId: string | null = parentDocumentId;
@@ -702,23 +629,21 @@ export class DocumentService {
     }
 
     // Get all direct permissions in one query
-    const parentPermissions = await this.prismaService.unifiedPermission.findMany({
+    const parentPermissions = await this.prismaService.documentPermission.findMany({
       where: {
-        resourceType: "DOCUMENT",
-        resourceId: { in: ancestorIds },
-        sourceId: null,
+        docId: { in: ancestorIds },
+        inheritedFromId: null,
       },
     });
 
     // Bulk insert permissions
-    await this.prismaService.unifiedPermission.createMany({
+    await this.prismaService.documentPermission.createMany({
       data: parentPermissions.map((permission) => ({
         userId: permission.userId,
-        resourceType: "DOCUMENT",
-        resourceId: documentId,
+        docId: docId,
         permission: permission.permission,
-        sourceType: permission.sourceType,
-        sourceId: permission.id,
+        inheritedFromType: permission.inheritedFromType,
+        inheritedFromId: permission.id,
         priority: permission.priority,
         createdById: permission.createdById,
       })),

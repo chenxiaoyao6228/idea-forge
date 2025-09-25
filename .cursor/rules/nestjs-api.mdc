@@ -493,6 +493,8 @@ If you want, I can generate a similar example for another module or help automat
 DATABASE_URL=postgresql://postgres:123456@localhost:5432/ideaforge?schema=public
 ```
 
+**IMPORTANT: When using PostgreSQL MCP tools to query the database, use this connection string**
+
 ### Environment Variables Pattern
 
 ```typescript

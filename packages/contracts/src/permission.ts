@@ -1,19 +1,17 @@
 import { z } from "zod";
 import { basePagerSchema } from "./_base";
-import { PermissionLevelSchema, ResourceTypeSchema, UnifiedPermissionSchema } from "./prisma-type-generated";
+import { PermissionLevelSchema, DocumentPermissionSchema } from "./prisma-type-generated";
 
 // Request schemas
 export const addUserPermissionSchema = z.object({
   userId: z.string(),
-  resourceType: ResourceTypeSchema,
-  resourceId: z.string(),
+  docId: z.string(),
   permission: PermissionLevelSchema,
 });
 
 export const addGroupPermissionSchema = z.object({
   groupId: z.string(),
-  resourceType: ResourceTypeSchema,
-  resourceId: z.string(),
+  docId: z.string(),
   permission: PermissionLevelSchema,
 });
 
@@ -22,14 +20,13 @@ export const updatePermissionSchema = z.object({
 });
 
 export const permissionListRequestSchema = basePagerSchema.extend({
-  resourceType: ResourceTypeSchema.optional(),
-  resourceId: z.string().optional(),
+  docId: z.string().optional(),
   userId: z.string().optional(),
   workspaceId: z.string(),
 });
 
 // Response schemas
-export const permissionResponseSchema = UnifiedPermissionSchema.extend({
+export const permissionResponseSchema = DocumentPermissionSchema.extend({
   user: z
     .object({
       id: z.string(),

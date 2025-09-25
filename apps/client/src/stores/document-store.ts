@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { useMemo } from "react";
 import useRequest from "@ahooksjs/use-request";
 import { toast } from "sonner";
-import { CoverImage, DocTypeSchema, DocVisibilitySchema, SubspaceTypeSchema } from "@idea/contracts";
+import { CoverImage, DocTypeSchema, DocVisibilitySchema, PermissionLevel, SubspaceTypeSchema } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useSubSpaceStore, { usePersonalSubspace } from "./subspace-store";
@@ -111,6 +111,7 @@ export interface DocumentEntity {
   createdById?: string;
   updatedAt: string;
   createdAt: string;
+  permission?: PermissionLevel;
   [key: string]: any;
 }
 
@@ -178,7 +179,7 @@ export const useFetchDocumentDetail = () => {
           throw new Error("Document not available");
         }
 
-        // Update store
+        // Update store with document payload (includes resolved permission)
         useDocumentStore.setState((state) => ({
           documents: { ...state.documents, [data.document.id]: data.document },
         }));
@@ -200,6 +201,21 @@ export const useFetchDocumentDetail = () => {
             useSubSpaceStore.setState({ activeSubspaceId: data.document.subspaceId });
           }
         }
+
+        // Legacy ability store functionality removed - using CASL instead
+        // if (permissions) {
+        //   const entities = Object.entries(permissions).map(([id, abilities]) => ({
+        //     id,
+        //     abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
+        //   }));
+        //   useAbilityStore.setState((state) => {
+        //     const newAbilities = { ...state.abilities };
+        //     entities.forEach((entity) => {
+        //       newAbilities[entity.id] = entity;
+        //     });
+        //     return { abilities: newAbilities };
+        //   });
+        // }
 
         return {
           data: {
@@ -252,20 +268,21 @@ export const useFetchDocumentChildren = () => {
           });
         }
 
-        if (response.permissions) {
-          // Convert permissions to ability entities and update store directly
-          const entities = Object.entries(response.permissions).map(([id, abilities]) => ({
-            id,
-            abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
-          }));
-          useAbilityStore.setState((state) => {
-            const newAbilities = { ...state.abilities };
-            entities.forEach((entity) => {
-              newAbilities[entity.id] = entity;
-            });
-            return { abilities: newAbilities };
-          });
-        }
+        // Legacy ability store functionality removed - using CASL instead
+        // if (response.permissions) {
+        //   // Convert permissions to ability entities and update store directly
+        //   const entities = Object.entries(response.permissions).map(([id, abilities]) => ({
+        //     id,
+        //     abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
+        //   }));
+        //   useAbilityStore.setState((state) => {
+        //     const newAbilities = { ...state.abilities };
+        //     entities.forEach((entity) => {
+        //       newAbilities[entity.id] = entity;
+        //     });
+        //     return { abilities: newAbilities };
+        //   });
+        // }
       } catch (error) {
         console.error("Failed to fetch children:", error);
         throw error;
@@ -331,20 +348,21 @@ export const useMoveDocument = () => {
           });
         }
 
-        if (res.permissions) {
-          // Convert permissions to ability entities and update store directly
-          const entities = Object.entries(res.permissions).map(([id, abilities]) => ({
-            id,
-            abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
-          }));
-          useAbilityStore.setState((state) => {
-            const newAbilities = { ...state.abilities };
-            entities.forEach((entity) => {
-              newAbilities[entity.id] = entity;
-            });
-            return { abilities: newAbilities };
-          });
-        }
+        // Legacy ability store functionality removed - using CASL instead
+        // if (res.permissions) {
+        //   // Convert permissions to ability entities and update store directly
+        //   const entities = Object.entries(res.permissions).map(([id, abilities]) => ({
+        //     id,
+        //     abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
+        //   }));
+        //   useAbilityStore.setState((state) => {
+        //     const newAbilities = { ...state.abilities };
+        //     entities.forEach((entity) => {
+        //       newAbilities[entity.id] = entity;
+        //     });
+        //     return { abilities: newAbilities };
+        //   });
+        // }
       } catch (error) {
         console.error("Failed to move document:", error);
         throw error;

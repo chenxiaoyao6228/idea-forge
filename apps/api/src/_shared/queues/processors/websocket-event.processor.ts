@@ -103,13 +103,13 @@ export class WebsocketEventProcessor extends WorkerHost {
 
   private async handleDocumentAddUserEvent(event: WebsocketEvent<any>, server: any) {
     const { data, workspaceId, actorId } = event;
-    const { userId, documentId, document, abilities, includeChildDocuments } = data;
+    const { userId, docId, document, abilities, includeChildDocuments } = data;
 
     if (userId) {
       // Notify the affected user with their new abilities and document access
       server.to(`user:${userId}`).emit(BusinessEvents.DOCUMENT_ADD_USER, {
         userId,
-        documentId,
+        docId,
         document,
         abilities,
         includeChildDocuments,
@@ -118,12 +118,11 @@ export class WebsocketEventProcessor extends WorkerHost {
   }
 
   private async handleDocumentCreateEvent(event: WebsocketEvent<any>, server: any) {
-    const { documentId, subspaceId, updatedAt } = event.data;
+    const { docId, subspaceId, updatedAt } = event.data;
     // Find all users who have permissions for this document
-    const permissions = await this.prismaService.unifiedPermission.findMany({
+    const permissions = await this.prismaService.documentPermission.findMany({
       where: {
-        resourceType: "DOCUMENT",
-        resourceId: documentId,
+        docId: docId,
       },
       select: { userId: true },
     });
@@ -135,9 +134,9 @@ export class WebsocketEventProcessor extends WorkerHost {
       server.to(`user:${userId}`).emit(BusinessEvents.ENTITIES, {
         event: BusinessEvents.DOCUMENT_CREATE,
         fetchIfMissing: true,
-        documentIds: [
+        docIds: [
           {
-            id: documentId,
+            id: docId,
             updatedAt,
           },
         ],
@@ -155,9 +154,9 @@ export class WebsocketEventProcessor extends WorkerHost {
     server.to(`workspace:${event.workspaceId}`).emit(BusinessEvents.ENTITIES, {
       event: BusinessEvents.DOCUMENT_CREATE,
       fetchIfMissing: true,
-      documentIds: [
+      docIds: [
         {
-          id: documentId,
+          id: docId,
           updatedAt,
         },
       ],
@@ -184,14 +183,14 @@ export class WebsocketEventProcessor extends WorkerHost {
           // Emit to relevant subspace rooms
           server.to(`subspace:${subspaceId}`).emit(BusinessEvents.ENTITIES, {
             event: event.name,
-            documentIds: [{ id, updatedAt }],
+            docIds: [{ id, updatedAt }],
             fetchIfMissing: true,
           });
         } else {
           // Emit to my docs room (per-user)
           server.to(`user:${actorId}`).emit(BusinessEvents.ENTITIES, {
             event: event.name,
-            documentIds: [{ id, updatedAt }],
+            docIds: [{ id, updatedAt }],
             fetchIfMissing: true,
           });
         }
@@ -225,11 +224,11 @@ export class WebsocketEventProcessor extends WorkerHost {
   // Handle entities update events (documents and subspaces)
   private async handleEntitiesEvent(event: WebsocketEvent<any>, server: any) {
     const { data, workspaceId, actorId } = event;
-    const { documentIds, subspaceIds } = data;
+    const { docIds, subspaceIds } = data;
 
     const eventData = {
       fetchIfMissing: true,
-      documentIds: documentIds || [],
+      docIds: docIds || [],
       subspaceIds: subspaceIds || [],
       event: event.name,
     };
@@ -446,19 +445,18 @@ export class WebsocketEventProcessor extends WorkerHost {
       channels.push(`workspace:${event.workspaceId}`);
     }
 
-    const permissions = await this.prismaService.unifiedPermission.findMany({
+    const permissions = await this.prismaService.documentPermission.findMany({
       where: {
-        resourceType: "DOCUMENT",
-        resourceId: document.id,
+        docId: document.id,
       },
     });
 
     // Handle DIRECT and GROUP permissions
     for (const permission of permissions) {
-      if (permission.sourceType === "DIRECT") {
+      if (permission.inheritedFromType === "DIRECT") {
         channels.push(`user:${permission.userId}`);
-      } else if (permission.sourceType === "GROUP") {
-        channels.push(`group:${permission.sourceId}`);
+      } else if (permission.inheritedFromType === "GROUP") {
+        channels.push(`group:${permission.inheritedFromId}`);
       }
     }
 

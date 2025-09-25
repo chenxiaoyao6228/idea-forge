@@ -359,51 +359,51 @@ async function seed() {
   //   ],
   // });
 
-  // // Create UnifiedPermission for groups
-  // await prisma.unifiedPermission.createMany({
+  // // Create DocumentPermission for groups
+  // await prisma.documentPermission.createMany({
   //   data: [
   //     {
-  //       resourceType: "DOCUMENT",
-  //       resourceId: folderA1.id,
+  
+  //       documentId: folderA1.id,
   //       userId: user1.id,
   //       permission: "EDIT",
-  //       sourceType: "GROUP",
+  //       inheritedFromType: "GROUP",
   //       priority: 2,
   //       createdById: user2.id
   //     },
   //     {
-  //       resourceType: "DOCUMENT",
-  //       resourceId: folderA2.id,
+  
+  //       documentId: folderA2.id,
   //       userId: user1.id,
   //       permission: "READ",
-  //       sourceType: "GROUP",
+  //       inheritedFromType: "GROUP",
   //       priority: 2,
   //       createdById: user2.id
   //     },
   //     {
-  //       resourceType: "DOCUMENT",
-  //       resourceId: folderA11.id,
+  
+  //       documentId: folderA11.id,
   //       userId: user2.id,
   //       permission: "EDIT",
-  //       sourceType: "GROUP",
+  //       inheritedFromType: "GROUP",
   //       priority: 2,
   //       createdById: user2.id
   //     },
   //     {
-  //       resourceType: "DOCUMENT",
-  //       resourceId: docA111.id,
+  
+  //       documentId: docA111.id,
   //       userId: user1.id,
   //       permission: "MANAGE",
-  //       sourceType: "GROUP",
+  //       inheritedFromType: "GROUP",
   //       priority: 2,
   //       createdById: user2.id
   //     },
   //     {
-  //       resourceType: "DOCUMENT",
-  //       resourceId: docA112.id,
+  
+  //       documentId: docA112.id,
   //       userId: user2.id,
   //       permission: "EDIT",
-  //       sourceType: "GROUP",
+  //       inheritedFromType: "GROUP",
   //       priority: 2,
   //       createdById: user2.id
   //     }

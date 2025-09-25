@@ -1,4 +1,4 @@
-import { ResourceType, PermissionLevel } from "@idea/contracts";
+import { PermissionLevel } from "@idea/contracts";
 
 import { Injectable } from "@nestjs/common";
 import { User } from "@idea/contracts";
@@ -19,10 +19,10 @@ export class DocumentAbility extends BaseAbility {
       const { can } = builder;
 
       const documentPermissions = await this.permissionService.getUserDocumentPermissions(user.id);
-      const docIds = documentPermissions.map((p) => p.resourceId);
+      const docIds = documentPermissions.map((p) => p.docId);
       const uniqueDocIds = Array.from(new Set(docIds));
       for (const docId of uniqueDocIds) {
-        const level = await this.permissionService.resolveUserPermission(user.id, ResourceType.DOCUMENT, docId);
+        const level = await this.permissionService.resolveUserPermission(user.id, docId);
         this.definePermissionsByLevel(can, docId, level);
       }
       // Author always has full permissions on their own docs
@@ -32,7 +32,6 @@ export class DocumentAbility extends BaseAbility {
 
   private definePermissionsByLevel(can: any, docId: string, level: PermissionLevel) {
     switch (level) {
-      case PermissionLevel.OWNER:
       case PermissionLevel.MANAGE:
         can([Action.Read, Action.Update, Action.Delete, Action.Share, Action.Move], "Doc", { id: docId });
         break;

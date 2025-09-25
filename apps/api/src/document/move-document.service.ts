@@ -11,7 +11,7 @@ import { HttpStatus } from "@nestjs/common";
 import { Transactional, TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { ExtendedPrismaClient } from "@/_shared/database/prisma/prisma.extension";
-import { PermissionEventService } from "@/permission/permission-event.service";
+// import { PermissionEventService } from "@/permission/permission-event.service";
 
 /*
 This service supports the following document move features:
@@ -29,7 +29,6 @@ export class MoveDocumentService {
   constructor(
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionService: PermissionService,
-    private readonly permissionEventService: PermissionEventService,
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma<ExtendedPrismaClient>>,
   ) {}
 
@@ -140,7 +139,7 @@ export class MoveDocumentService {
 
     // Handle permission updates for document move
     if (subspaceChanged) {
-      await this.permissionEventService.handleDocumentMove(id, document.subspaceId, targetSubspaceId || null);
+      // TODO: notice event
     }
 
     // 6. If subspace changed, recursively update all children subspaceId
@@ -163,7 +162,7 @@ export class MoveDocumentService {
       },
     });
     // 8. Permissions
-    const abilities = await this.permissionService.getResourcePermissionAbilities("DOCUMENT", updatedDoc.id, authorId);
+    const abilities = await this.permissionService.getResourcePermissionAbilities(updatedDoc.id, authorId);
     return { data: { documents: [presentDocument(updatedDoc, { isPublic: true })] }, permissions: { [updatedDoc.id]: abilities } };
   }
 

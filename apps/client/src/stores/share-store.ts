@@ -105,18 +105,19 @@ export const useFetchSharedDocuments = () => {
           });
           return { documents: newDocuments };
         });
-        // Update ability store directly
-        const entities = Object.entries(response.abilities).map(([id, abilities]) => ({
-          id,
-          abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
-        }));
-        useAbilityStore.setState((state) => {
-          const newAbilities = { ...state.abilities };
-          entities.forEach((entity) => {
-            newAbilities[entity.id] = entity;
-          });
-          return { abilities: newAbilities };
-        });
+        // Legacy ability store functionality removed - using CASL instead
+        // // Update ability store directly
+        // const entities = Object.entries(response.abilities).map(([id, abilities]) => ({
+        //   id,
+        //   abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
+        // }));
+        // useAbilityStore.setState((state) => {
+        //   const newAbilities = { ...state.abilities };
+        //   entities.forEach((entity) => {
+        //     newAbilities[entity.id] = entity;
+        //   });
+        //   return { abilities: newAbilities };
+        // });
 
         return response.data.documents;
       } catch (error: any) {
@@ -176,17 +177,18 @@ export const useLoadMoreSharedDocuments = () => {
           return { documents: newDocuments };
         });
         // Update ability store directly
-        const entities = Object.entries({ ...state.allAbilities, ...response.abilities }).map(([id, abilities]) => ({
-          id,
-          abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
-        }));
-        useAbilityStore.setState((abilityState) => {
-          const newAbilities = { ...abilityState.abilities };
-          entities.forEach((entity) => {
-            newAbilities[entity.id] = entity;
-          });
-          return { abilities: newAbilities };
-        });
+        // Legacy ability store functionality removed - using CASL instead
+        // const entities = Object.entries({ ...state.allAbilities, ...response.abilities }).map(([id, abilities]) => ({
+        //   id,
+        //   abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
+        // }));
+        // useAbilityStore.setState((abilityState) => {
+        //   const newAbilities = { ...abilityState.abilities };
+        //   entities.forEach((entity) => {
+        //     newAbilities[entity.id] = entity;
+        //   });
+        //   return { abilities: newAbilities };
+        // });
 
         return response.data.documents;
       } catch (error: any) {

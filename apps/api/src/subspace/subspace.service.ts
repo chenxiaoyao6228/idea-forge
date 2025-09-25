@@ -9,8 +9,7 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { presentSubspace, presentSubspaceMember, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PermissionService } from "@/permission/permission.service";
-import { PermissionEventService } from "@/permission/permission-event.service";
-import { SourceType, ResourceType, SubspaceType, PermissionLevel } from "@idea/contracts";
+import { PermissionInheritanceType, SubspaceType, PermissionLevel } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 @Injectable()
@@ -19,7 +18,6 @@ export class SubspaceService {
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly permissionService: PermissionService,
-    private readonly permissionEventService: PermissionEventService,
   ) {}
 
   async joinSubspace(subspaceId: string, userId: string) {
@@ -116,13 +114,17 @@ export class SubspaceService {
       return existingPersonalSubspace;
     }
 
+    const subspaceType = SubspaceType.PERSONAL;
+    const permissionDefaults = this.getInitialPermissionsForSubspaceType(subspaceType);
+
     // Create personal subspace
     const personalSubspace = await this.prismaService.subspace.create({
       data: {
         name: "My Docs",
         description: "Personal documents for this workspace member",
-        type: SubspaceType.PERSONAL,
+        type: subspaceType,
         workspaceId,
+        ...permissionDefaults,
         navigationTree: [],
         members: {
           create: {
@@ -207,12 +209,16 @@ export class SubspaceService {
     // Handle possible index collision
     const finalIndex = await this.removeIndexCollision(dto.workspaceId, newIndex);
 
+    const subspaceType = (dto.type as SubspaceType) ?? SubspaceType.PUBLIC;
+    const permissionDefaults = this.getInitialPermissionsForSubspaceType(subspaceType);
+
     const subspace = await this.prismaService.subspace.create({
       data: {
         name: dto.name,
         description: dto.description,
         avatar: dto.avatar,
-        type: dto.type,
+        type: subspaceType,
+        ...permissionDefaults,
         index: finalIndex,
         workspace: {
           connect: {
@@ -255,7 +261,7 @@ export class SubspaceService {
 
     // Assign subspace type permissions
     // FIXME: ts type optimization
-    await this.permissionService.assignSubspaceTypePermissions(subspace.id, dto.type as SubspaceType, dto.workspaceId, creatorId);
+    await this.permissionService.assignSubspaceTypePermissions(subspace.id, subspaceType, dto.workspaceId, creatorId);
 
     // Emit create event
     await this.eventPublisher.publishWebsocketEvent({
@@ -374,15 +380,6 @@ export class SubspaceService {
     // Delete member record
     await this.prismaService.subspaceMember.delete({
       where: { id: userMember.id },
-    });
-
-    // Delete related permissions
-    await this.prismaService.unifiedPermission.deleteMany({
-      where: {
-        userId,
-        resourceType: ResourceType.SUBSPACE,
-        resourceId: subspaceId,
-      },
     });
 
     // Publish WebSocket event to notify other users
@@ -1196,7 +1193,7 @@ export class SubspaceService {
 
     // Handle permission changes for role update
     if (oldRole !== newRole) {
-      await this.permissionEventService.handleSubspaceRoleChange(member.userId, subspaceId, oldRole, newRole);
+      // TODO: u
     }
 
     return {
@@ -1250,7 +1247,6 @@ export class SubspaceService {
     });
 
     // Handle permission cleanup for removed user using event service
-    await this.permissionEventService.handleUserRemovedFromSubspace(memberToRemove.userId, subspaceId);
 
     // Publish WebSocket event to notify other users
     await this.eventPublisher.publishWebsocketEvent({
@@ -1324,13 +1320,13 @@ export class SubspaceService {
 
     // Delete related permissions for all removed members
     const removedUserIds = membersToRemove.map((member) => member.userId);
-    await this.prismaService.unifiedPermission.deleteMany({
-      where: {
-        userId: { in: removedUserIds },
-        resourceType: ResourceType.SUBSPACE,
-        resourceId: subspaceId,
-      },
-    });
+    // await this.prismaService.documentPermission.deleteMany({
+    //   where: {
+    //     userId: { in: removedUserIds },
+    //     docId: string.SUBSPACE,
+    //     documentId: subspaceId,
+    //   },
+    // });
 
     // Publish WebSocket events for each removed member
     for (const member of membersToRemove) {
@@ -1474,34 +1470,25 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
     }
 
-    // Create or update user permission
-    const userPermission = await this.prismaService.unifiedPermission.upsert({
+    // Create or update subspace member
+    const subspaceMember = await this.prismaService.subspaceMember.upsert({
       where: {
-        userId_guestId_resourceType_resourceId_sourceType: {
+        subspaceId_userId: {
+          subspaceId: subspaceId,
           userId: targetUserId,
-          guestId: "",
-          resourceType: ResourceType.SUBSPACE,
-          resourceId: subspaceId,
-          sourceType: SourceType.DIRECT,
         },
       },
       update: {
-        permission,
+        role: permission === "MANAGE" ? "ADMIN" : "MEMBER",
       },
       create: {
         userId: targetUserId,
-        guestId: "",
-        resourceType: ResourceType.SUBSPACE,
-        resourceId: subspaceId,
-        sourceType: SourceType.DIRECT,
-        permission,
-        priority: 2,
-        createdById: currentUserId,
+        subspaceId: subspaceId,
+        role: permission === "MANAGE" ? "ADMIN" : "MEMBER",
       },
-      include: {},
     });
 
-    return userPermission;
+    return subspaceMember;
   }
 
   async removeUserPermission(subspaceId: string, targetUserId: string, currentUserId: string) {
@@ -1525,14 +1512,11 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
     }
 
-    await this.prismaService.unifiedPermission.delete({
+    await this.prismaService.subspaceMember.delete({
       where: {
-        userId_guestId_resourceType_resourceId_sourceType: {
+        subspaceId_userId: {
+          subspaceId: subspaceId,
           userId: targetUserId,
-          guestId: "",
-          resourceType: ResourceType.SUBSPACE,
-          resourceId: subspaceId,
-          sourceType: SourceType.DIRECT,
         },
       },
     });
@@ -1815,16 +1799,16 @@ export class SubspaceService {
     }
 
     // Get user permissions
-    const userPermission = await this.permissionService.resolveUserPermission(currentUserId, ResourceType.SUBSPACE, subspaceId);
+    const userPermission = (await this.permissionService.resolveUserPermission(currentUserId, subspaceId)) as PermissionLevel;
 
     const isSubspaceAdmin = subspace.members.find((member) => member.userId === currentUserId)?.role === "ADMIN";
     const isWorkspaceAdmin = subspace.workspace.members[0]?.role === "ADMIN" || subspace.workspace.members[0]?.role === "OWNER";
 
     const permissions = {
-      canEditSettings: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE || userPermission === PermissionLevel.OWNER,
-      canManageMembers: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE || userPermission === PermissionLevel.OWNER,
-      canChangeType: isWorkspaceAdmin || userPermission === PermissionLevel.OWNER,
-      canManageSecurity: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE || userPermission === PermissionLevel.OWNER,
+      canEditSettings: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE,
+      canManageMembers: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE,
+      canChangeType: isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE,
+      canManageSecurity: isSubspaceAdmin || isWorkspaceAdmin || userPermission === PermissionLevel.MANAGE,
     };
 
     return {
@@ -1950,26 +1934,32 @@ export class SubspaceService {
     switch (subspaceType) {
       case "WORKSPACE_WIDE":
         return {
-          subspaceAdminPermission: PermissionLevel.OWNER,
-          subspaceMemberPermission: PermissionLevel.OWNER,
+          subspaceAdminPermission: PermissionLevel.MANAGE,
+          subspaceMemberPermission: PermissionLevel.MANAGE,
           // Non-subspace member permissions are not applicable for WORKSPACE_WIDE
         };
       case "PUBLIC":
         return {
-          subspaceAdminPermission: PermissionLevel.OWNER,
-          subspaceMemberPermission: PermissionLevel.OWNER,
+          subspaceAdminPermission: PermissionLevel.MANAGE,
+          subspaceMemberPermission: PermissionLevel.MANAGE,
           nonSubspaceMemberPermission: PermissionLevel.COMMENT,
         };
       case "INVITE_ONLY":
         return {
-          subspaceAdminPermission: PermissionLevel.OWNER,
-          subspaceMemberPermission: PermissionLevel.OWNER,
+          subspaceAdminPermission: PermissionLevel.MANAGE,
+          subspaceMemberPermission: PermissionLevel.MANAGE,
           nonSubspaceMemberPermission: PermissionLevel.NONE,
         };
       case "PRIVATE":
         return {
-          subspaceAdminPermission: PermissionLevel.OWNER,
-          subspaceMemberPermission: PermissionLevel.OWNER,
+          subspaceAdminPermission: PermissionLevel.MANAGE,
+          subspaceMemberPermission: PermissionLevel.MANAGE,
+          nonSubspaceMemberPermission: PermissionLevel.NONE,
+        };
+      case "PERSONAL":
+        return {
+          subspaceAdminPermission: PermissionLevel.MANAGE,
+          subspaceMemberPermission: PermissionLevel.EDIT,
           nonSubspaceMemberPermission: PermissionLevel.NONE,
         };
       default:

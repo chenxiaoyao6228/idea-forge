@@ -13,7 +13,7 @@ import { useMemberSearch } from "@/hooks/use-member-search";
 import useWorkspaceStore from "@/stores/workspace-store";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
-interface SharedUser {
+export interface SharedUser {
   id: string;
   name: string;
   email?: string;

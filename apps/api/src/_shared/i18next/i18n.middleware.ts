@@ -1,7 +1,7 @@
 import { Inject, Injectable, NestMiddleware } from "@nestjs/common";
 import { Request, Response, NextFunction } from "express";
 import { I18nNextService } from "./i18n.service";
-import i18nextMiddleware from "i18next-http-middleware";
+import * as i18nextMiddleware from "i18next-http-middleware";
 import { I18nContextManager } from "./i18n.context";
 import { Logger } from "winston";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";

@@ -11,6 +11,7 @@ import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "@/stores/workspace-store";
 import useUserStore from "@/stores/user-store";
 import { showAddMembersModal } from "./add-members-dialog";
+import type { SharedUser } from "./add-members-dialog";
 import {
   useDocumentShares,
   useFetchDocumentShares,
@@ -22,16 +23,6 @@ import { PermissionLevel } from "@idea/contracts";
 
 interface MemberSharingTabProps {
   documentId: string;
-}
-
-interface SharedUser {
-  id: string;
-  name: string;
-  email?: string;
-  avatar?: string;
-  permission: PermissionLevel;
-  type: "user" | "group";
-  memberCount?: number;
 }
 
 export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
@@ -88,7 +79,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
       // Check if they're downgrading from a high permission level
       const currentPermissionLevel = currentPermission;
       const isDowngrading =
-        (currentPermissionLevel === "OWNER" && permission !== "OWNER") || (currentPermissionLevel === "EDIT" && !["EDIT", "OWNER"].includes(permission));
+        (currentPermissionLevel === "MANAGE" && permission !== "MANAGE") || (currentPermissionLevel === "EDIT" && !["EDIT", "MANAGE"].includes(permission));
 
       if (isDowngrading) {
         // Show custom confirmation modal
@@ -125,7 +116,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
           await addShare({
             targetUserIds: users.filter(({ type }) => type === "user").map(({ id }) => id),
             targetGroupIds: users.filter(({ type }) => type === "group").map(({ id }) => id),
-            permission: users[0]?.permission as "READ" | "EDIT",
+            permission: users[0]?.permission,
             includeChildDocuments: true,
             workspaceId,
           });
@@ -166,7 +157,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                   <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                 </div>
                 <PermissionLevelSelector
-                  value={user.permission.level}
+                  value={user.permission.level === "OWNER" ? "MANAGE" : user.permission.level}
                   onChange={(value) => handleUpdatePermission(user.id, value)}
                   className="h-8 text-xs flex-shrink-0"
                 />

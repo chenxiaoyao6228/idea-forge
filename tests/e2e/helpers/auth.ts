@@ -141,7 +141,7 @@ export async function cleanupTestUser(email: string): Promise<void> {
         });
         
         // Delete unified permissions
-        await tx.unifiedPermission.deleteMany({
+        await tx.documentPermission.deleteMany({
           where: { userId: existingUser.id },
         });
         

@@ -1,7 +1,6 @@
 import type { Socket } from "socket.io";
 import { WebSocketServer } from "@nestjs/websockets";
 import { Namespace } from "socket.io";
-
 import { BusinessEvents } from "../business-event.constant";
 
 export abstract class BaseGateway {
@@ -27,7 +26,6 @@ export abstract class BaseGateway {
         }),
       );
       console.log(`[websocket]: Successfully joined room: ${roomId}`);
-      console.log(`[websocket]: client.rooms:`, client.rooms);
       return true;
     } catch (error) {
       console.error(`Error joining room ${roomId}:`, error);
@@ -94,7 +92,6 @@ export class BroadcastBaseGateway extends BaseGateway {
         }),
       );
       console.log(`[websocket]: Successfully joined room: ${roomId}`);
-      console.log(`[websocket]: client.rooms:`, client.rooms);
       return true;
     } catch (error) {
       console.error(`Error joining room ${roomId}:`, error);

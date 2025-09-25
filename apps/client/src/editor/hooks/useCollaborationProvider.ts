@@ -4,7 +4,7 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
 import { CollabUser, useEditorStore } from "../../stores/editor-store";
 import { useTranslation } from "react-i18next";
-import { useCollaborationPermissionWebsocket } from "@/hooks/use-permission-websocket";
+// import { useCollaborationPermissionWebsocket } from "@/hooks/use-permission-websocket";
 import { getWebsocketService } from "@/lib/websocket";
 
 const CONNECTION_TIMEOUT = 10000;
@@ -44,7 +44,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
   };
 
   // Set up permission WebSocket events for this document
-  useCollaborationPermissionWebsocket(websocketService.socket, documentId, handlePermissionRevoked);
+  // useCollaborationPermissionWebsocket(websocketService.socket, documentId, handlePermissionRevoked);
 
   useEffect(() => {
     if (!editable) {

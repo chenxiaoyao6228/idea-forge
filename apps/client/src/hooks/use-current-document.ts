@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useDocumentStore, { useGetDocument } from "@/stores/document-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useSubSpaceStore from "@/stores/subspace-store";
@@ -8,6 +8,7 @@ import { NavigationNode } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useRequest from "@ahooksjs/use-request";
 import { useDebounce } from "react-use";
+import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
 
 // Direct functions for navigation node finding (can be called from within hooks)
 const findNavigationNodeInPersonalSubspace = (documentId: string) => {
@@ -112,21 +113,21 @@ export const useCurrentDocument = () => {
         return null;
       }
 
-      const response = await documentApi.getDocument(debouncedDocumentId);
-      const { data } = response as any;
+      const response = (await documentApi.getDocument(debouncedDocumentId)) as any;
+      const { data } = response;
 
-      if (!data?.document) {
-        throw new Error("Document not found");
+      if (!data) {
+        throw new Error(ErrorCodeEnum.DocumentNotFound);
       }
 
-      console.log("✅ useCurrentDocument: API call successful", { documentId: data.document.id, title: data.document.title });
+      console.log("✅ useCurrentDocument: API call successful", { documentId: data.id, title: data.title });
 
       // Update the store for caching
       useDocumentStore.setState((state) => ({
-        documents: { ...state.documents, [data.document.id]: data.document },
+        documents: { ...state.documents, [data.id]: data },
       }));
 
-      return data.document;
+      return data;
     },
     {
       ready: !!debouncedDocumentId && !cachedDocument, // Only run if we have a debounced ID and no cached data

@@ -6,10 +6,8 @@ import { SubspaceService } from "@/subspace/subspace.service";
 import { presentWorkspace } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
 import { PermissionService } from "@/permission/permission.service";
-import { PermissionEventService } from "@/permission/permission-event.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import {
-  ResourceType,
   WorkspaceRole,
   WorkspaceMember,
   SubspaceType,
@@ -51,7 +49,6 @@ export class WorkspaceService {
     private readonly subspaceService: SubspaceService,
     private readonly permissionService: PermissionService,
     private readonly eventPublisher: EventPublisherService,
-    private readonly permissionEventService: PermissionEventService,
     private readonly abilityService: AbilityService,
     private readonly configService: ConfigService,
   ) {}
@@ -400,16 +397,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.WorkspaceHasMembers);
     }
 
-    // Clean up all related permissions across workspace hierarchy
-    await this.prismaService.unifiedPermission.deleteMany({
-      where: {
-        OR: [
-          { resourceType: ResourceType.WORKSPACE, resourceId: id },
-          { resourceType: ResourceType.SUBSPACE, resourceId: { in: await this.getWorkspaceSubspaceIds(id) } },
-          { resourceType: ResourceType.DOCUMENT, resourceId: { in: await this.getWorkspaceDocumentIds(id) } },
-        ],
-      },
-    });
+    // TODO:  Clean up all related permissions across workspace hierarchy
 
     await this.prismaService.workspace.delete({ where: { id } });
     return { success: true };
@@ -678,17 +666,7 @@ export class WorkspaceService {
     // --- Remove the user's personal subspaces in this workspace ---
     await this.subspaceService.removePersonalSubspacesForUser(userId, workspaceId);
 
-    // 2. Clean up all related permissions across workspace hierarchy
-    await this.prismaService.unifiedPermission.deleteMany({
-      where: {
-        userId,
-        OR: [
-          { resourceType: ResourceType.WORKSPACE, resourceId: workspaceId },
-          { resourceType: ResourceType.SUBSPACE, resourceId: { in: await this.getWorkspaceSubspaceIds(workspaceId) } },
-          { resourceType: ResourceType.DOCUMENT, resourceId: { in: await this.getWorkspaceDocumentIds(workspaceId) } },
-        ],
-      },
-    });
+    // TODO: Clean up all related permissions across workspace hierarchy
 
     return { success: true };
   }
@@ -817,9 +795,6 @@ export class WorkspaceService {
 
     // 2. Update unified permissions based on new role
     await this.permissionService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
-
-    // 3. Propagate permission changes to all child resources using event service
-    await this.permissionEventService.handleWorkspaceRoleChange(userId, workspaceId, oldRole, newRole);
 
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
@@ -1105,13 +1080,13 @@ export class WorkspaceService {
   //   });
 
   //   // Assign document permission to guest
-  //   await this.prismaService.unifiedPermission.create({
+  //   await this.prismaService.documentPermission.create({
   //     data: {
   //       guestId: guest.id,
   //       resourceType: ResourceType.DOCUMENT,
-  //       resourceId: documentId,
+  //       documentId: documentId,
   //       permission: permission as PermissionLevel,
-  //       sourceType: SourceType.GUEST,
+  //       sourceType: PermissionInheritanceType.GUEST,
   //       priority: 7,
   //       createdById: inviterId,
   //     },
@@ -1137,11 +1112,11 @@ export class WorkspaceService {
   //       invitedBy: {
   //         select: { id: true, email: true, displayName: true },
   //       },
-  //       unifiedPermissions: {
-  //         select: { resourceId: true, permission: true },
+  //       DocumentPermissions: {
+  //         select: { documentId: true, permission: true },
   //       },
   //       _count: {
-  //         select: { unifiedPermissions: true },
+  //         select: { DocumentPermissions: true },
   //       },
   //     },
   //     orderBy: { createdAt: "desc" },
@@ -1171,7 +1146,7 @@ export class WorkspaceService {
   //   }
 
   //   // Remove all guest permissions
-  //   await this.prismaService.unifiedPermission.deleteMany({
+  //   await this.prismaService.documentPermission.deleteMany({
   //     where: { guestId },
   //   });
 
@@ -1198,7 +1173,7 @@ export class WorkspaceService {
   //   const guest = await this.prismaService.guestCollaborator.findUnique({
   //     where: { id: guestId },
   //     include: {
-  //       unifiedPermissions: true,
+  //       DocumentPermissions: true,
   //     },
   //   });
 
@@ -1225,14 +1200,14 @@ export class WorkspaceService {
   //   const member = await this.addWorkspaceMember(workspaceId, user.id, role, adminId);
 
   //   // Migrate guest permissions to user permissions
-  //   for (const guestPermission of guest.unifiedPermissions) {
-  //     await this.prismaService.unifiedPermission.create({
+  //   for (const guestPermission of guest.documentPermissions) {
+  //     await this.prismaService.documentPermission.create({
   //       data: {
   //         userId: user.id,
   //         resourceType: guestPermission.resourceType,
-  //         resourceId: guestPermission.resourceId,
+  //         documentId: guestPermission.documentId,
   //         permission: guestPermission.permission,
-  //         sourceType: SourceType.DIRECT,
+  //         sourceType: PermissionInheritanceType.DIRECT,
   //         priority: 1,
   //         createdById: adminId,
   //       },

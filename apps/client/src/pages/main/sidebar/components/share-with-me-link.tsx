@@ -5,7 +5,7 @@ import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCurrentDocumentId } from "@/hooks/use-current-document";
 import useDocumentStore, { useFetchDocumentDetail, useFetchDocumentChildren, useGetDocumentAsNavigationNode } from "@/stores/document-store";
-import { useHasAbility } from "@/stores/ability-store";
+// import { useHasAbility } from "@/stores/ability-store";
 import { DocumentLink } from "./document-link";
 import type { DocumentEntity } from "@/stores/document-store";
 
@@ -20,7 +20,7 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
   const { run: fetchDetail } = useFetchDocumentDetail();
   const { run: fetchChildren } = useFetchDocumentChildren();
   const getDocumentAsNavigationNode = useGetDocumentAsNavigationNode();
-  const hasPermission = useHasAbility();
+  // const hasPermission = useHasAbility();
   const [isExpanded, setIsExpanded] = useState(false);
   const [document, setDocument] = useState<DocumentEntity>(initialDocument);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);

@@ -8,7 +8,6 @@ import { useSubspaceWebsocketEvents } from "@/hooks/websocket/subspace-events";
 import { useDocumentWebsocketEvents } from "@/hooks/websocket/document-events";
 import { useWorkspaceWebsocketEvents } from "@/hooks/websocket/workspace-events";
 import { useSharedWithMeWebsocketEvents } from "@/hooks/websocket/shared-with-me-events";
-import { usePermissionWebsocketEvents } from "@/hooks/use-permission-websocket";
 
 // Define SocketEvents enum locally to avoid import issues
 enum SocketEvents {
@@ -113,7 +112,6 @@ export function useWebsocketEventHandlers(socket: Socket | null) {
   const documentCleanup = useDocumentWebsocketEvents(socket);
   const workspaceCleanup = useWorkspaceWebsocketEvents(socket);
   const sharedWithMeCleanup = useSharedWithMeWebsocketEvents(socket);
-  const permissionCleanup = usePermissionWebsocketEvents(socket);
 
   // Return combined cleanup function
   return () => {
@@ -131,9 +129,6 @@ export function useWebsocketEventHandlers(socket: Socket | null) {
     }
     if (sharedWithMeCleanup) {
       sharedWithMeCleanup();
-    }
-    if (permissionCleanup) {
-      permissionCleanup();
     }
   };
 }

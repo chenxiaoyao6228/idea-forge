@@ -239,13 +239,13 @@ async function addUserToWorkspace(userId, workspaceId, adminToken) {
     });
     
     // Assign workspace permissions
-    await prisma.unifiedPermission.create({
+    await prisma.documentPermission.create({
       data: {
         userId,
-        resourceType: 'WORKSPACE',
-        resourceId: workspaceId,
+        reinheritedFromType: 'WORKSPACE',
+        documentId: workspaceId,
         permission: 'READ', // Use READ permission for workspace members
-        sourceType: 'WORKSPACE_MEMBER',
+        inheritedFromType: 'WORKSPACE_MEMBER',
         priority: 6,
         createdById: userId, // Use the user themselves as creator for simplicity
       },
@@ -269,13 +269,13 @@ async function addUserToWorkspace(userId, workspaceId, adminToken) {
       });
       
       // Assign subspace permissions
-      await prisma.unifiedPermission.create({
+      await prisma.documentPermission.create({
         data: {
           userId,
-          resourceType: 'SUBSPACE',
-          resourceId: subspace.id,
+          reinheritedFromType: 'SUBSPACE',
+          documentId: subspace.id,
           permission: 'READ', // Use READ permission for subspace members
-          sourceType: 'SUBSPACE_MEMBER',
+          inheritedFromType: 'SUBSPACE_MEMBER',
           priority: 4,
           createdById: userId,
         },
@@ -312,13 +312,13 @@ async function addUserToWorkspace(userId, workspaceId, adminToken) {
     });
     
     // Assign personal subspace permissions
-    await prisma.unifiedPermission.create({
+    await prisma.documentPermission.create({
       data: {
         userId,
-        resourceType: 'SUBSPACE',
-        resourceId: personalSubspace.id,
+        reinheritedFromType: 'SUBSPACE',
+        documentId: personalSubspace.id,
         permission: 'OWNER',
-        sourceType: 'SUBSPACE_ADMIN',
+        inheritedFromType: 'SUBSPACE_ADMIN',
         priority: 3,
         createdById: userId,
       },

@@ -52,13 +52,13 @@ async function addUserToWorkspace(userEmail: string, workspaceId: string) {
     });
     
     // Add workspace-level unified permission
-    await prisma.unifiedPermission.create({
+    await prisma.documentPermission.create({
       data: {
-        resourceType: 'WORKSPACE',
-        resourceId: workspaceId,
+        reinheritedFromType: 'WORKSPACE',
+        documentId: workspaceId,
         userId: user.id,
         permission: 'READ',
-        sourceType: 'WORKSPACE_MEMBER',
+        inheritedFromType: 'WORKSPACE_MEMBER',
         priority: 6,
         createdById: user.id
       }
@@ -111,13 +111,13 @@ async function addUserToWorkspace(userEmail: string, workspaceId: string) {
         });
     
         // Add subspace-level unified permission
-        await prisma.unifiedPermission.create({
+        await prisma.documentPermission.create({
           data: {
-            resourceType: 'SUBSPACE',
-            resourceId: subspace.id,
+            reinheritedFromType: 'SUBSPACE',
+            documentId: subspace.id,
             userId: user.id,
             permission: 'READ',
-            sourceType: 'SUBSPACE_MEMBER',
+            inheritedFromType: 'SUBSPACE_MEMBER',
             priority: 4,
             createdById: user.id
           }

@@ -116,6 +116,12 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
           subspaceMemberPermission: "OWNER" as PermissionLevel,
           nonSubspaceMemberPermission: "NONE" as PermissionLevel,
         };
+      case "PERSONAL":
+        return {
+          subspaceAdminPermission: "OWNER" as PermissionLevel,
+          subspaceMemberPermission: "EDIT" as PermissionLevel,
+          nonSubspaceMemberPermission: "NONE" as PermissionLevel,
+        };
       default:
         return {};
     }
@@ -140,15 +146,15 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
   const validatePermissionChange = useRefCallback((permissionType: string, newValue: PermissionLevel) => {
     const currentSettings = settings.subspace;
 
-    // Admins should always have OWNER permissions
-    if (permissionType === "subspaceAdminPermission" && newValue !== "OWNER") {
-      console.warn("Admins must have OWNER permissions");
+    // Admins should always have MANAGE permissions
+    if (permissionType === "subspaceAdminPermission" && newValue !== "MANAGE") {
+      console.warn("Admins must have MANAGE permissions");
       return false;
     }
 
     // Non-members should not have higher permissions than members
     if (permissionType === "nonSubspaceMemberPermission") {
-      if (newValue === "OWNER" || newValue === "MANAGE") {
+      if (newValue === "MANAGE") {
         console.warn("Non-Members cannot have higher permissions than Members");
         return false;
       }
