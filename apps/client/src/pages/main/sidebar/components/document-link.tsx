@@ -47,7 +47,7 @@ export function DocumentLink(props: DocumentLinkProps) {
 
   // Load children details when document is active and has children in navigation tree
   const fetchChildrenData = useRefCallback(async () => {
-    if (!isActiveDocument) return;
+    if (!isActiveDocument || !hasChildren) return;
 
     try {
       // Check if children are already loaded to avoid unnecessary API calls
@@ -65,7 +65,7 @@ export function DocumentLink(props: DocumentLinkProps) {
 
   useEffect(() => {
     void fetchChildrenData();
-  }, [isActiveDocument, fetchChildrenData]);
+  }, [isActiveDocument, hasChildren, fetchChildrenData]);
 
   // auto expand state sync
   const subspace = useSubSpaceStore((state) => (subspaceId ? state.subspaces[subspaceId] : undefined));

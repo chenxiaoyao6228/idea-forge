@@ -34,6 +34,10 @@ export function presentDocument(document: any, options?: { isPublic?: boolean })
       children: document.children,
       // Cover image
       coverImage: document.coverImage,
+      // Subspace permission overrides
+      subspaceAdminPermission: document.subspaceAdminPermission,
+      subspaceMemberPermission: document.subspaceMemberPermission,
+      nonSubspaceMemberPermission: document.nonSubspaceMemberPermission,
       // Revision count
       // revisionCount: document.revisions.length,
     };

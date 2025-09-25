@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto, UpdateSubspaceSettingsDto } from "./subspace.dto";
+import { CreateSubspaceDto, UpdateSubspaceDto, AddSubspaceMemberDto, UpdateSubspaceMemberDto } from "./subspace.dto";
 import { Subspace, SubspaceTypeSchema, SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
@@ -8,16 +8,16 @@ import fractionalIndex from "fractional-index";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { presentSubspace, presentSubspaceMember, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
-import { DocPermissionResolveService } from "@/permission/document-permission.service";
-import { PermissionInheritanceType, SubspaceType, PermissionLevel } from "@idea/contracts";
+import { SubspaceType, PermissionLevel } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { AbilityService } from "@/_shared/casl/casl.service";
 
 @Injectable()
 export class SubspaceService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
-    private readonly docPermissionResolveService: DocPermissionResolveService,
+    private readonly abilityService: AbilityService,
   ) {}
 
   async joinSubspace(subspaceId: string, userId: string) {
@@ -1775,6 +1775,18 @@ export class SubspaceService {
       throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
     }
 
+    // Get and serialize subspace abilities for the user scoped to this subspace
+    const serializedAbility = await this.abilityService.serializeAbilityForUser(
+      "Subspace",
+      { id: currentUserId, currentWorkspaceId: subspace.workspaceId },
+      {
+        subspace: {
+          id: subspaceId,
+          workspaceId: subspace.workspaceId,
+        },
+      },
+    );
+
     return {
       subspace: {
         ...subspace,
@@ -1788,7 +1800,9 @@ export class SubspaceService {
         subspaceMemberPermission: subspace.subspaceMemberPermission,
         nonSubspaceMemberPermission: subspace.nonSubspaceMemberPermission,
       } as any,
-      permissions: {} as any,
+      permissions: {
+        Subspace: serializedAbility,
+      },
     };
   }
 

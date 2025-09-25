@@ -20,7 +20,7 @@ export function SharePopover({ documentId }: ShareButtonProps) {
           <UserPlus className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0 gap-0" align="end">
+      <PopoverContent className="w-[460px] p-0 gap-0" align="end">
         <Tabs defaultValue="members" className="w-full">
           <TabsList className="grid w-[calc(100%-2rem)] grid-cols-2 mx-4 mb-2 mt-2">
             <TabsTrigger value="members" className="px-2 py-1">

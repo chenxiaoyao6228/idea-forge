@@ -12,6 +12,9 @@ const commonDocumentSchema = DocSchema.pick({
   parentId: true,
   icon: true,
   createdById: true,
+  subspaceAdminPermission: true,
+  subspaceMemberPermission: true,
+  nonSubspaceMemberPermission: true,
 });
 export type CommonDocument = z.infer<typeof commonDocumentSchema>;
 
@@ -199,6 +202,15 @@ export const removeGroupShareSchema = z.object({
 });
 
 export type RemoveGroupShareDto = z.infer<typeof removeGroupShareSchema>;
+
+// update document subspace permissions
+export const updateDocumentSubspacePermissionsSchema = z.object({
+  subspaceAdminPermission: PermissionLevelSchema.optional(),
+  subspaceMemberPermission: PermissionLevelSchema.optional(),
+  nonSubspaceMemberPermission: PermissionLevelSchema.optional(),
+});
+
+export type UpdateDocumentSubspacePermissionsDto = z.infer<typeof updateDocumentSubspacePermissionsSchema>;
 
 // ============== others ================
 

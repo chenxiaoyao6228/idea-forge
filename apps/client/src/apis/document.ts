@@ -17,6 +17,7 @@ import type {
   ListDocumentResponse,
   ListDocumentDto,
   SharedWithMeResponse,
+  UpdateDocumentSubspacePermissionsDto,
 } from "@idea/contracts";
 
 export const documentApi = {
@@ -96,4 +97,7 @@ export const documentApi = {
   },
 
   duplicate: (id: string) => request.post<null, DuplicateDocumentResponse>(`/api/documents/${id}/duplicate`),
+
+  updateSubspacePermissions: (id: string, data: UpdateDocumentSubspacePermissionsDto) =>
+    request.patch<UpdateDocumentSubspacePermissionsDto, CommonDocumentResponse>(`/api/documents/${id}/subspace-permissions`, data),
 };

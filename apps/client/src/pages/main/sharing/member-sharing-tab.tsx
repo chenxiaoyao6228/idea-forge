@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Link, X, Plus, Users, UserCheck } from "lucide-react";
+import { Link, X, Plus, Users, UserCheck, RotateCcw } from "lucide-react";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "@/stores/workspace-store";
 import useUserStore from "@/stores/user-store";
+import useDocumentStore from "@/stores/document-store";
 import { showAddMembersModal } from "./add-members-dialog";
 import type { SharedUser } from "./add-members-dialog";
 import {
@@ -24,8 +25,11 @@ import {
 } from "@/stores/document-shares-store";
 import { PermissionLevel } from "@idea/contracts";
 import { useCurrentDocument } from "@/hooks/use-current-document";
-import { useFetchSubspaceSettings, useUpdateSubspaceSettings } from "@/stores/subspace-store";
+import { useFetchSubspaceSettings } from "@/stores/subspace-store";
 import useSubSpaceStore from "@/stores/subspace-store";
+import { documentApi } from "@/apis/document";
+import { UpdateDocumentSubspacePermissionsDto } from "@idea/contracts";
+import useRequest from "@ahooksjs/use-request";
 
 interface MemberSharingTabProps {
   documentId: string;
@@ -34,6 +38,7 @@ interface MemberSharingTabProps {
 export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
+
   const currentUserId = useUserStore((s) => s.userInfo?.id);
   const workspaceId = currentWorkspace?.id;
   const currentDocument = useCurrentDocument();
@@ -53,7 +58,6 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
 
   // Fetch subspace settings if document is in a subspace
   const { run: fetchSubspaceSettings } = useFetchSubspaceSettings(currentDocument?.subspaceId || "");
-  const { run: updateSubspaceSettings } = useUpdateSubspaceSettings(currentDocument?.subspaceId || "");
 
   // Fetch subspace settings when component mounts and document has a subspace
   useEffect(() => {
@@ -137,6 +141,68 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
     toast.success(t("Link copied to clipboard"));
   };
 
+  // Hook for updating document subspace permissions
+  const { run: updateDocumentSubspacePermission, loading: isUpdatingPermissions } = useRequest(
+    async (params: { permissionType: string; value: PermissionLevel }) => {
+      const { permissionType, value } = params;
+
+      const updateData: UpdateDocumentSubspacePermissionsDto = {};
+
+      switch (permissionType) {
+        case "subspaceAdminPermission":
+          updateData.subspaceAdminPermission = value;
+          break;
+        case "subspaceMemberPermission":
+          updateData.subspaceMemberPermission = value;
+          break;
+        case "nonSubspaceMemberPermission":
+          updateData.nonSubspaceMemberPermission = value;
+          break;
+      }
+
+      try {
+        const updatedDocument = await documentApi.updateSubspacePermissions(documentId, updateData);
+
+        // Update the document in the store with the new subspace permission data
+        useDocumentStore.setState((state) => {
+          const currentDocument = state.documents[documentId];
+          if (currentDocument) {
+            return {
+              documents: {
+                ...state.documents,
+                [documentId]: {
+                  ...currentDocument,
+                  subspaceAdminPermission: updatedDocument.subspaceAdminPermission,
+                  subspaceMemberPermission: updatedDocument.subspaceMemberPermission,
+                  nonSubspaceMemberPermission: updatedDocument.nonSubspaceMemberPermission,
+                },
+              },
+            };
+          }
+          return state;
+        });
+
+        toast.success(t("Document permissions updated"));
+        return updatedDocument;
+      } catch (error) {
+        console.error("Failed to update document subspace permissions:", error);
+        toast.error(t("Failed to update permissions"));
+        throw error;
+      }
+    },
+    { manual: true },
+  );
+
+  const handleUpdateDocumentSubspacePermission = (permissionType: string, value: PermissionLevel) => {
+    updateDocumentSubspacePermission({ permissionType, value });
+  };
+
+  // Check if document has any permission overrides
+  const hasDocumentOverrides =
+    currentDocument?.subspaceAdminPermission !== null ||
+    currentDocument?.subspaceMemberPermission !== null ||
+    currentDocument?.nonSubspaceMemberPermission !== null;
+
   const handleAddMembers = () => {
     showAddMembersModal({
       onAddUsers: async (users: SharedUser[]) => {
@@ -162,8 +228,11 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
       {/* Subspace Role-Based Permissions Section */}
       {currentDocument?.subspaceId && subspaceSettings && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium">{t("Subspace Role-Based Permissions")}</Label>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium">{t("Subspace Role-Based Permissions")}</Label>
+              {hasDocumentOverrides ? <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">{t("Document Override")}</span> : null}
+            </div>
           </div>
 
           <div className="space-y-2 p-3 bg-blue-50 rounded-lg border">
@@ -178,8 +247,9 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
               </div>
               <div className="flex items-center gap-2">
                 <PermissionLevelSelector
-                  value={subspaceSettings.subspace.subspaceAdminPermission}
-                  onChange={(value) => updateSubspaceSettings({ settings: { subspaceAdminPermission: value } })}
+                  value={currentDocument.subspaceAdminPermission ?? subspaceSettings.subspace.subspaceAdminPermission}
+                  onChange={(value) => handleUpdateDocumentSubspacePermission("subspaceAdminPermission", value)}
+                  disabled={isUpdatingPermissions}
                 />
               </div>
             </div>
@@ -195,8 +265,9 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
               </div>
               <div className="flex items-center gap-2">
                 <PermissionLevelSelector
-                  value={subspaceSettings.subspace.subspaceMemberPermission}
-                  onChange={(value) => updateSubspaceSettings({ settings: { subspaceMemberPermission: value } })}
+                  value={currentDocument.subspaceMemberPermission ?? subspaceSettings.subspace.subspaceMemberPermission}
+                  onChange={(value) => handleUpdateDocumentSubspacePermission("subspaceMemberPermission", value)}
+                  disabled={isUpdatingPermissions}
                 />
               </div>
             </div>
@@ -207,19 +278,22 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-gray-600" />
                   <span className="text-sm font-medium">{t("Other Members")}</span>
-                  <span className="text-xs text-muted-foreground">({t("x members")})</span>
+                  <span className="text-xs text-muted-foreground">({t("-- members")})</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <PermissionLevelSelector
-                    value={subspaceSettings.subspace.nonSubspaceMemberPermission}
-                    onChange={(value) => updateSubspaceSettings({ settings: { nonSubspaceMemberPermission: value } })}
+                    value={currentDocument.nonSubspaceMemberPermission ?? subspaceSettings.subspace.nonSubspaceMemberPermission}
+                    onChange={(value) => handleUpdateDocumentSubspacePermission("nonSubspaceMemberPermission", value)}
+                    disabled={isUpdatingPermissions}
                   />
                 </div>
               </div>
             }
 
             <div className="text-xs text-muted-foreground mt-2">
-              {t("These permissions are inherited from the subspace settings and apply to all documents in this subspace.")}
+              {hasDocumentOverrides
+                ? t("This document has custom permission settings that override the subspace defaults.")
+                : t("These permissions are inherited from the subspace settings and apply to all documents in this subspace.")}
             </div>
           </div>
         </div>

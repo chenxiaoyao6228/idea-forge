@@ -9,7 +9,7 @@ import { PolicyGuard } from "@/_shared/casl/policy.guard";
 import { SearchDocumentService } from "./search-document.service";
 import { DocumentTrashService } from "./trash-document.service";
 import { ShareDocumentService } from "./share-document.services";
-import { UpdateCoverDto } from "@idea/contracts";
+import { UpdateCoverDto, UpdateDocumentSubspacePermissionsDto } from "@idea/contracts";
 import { PermissionListRequestDto } from "@/permission/permission.dto";
 
 @UseGuards(PolicyGuard)
@@ -104,5 +104,10 @@ export class DocumentController {
   @Delete(":id/cover")
   async deleteCover(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.removeCover(id, userId);
+  }
+
+  @Patch(":id/subspace-permissions")
+  async updateSubspacePermissions(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: UpdateDocumentSubspacePermissionsDto) {
+    return this.documentService.updateSubspacePermissions(id, userId, dto);
   }
 }

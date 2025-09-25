@@ -62,7 +62,9 @@ export class ShareDocumentService {
         updatedAt: doc.updatedAt,
         owner: doc.author,
         coverImage: doc.coverImage,
-        permission: { level: "READ" as const },
+        subspaceAdminPermission: doc.subspaceAdminPermission,
+        subspaceMemberPermission: doc.subspaceMemberPermission,
+        nonSubspaceMemberPermission: doc.nonSubspaceMemberPermission,
       };
     });
   }

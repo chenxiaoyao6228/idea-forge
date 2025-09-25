@@ -17,6 +17,7 @@ import { subspaceApi } from "@/apis/subspace";
 import { DocumentEntity } from "./document-store";
 import useUserStore from "./user-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
+import { useInitializeSubjectAbilities } from "./ability-store";
 
 export interface SubspaceEntity {
   id: string;
@@ -697,11 +698,17 @@ export const useBatchRemoveSubspaceMembers = () => {
 
 export const useFetchSubspaceSettings = (subspaceId: string) => {
   const { t } = useTranslation();
+  const initializeSubjectAbilities = useInitializeSubjectAbilities();
 
   return useRequest(
     async () => {
       try {
         const response = await subspaceApi.getSubspaceSettings(subspaceId);
+
+        // Initialize abilities if permissions are available
+        if (response.permissions && Object.keys(response.permissions).length > 0) {
+          initializeSubjectAbilities(response.permissions);
+        }
 
         // Update store using direct setState
         useSubSpaceStore.setState({ subspaceSettings: response });

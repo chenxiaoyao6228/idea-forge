@@ -29,7 +29,7 @@ ALTER TABLE "DocGroupPermission" DROP CONSTRAINT "DocGroupPermission_docId_fkey"
 ALTER TABLE "DocGroupPermission" DROP CONSTRAINT "DocGroupPermission_groupId_fkey";
 
 -- DropForeignKey
-ALTER TABLE "DocGroupPermission" DROP CONSTRAINT "DocGroupPermission_inheritedFromId_fkey";
+ALTER TABLE "DocGroupPermission" DROP CONSTRAINT "DocGroupPermission_sourceId_fkey";
 
 -- DropForeignKey
 ALTER TABLE "DocGroupPermission" DROP CONSTRAINT "DocGroupPermission_userId_fkey";
@@ -41,7 +41,7 @@ ALTER TABLE "DocUserPermission" DROP CONSTRAINT "DocUserPermission_createdById_f
 ALTER TABLE "DocUserPermission" DROP CONSTRAINT "DocUserPermission_docId_fkey";
 
 -- DropForeignKey
-ALTER TABLE "DocUserPermission" DROP CONSTRAINT "DocUserPermission_inheritedFromId_fkey";
+ALTER TABLE "DocUserPermission" DROP CONSTRAINT "DocUserPermission_sourceId_fkey";
 
 -- DropForeignKey
 ALTER TABLE "DocUserPermission" DROP CONSTRAINT "DocUserPermission_subspaceMemberId_fkey";
@@ -104,19 +104,19 @@ CREATE TABLE "DocumentPermission" (
 );
 
 -- CreateIndex
-CREATE INDEX "DocumentPermission_userId_reinheritedFromType_idx" ON "DocumentPermission"("userId", "reinheritedFromType");
+CREATE INDEX "DocumentPermission_userId_inheritedFromType_idx" ON "DocumentPermission"("userId", "inheritedFromType");
 
 -- CreateIndex
-CREATE INDEX "DocumentPermission_guestId_reinheritedFromType_idx" ON "DocumentPermission"("guestId", "reinheritedFromType");
+CREATE INDEX "DocumentPermission_guestId_inheritedFromType_idx" ON "DocumentPermission"("guestId", "inheritedFromType");
 
 -- CreateIndex
-CREATE INDEX "DocumentPermission_reinheritedFromType_documentId_idx" ON "DocumentPermission"("reinheritedFromType", "documentId");
+CREATE INDEX "DocumentPermission_inheritedFromType_documentId_idx" ON "DocumentPermission"("inheritedFromType", "documentId");
 
 -- CreateIndex
 CREATE INDEX "DocumentPermission_priority_idx" ON "DocumentPermission"("priority");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "DocumentPermission_userId_guestId_reinheritedFromType_documentId_so_key" ON "DocumentPermission"("userId", "guestId", "reinheritedFromType", "documentId", "inheritedFromType");
+CREATE UNIQUE INDEX "DocumentPermission_userId_guestId_inheritedFromType_documentId_so_key" ON "DocumentPermission"("userId", "guestId", "inheritedFromType", "documentId", "inheritedFromType");
 
 -- AddForeignKey
 ALTER TABLE "DocumentPermission" ADD CONSTRAINT "DocumentPermission_inheritedFromId_fkey" FOREIGN KEY ("inheritedFromId") REFERENCES "DocumentPermission"("id") ON DELETE SET NULL ON UPDATE CASCADE;

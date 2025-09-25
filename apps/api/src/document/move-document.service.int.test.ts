@@ -165,13 +165,13 @@ describe("MoveDocumentService (integration)", () => {
   let mockData: Awaited<ReturnType<typeof createComplexMockData>>;
   let prisma: PrismaService;
   let eventPublisherMock: { publishWebsocketEvent: any };
-  let permissionMock: { getResourcePermissionAbilities: any };
+  let permissionMock: {};
   let realtimeGatewayMock: { sendToUser: any };
 
   beforeEach(async () => {
     console.log("beforeEach in move-document.service.int.test.ts");
     eventPublisherMock = { publishWebsocketEvent: vi.fn().mockResolvedValue(undefined) };
-    permissionMock = { getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }) };
+    permissionMock = {};
     realtimeGatewayMock = { sendToUser: vi.fn() };
 
     module = await Test.createTestingModule({
@@ -1029,14 +1029,7 @@ describe("MoveDocumentService (integration)", () => {
     beforeEach(async () => {
       const module = await Test.createTestingModule({
         imports: [ConfigsModule, ClsModule, PrismaModule],
-        providers: [
-          MoveDocumentService,
-          { provide: EventPublisherService, useValue: { publishWebsocketEvent: vi.fn() } },
-          {
-            provide: DocPermissionResolveService,
-            useValue: { getResourcePermissionAbilities: vi.fn().mockResolvedValue({ read: true, write: true }) },
-          },
-        ],
+        providers: [MoveDocumentService, { provide: EventPublisherService, useValue: { publishWebsocketEvent: vi.fn() } }],
       }).compile();
       service = module.get(MoveDocumentService);
       prisma = module.get(PrismaService);

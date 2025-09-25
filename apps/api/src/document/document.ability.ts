@@ -54,15 +54,7 @@ export class DocumentAbility extends BaseAbility {
   }
 
   private async buildGlobalPermissions(can: any, user: User) {
-    const documentPermissions = await this.docPermissionResolveService.getUserDocumentPermissions(user.id);
-    const docIds = documentPermissions.map((p) => p.docId);
-    const uniqueDocIds = Array.from(new Set(docIds));
-
-    for (const docId of uniqueDocIds) {
-      const level = await this.docPermissionResolveService.resolveUserPermission(user.id, docId);
-      this.defineContentPermissionsByLevel(can, docId, level);
-    }
-
+    // TODO:
     // Author always has full permissions on their own docs when building global ability
     can([Action.Read, Action.Update, Action.Delete, Action.Share], "Doc", { authorId: user.id });
   }

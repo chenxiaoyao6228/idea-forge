@@ -8,6 +8,7 @@ import {
   UpdateCoverDto,
   SharedWithMeResponse,
   PermissionLevel,
+  UpdateDocumentSubspacePermissionsDto,
 } from "@idea/contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
@@ -868,5 +869,34 @@ export class DocumentService {
         await this.duplicateChildren(grandchildren, duplicatedChild.id, userId);
       }
     }
+  }
+
+  async updateSubspacePermissions(id: string, userId: string, dto: UpdateDocumentSubspacePermissionsDto) {
+    // Verify document exists and user has permission
+    const doc = await this.prismaService.doc.findUnique({
+      where: { id },
+      select: { id: true, authorId: true, subspaceId: true },
+    });
+
+    if (!doc) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Check if user is the author or has manage permission
+    if (doc.authorId !== userId) {
+      // TODO: Add permission check for subspace admins
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    // Update the document with new subspace permission overrides
+    const updatedDoc = await this.prismaService.doc.update({
+      where: { id },
+      data: {
+        ...dto,
+        lastModifiedById: userId,
+      },
+    });
+
+    return updatedDoc;
   }
 }

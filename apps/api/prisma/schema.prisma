@@ -246,6 +246,11 @@ model Doc {
   docShare    DocShare[]
   permissions DocumentPermission[]
 
+  // Subspace permission overrides (null means inherit from subspace)
+  subspaceAdminPermission     PermissionLevel?
+  subspaceMemberPermission    PermissionLevel?
+  nonSubspaceMemberPermission PermissionLevel?
+
   // publicShare        PublicShare?
 
   // versions

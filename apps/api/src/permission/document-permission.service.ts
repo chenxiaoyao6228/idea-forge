@@ -8,7 +8,7 @@ export class DocPermissionResolveService {
 
   /**
    * Dynamically resolve a user's permission for a document by traversing the permission inheritance chain.
-   * Priority: DIRECT/GROUP (document) > DIRECT/GROUP (subspace) > subspace role > workspace role > guest > none
+   * Priority: DIRECT/GROUP (document) > document subspace overrides > subspace role > guest > none
    */
   async resolveUserPermissionForDocument(userId: string, doc: { id: string; subspaceId?: string | null; workspaceId: string }): Promise<PermissionLevel> {
     // 1. Document level (DIRECT, GROUP)
@@ -21,9 +21,17 @@ export class DocPermissionResolveService {
     });
     if (docPerms.length) return docPerms[0].permission;
 
-    // 2. Subspace level (SUBSPACE_ADMIN, SUBSPACE_MEMBER)
+    // 2. Document-level subspace permission overrides
     if (doc.subspaceId) {
-      // 2.1. Check subspace role-based permissions
+      const documentSubspacePermission = await this.getDocumentSubspaceRoleBasedPermission(userId, doc.id, doc.subspaceId);
+      if (documentSubspacePermission !== PermissionLevel.NONE) {
+        return documentSubspacePermission;
+      }
+    }
+
+    // 3. Subspace level (SUBSPACE_ADMIN, SUBSPACE_MEMBER)
+    if (doc.subspaceId) {
+      // 3.1. Check subspace role-based permissions
       const subspaceRolePermission = await this.getSubspaceRoleBasedPermission(userId, doc.subspaceId);
       if (subspaceRolePermission !== PermissionLevel.NONE) {
         return subspaceRolePermission;
@@ -35,185 +43,50 @@ export class DocPermissionResolveService {
   }
 
   /**
-   * Batch resolve permissions for a list of documents for a user.
-   * Returns a map of docId to PermissionLevel.
+   * Get permission level based on document-level subspace permission overrides
    */
-  async batchResolveUserPermissionsForDocuments(
-    userId: string,
-    docs: { id: string; subspaceId?: string | null; workspaceId: string }[],
-  ): Promise<Record<string, PermissionLevel>> {
-    // Preload all relevant permissions in one query for efficiency
-    const docIds = docs.map((d) => d.id);
-    const subspaceIds = docs.map((d) => d.subspaceId).filter((id): id is string => typeof id === "string" && !!id);
-    const workspaceIds = docs.map((d) => d.workspaceId);
-    const perms = await this.prismaService.documentPermission.findMany({
-      where: {
-        userId,
-        OR: [{ docId: { in: docIds } }, { docId: { in: subspaceIds } }, { docId: { in: workspaceIds } }],
+  private async getDocumentSubspaceRoleBasedPermission(userId: string, documentId: string, subspaceId: string): Promise<PermissionLevel> {
+    // Get document with permission overrides
+    const document = await this.prismaService.doc.findUnique({
+      where: { id: documentId },
+      select: {
+        id: true,
+        subspaceAdminPermission: true,
+        subspaceMemberPermission: true,
+        nonSubspaceMemberPermission: true,
       },
-      orderBy: { priority: "asc" },
     });
-    // Group permissions by resource
-    const docPermMap = new Map<string, DocumentPermission[]>();
-    const subspacePermMap = new Map<string, DocumentPermission[]>();
-    const wsPermMap = new Map<string, DocumentPermission[]>();
-    for (const perm of perms) {
-      const doc = docs.find((d) => d.id === perm.docId);
-      if (doc && perm.docId === doc.id) {
-        if (!docPermMap.has(perm.docId)) docPermMap.set(perm.docId, []);
-        docPermMap.get(perm.docId)!.push(perm);
-      } else if (doc && perm.docId === doc.subspaceId) {
-        if (!subspacePermMap.has(perm.docId)) subspacePermMap.set(perm.docId, []);
-        subspacePermMap.get(perm.docId)!.push(perm);
-      } else if (doc && perm.docId === doc.workspaceId) {
-        if (!wsPermMap.has(perm.docId)) wsPermMap.set(perm.docId, []);
-        wsPermMap.get(perm.docId)!.push(perm);
-      }
-    }
-    const result: Record<string, PermissionLevel> = {};
-    for (const doc of docs) {
-      // 1. Document level
-      const docPerms = docPermMap.get(doc.id) || [];
-      if (docPerms.length) {
-        result[doc.id] = docPerms[0].permission;
-        continue;
-      }
-      // 2. Subspace level
-      if (doc.subspaceId) {
-        // 2.1. Check subspace role-based permissions
-        const subspaceRolePermission = await this.getSubspaceRoleBasedPermission(userId, doc.subspaceId);
-        if (subspaceRolePermission !== PermissionLevel.NONE) {
-          result[doc.id] = subspaceRolePermission;
-          continue;
-        }
-      }
-      // 3. Workspace level
-      const wsPerms = wsPermMap.get(doc.workspaceId) || [];
-      if (wsPerms.length) {
-        result[doc.id] = wsPerms[0].permission;
-        continue;
-      }
-      // 4. Default
-      result[doc.id] = PermissionLevel.NONE;
-    }
-    return result;
-  }
 
-  // ================================================================================================================
-
-  async getResourcePermissionAbilities(docId: string, userId: string) {
-    const permissions = await this.prismaService.documentPermission.findMany({
-      where: { docId, userId },
-      orderBy: { priority: "asc" },
-    });
-    if (permissions.length === 0) return {};
-
-    if (docId === "DOCUMENT") {
-      const permissionLevel = this.applyPermissionPriority(permissions);
-      return this.mapDocPermissionLevelToAbilities(permissionLevel);
+    if (!document) {
+      return PermissionLevel.NONE;
     }
 
-    return {};
-  }
-
-  async getUserDocumentPermissions(userId: string) {
-    return this.prismaService.documentPermission.findMany({
-      where: { userId },
-      orderBy: { priority: "asc" },
-    });
-  }
-
-  // TODO: 支持 Guest 权限
-  async resolveUserPermission(userId: string, docId: string): Promise<PermissionLevel> {
-    const permissions = await this.prismaService.documentPermission.findMany({
+    // Get user's role in the subspace
+    const subspaceMembership = await this.prismaService.subspaceMember.findFirst({
       where: {
+        subspaceId,
         userId,
-        docId,
       },
-      orderBy: { priority: "asc" },
+      select: { role: true },
     });
 
-    return this.applyPermissionPriority(permissions);
-  }
-
-  // 权限优先级解析
-  private applyPermissionPriority(permissions: DocumentPermission[]): PermissionLevel {
-    if (permissions.length === 0) return PermissionLevel.NONE;
-
-    // 按优先级排序，数字越小优先级越高
-    const sortedPermissions = permissions.sort((a, b) => a.priority - b.priority);
-
-    // 返回最高优先级的权限
-    return sortedPermissions[0].permission;
-  }
-
-  // assign initial permissions based on subspace type
-  async assignSubspaceTypePermissions(subspaceId: string, subspaceType: SubspaceType, workspaceId: string, creatorId: string) {}
-
-  mapDocPermissionLevelToAbilities(permissionLevel: PermissionLevel) {
-    switch (permissionLevel) {
-      case PermissionLevel.MANAGE:
-        return {
-          read: true,
-          update: true,
-          delete: true,
-          share: true,
-          comment: true,
-        };
-      case PermissionLevel.EDIT:
-        return {
-          read: true,
-          update: true,
-          delete: false,
-          share: false,
-          comment: true,
-        };
-      case PermissionLevel.COMMENT:
-        return {
-          read: true,
-          update: false,
-          delete: false,
-          share: false,
-          comment: true,
-        };
-      case PermissionLevel.READ:
-        return {
-          read: true,
-          update: false,
-          delete: false,
-          share: false,
-          comment: false,
-        };
-      default:
-        return {
-          read: false,
-          update: false,
-          delete: false,
-          share: false,
-          comment: false,
-        };
+    // Check if document has overrides for this role
+    if (subspaceMembership) {
+      switch (subspaceMembership.role) {
+        case "ADMIN":
+          // If document has a specific override (not null), use it; otherwise return NONE to inherit from subspace
+          return document.subspaceAdminPermission !== null ? document.subspaceAdminPermission : PermissionLevel.NONE;
+        case "MEMBER":
+          // If document has a specific override (not null), use it; otherwise return NONE to inherit from subspace
+          return document.subspaceMemberPermission !== null ? document.subspaceMemberPermission : PermissionLevel.NONE;
+        default:
+          return PermissionLevel.NONE;
+      }
     }
-  }
 
-  getPriorityByPermissionInheritanceType(inheritedFromType: PermissionInheritanceType): number {
-    switch (inheritedFromType) {
-      case PermissionInheritanceType.DIRECT:
-        return 1;
-      case PermissionInheritanceType.GROUP:
-        return 2;
-      case PermissionInheritanceType.SUBSPACE_ADMIN:
-        return 3;
-      case PermissionInheritanceType.SUBSPACE_MEMBER:
-        return 4;
-      case PermissionInheritanceType.WORKSPACE_ADMIN:
-        return 5;
-      case PermissionInheritanceType.WORKSPACE_MEMBER:
-        return 6;
-      case PermissionInheritanceType.GUEST:
-        return 7;
-      default:
-        return 999;
-    }
+    // User is not a member, check non-subspace member permission
+    // If document has a specific override (not null), use it; otherwise return NONE to inherit from subspace
+    return document.nonSubspaceMemberPermission !== null ? document.nonSubspaceMemberPermission : PermissionLevel.NONE;
   }
 
   /**

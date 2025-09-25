@@ -161,9 +161,8 @@ export class MoveDocumentService {
             : [],
       },
     });
-    // 8. Permissions
-    const abilities = await this.docPermissionResolveService.getResourcePermissionAbilities(updatedDoc.id, authorId);
-    return { data: { documents: [presentDocument(updatedDoc, { isPublic: true })] }, permissions: { [updatedDoc.id]: abilities } };
+
+    return { data: { documents: [presentDocument(updatedDoc, { isPublic: true })] } };
   }
 
   // Insert node under a parent node at specified position

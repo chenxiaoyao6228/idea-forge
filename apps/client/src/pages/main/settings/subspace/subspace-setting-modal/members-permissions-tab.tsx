@@ -177,11 +177,11 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
               />
             </div>
 
-            {/* Others outside the Subspace */}
+            {/* Others members in the workspace */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span className="text-sm font-medium">{t("Others outside the Subspace")}</span>
+                <span className="text-sm font-medium">{t("Others members in the workspace")}</span>
               </div>
               <PermissionLevelSelector
                 value={settings.subspace.nonSubspaceMemberPermission}
