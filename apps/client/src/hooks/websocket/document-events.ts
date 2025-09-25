@@ -4,13 +4,14 @@ import { SocketEvents } from "@/lib/websocket";
 import useDocumentStore, { useHandleDocumentUpdate, useHandleDocumentRemove } from "@/stores/document-store";
 import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
 import useUserStore from "@/stores/user-store";
-import useSubSpaceStore from "@/stores/subspace-store";
+import useSubSpaceStore, { useRefreshNavigationTree } from "@/stores/subspace-store";
 import { toast } from "sonner";
 
 export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) | null {
   const { handleWebsocketAbilityChange, handleWebsocketDocumentShare } = useSharedWithMeWebsocketHandlers();
   const { run: handleDocumentUpdate } = useHandleDocumentUpdate();
   const handleDocumentRemove = useHandleDocumentRemove();
+  const refreshNavigationTree = useRefreshNavigationTree();
 
   useEffect(() => {
     if (!socket) return;
@@ -99,10 +100,8 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
 
           try {
             // Force refresh the subspace's document structure
-            // Note: Navigation tree will be updated via WebSocket events
-            // await subspaceStore.fetchNavigationTree(subspaceId, {
-            //   force: true,
-            // });
+            // This will update the navigation tree to show the new document
+            await refreshNavigationTree(subspaceId);
           } catch (err: any) {
             // Remove from local store if fetch fails (due to permissions or non-existence)
             if (err.status === 404 || err.status === 403) {
@@ -129,7 +128,7 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
       socket.off(SocketEvents.DOCUMENT_ADD_USER, onDocumentAddUser);
       socket.off(SocketEvents.ENTITIES, onEntities);
     };
-  }, [socket, handleWebsocketAbilityChange, handleWebsocketDocumentShare, handleDocumentUpdate, handleDocumentRemove]);
+  }, [socket, handleWebsocketAbilityChange, handleWebsocketDocumentShare, handleDocumentUpdate, handleDocumentRemove, refreshNavigationTree]);
 
   return null;
 }

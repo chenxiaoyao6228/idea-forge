@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { GuestStatus, PermissionLevel, PermissionInheritanceType, SubspaceRole, SubspaceType, DocumentPermission, WorkspaceRole } from "@idea/contracts";
-import { PermissionListRequest, SharedWithMeResponse } from "@idea/contracts";
+import { PermissionLevel, PermissionInheritanceType, SubspaceRole, SubspaceType, DocumentPermission, WorkspaceRole } from "@idea/contracts";
 
 @Injectable()
 export class DocPermissionResolveService {
@@ -22,27 +21,14 @@ export class DocPermissionResolveService {
     });
     if (docPerms.length) return docPerms[0].permission;
 
-    // 2. Subspace level (DIRECT, GROUP, SUBSPACE_ADMIN, SUBSPACE_MEMBER)
+    // 2. Subspace level (SUBSPACE_ADMIN, SUBSPACE_MEMBER)
     if (doc.subspaceId) {
-      const subspacePerms = await this.prismaService.documentPermission.findMany({
-        where: {
-          userId,
-          docId: doc.subspaceId,
-        },
-        orderBy: { priority: "asc" },
-      });
-      if (subspacePerms.length) return this.mapSubspacePermissionToDocumentPermission(subspacePerms[0].permission);
+      // 2.1. Check subspace role-based permissions
+      const subspaceRolePermission = await this.getSubspaceRoleBasedPermission(userId, doc.subspaceId);
+      if (subspaceRolePermission !== PermissionLevel.NONE) {
+        return subspaceRolePermission;
+      }
     }
-
-    // 3. Workspace level (DIRECT, GROUP, WORKSPACE_ADMIN, WORKSPACE_MEMBER)
-    const wsPerms = await this.prismaService.documentPermission.findMany({
-      where: {
-        userId,
-        docId: doc.workspaceId,
-      },
-      orderBy: { priority: "asc" },
-    });
-    if (wsPerms.length) return this.mapWorkspacePermissionToDocumentPermission(wsPerms[0].permission);
 
     // 4. Guest/Default
     return PermissionLevel.NONE;
@@ -94,9 +80,10 @@ export class DocPermissionResolveService {
       }
       // 2. Subspace level
       if (doc.subspaceId) {
-        const subspacePerms = subspacePermMap.get(doc.subspaceId) || [];
-        if (subspacePerms.length) {
-          result[doc.id] = subspacePerms[0].permission;
+        // 2.1. Check subspace role-based permissions
+        const subspaceRolePermission = await this.getSubspaceRoleBasedPermission(userId, doc.subspaceId);
+        if (subspaceRolePermission !== PermissionLevel.NONE) {
+          result[doc.id] = subspaceRolePermission;
           continue;
         }
       }
@@ -129,72 +116,6 @@ export class DocPermissionResolveService {
     return {};
   }
 
-  async getUserPermissions(userId: string, query: PermissionListRequest) {
-    const { page = 1, limit = 10 } = query;
-
-    const { data: permissions, pagination } = await (this.prismaService.documentPermission as any).paginateWithApiFormat({
-      where: {
-        userId,
-        docId: query.docId,
-        inheritedFromType: { in: [PermissionInheritanceType.DIRECT] },
-        createdById: { not: userId },
-      },
-      orderBy: { priority: "asc" },
-      page,
-      limit,
-    });
-
-    let data: any[] = [];
-    if (query.docId === "DOCUMENT") {
-      data = await this.prismaService.doc.findMany({
-        where: { id: { in: permissions.map((permission) => permission.docId) } },
-      });
-    }
-    if (query.docId === "SUBSPACE") {
-      data = await this.prismaService.subspace.findMany({
-        where: { id: { in: permissions.map((permission) => permission.docId) } },
-      });
-    }
-
-    return {
-      pagination,
-      data,
-      // TODO:
-      permissions: {},
-    };
-  }
-
-  // Usually there are not that many group permissions for user, so we just return all of them
-  async getGroupPermissions(adminId: string, query: PermissionListRequest) {
-    const { docId } = query;
-    const groupMembers = await this.prismaService.memberGroupUser.findMany({
-      where: { groupId: query.docId, userId: adminId },
-      include: { user: true },
-    });
-
-    const permissions = await this.prismaService.documentPermission.findMany({
-      where: { userId: { in: groupMembers.map((member) => member.userId) } },
-      orderBy: { priority: "asc" },
-    });
-
-    let data: any[] = [];
-    if (docId === "DOCUMENT") {
-      data = await this.prismaService.doc.findMany({
-        where: { id: { in: permissions.map((permission) => permission.docId) } },
-      });
-    }
-    if (docId === "SUBSPACE") {
-      data = await this.prismaService.subspace.findMany({
-        where: { id: { in: permissions.map((permission) => permission.docId) } },
-      });
-    }
-
-    return {
-      data,
-      permissions,
-    };
-  }
-
   async getUserDocumentPermissions(userId: string) {
     return this.prismaService.documentPermission.findMany({
       where: { userId },
@@ -213,28 +134,6 @@ export class DocPermissionResolveService {
     });
 
     return this.applyPermissionPriority(permissions);
-  }
-
-  mapWorkspacePermissionToDocumentPermission(permission: PermissionLevel): PermissionLevel {
-    switch (permission) {
-      case PermissionLevel.MANAGE:
-        return PermissionLevel.MANAGE;
-      case PermissionLevel.EDIT:
-        return PermissionLevel.MANAGE;
-      default:
-        return PermissionLevel.NONE;
-    }
-  }
-
-  mapSubspacePermissionToDocumentPermission(permission: PermissionLevel): PermissionLevel {
-    switch (permission) {
-      case PermissionLevel.MANAGE:
-        return PermissionLevel.MANAGE;
-      case PermissionLevel.EDIT:
-        return PermissionLevel.MANAGE;
-      default:
-        return PermissionLevel.NONE;
-    }
   }
 
   // 权限优先级解析
@@ -264,226 +163,51 @@ export class DocPermissionResolveService {
     return { userId, subspaceId, role, createdById };
   }
 
-  // assign  direct permission to a user
-  async assignUserPermission(userId: string, docId: string, permission: PermissionLevel, createdById: string) {
-    const priority = this.getPriorityByPermissionInheritanceType(PermissionInheritanceType.DIRECT);
-
-    return await this.prismaService.documentPermission.upsert({
-      where: {
-        userId_guestId_docId_inheritedFromType: {
-          userId,
-          guestId: "",
-          docId,
-          inheritedFromType: PermissionInheritanceType.DIRECT,
-        },
-      },
-      create: {
-        userId,
-        docId,
-        permission,
-        inheritedFromType: PermissionInheritanceType.DIRECT,
-        priority,
-        createdById,
-      },
-      update: { permission },
-    });
-  }
-
-  // assign group permission to a user
-  async assignGroupPermissions(groupId: string, docId: string, permission: PermissionLevel, createdById: string) {
-    const groupMembers = await this.prismaService.memberGroupUser.findMany({
-      where: { groupId },
-      include: { user: true },
-    });
-
-    const permissions: DocumentPermission[] = [];
-
-    for (const member of groupMembers) {
-      const groupPermission = await this.prismaService.documentPermission.upsert({
-        where: {
-          userId_guestId_docId_inheritedFromType: {
-            userId: member.userId,
-            guestId: "",
-            docId,
-            inheritedFromType: PermissionInheritanceType.GROUP,
-          },
-        },
-        create: {
-          userId: member.userId,
-          docId,
-          permission,
-          inheritedFromType: PermissionInheritanceType.GROUP,
-          priority: 2,
-          createdById,
-        },
-        update: { permission },
-      });
-      permissions.push(groupPermission);
-    }
-
-    return permissions;
-  }
-
-  // invite guest collaborator
-  async inviteGuestCollaborator(docId: string, email: string, permission: PermissionLevel, inviterId: string, expireDays = 30) {
-    // get the workspace of the document
-    const doc = await this.prismaService.doc.findUnique({
-      where: { id: docId },
-      select: { workspaceId: true },
-    });
-
-    if (!doc) {
-      throw new Error("Document not found");
-    }
-
-    //  create or update guest collaborator
-    const guest = await this.prismaService.guestCollaborator.upsert({
-      where: {
-        email_workspaceId: {
-          email,
-          workspaceId: doc.workspaceId,
-        },
-      },
-      create: {
-        email,
-        workspaceId: doc.workspaceId,
-        invitedById: inviterId,
-        expireAt: new Date(Date.now() + expireDays * 24 * 60 * 60 * 1000),
-        status: GuestStatus.PENDING,
-      },
-      update: {
-        expireAt: new Date(Date.now() + expireDays * 24 * 60 * 60 * 1000),
-        status: GuestStatus.ACTIVE,
-      },
-    });
-
-    // create guest permission
-    // const guestPermission = await this.prismaService.documentPermission.create({
-    //   data: {
-    //     guestId: guest.id,
-    //     docId: "DOCUMENT",
-    //     docId: docId,
-    //     permission,
-    //     inheritedFromType: PermissionInheritanceType.GUEST,
-    //     priority: 7,
-    //     createdById: inviterId,
-    //   },
-    // });
-
-    return { guest, permission: { level: PermissionLevel.READ } };
-  }
-
   // assign initial permissions based on subspace type
   async assignSubspaceTypePermissions(subspaceId: string, subspaceType: SubspaceType, workspaceId: string, creatorId: string) {
     switch (subspaceType) {
-      case SubspaceType.WORKSPACE_WIDE:
-        await this.assignWorkspaceWideSubspacePermissions(subspaceId, workspaceId, creatorId);
+      case SubspaceType.WORKSPACE_WIDE: {
+        // Assign permissions to all workspace members
+        const workspaceMembers = await this.prismaService.workspaceMember.findMany({
+          where: { workspaceId },
+        });
+        for (const member of workspaceMembers) {
+          const role = member.userId === creatorId ? SubspaceRole.ADMIN : SubspaceRole.MEMBER;
+          await this.assignSubspacePermissions(member.userId, subspaceId, role, creatorId);
+        }
         break;
-      case SubspaceType.PUBLIC:
-        await this.assignPublicSubspacePermissions(subspaceId, workspaceId, creatorId);
+      }
+      case SubspaceType.PUBLIC: {
+        // Creator is admin, other workspace members can comment
+        await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
+
+        const otherWorkspaceMembers = await this.prismaService.workspaceMember.findMany({
+          where: {
+            workspaceId,
+            userId: { not: creatorId },
+          },
+        });
+
+        for (const member of otherWorkspaceMembers) {
+          await this.prismaService.subspaceMember.create({
+            data: {
+              userId: member.userId,
+              subspaceId: subspaceId,
+              role: SubspaceRole.MEMBER,
+            },
+          });
+        }
         break;
+      }
       case SubspaceType.INVITE_ONLY:
-        await this.assignInviteOnlySubspacePermissions(subspaceId, creatorId);
+        // Only creator has permissions
+        await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
         break;
       case SubspaceType.PRIVATE:
-        await this.assignPrivateSubspacePermissions(subspaceId, creatorId);
+        // Only creator has permissions
+        await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
         break;
     }
-  }
-
-  // assign workspace wide subspace permissions
-  private async assignWorkspaceWideSubspacePermissions(subspaceId: string, workspaceId: string, creatorId: string) {
-    const workspaceMembers = await this.prismaService.workspaceMember.findMany({
-      where: { workspaceId },
-    });
-    // TODO: 每次都要遍历, 待优化
-    for (const member of workspaceMembers) {
-      const role = member.userId === creatorId ? SubspaceRole.ADMIN : SubspaceRole.MEMBER;
-      await this.assignSubspacePermissions(member.userId, subspaceId, role, creatorId);
-    }
-  }
-
-  // 公开空间权限分配
-  private async assignPublicSubspacePermissions(subspaceId: string, workspaceId: string, creatorId: string) {
-    // 创建者为管理员
-    await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
-
-    // 其他工作空间成员可以评论
-    const workspaceMembers = await this.prismaService.workspaceMember.findMany({
-      where: {
-        workspaceId,
-        userId: { not: creatorId },
-      },
-    });
-
-    for (const member of workspaceMembers) {
-      await this.prismaService.subspaceMember.create({
-        data: {
-          userId: member.userId,
-          subspaceId: subspaceId,
-          role: SubspaceRole.MEMBER,
-        },
-      });
-    }
-  }
-
-  // 邀请空间权限分配
-  private async assignInviteOnlySubspacePermissions(subspaceId: string, creatorId: string) {
-    // 只有创建者有权限
-    await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
-  }
-
-  // 私有空间权限分配
-  private async assignPrivateSubspacePermissions(subspaceId: string, creatorId: string) {
-    // 只有创建者有权限
-    await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
-  }
-
-  // 移除权限
-  async removePermission(permissionId: string) {
-    return await this.prismaService.documentPermission.delete({
-      where: { id: permissionId },
-    });
-  }
-
-  // 更新权限
-  async updatePermission(permissionId: string, newPermission: PermissionLevel) {
-    return await this.prismaService.documentPermission.update({
-      where: { id: permissionId },
-      data: { permission: newPermission },
-    });
-  }
-
-  private mapWorkspaceRoleToPermission(role: WorkspaceRole): PermissionLevel {
-    switch (role) {
-      case WorkspaceRole.OWNER:
-        return PermissionLevel.MANAGE;
-      case WorkspaceRole.ADMIN:
-        return PermissionLevel.MANAGE;
-      case WorkspaceRole.MEMBER:
-        return PermissionLevel.READ;
-      default:
-        return PermissionLevel.NONE;
-    }
-  }
-
-  private mapSubspaceRoleToPermission(role: SubspaceRole): PermissionLevel {
-    switch (role) {
-      case SubspaceRole.ADMIN:
-        return PermissionLevel.MANAGE;
-      case SubspaceRole.MEMBER:
-        return PermissionLevel.EDIT;
-      default:
-        return PermissionLevel.NONE;
-    }
-  }
-
-  private mapWorkspaceRoleToPermissionInheritanceType(role: WorkspaceRole): PermissionInheritanceType {
-    return role === WorkspaceRole.MEMBER ? PermissionInheritanceType.WORKSPACE_MEMBER : PermissionInheritanceType.WORKSPACE_ADMIN;
-  }
-
-  private mapSubspaceRoleToPermissionInheritanceType(role: SubspaceRole): PermissionInheritanceType {
-    return role === SubspaceRole.MEMBER ? PermissionInheritanceType.SUBSPACE_MEMBER : PermissionInheritanceType.SUBSPACE_ADMIN;
   }
 
   mapDocPermissionLevelToAbilities(permissionLevel: PermissionLevel) {
@@ -550,5 +274,46 @@ export class DocPermissionResolveService {
       default:
         return 999;
     }
+  }
+
+  /**
+   * Get permission level based on user's role in the subspace
+   */
+  private async getSubspaceRoleBasedPermission(userId: string, subspaceId: string): Promise<PermissionLevel> {
+    // Get subspace with permission settings
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      select: {
+        id: true,
+        subspaceAdminPermission: true,
+        subspaceMemberPermission: true,
+        nonSubspaceMemberPermission: true,
+        members: {
+          where: { userId },
+          select: { role: true },
+        },
+      },
+    });
+
+    if (!subspace) {
+      return PermissionLevel.NONE;
+    }
+
+    // Check if user is a member of the subspace
+    const membership = subspace.members[0];
+    if (membership) {
+      // User is a member, check their role
+      switch (membership.role) {
+        case "ADMIN":
+          return subspace.subspaceAdminPermission;
+        case "MEMBER":
+          return subspace.subspaceMemberPermission;
+        default:
+          return PermissionLevel.NONE;
+      }
+    }
+
+    // User is not a member, use non-subspace member permission
+    return subspace.nonSubspaceMemberPermission;
   }
 }

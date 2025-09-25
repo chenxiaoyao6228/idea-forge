@@ -217,11 +217,6 @@ export const SubspaceSettingsResponseSchema = z.object({
     ),
     memberCount: z.number(),
   }),
-  permissions: z.object({
-    canEditSettings: z.boolean(),
-    canManageMembers: z.boolean(),
-    canChangeType: z.boolean(),
-    canManageSecurity: z.boolean(),
-  }),
+  permissions: z.object({}),
 });
 export type SubspaceSettingsResponse = z.infer<typeof SubspaceSettingsResponseSchema>;

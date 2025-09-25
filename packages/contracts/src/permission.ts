@@ -54,17 +54,8 @@ export const sharedWithMeResponseSchema = z.object({
     total: z.number(),
   }),
   data: z.object({
-    documents: z.array(z.any()), // DocSchema 替换为 any 或本地定义
+    documents: z.array(z.any()),
   }),
-  abilities: z.record(
-    z.object({
-      read: z.boolean(),
-      update: z.boolean(),
-      delete: z.boolean(),
-      share: z.boolean(),
-      comment: z.boolean(),
-    }),
-  ),
 });
 
 export type AddUserPermissionRequest = z.infer<typeof addUserPermissionSchema>;

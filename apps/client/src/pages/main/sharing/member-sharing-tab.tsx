@@ -1,11 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Link, X, Plus } from "lucide-react";
+import { Link, X, Plus, Users, Shield, UserCheck } from "lucide-react";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "@/stores/workspace-store";
@@ -20,6 +20,9 @@ import {
   useRemoveDocumentShare,
 } from "@/stores/document-shares-store";
 import { PermissionLevel } from "@idea/contracts";
+import { useCurrentDocument } from "@/hooks/use-current-document";
+import { useFetchSubspaceSettings, useUpdateSubspaceSettings } from "@/stores/subspace-store";
+import useSubSpaceStore from "@/stores/subspace-store";
 
 interface MemberSharingTabProps {
   documentId: string;
@@ -30,6 +33,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
   const currentUserId = useUserStore((s) => s.userInfo?.id);
   const workspaceId = currentWorkspace?.id;
+  const currentDocument = useCurrentDocument();
 
   // Use store hooks
   const sharedUsers = useDocumentShares(documentId);
@@ -37,6 +41,20 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const { run: addShare } = useAddDocumentShare(documentId);
   const { run: updatePermission } = useUpdateDocumentSharePermission(documentId);
   const { run: removeShare } = useRemoveDocumentShare(documentId);
+
+  // Get subspace settings from store
+  const subspaceSettings = useSubSpaceStore((state) => state.subspaceSettings);
+
+  // Fetch subspace settings if document is in a subspace
+  const { run: fetchSubspaceSettings, loading: subspaceLoading } = useFetchSubspaceSettings(currentDocument?.subspaceId || "");
+  const { run: updateSubspaceSettings } = useUpdateSubspaceSettings(currentDocument?.subspaceId || "");
+
+  // Fetch subspace settings when component mounts and document has a subspace
+  useEffect(() => {
+    if (currentDocument?.subspaceId) {
+      fetchSubspaceSettings();
+    }
+  }, [currentDocument?.subspaceId, fetchSubspaceSettings]);
 
   // Fetch shares when component mounts
   useEffect(() => {
@@ -130,11 +148,77 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   }
 
   return (
-    <div className="space-y-2">
-      {/* Add Members Section */}
+    <div className="space-y-4">
+      {/* Subspace Role-Based Permissions Section */}
+      {currentDocument?.subspaceId && subspaceSettings && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-medium">{t("Subspace Role-Based Permissions")}</Label>
+          </div>
+
+          <div className="space-y-2 p-3 bg-blue-50 rounded-lg border">
+            {/* Admin Permissions */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium">{t("Subspace Admins")}</span>
+                <span className="text-xs text-muted-foreground">
+                  ({subspaceSettings.subspace.members.filter((m) => m.role === "ADMIN").length} {t("members")})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <PermissionLevelSelector
+                  value={subspaceSettings.subspace.subspaceAdminPermission}
+                  onChange={(value) => updateSubspaceSettings({ settings: { subspaceAdminPermission: value } })}
+                />
+              </div>
+            </div>
+
+            {/* Member Permissions */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium">{t("Subspace Members")}</span>
+                <span className="text-xs text-muted-foreground">
+                  ({subspaceSettings.subspace.members.filter((m) => m.role === "MEMBER").length} {t("members")})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <PermissionLevelSelector
+                  value={subspaceSettings.subspace.subspaceMemberPermission}
+                  onChange={(value) => updateSubspaceSettings({ settings: { subspaceMemberPermission: value } })}
+                />
+              </div>
+            </div>
+
+            {/* All-Member Permissions */}
+            {
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm font-medium">{t("Other Members")}</span>
+                  <span className="text-xs text-muted-foreground">({t("x members")})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <PermissionLevelSelector
+                    value={subspaceSettings.subspace.nonSubspaceMemberPermission}
+                    onChange={(value) => updateSubspaceSettings({ settings: { nonSubspaceMemberPermission: value } })}
+                  />
+                </div>
+              </div>
+            }
+
+            <div className="text-xs text-muted-foreground mt-2">
+              {t("These permissions are inherited from the subspace settings and apply to all documents in this subspace.")}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Individual Document Shares Section */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-medium flex items-center gap-2">{t("workspace members' permissions")}</Label>
+          <Label className="text-sm font-medium flex items-center gap-2">{t("Individual Document Permissions")}</Label>
 
           <Button variant="outline" size="sm" className="h-8 bg-transparent" onClick={handleAddMembers}>
             <Plus className="h-4 w-4 mr-1" />

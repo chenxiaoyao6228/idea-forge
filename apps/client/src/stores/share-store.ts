@@ -5,15 +5,12 @@ import { documentApi } from "@/apis/document";
 import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useDocumentStore, { DocumentEntity } from "./document-store";
-import useAbilityStore from "./ability-store";
-import useUserStore from "./user-store";
 import useWorkspaceStore from "./workspace-store";
-import { NavigationNode, NavigationNodeType } from "@idea/contracts";
+import { NavigationNodeType } from "@idea/contracts";
 
 // Minimal store - only state
 const useSharedWithMeStore = create<{
   documents: DocumentEntity[];
-  allAbilities: Record<string, Record<string, boolean>>;
   // Pagination state
   page: number;
   limit: number;
@@ -24,7 +21,6 @@ const useSharedWithMeStore = create<{
   error: string | null;
 }>((set) => ({
   documents: [],
-  allAbilities: {},
   page: 1,
   limit: 20,
   total: 0,
@@ -37,10 +33,6 @@ const useSharedWithMeStore = create<{
 // Basic data access
 export const useSharedDocuments = () => {
   return useSharedWithMeStore((state) => state.documents);
-};
-
-export const useSharedAbilities = () => {
-  return useSharedWithMeStore((state) => state.allAbilities);
 };
 
 // Computed values
@@ -91,7 +83,6 @@ export const useFetchSharedDocuments = () => {
         // Update store with first page data
         useSharedWithMeStore.setState({
           documents: response.data.documents,
-          allAbilities: response.abilities,
           page: 1,
           total: response.pagination.total,
           hasNextPage: response.pagination.page * response.pagination.limit < response.pagination.total,
@@ -105,19 +96,6 @@ export const useFetchSharedDocuments = () => {
           });
           return { documents: newDocuments };
         });
-        // Legacy ability store functionality removed - using CASL instead
-        // // Update ability store directly
-        // const entities = Object.entries(response.abilities).map(([id, abilities]) => ({
-        //   id,
-        //   abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
-        // }));
-        // useAbilityStore.setState((state) => {
-        //   const newAbilities = { ...state.abilities };
-        //   entities.forEach((entity) => {
-        //     newAbilities[entity.id] = entity;
-        //   });
-        //   return { abilities: newAbilities };
-        // });
 
         return response.data.documents;
       } catch (error: any) {
@@ -163,7 +141,6 @@ export const useLoadMoreSharedDocuments = () => {
         // Append new data to existing documents
         useSharedWithMeStore.setState({
           documents: [...state.documents, ...response.data.documents],
-          allAbilities: { ...state.allAbilities, ...response.abilities },
           page: state.page + 1,
           hasNextPage: response.pagination.page * response.pagination.limit < response.pagination.total,
         });
@@ -176,19 +153,6 @@ export const useLoadMoreSharedDocuments = () => {
           });
           return { documents: newDocuments };
         });
-        // Update ability store directly
-        // Legacy ability store functionality removed - using CASL instead
-        // const entities = Object.entries({ ...state.allAbilities, ...response.abilities }).map(([id, abilities]) => ({
-        //   id,
-        //   abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
-        // }));
-        // useAbilityStore.setState((abilityState) => {
-        //   const newAbilities = { ...abilityState.abilities };
-        //   entities.forEach((entity) => {
-        //     newAbilities[entity.id] = entity;
-        //   });
-        //   return { abilities: newAbilities };
-        // });
 
         return response.data.documents;
       } catch (error: any) {
@@ -235,11 +199,8 @@ export const useSharedWithMeWebsocketHandlers = () => {
   const { run: fetchSharedDocuments } = useFetchSharedDocuments();
 
   const handleWebsocketAbilityChange = useRefCallback((abilities: Record<string, Record<string, boolean>>) => {
-    const state = useSharedWithMeStore.getState();
-    useSharedWithMeStore.setState({
-      allAbilities: { ...state.allAbilities, ...abilities },
-    });
-    // Trigger refetch
+    // No longer needed - abilities are handled by the unified ability store
+    // Trigger refetch to get updated document list
     fetchSharedDocuments();
   });
 
@@ -256,7 +217,6 @@ export const useSharedWithMeWebsocketHandlers = () => {
     useSharedWithMeStore.setState({
       page: 1,
       documents: [],
-      allAbilities: {},
       hasNextPage: false,
       total: 0,
       error: null,

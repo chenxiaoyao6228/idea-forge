@@ -14,7 +14,6 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { presentDocument } from "./document.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
-import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionListRequestDto } from "@/permission/permission.dto";
 import { AbilityService } from "@/_shared/casl/casl.service";
@@ -24,7 +23,6 @@ export class DocumentService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
-    private readonly docPermissionResolveService: DocPermissionResolveService,
     private readonly abilityService: AbilityService,
   ) {}
 
@@ -496,7 +494,7 @@ export class DocumentService {
       }
     }
 
-    // 7. Publish websocket event
+    // 7. Publish websocket event - simplified version
     // Collect all affected user IDs
     const affectedUserIds = new Set<string>();
     for (const permission of createdPermissions) {
@@ -505,11 +503,8 @@ export class DocumentService {
       }
     }
 
-    // For each affected user, publish a websocket event with their new abilities for this document
+    // Send simple notification to each affected user
     for (const affectedUserId of affectedUserIds) {
-      // Get abilities for the shared document for this user
-      const userAbilities = await this.docPermissionResolveService.getResourcePermissionAbilities(docId, affectedUserId);
-
       await this.eventPublisher.publishWebsocketEvent({
         name: BusinessEvents.DOCUMENT_ADD_USER,
         workspaceId: doc.workspaceId,
@@ -518,7 +513,6 @@ export class DocumentService {
           userId: affectedUserId,
           docId: docId,
           document: doc,
-          abilities: userAbilities,
           includeChildDocuments: dto.includeChildDocuments || false,
         },
         timestamp: new Date().toISOString(),
@@ -597,15 +591,6 @@ export class DocumentService {
       where: { id: { in: finalDocIds } },
     });
 
-    // Build permissions object
-    const abilitiesObj: Record<string, any> = {};
-    for (const docId of finalDocIds) {
-      const ability = resolvedPermissions.get(docId);
-      if (ability) {
-        abilitiesObj[docId] = this.docPermissionResolveService.mapDocPermissionLevelToAbilities(ability.permission);
-      }
-    }
-
     // Create pagination object
     const total = filteredDocIds.length;
     const pagination = {
@@ -618,7 +603,6 @@ export class DocumentService {
     return {
       pagination,
       data: { documents },
-      abilities: abilitiesObj,
     };
   }
 
@@ -884,22 +868,5 @@ export class DocumentService {
         await this.duplicateChildren(grandchildren, duplicatedChild.id, userId);
       }
     }
-  }
-
-  /**
-   * List documents with resolved permissions for the current user
-   */
-  async listDocumentsWithPermissions(userId: string, filter: any = {}) {
-    const docs = await this.prismaService.doc.findMany({
-      where: filter,
-    });
-    const permissions = await this.docPermissionResolveService.batchResolveUserPermissionsForDocuments(
-      userId,
-      docs.map((doc) => ({ id: doc.id, subspaceId: doc.subspaceId, workspaceId: doc.workspaceId })),
-    );
-    return {
-      documents: docs,
-      permissions,
-    };
   }
 }

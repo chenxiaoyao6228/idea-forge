@@ -1819,18 +1819,6 @@ export class SubspaceService {
    * Update subspace settings
    */
   async updateSubspaceSettings(subspaceId: string, settings: UpdateSubspaceSettingsRequest, currentUserId: string): Promise<SubspaceSettingsResponse> {
-    // First validate access
-    const currentSettings = await this.getSubspaceSettings(subspaceId, currentUserId);
-
-    if (!currentSettings.permissions.canEditSettings) {
-      throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
-    }
-
-    // Validate type change permissions
-    if (settings.type && !currentSettings.permissions.canChangeType) {
-      throw new ApiException(ErrorCodeEnum.SubspaceAccessDenied);
-    }
-
     // Auto-set initial permissions based on subspace type if type is being changed
     let permissionUpdates = {};
     if (settings.type) {
@@ -1896,18 +1884,6 @@ export class SubspaceService {
 
     // Return updated settings
     return this.getSubspaceSettings(subspaceId, currentUserId);
-  }
-
-  /**
-   * Validate user access to subspace settings
-   */
-  async validateSubspaceSettingsAccess(subspaceId: string, currentUserId: string): Promise<boolean> {
-    try {
-      const settings = await this.getSubspaceSettings(subspaceId, currentUserId);
-      return settings.permissions.canEditSettings;
-    } catch (error) {
-      return false;
-    }
   }
 
   /**

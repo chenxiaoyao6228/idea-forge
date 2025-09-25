@@ -48,9 +48,9 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
   }, [settings.subspace.members, searchQuery]);
 
   const handleTypeChange = (type: any) => {
-    // Auto-set initial permissions based on subspace type
-    const permissionUpdates = getInitialPermissionsForSubspaceType(type);
-    onSettingsChange({ type, ...permissionUpdates });
+    // Let the server handle permission updates based on subspace type
+    // The server will automatically set the appropriate permissions
+    onSettingsChange({ type });
   };
 
   const handleMemberRoleChange = (memberId: string, newRole: SubspaceRole) => {
@@ -86,44 +86,6 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
     } catch (error) {
       console.error("Failed to remove member:", error);
       toast.error(t("Failed to remove member"));
-    }
-  };
-
-  // Helper function to get initial permissions based on subspace type
-  const getInitialPermissionsForSubspaceType = (subspaceType: string) => {
-    switch (subspaceType) {
-      case "WORKSPACE_WIDE":
-        return {
-          subspaceAdminPermission: "OWNER" as PermissionLevel,
-          subspaceMemberPermission: "OWNER" as PermissionLevel,
-          // Non-Member permissions are not applicable for WORKSPACE_WIDE
-        };
-      case "PUBLIC":
-        return {
-          subspaceAdminPermission: "OWNER" as PermissionLevel,
-          subspaceMemberPermission: "OWNER" as PermissionLevel,
-          nonSubspaceMemberPermission: "COMMENT" as PermissionLevel,
-        };
-      case "INVITE_ONLY":
-        return {
-          subspaceAdminPermission: "OWNER" as PermissionLevel,
-          subspaceMemberPermission: "OWNER" as PermissionLevel,
-          nonSubspaceMemberPermission: "NONE" as PermissionLevel,
-        };
-      case "PRIVATE":
-        return {
-          subspaceAdminPermission: "OWNER" as PermissionLevel,
-          subspaceMemberPermission: "OWNER" as PermissionLevel,
-          nonSubspaceMemberPermission: "NONE" as PermissionLevel,
-        };
-      case "PERSONAL":
-        return {
-          subspaceAdminPermission: "OWNER" as PermissionLevel,
-          subspaceMemberPermission: "EDIT" as PermissionLevel,
-          nonSubspaceMemberPermission: "NONE" as PermissionLevel,
-        };
-      default:
-        return {};
     }
   };
 

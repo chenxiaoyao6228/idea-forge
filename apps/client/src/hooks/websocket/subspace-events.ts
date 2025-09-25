@@ -1,13 +1,15 @@
 import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
-import useSubSpaceStore, { SubspaceEntity } from "@/stores/subspace-store";
+import useSubSpaceStore, { SubspaceEntity, useFetchSubspace } from "@/stores/subspace-store";
 import useUserStore from "@/stores/user-store";
 import { toast } from "sonner";
 import { useFetchStars } from "@/stores/star-store";
 
 export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) | null {
   const cleanupRef = useRef<(() => void) | null>(null);
+  const fetchSubspace = useFetchSubspace();
+
   useEffect(() => {
     if (!socket) return;
 
@@ -27,9 +29,8 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
 
       if (shouldBeMember) {
         try {
-          // Use existing fetchSubspace method from store
-          // Note: Subspace will be fetched via normal flow
-          // await store.fetchSubspace(subspace.id);
+          // Fetch the complete subspace data from the server
+          await fetchSubspace.run(subspace.id);
           console.log(`[websocket]: Successfully fetched and added subspace ${subspace.id}`);
         } catch (error) {
           console.error(`[websocket]: Failed to fetch subspace ${subspace.id}:`, error);
@@ -90,25 +91,30 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
 
       // If the current user was added to the subspace
       if (member?.userId === userInfo?.id) {
-        // Use existing fetchSubspace method
-        // Note: Subspace will be fetched via normal flow
-        // await subspaceStore.fetchSubspace(subspaceId);
+        try {
+          // Fetch the complete subspace data from the server
+          await fetchSubspace.run(subspaceId);
 
-        // Join the subspace room for real-time updates
-        if (socket) {
-          socket.emit("join", `subspace:${subspaceId}`);
+          // Join the subspace room for real-time updates
+          if (socket) {
+            socket.emit("join", `subspace:${subspaceId}`);
+          }
+
+          toast.success(`You've been added to a subspace`);
+        } catch (error) {
+          console.error(`[websocket]: Failed to fetch subspace ${subspaceId} after member added:`, error);
         }
-
-        toast.success(`You've been added to a subspace`);
       } else {
         // Another user was added, refresh subspace member list
-        // Use existing refreshSubspaceMembers method
-        // Note: Members will be refreshed via normal flow
-        // subspaceStore.refreshSubspaceMembers(subspaceId);
+        try {
+          await fetchSubspace.run(subspaceId);
+        } catch (error) {
+          console.error(`[websocket]: Failed to refresh subspace ${subspaceId} after member added:`, error);
+        }
       }
     };
 
-    const onSubspaceMembersBatchAdded = (message: any) => {
+    const onSubspaceMembersBatchAdded = async (message: any) => {
       console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED}:`, message);
       const { subspaceId, totalAdded, membersBatchAdded, workspaceWideSubspaces } = message;
       if (!subspaceId) return;
@@ -118,16 +124,20 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
         // If this is a workspace-wide batch operation affecting multiple subspaces
         if (workspaceWideSubspaces && Array.isArray(workspaceWideSubspaces)) {
           // Refresh all affected subspaces
-          workspaceWideSubspaces.forEach((subspaceId: string) => {
-            const subspaceStore = useSubSpaceStore.getState();
-            // Note: Members will be refreshed via normal flow
-            // subspaceStore.refreshSubspaceMembers(subspaceId);
-          });
+          for (const subspaceId of workspaceWideSubspaces) {
+            try {
+              await fetchSubspace.run(subspaceId);
+            } catch (error) {
+              console.error(`[websocket]: Failed to refresh subspace ${subspaceId} after batch member added:`, error);
+            }
+          }
         } else {
           // Regular batch operation for a single subspace
-          const subspaceStore = useSubSpaceStore.getState();
-          // Note: Members will be refreshed via normal flow
-          // subspaceStore.refreshSubspaceMembers(subspaceId);
+          try {
+            await fetchSubspace.run(subspaceId);
+          } catch (error) {
+            console.error(`[websocket]: Failed to refresh subspace ${subspaceId} after batch member added:`, error);
+          }
         }
       }
     };
@@ -205,7 +215,7 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
       socket.off(SocketEvents.SUBSPACE_MEMBER_LEFT, onSubspaceMemberLeft);
       socket.off(SocketEvents.SUBSPACE_UPDATE, onSubspaceUpdate);
     };
-  }, [socket]);
+  }, [socket, fetchSubspace]);
 
   return null;
 }

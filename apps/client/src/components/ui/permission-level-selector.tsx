@@ -47,12 +47,6 @@ export function PermissionLevelSelector({ value, onChange, disabled = false, cla
       description: t("Can manage content and settings"),
       color: "default" as const,
     },
-    {
-      value: "OWNER" as PermissionLevel,
-      label: t("All Permissions"),
-      description: t("Full access to all features"),
-      color: "default" as const,
-    },
   ];
 
   const selectedPermission = permissionLevels.find((level) => level.value === value);
