@@ -5,13 +5,13 @@
 node scripts/seed/create-group.js
 
 # Create groups for a specific workspace
-node scripts/seed/create-group.js -n="York's Workspace"
+node scripts/seed/create-group.js -n="York's Team"
 
 # Create custom groups for a specific workspace
-node scripts/seed/create-group.js -n="York's Workspace" -g="Development Team,Marketing Team,Design Team"
+node scripts/seed/create-group.js -n="York's Team" -g="Development Team,Marketing Team,Design Team"
 
 # Create groups with custom member count
-node scripts/seed/create-group.js -n="York's Workspace" -m=15
+node scripts/seed/create-group.js -n="York's Team" -m=15
 
 # Show help
 node scripts/seed/create-group.js --help
@@ -197,6 +197,7 @@ async function addUserToGroupViaAPI(groupId, userId, adminToken) {
         'Authorization': `Bearer ${adminToken}`,
       },
       body: JSON.stringify({
+        id: groupId,
         userId: userId,
       }),
     });

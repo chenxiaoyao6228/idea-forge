@@ -135,9 +135,6 @@ export class SubspaceService {
       },
     });
 
-    // Assign permissions
-    await this.docPermissionResolveService.assignSubspacePermissions(userId, personalSubspace.id, "ADMIN", userId);
-
     return personalSubspace;
   }
 
@@ -250,18 +247,7 @@ export class SubspaceService {
         })),
         skipDuplicates: true, // Avoid duplicate for creator who is already ADMIN
       });
-
-      // Assign subspace permissions for each member (keep creator as ADMIN)
-      await Promise.all(
-        workspaceMembers.map(({ userId }) =>
-          this.docPermissionResolveService.assignSubspacePermissions(userId, subspace.id, userId === creatorId ? "ADMIN" : "MEMBER", creatorId),
-        ),
-      );
     }
-
-    // Assign subspace type permissions
-    // FIXME: ts type optimization
-    await this.docPermissionResolveService.assignSubspaceTypePermissions(subspace.id, subspaceType, dto.workspaceId, creatorId);
 
     // Emit create event
     await this.eventPublisher.publishWebsocketEvent({
@@ -946,9 +932,6 @@ export class SubspaceService {
       },
     });
 
-    // Only assign subspace-level permission
-    await this.docPermissionResolveService.assignSubspacePermissions(dto.userId, subspaceId, dto.role, adminId);
-
     return {
       member: {
         ...member,
@@ -1024,9 +1007,6 @@ export class SubspaceService {
             },
           });
 
-          // Assign permissions
-          await this.docPermissionResolveService.assignSubspacePermissions(item.id, subspaceId, item.role, adminId);
-
           // Track for batch notification
           addedUsers.push({
             userId: item.id,
@@ -1097,9 +1077,6 @@ export class SubspaceService {
                   user: true,
                 },
               });
-
-              // Assign permissions
-              await this.docPermissionResolveService.assignSubspacePermissions(userId, subspaceId, item.role || "MEMBER", adminId);
 
               groupAddedMembers.push(memberWithUser);
 

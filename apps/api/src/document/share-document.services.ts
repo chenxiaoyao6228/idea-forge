@@ -1,6 +1,6 @@
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { CommonSharedDocumentResponse, RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "@idea/contracts";
+import { CommonSharedDocumentResponse, RemoveShareDto, RemoveGroupShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "@idea/contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionInheritanceType, PermissionLevel } from "@idea/contracts";
@@ -131,14 +131,14 @@ export class ShareDocumentService {
             },
           });
 
-          // Create new permission
+          // Create new permission for group member
           const perm = await this.prismaService.documentPermission.create({
             data: {
               ...permissionBase,
               userId: member.userId,
               inheritedFromType: "GROUP",
               priority: 2,
-              inheritedFromId: null,
+              inheritedFromId: null, // Group permissions don't inherit from other document permissions
             },
           });
           createdPermissions.push(perm);
@@ -167,7 +167,7 @@ export class ShareDocumentService {
               userId: parentPerm.userId,
               inheritedFromType: parentPerm.inheritedFromType,
               priority: parentPerm.priority,
-              inheritedFromId: parentPerm.id,
+              inheritedFromId: null, // Child documents don't inherit from parent permissions directly
             },
           });
         }
@@ -199,15 +199,129 @@ export class ShareDocumentService {
   }
 
   async getDocShares(id: string, userId: string) {
-    // Get all permissions for this document
-    const permissions = await this.prismaService.documentPermission.findMany({
+    const [userShares, groupShares] = await Promise.all([this.getDirectUserShares(id), this.getGroupShares(id)]);
+
+    return [...userShares, ...groupShares];
+  }
+
+  private async getDirectUserShares(docId: string) {
+    // Get direct user permissions
+    const userPermissions = await this.prismaService.documentPermission.findMany({
       where: {
-        docId: id,
-        inheritedFromType: "DIRECT", // Only direct permissions, not inherited ones
+        docId,
+        inheritedFromType: PermissionInheritanceType.DIRECT,
+        userId: { not: null },
       },
     });
 
-    // Deduplicate permissions by user ID and keep the highest permission level
+    // Deduplicate and get highest permission level for each user
+    const userPermissionMap = this.deduplicatePermissions(userPermissions);
+
+    if (userPermissionMap.size === 0) {
+      return [];
+    }
+
+    // Fetch user details
+    const userIds = Array.from(userPermissionMap.keys());
+    const users = await this.prismaService.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+      },
+    });
+
+    // Create user map for quick lookup
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
+    // Transform to expected format
+    return Array.from(userPermissionMap.entries()).map(([userId, permissionLevel]) => {
+      const user = userMap.get(userId);
+      return {
+        id: user?.id || userId,
+        email: user?.email || "",
+        displayName: user?.displayName,
+        permission: { level: permissionLevel },
+        type: "user" as const,
+      };
+    });
+  }
+
+  private async getGroupShares(docId: string) {
+    // Get group permissions with user and group information
+    const groupPermissionsWithGroups = await this.prismaService.documentPermission.findMany({
+      where: {
+        docId,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+      },
+      include: {
+        user: {
+          include: {
+            memberGroups: {
+              include: {
+                group: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Process group permissions to get unique groups with highest permission level
+    const groupPermissionMap = new Map<string, string>();
+    const permissionLevels = ["NONE", "READ", "COMMENT", "EDIT", "MANAGE"];
+
+    groupPermissionsWithGroups.forEach((permission) => {
+      const userGroup = permission.user?.memberGroups?.[0]?.group;
+      if (userGroup) {
+        const currentLevel = groupPermissionMap.get(userGroup.id);
+        const newLevel = permission.permission;
+
+        if (!currentLevel || permissionLevels.indexOf(newLevel) > permissionLevels.indexOf(currentLevel)) {
+          groupPermissionMap.set(userGroup.id, newLevel);
+        }
+      }
+    });
+
+    if (groupPermissionMap.size === 0) {
+      return [];
+    }
+
+    // Fetch group details
+    const groupIds = Array.from(groupPermissionMap.keys());
+    const groups = await this.prismaService.memberGroup.findMany({
+      where: { id: { in: groupIds } },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+      },
+    });
+
+    // Create group map for quick lookup
+    const groupMap = new Map(groups.map((group) => [group.id, group]));
+
+    // Transform to expected format
+    return Array.from(groupPermissionMap.entries()).map(([groupId, permission]) => {
+      const group = groupMap.get(groupId);
+      return {
+        id: group?.id || groupId,
+        name: group?.name || "",
+        description: group?.description,
+        memberCount: group?._count?.members || 0,
+        permission: { level: permission },
+        type: "group" as const,
+      };
+    });
+  }
+
+  private deduplicatePermissions(permissions: any[]): Map<string, string> {
     const permissionMap = new Map<string, string>();
     const permissionLevels = ["NONE", "READ", "COMMENT", "EDIT", "MANAGE"];
 
@@ -222,39 +336,7 @@ export class ShareDocumentService {
       }
     });
 
-    // Get unique user IDs from deduplicated permissions
-    const userIds = Array.from(permissionMap.keys());
-
-    // Fetch users with their details
-    const users = await this.prismaService.user.findMany({
-      where: {
-        id: { in: userIds },
-      },
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-      },
-    });
-
-    // Create a map of user ID to user data
-    const userMap = new Map();
-    users.forEach((user) => {
-      userMap.set(user.id, user);
-    });
-
-    // Transform to the expected format with deduplicated permissions
-    return Array.from(permissionMap.entries()).map(([userId, permissionLevel]) => {
-      const user = userMap.get(userId);
-      return {
-        id: user?.id || userId,
-        email: user?.email || "",
-        displayName: user?.displayName,
-        permission: {
-          level: permissionLevel,
-        },
-      };
-    });
+    return permissionMap;
   }
 
   async removeShare(id: string, userId: string, dto: RemoveShareDto) {
@@ -270,6 +352,41 @@ export class ShareDocumentService {
         docId: id,
         userId: dto.targetUserId,
         inheritedFromType: PermissionInheritanceType.DIRECT,
+      },
+    });
+
+    return this.getDocShares(id, userId);
+  }
+
+  async removeGroupShare(id: string, userId: string, dto: RemoveGroupShareDto) {
+    const doc = await this.prismaService.doc.findFirst({
+      where: { id, authorId: userId },
+    });
+
+    if (!doc) throw new NotFoundException("Document not found");
+
+    // Get all users in the group
+    const groupMembers = await this.prismaService.memberGroup.findUnique({
+      where: { id: dto.targetGroupId },
+      include: {
+        members: {
+          select: { userId: true },
+        },
+      },
+    });
+
+    if (!groupMembers) {
+      throw new NotFoundException("Group not found");
+    }
+
+    const userIds = groupMembers.members.map((member) => member.userId);
+
+    // Remove ALL group permissions for users in this group from DocumentPermission table
+    await this.prismaService.documentPermission.deleteMany({
+      where: {
+        docId: id,
+        userId: { in: userIds },
+        inheritedFromType: PermissionInheritanceType.GROUP,
       },
     });
 

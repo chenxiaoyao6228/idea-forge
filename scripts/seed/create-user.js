@@ -5,7 +5,7 @@
 node scripts/seed/create-user.js
 
 # Add 100 users to a specific workspace
-node scripts/seed/create-user.js -n="York's Workspace"
+node scripts/seed/create-user.js -n="York's Team"
 
 # Show help
 node scripts/seed/create-user.js --help
@@ -238,18 +238,8 @@ async function addUserToWorkspace(userId, workspaceId, adminToken) {
       },
     });
     
-    // Assign workspace permissions
-    await prisma.documentPermission.create({
-      data: {
-        userId,
-        reinheritedFromType: 'WORKSPACE',
-        documentId: workspaceId,
-        permission: 'READ', // Use READ permission for workspace members
-        inheritedFromType: 'WORKSPACE_MEMBER',
-        priority: 6,
-        createdById: userId, // Use the user themselves as creator for simplicity
-      },
-    });
+    // Workspace permissions are handled automatically by the WorkspaceMember model
+    // No need to create DocumentPermission for workspace membership
     
     // Add to workspace-wide subspaces
     const workspaceWideSubspaces = await prisma.subspace.findMany({
@@ -268,18 +258,8 @@ async function addUserToWorkspace(userId, workspaceId, adminToken) {
         },
       });
       
-      // Assign subspace permissions
-      await prisma.documentPermission.create({
-        data: {
-          userId,
-          reinheritedFromType: 'SUBSPACE',
-          documentId: subspace.id,
-          permission: 'READ', // Use READ permission for subspace members
-          inheritedFromType: 'SUBSPACE_MEMBER',
-          priority: 4,
-          createdById: userId,
-        },
-      });
+      // Subspace permissions are handled automatically by the SubspaceMember model
+      // No need to create DocumentPermission for subspace membership
     }
     
     // Create personal subspace for the user
@@ -296,8 +276,8 @@ async function addUserToWorkspace(userId, workspaceId, adminToken) {
         allowTopLevelEdit: true,
         memberInvitePermission: 'ADMINS_ONLY',
         topLevelEditPermission: 'ADMINS_ONLY',
-        subspaceAdminPermission: 'OWNER',
-        subspaceMemberPermission: 'OWNER',
+        subspaceAdminPermission: 'MANAGE',
+        subspaceMemberPermission: 'MANAGE',
         nonSubspaceMemberPermission: 'NONE',
       },
     });
@@ -311,18 +291,8 @@ async function addUserToWorkspace(userId, workspaceId, adminToken) {
       },
     });
     
-    // Assign personal subspace permissions
-    await prisma.documentPermission.create({
-      data: {
-        userId,
-        reinheritedFromType: 'SUBSPACE',
-        documentId: personalSubspace.id,
-        permission: 'OWNER',
-        inheritedFromType: 'SUBSPACE_ADMIN',
-        priority: 3,
-        createdById: userId,
-      },
-    });
+    // Subspace permissions are handled automatically by the SubspaceMember model
+    // No need to create DocumentPermission for subspace membership
     
     // console.log(`Successfully added user ${userId} to workspace ${workspaceId} via database`);
     return member;

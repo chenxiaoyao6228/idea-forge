@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from "@nestjs/common";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
-import { RemoveShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "@idea/contracts";
+import { RemoveShareDto, RemoveGroupShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "@idea/contracts";
 import { ShareDocumentService } from "./share-document.services";
 
 @Controller("/api/share-documents")
@@ -30,5 +30,10 @@ export class ShareDocumentController {
   @Delete(":id")
   async removeShare(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: RemoveShareDto) {
     return this.shareDocumentService.removeShare(id, userId, dto);
+  }
+
+  @Delete(":id/group")
+  async removeGroupShare(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: RemoveGroupShareDto) {
+    return this.shareDocumentService.removeGroupShare(id, userId, dto);
   }
 }

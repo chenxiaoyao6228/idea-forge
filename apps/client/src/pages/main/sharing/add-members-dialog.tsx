@@ -12,13 +12,14 @@ import { X } from "lucide-react";
 import { useMemberSearch } from "@/hooks/use-member-search";
 import useWorkspaceStore from "@/stores/workspace-store";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
+import { PermissionLevel } from "@idea/contracts";
 
 export interface SharedUser {
   id: string;
   name: string;
   email?: string;
   avatar?: string;
-  permission: "READ" | "EDIT";
+  permission: PermissionLevel;
   type: "user" | "group";
   memberCount?: number;
 }
@@ -59,7 +60,7 @@ const AddMembersDialog = ({ show = false, proceed, onAddUsers }: ConfirmDialogPr
       name: member.name,
       email: member.email,
       avatar: member.avatar,
-      permission: "READ",
+      permission: PermissionLevel.READ,
       type: member.type,
       memberCount: member.memberCount,
     };
@@ -72,7 +73,7 @@ const AddMembersDialog = ({ show = false, proceed, onAddUsers }: ConfirmDialogPr
     setPendingUsers(pendingUsers.filter((user) => user.id !== userId));
   };
 
-  const updatePendingPermission = (userId: string, permission: "READ" | "EDIT") => {
+  const updatePendingPermission = (userId: string, permission: PermissionLevel) => {
     setPendingUsers(pendingUsers.map((user) => (user.id === userId ? { ...user, permission } : user)));
   };
 
@@ -181,13 +182,15 @@ const AddMembersDialog = ({ show = false, proceed, onAddUsers }: ConfirmDialogPr
                       <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                       {user.memberCount && <div className="text-xs text-muted-foreground">{t("{{count}} members", { count: user.memberCount })}</div>}
                     </div>
-                    <Select value={user.permission} onValueChange={(value: "READ" | "EDIT") => updatePendingPermission(user.id, value)}>
+                    <Select value={user.permission} onValueChange={(value: PermissionLevel) => updatePendingPermission(user.id, value)}>
                       <SelectTrigger className="w-20 h-8 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="READ">{t("View")}</SelectItem>
-                        <SelectItem value="EDIT">{t("Edit")}</SelectItem>
+                        <SelectItem value={PermissionLevel.READ}>{t("View")}</SelectItem>
+                        <SelectItem value={PermissionLevel.COMMENT}>{t("Comment")}</SelectItem>
+                        <SelectItem value={PermissionLevel.EDIT}>{t("Edit")}</SelectItem>
+                        <SelectItem value={PermissionLevel.MANAGE}>{t("Manage")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button variant="ghost" size="sm" onClick={() => removePendingUser(user.id)} className="h-8 w-8 p-0">

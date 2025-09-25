@@ -8,6 +8,7 @@ import type {
   UpdateSharePermissionDto,
   ShareDocumentDto,
   RemoveShareDto,
+  RemoveGroupShareDto,
   UpdateCoverDto,
   TrashDocumentResponse,
   SearchDocumentDto,
@@ -15,7 +16,6 @@ import type {
   DuplicateDocumentResponse,
   ListDocumentResponse,
   ListDocumentDto,
-  PermissionListRequest,
   SharedWithMeResponse,
 } from "@idea/contracts";
 
@@ -33,6 +33,7 @@ export const documentApi = {
   // ================ others ========================
 
   removeShare: (id: string, data: RemoveShareDto) => request.delete<DocSharesResponse>(`/api/share-documents/${id}`, { data }),
+  removeGroupShare: (id: string, data: RemoveGroupShareDto) => request.delete<DocSharesResponse>(`/api/share-documents/${id}/group`, { data }),
   updateSharePermission: (id: string, data: UpdateSharePermissionDto) =>
     request.patch<UpdateSharePermissionDto, DocSharesResponse>(`/api/share-documents/${id}`, data),
 

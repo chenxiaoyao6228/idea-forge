@@ -58,11 +58,6 @@ export function PermissionLevelSelector({ value, onChange, disabled = false, cla
           {selectedPermission && (
             <div className="flex items-center gap-2">
               <span className="mr-1">{selectedPermission.label}</span>
-              {selectedPermission.color === "destructive" && (
-                <Badge variant="destructive" className="text-xs">
-                  {t("Restricted")}
-                </Badge>
-              )}
             </div>
           )}
         </SelectValue>
@@ -73,11 +68,6 @@ export function PermissionLevelSelector({ value, onChange, disabled = false, cla
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{level.label}</span>
-                {level.color === "destructive" && (
-                  <Badge variant="destructive" className="text-xs">
-                    {t("Restricted")}
-                  </Badge>
-                )}
               </div>
               <span className="text-xs text-muted-foreground">{level.description}</span>
             </div>

@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Link, X, Plus, Users, Shield, UserCheck } from "lucide-react";
+import { Link, X, Plus, Users, UserCheck } from "lucide-react";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "@/stores/workspace-store";
@@ -14,10 +14,13 @@ import { showAddMembersModal } from "./add-members-dialog";
 import type { SharedUser } from "./add-members-dialog";
 import {
   useDocumentShares,
+  useDocumentUserShares,
+  useDocumentGroupShares,
   useFetchDocumentShares,
   useAddDocumentShare,
   useUpdateDocumentSharePermission,
   useRemoveDocumentShare,
+  useRemoveDocumentGroupShare,
 } from "@/stores/document-shares-store";
 import { PermissionLevel } from "@idea/contracts";
 import { useCurrentDocument } from "@/hooks/use-current-document";
@@ -36,17 +39,20 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const currentDocument = useCurrentDocument();
 
   // Use store hooks
-  const sharedUsers = useDocumentShares(documentId);
+  const sharedUsers = useDocumentUserShares(documentId);
+  const sharedGroups = useDocumentGroupShares(documentId);
+  const allShares = useDocumentShares(documentId);
   const { run: fetchShares } = useFetchDocumentShares(documentId);
   const { run: addShare } = useAddDocumentShare(documentId);
   const { run: updatePermission } = useUpdateDocumentSharePermission(documentId);
   const { run: removeShare } = useRemoveDocumentShare(documentId);
+  const { run: removeGroupShare } = useRemoveDocumentGroupShare(documentId);
 
   // Get subspace settings from store
   const subspaceSettings = useSubSpaceStore((state) => state.subspaceSettings);
 
   // Fetch subspace settings if document is in a subspace
-  const { run: fetchSubspaceSettings, loading: subspaceLoading } = useFetchSubspaceSettings(currentDocument?.subspaceId || "");
+  const { run: fetchSubspaceSettings } = useFetchSubspaceSettings(currentDocument?.subspaceId || "");
   const { run: updateSubspaceSettings } = useUpdateSubspaceSettings(currentDocument?.subspaceId || "");
 
   // Fetch subspace settings when component mounts and document has a subspace
@@ -87,6 +93,10 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
     await removeShare({ targetUserId: userId });
   };
 
+  const handleRemoveGroup = async (groupId: string) => {
+    await removeGroupShare({ targetGroupId: groupId });
+  };
+
   const handleUpdatePermission = async (userId: string, permission: PermissionLevel) => {
     // Check if user is trying to change their own permission
     if (currentUserId && userId === currentUserId) {
@@ -122,8 +132,8 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   };
 
   const copyPageAccessLink = () => {
-    // TODO: Implement copy page access link functionality
-    navigator.clipboard.writeText("https://app.example.com/shared/abc123");
+    // Copy the current page URL from the browser address bar
+    navigator.clipboard.writeText(window.location.href);
     toast.success(t("Link copied to clipboard"));
   };
 
@@ -134,7 +144,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
           await addShare({
             targetUserIds: users.filter(({ type }) => type === "user").map(({ id }) => id),
             targetGroupIds: users.filter(({ type }) => type === "group").map(({ id }) => id),
-            permission: users[0]?.permission,
+            permission: users[0]?.permission as "READ" | "EDIT",
             includeChildDocuments: true,
             workspaceId,
           });
@@ -148,10 +158,10 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Subspace Role-Based Permissions Section */}
       {currentDocument?.subspaceId && subspaceSettings && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Label className="text-sm font-medium">{t("Subspace Role-Based Permissions")}</Label>
           </div>
@@ -218,7 +228,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
       {/* Individual Document Shares Section */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-medium flex items-center gap-2">{t("Individual Document Permissions")}</Label>
+          <Label className="text-sm font-medium flex items-center gap-2">{t("User/Group Permissions")}</Label>
 
           <Button variant="outline" size="sm" className="h-8 bg-transparent" onClick={handleAddMembers}>
             <Plus className="h-4 w-4 mr-1" />
@@ -227,10 +237,34 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
         </div>
       </div>
 
-      {/* Shared Users List */}
-      {sharedUsers.length > 0 && (
+      {allShares.length > 0 && (
         <div className="space-y-3">
-          <div className="space-y-2 max-h-72 overflow-y-auto">
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {/* Shared Groups List */}
+            {sharedGroups.map((group) => (
+              <div key={group.id} className="flex items-center gap-2 p-2 rounded-md border bg-card">
+                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0 mr-2">
+                  <div className="font-medium text-sm truncate">{group.name}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {group.memberCount} {t("members")}
+                    {group.description && ` • ${group.description}`}
+                  </div>
+                </div>
+                <PermissionLevelSelector
+                  value={group.permission.level}
+                  onChange={(value) => handleUpdatePermission(group.id, value)}
+                  className="h-8 text-xs flex-shrink-0"
+                />
+                <Button variant="ghost" size="sm" onClick={() => handleRemoveGroup(group.id)} className="h-8 w-8 p-0 flex-shrink-0">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+
+            {/* Shared Users List */}
             {sharedUsers.map((user) => (
               <div key={user.id} className="flex items-center gap-2 p-2 rounded-md border bg-card">
                 <Avatar className="h-8 w-8 flex-shrink-0">
@@ -241,7 +275,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                   <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                 </div>
                 <PermissionLevelSelector
-                  value={user.permission.level === "OWNER" ? "MANAGE" : user.permission.level}
+                  value={user.permission.level}
                   onChange={(value) => handleUpdatePermission(user.id, value)}
                   className="h-8 text-xs flex-shrink-0"
                 />
@@ -254,15 +288,22 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
         </div>
       )}
 
+      {/* No shares message */}
+      {allShares.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">{t("No users or groups have been shared with this document")}</p>
+        </div>
+      )}
+
       <Separator />
 
       {/* Link Sharing Section */}
-      <div className="">
-        <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-md transition-colors" onClick={copyPageAccessLink}>
-          <div className="text-sm  flex items-center gap-2 cursor-pointer">
-            <Link className="h-4 w-4" />
-            {t("Copy page access link")}
-          </div>
+
+      <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-md transition-colors" onClick={copyPageAccessLink}>
+        <div className="text-sm  flex items-center gap-2 p-1 cursor-pointer">
+          <Link className="h-4 w-4" />
+          {t("Copy page access link")}
         </div>
       </div>
     </div>

@@ -40,6 +40,9 @@ export default function Doc() {
 
   const { can: canReadDoc } = useAbilityCan("Doc", Action.Read, docAbilitySubject);
   const { can: canUpdateDoc } = useAbilityCan("Doc", Action.Update, docAbilitySubject);
+  const { can: canManageDoc } = useAbilityCan("Doc", Action.Manage, docAbilitySubject);
+
+  console.log("[current doc permission]: canManageDoc, canUpdateDoc, canReadDoc", canManageDoc, canUpdateDoc, canReadDoc);
 
   // Handle loading state
   if (currentDocument?.isLoading) {
@@ -59,7 +62,7 @@ export default function Doc() {
   }
 
   if (!canReadDoc) {
-    return <div>{t("You have no permission to view this document")}</div>;
+    return <div className="text-center h-screen flex items-center justify-center text-lg">{t("You have no permission to view this document")}</div>;
   }
 
   return (

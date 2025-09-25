@@ -147,68 +147,8 @@ export class DocPermissionResolveService {
     return sortedPermissions[0].permission;
   }
 
-  // 分配工作空间权限
-  async assignWorkspacePermissions(userId: string, workspaceId: string, role: WorkspaceRole, createdById: string) {
-    // Workspace permissions are handled by WorkspaceMember model, not DocumentPermission
-    // This method is kept for compatibility but doesn't create document permissions
-    // The actual workspace membership is created in the workspace service
-    return { userId, workspaceId, role, createdById };
-  }
-
-  // 分配子空间权限
-  async assignSubspacePermissions(userId: string, subspaceId: string, role: SubspaceRole, createdById: string) {
-    // Subspace permissions are handled by SubspaceMember model, not DocumentPermission
-    // This method is kept for compatibility but doesn't create document permissions
-    // The actual subspace membership is created in the subspace service
-    return { userId, subspaceId, role, createdById };
-  }
-
   // assign initial permissions based on subspace type
-  async assignSubspaceTypePermissions(subspaceId: string, subspaceType: SubspaceType, workspaceId: string, creatorId: string) {
-    switch (subspaceType) {
-      case SubspaceType.WORKSPACE_WIDE: {
-        // Assign permissions to all workspace members
-        const workspaceMembers = await this.prismaService.workspaceMember.findMany({
-          where: { workspaceId },
-        });
-        for (const member of workspaceMembers) {
-          const role = member.userId === creatorId ? SubspaceRole.ADMIN : SubspaceRole.MEMBER;
-          await this.assignSubspacePermissions(member.userId, subspaceId, role, creatorId);
-        }
-        break;
-      }
-      case SubspaceType.PUBLIC: {
-        // Creator is admin, other workspace members can comment
-        await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
-
-        const otherWorkspaceMembers = await this.prismaService.workspaceMember.findMany({
-          where: {
-            workspaceId,
-            userId: { not: creatorId },
-          },
-        });
-
-        for (const member of otherWorkspaceMembers) {
-          await this.prismaService.subspaceMember.create({
-            data: {
-              userId: member.userId,
-              subspaceId: subspaceId,
-              role: SubspaceRole.MEMBER,
-            },
-          });
-        }
-        break;
-      }
-      case SubspaceType.INVITE_ONLY:
-        // Only creator has permissions
-        await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
-        break;
-      case SubspaceType.PRIVATE:
-        // Only creator has permissions
-        await this.assignSubspacePermissions(creatorId, subspaceId, SubspaceRole.ADMIN, creatorId);
-        break;
-    }
-  }
+  async assignSubspaceTypePermissions(subspaceId: string, subspaceType: SubspaceType, workspaceId: string, creatorId: string) {}
 
   mapDocPermissionLevelToAbilities(permissionLevel: PermissionLevel) {
     switch (permissionLevel) {

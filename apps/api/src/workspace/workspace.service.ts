@@ -196,9 +196,6 @@ export class WorkspaceService {
       },
     });
 
-    // Assign workspace permissions to creator with full ownership
-    const permission = await this.docPermissionResolveService.assignWorkspacePermissions(userId, workspace.id, WorkspaceRole.OWNER, userId);
-
     // Create subspaces based on workspace type
     if (dto.type === WorkspaceType.TEAM) {
       // For team workspaces, create a default public subspace
@@ -445,9 +442,6 @@ export class WorkspaceService {
       },
     });
 
-    //  Assign workspace permissions based on role
-    await this.docPermissionResolveService.assignWorkspacePermissions(userId, workspaceId, role, adminId);
-
     // Invite user to all workspace-wide subspaces
     const workspaceWideSubspaces = await this.prismaService.subspace.findMany({
       where: { workspaceId, type: SubspaceType.WORKSPACE_WIDE },
@@ -469,19 +463,6 @@ export class WorkspaceService {
         data: subspaceMemberships,
         skipDuplicates: true, // Skip if user is already a member
       });
-
-      // TODO: Commented out permission assignment to fix performance issue
-      // The assignSubspaceTypePermissions method was creating permissions for ALL workspace members
-      // instead of just the new member, causing hundreds of database queries
-      //
-      // Assign permissions for each subspace
-      // for (const subspace of workspaceWideSubspaces) {
-      //   try {
-      //     await this.docPermissionResolveService.assignSubspaceTypePermissions(subspace.id, SubspaceType.WORKSPACE_WIDE, workspaceId, adminId);
-      //   } catch (error) {
-      //     console.warn(`Failed to assign permissions for subspace ${subspace.id}:`, error);
-      //   }
-      // }
 
       // Emit a single batch event for all workspace-wide subspace memberships
       if (workspaceWideSubspaces.length > 0) {
@@ -792,9 +773,6 @@ export class WorkspaceService {
         },
       },
     });
-
-    // 2. Update unified permissions based on new role
-    await this.docPermissionResolveService.assignWorkspacePermissions(userId, workspaceId, newRole, adminId);
 
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },

@@ -143,7 +143,7 @@ export const shareDocumentSchema = z.object({
   workspaceId: z.string(),
   targetUserIds: z.array(z.string()).optional(),
   targetGroupIds: z.array(z.string()).optional(),
-  permission: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE", "OWNER"]),
+  permission: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),
   includeChildDocuments: z.boolean().optional(),
 });
 
@@ -155,11 +155,30 @@ export const docShareUserSchema = z.object({
   email: z.string(),
   displayName: z.string().nullable(),
   permission: z.object({
-    level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE", "OWNER"]),
+    level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),
   }),
+  type: z.literal("user"),
 });
 
 export type DocShareUser = z.infer<typeof docShareUserSchema>;
+
+// group share doc
+export const docShareGroupSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  memberCount: z.number(),
+  permission: z.object({
+    level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),
+  }),
+  type: z.literal("group"),
+});
+
+export type DocShareGroup = z.infer<typeof docShareGroupSchema>;
+
+// union type for both user and group shares
+export const docShareSchema = z.union([docShareUserSchema, docShareGroupSchema]);
+export type DocShareItem = z.infer<typeof docShareSchema>;
 
 // update doc
 export const updateSharePermissionSchema = z.object({
@@ -174,6 +193,12 @@ export const removeShareSchema = z.object({
 });
 
 export type RemoveShareDto = z.infer<typeof removeShareSchema>;
+
+export const removeGroupShareSchema = z.object({
+  targetGroupId: z.string(),
+});
+
+export type RemoveGroupShareDto = z.infer<typeof removeGroupShareSchema>;
 
 // ============== others ================
 
@@ -210,7 +235,7 @@ export const detailSharedDocumentSchema = commonSharedDocumentSchema.extend({
 
 export type DetailSharedDocumentResponse = z.infer<typeof detailSharedDocumentSchema>;
 
-export const docSharesSchema = z.array(docShareUserSchema);
+export const docSharesSchema = z.array(docShareSchema);
 export type DocSharesResponse = z.infer<typeof docSharesSchema>;
 
 export interface TrashDocumentResponse {
