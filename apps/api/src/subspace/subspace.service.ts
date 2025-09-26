@@ -1824,8 +1824,6 @@ export class SubspaceService {
         ...(settings.description !== undefined && { description: settings.description }),
         ...(settings.avatar !== undefined && { avatar: settings.avatar }),
         ...(settings.type && { type: settings.type }),
-        ...(settings.allowPublicSharing !== undefined && { allowPublicSharing: settings.allowPublicSharing }),
-        ...(settings.allowGuestCollaborators !== undefined && { allowGuestCollaborators: settings.allowGuestCollaborators }),
         ...(settings.allowExport !== undefined && { allowExport: settings.allowExport }),
         ...(settings.allowMemberInvites !== undefined && { allowMemberInvites: settings.allowMemberInvites }),
         ...(settings.allowTopLevelEdit !== undefined && { allowTopLevelEdit: settings.allowTopLevelEdit }),

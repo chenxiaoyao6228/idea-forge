@@ -34,6 +34,7 @@ import { StarModule } from "./star/star.module";
 import { DocShareModule } from "./doc-share/doc-share.module";
 import { GroupModule } from "./group/group.module";
 import { PermissionModule } from "./permission/permission.module";
+import { GuestCollaboratorsModule } from "./guest-collaborators/guest-collaborators.module";
 import { UserIpInterceptor } from "./_shared/interceptors/user-ip.interceptor";
 import { ClsModule } from "@/_shared/utils/cls.module";
 import { HealthModule } from "./health/health.module";
@@ -90,6 +91,7 @@ import { HealthModule } from "./health/health.module";
     DocShareModule,
     GroupModule,
     PermissionModule,
+    GuestCollaboratorsModule,
     HealthModule,
   ],
   providers: [

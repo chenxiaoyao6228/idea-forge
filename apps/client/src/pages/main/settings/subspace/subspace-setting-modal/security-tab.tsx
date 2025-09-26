@@ -102,42 +102,6 @@ export function SecurityTab({ settings, onSettingsChange }: SecurityTabProps) {
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label htmlFor="allowPublicSharing" className="text-sm font-medium">
-                {t("Disable public page sharing")}
-              </label>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="allowPublicSharing"
-                  checked={!settings.subspace.allowPublicSharing}
-                  onCheckedChange={(checked) => handleBooleanSettingChange("allowPublicSharing", !checked)}
-                  disabled={!canManageSubspaceSettings}
-                />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">{t("Prevents members from publishing pages from this subspace to the internet")}</p>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="allowGuestCollaborators" className="text-sm font-medium">
-                {t("Disable guests")}
-              </label>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="allowGuestCollaborators"
-                  checked={!settings.subspace.allowGuestCollaborators}
-                  onCheckedChange={(checked) => handleBooleanSettingChange("allowGuestCollaborators", !checked)}
-                  disabled={!canManageSubspaceSettings}
-                />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {t("Prevents sharing pages from this subspace with people who are not members of your parent workspace")}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
               <label htmlFor="allowExport" className="text-sm font-medium">
                 {t("Disable export")}
               </label>

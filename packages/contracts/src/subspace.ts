@@ -178,8 +178,6 @@ export const UpdateSubspaceSettingsRequestSchema = z.object({
   description: z.string().nullable().optional(),
   avatar: z.string().nullable().optional(),
   type: SubspaceTypeSchema.optional(),
-  allowPublicSharing: z.boolean().optional(),
-  allowGuestCollaborators: z.boolean().optional(),
   allowExport: z.boolean().optional(),
   allowMemberInvites: z.boolean().optional(),
   allowTopLevelEdit: z.boolean().optional(),
@@ -194,8 +192,6 @@ export type UpdateSubspaceSettingsRequest = z.infer<typeof UpdateSubspaceSetting
 
 export const SubspaceSettingsResponseSchema = z.object({
   subspace: SubspaceSchema.extend({
-    allowPublicSharing: z.boolean(),
-    allowGuestCollaborators: z.boolean(),
     allowExport: z.boolean(),
     allowMemberInvites: z.boolean(),
     allowTopLevelEdit: z.boolean(),

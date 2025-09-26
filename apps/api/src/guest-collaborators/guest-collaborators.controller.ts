@@ -1,0 +1,55 @@
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from "@nestjs/common";
+import { GuestCollaboratorsService } from "./guest-collaborators.service";
+import { InviteGuestDto, UpdateGuestPermissionDto, GetWorkspaceGuestsDto, RemoveGuestFromDocumentDto } from "./guest-collaborators.dto";
+import { GetUser } from "@/auth/decorators/get-user.decorator";
+import { PolicyGuard } from "@/_shared/casl/policy.guard";
+import { CheckPolicy } from "@/_shared/casl/policy.decorator";
+import { AppAbility } from "@/_shared/casl/ability.class";
+import { Action } from "@/_shared/casl/ability.class";
+
+@UseGuards(PolicyGuard)
+@Controller("/api/guest-collaborators")
+export class GuestCollaboratorsController {
+  constructor(private readonly guestCollaboratorsService: GuestCollaboratorsService) {}
+
+  @Post("invite")
+  @CheckPolicy(Action.Create, "GuestCollaborator")
+  async inviteGuest(@GetUser("id") userId: string, @Body() dto: InviteGuestDto) {
+    return this.guestCollaboratorsService.inviteGuestToDocument(userId, dto);
+  }
+
+  @Get("workspace/:workspaceId")
+  @CheckPolicy(Action.Read, "GuestCollaborator")
+  async getWorkspaceGuests(
+    @GetUser("id") userId: string,
+    @Param("workspaceId") workspaceId: string,
+    @Query() query: Omit<GetWorkspaceGuestsDto, "workspaceId">,
+  ) {
+    const dto: GetWorkspaceGuestsDto = {
+      workspaceId,
+      ...query,
+    };
+    return this.guestCollaboratorsService.getWorkspaceGuests(userId, dto);
+  }
+
+  @Patch(":guestId/permission")
+  @CheckPolicy(Action.Update, "GuestCollaborator")
+  async updateGuestPermission(@GetUser("id") userId: string, @Param("guestId") guestId: string, @Body() dto: UpdateGuestPermissionDto) {
+    return this.guestCollaboratorsService.updateGuestPermission(userId, guestId, dto);
+  }
+
+  @Delete(":guestId")
+  @CheckPolicy(Action.Delete, "GuestCollaborator")
+  async removeGuestFromWorkspace(@GetUser("id") userId: string, @Param("guestId") guestId: string) {
+    await this.guestCollaboratorsService.removeGuestFromWorkspace(userId, guestId);
+    return { message: "Guest removed successfully" };
+  }
+
+  @Delete(":guestId/documents/:documentId")
+  @CheckPolicy(Action.Delete, "GuestCollaborator")
+  async removeGuestFromDocument(@GetUser("id") userId: string, @Param("guestId") guestId: string, @Param("documentId") documentId: string) {
+    const dto: RemoveGuestFromDocumentDto = { documentId };
+    await this.guestCollaboratorsService.removeGuestFromDocument(userId, guestId, dto);
+    return { message: "Guest access removed successfully" };
+  }
+}

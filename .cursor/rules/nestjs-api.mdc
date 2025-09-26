@@ -633,7 +633,7 @@ import * as request from "supertest";
 import { AppModule } from "../src/app.module";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
-describe("UserController (e2e)", () => {
+describe("UserController (integration)", () => {
   let app: INestApplication;
   let prisma: PrismaService;
 

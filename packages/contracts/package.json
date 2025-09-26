@@ -12,9 +12,10 @@
     }
   },
   "scripts": {
-    "dev": "concurrently \"tsc -p tsconfig.cjs.json -w\" \"tsc -p tsconfig.json -w\"",
+    "dev": "concurrently \"tsc -p tsconfig.cjs.json -w --preserveWatchOutput\" \"tsc -p tsconfig.json -w --preserveWatchOutput\"",
     "build": "rimraf dist && tsc -p tsconfig.cjs.json && tsc -p tsconfig.json",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "watch": "tsc -p tsconfig.json -w --preserveWatchOutput"
   },
   "dependencies": {
     "@casl/ability": "^6.7.3",

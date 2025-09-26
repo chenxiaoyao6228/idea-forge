@@ -17,4 +17,12 @@ If the user's requirements are unclear, especially after researching the relevan
 
 Prioritize being concise and precise. Make the plan as tight as possible without losing any of the critical details from the user's requirements.
 
+## Development Guidelines
+
+When creating the technical plan, ensure that:
+
+- **For API-related changes**: Follow the `.cursor/rules/nestjs-api.mdc` guideline for NestJS API development patterns, module structure, DTOs, services, controllers, and testing approaches.
+
+- **For client-related changes**: Follow the `.cursor/rules/react-client.mdc` guideline for React client development patterns, component architecture, state management, hooks, styling, and testing approaches.
+
 Write the plan into an .cursor/docs/features/<self_describe>\_PLAN.md file with the available feature

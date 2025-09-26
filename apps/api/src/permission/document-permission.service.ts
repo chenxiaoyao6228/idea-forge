@@ -21,24 +21,36 @@ export class DocPermissionResolveService {
     });
     if (docPerms.length) return docPerms[0].permission;
 
-    // 2. Document-level subspace permission overrides
     if (doc.subspaceId) {
-      const documentSubspacePermission = await this.getDocumentSubspaceRoleBasedPermission(userId, doc.id, doc.subspaceId);
-      if (documentSubspacePermission !== PermissionLevel.NONE) {
-        return documentSubspacePermission;
+      // check if user is a workspace member, might be a guest collaborator
+      const member = await this.prismaService.workspaceMember.findFirst({
+        where: {
+          workspaceId: doc.workspaceId,
+          userId,
+        },
+      });
+      if (member) {
+        // 2. Document-level subspace permission overrides
+        const documentSubspacePermission = await this.getDocumentSubspaceRoleBasedPermission(userId, doc.id, doc.subspaceId);
+        if (documentSubspacePermission !== PermissionLevel.NONE) {
+          return documentSubspacePermission;
+        }
+        // 3. Subspace level (SUBSPACE_ADMIN, SUBSPACE_MEMBER)
+        // 3.1. Check subspace role-based permissions
+        const subspaceRolePermission = await this.getSubspaceRoleBasedPermission(userId, doc.subspaceId);
+        if (subspaceRolePermission !== PermissionLevel.NONE) {
+          return subspaceRolePermission;
+        }
       }
     }
 
-    // 3. Subspace level (SUBSPACE_ADMIN, SUBSPACE_MEMBER)
-    if (doc.subspaceId) {
-      // 3.1. Check subspace role-based permissions
-      const subspaceRolePermission = await this.getSubspaceRoleBasedPermission(userId, doc.subspaceId);
-      if (subspaceRolePermission !== PermissionLevel.NONE) {
-        return subspaceRolePermission;
-      }
+    // 4. Guest permissions (for users not in workspace)
+    const guestPermission = await this.getGuestPermissionForDocument(userId, doc.id, doc.workspaceId);
+    if (guestPermission !== PermissionLevel.NONE) {
+      return guestPermission;
     }
 
-    // 4. Guest/Default
+    // 5. Default
     return PermissionLevel.NONE;
   }
 
@@ -128,5 +140,35 @@ export class DocPermissionResolveService {
 
     // User is not a member, use non-subspace member permission
     return subspace.nonSubspaceMemberPermission;
+  }
+
+  /**
+   * Get guest permission for a document (for users not in workspace)
+   */
+  private async getGuestPermissionForDocument(userId: string, documentId: string, workspaceId: string): Promise<PermissionLevel> {
+    // Check if user is a workspace member
+    const workspaceMember = await this.prismaService.workspaceMember.findFirst({
+      where: {
+        workspaceId,
+        userId,
+      },
+    });
+
+    // If user is a workspace member, they don't need guest permissions
+    if (workspaceMember) {
+      return PermissionLevel.NONE;
+    }
+
+    // Check if user has guest permissions for this document
+    const guestPermission = await this.prismaService.documentPermission.findFirst({
+      where: {
+        userId,
+        docId: documentId,
+        inheritedFromType: PermissionInheritanceType.GUEST,
+      },
+      orderBy: { priority: "asc" },
+    });
+
+    return guestPermission ? guestPermission.permission : PermissionLevel.NONE;
   }
 }
