@@ -289,11 +289,9 @@ model Subspace {
   archivedAt  DateTime?
 
   // Security settings
-  allowPublicSharing      Boolean @default(true)
-  allowGuestCollaborators Boolean @default(true)
-  allowExport             Boolean @default(true)
-  allowMemberInvites      Boolean @default(true)
-  allowTopLevelEdit       Boolean @default(true)
+  allowExport        Boolean @default(true)
+  allowMemberInvites Boolean @default(true)
+  allowTopLevelEdit  Boolean @default(true)
 
   // Permission management
   memberInvitePermission String @default("ALL_MEMBERS") // ALL_MEMBERS, ADMINS_ONLY
