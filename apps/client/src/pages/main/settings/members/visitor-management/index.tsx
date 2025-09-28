@@ -1,0 +1,91 @@
+import { useEffect, useState } from "react";
+import { useOrderedGuests, useFetchGuests, useUpdateGuestPermission, useRemoveGuestFromDocument } from "@/stores/guest-collaborators-store";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import { Search, Plus, Users } from "lucide-react";
+import { GuestCard } from "./guest-card";
+
+export const GuestCollaboratorPanel = () => {
+  const { t } = useTranslation();
+  const orderedGuests = useOrderedGuests();
+  const { run: fetchGuests } = useFetchGuests();
+  const { run: updateGuestPermission } = useUpdateGuestPermission();
+  const { run: removeGuestFromDocument } = useRemoveGuestFromDocument();
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    // TODO: Remove this limit after we have a better way to paginate guests
+    fetchGuests({ page: 1, limit: 1000, sortBy: "createdAt" });
+  }, []);
+
+  const guests = orderedGuests.filter(
+    (guest) => !search || guest.email.toLowerCase().includes(search.toLowerCase()) || guest.name?.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const handleUpdatePermission = async (guestId: string, documentId: string, permission: string) => {
+    await updateGuestPermission({
+      guestId,
+      documentId,
+      permission: permission as any,
+    });
+  };
+
+  const handleRemoveDocumentAccess = (guestId: string, documentId: string, documentTitle: string) => {
+    removeGuestFromDocument({
+      guestId,
+      documentId,
+      documentTitle,
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header with search and add button */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input placeholder={t("Search guests...")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" aria-label="Search guests" />
+        </div>
+        <Button
+          onClick={() => {
+            /* TODO: Implement add guest without document */
+          }}
+          className="bg-black hover:bg-gray-800 text-white"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          {t("Invite Guest")}
+        </Button>
+      </div>
+
+      {/* Guests grid */}
+      <div className="grid gap-4 grid-cols-1">
+        {guests.map((guest) => (
+          <GuestCard key={guest.id} guest={guest} onUpdatePermission={handleUpdatePermission} onRemoveDocumentAccess={handleRemoveDocumentAccess} />
+        ))}
+      </div>
+
+      {/* Empty state */}
+      {guests.length === 0 && (
+        <div className="text-center py-12">
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2 text-black">{t("No guests found")}</h3>
+          <p className="text-muted-foreground mb-4">{search ? t("Try adjusting your search terms") : t("Invite your first guest to get started")}</p>
+          {!search && (
+            <Button
+              onClick={() => {
+                /* TODO: Implement add guest without document */
+              }}
+              className="bg-black hover:bg-gray-800 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t("Invite Guest")}
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default GuestCollaboratorPanel;

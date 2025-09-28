@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupManagementPanel } from "./group-management";
-import VisitorPanel from "./visistor-management";
 import MemberManagementPanel from "./member-management";
+import { GuestCollaboratorPanel } from "./visitor-management";
 
 export const Members = () => {
   const { t } = useTranslation();
@@ -29,7 +29,7 @@ export const Members = () => {
             <GroupManagementPanel />
           </TabsContent>
           <TabsContent value="visitors" className="mt-0">
-            <VisitorPanel />
+            <GuestCollaboratorPanel />
           </TabsContent>
         </div>
       </Tabs>

@@ -94,12 +94,18 @@ export class DocumentService {
     }
 
     if (!hasAccess) {
+      // Check for permissions (all users have userId, guests use inheritedFromType: "GUEST")
       const perm = await this.prismaService.documentPermission.findFirst({
         where: {
           userId,
           docId: parentId,
+          inheritedFromType: {
+            in: [PermissionInheritanceType.DIRECT, PermissionInheritanceType.GROUP, PermissionInheritanceType.GUEST],
+          },
         },
+        orderBy: { priority: "asc" },
       });
+
       hasAccess = !!perm && perm.permission !== PermissionLevel.NONE;
     }
 
@@ -116,9 +122,6 @@ export class DocumentService {
     });
 
     const data = items.map((doc) => presentDocument(doc, { isPublic: false }));
-
-    // Use batch permission context resolution for better performance with caching
-    const docIds = items.map((doc) => doc.id);
 
     return {
       pagination,
@@ -198,6 +201,7 @@ export class DocumentService {
   }
 
   async findOne(id: string, userId: string) {
+    // TODO: don't need that much include
     const document = await this.prismaService.doc.findUnique({
       where: { id },
       include: {
@@ -266,20 +270,6 @@ export class DocumentService {
 
     if (!document) {
       throw new ApiException(ErrorCodeEnum.DocumentNotFound);
-    }
-
-    // Check if user has permission to access this document
-    if (document.visibility === "PRIVATE") {
-      const userPermission = await this.prismaService.documentPermission.findFirst({
-        where: {
-          docId: id,
-          userId: userId,
-        },
-      });
-
-      if (!userPermission) {
-        throw new ApiException(ErrorCodeEnum.DocumentNotFound);
-      }
     }
 
     // Check basic visibility (simplified, no complex permissions yet)
@@ -527,7 +517,8 @@ export class DocumentService {
     const { page = 1, limit = 10, workspaceId } = query;
 
     // Get all direct permissions for documents (excluding user's own docs)
-    const directPermissions = await this.prismaService.documentPermission.findMany({
+    // Check both user permissions and guest permissions
+    const userPermissions = await this.prismaService.documentPermission.findMany({
       where: {
         userId,
         inheritedFromType: { in: [PermissionInheritanceType.DIRECT, PermissionInheritanceType.GROUP] },
@@ -536,6 +527,16 @@ export class DocumentService {
       },
       orderBy: [{ docId: "asc" }, { priority: "asc" }],
     });
+
+    const guestPermissions = await this.prismaService.documentPermission.findMany({
+      where: {
+        userId,
+        inheritedFromType: PermissionInheritanceType.GUEST,
+      },
+      orderBy: [{ docId: "asc" }, { priority: "asc" }],
+    });
+
+    const directPermissions = [...userPermissions, ...guestPermissions];
 
     // Get document IDs from permissions
     const docIds = directPermissions.map((perm) => perm.docId);

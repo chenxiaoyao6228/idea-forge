@@ -146,23 +146,32 @@ export class DocPermissionResolveService {
    * Get guest permission for a document (for users not in workspace)
    */
   private async getGuestPermissionForDocument(userId: string, documentId: string, workspaceId: string): Promise<PermissionLevel> {
-    // Check if user is a workspace member
-    const workspaceMember = await this.prismaService.workspaceMember.findFirst({
-      where: {
-        workspaceId,
-        userId,
-      },
+    // First, get the user's email
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
     });
 
-    // If user is a workspace member, they don't need guest permissions
-    if (workspaceMember) {
+    if (!user) {
       return PermissionLevel.NONE;
     }
 
-    // Check if user has guest permissions for this document
+    // Check if there's a guest collaborator with the same email
+    const guestCollaborator = await this.prismaService.guestCollaborator.findFirst({
+      where: {
+        email: user.email,
+        workspaceId: workspaceId,
+      },
+    });
+
+    if (!guestCollaborator) {
+      return PermissionLevel.NONE;
+    }
+
+    // Check if the guest collaborator has permissions for this document
     const guestPermission = await this.prismaService.documentPermission.findFirst({
       where: {
-        userId,
+        guestCollaboratorId: guestCollaborator.id,
         docId: documentId,
         inheritedFromType: PermissionInheritanceType.GUEST,
       },

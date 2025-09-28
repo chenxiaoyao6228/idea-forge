@@ -38,30 +38,30 @@ generator zod {
 }
 
 model DocumentPermission {
-  id                String                    @id @default(cuid())
-  userId            String?
-  docId             String
-  doc               Doc                       @relation(fields: [docId], references: [id], onDelete: Cascade)
-  permission        PermissionLevel
-  inheritedFromId   String? // for inheritance
-  inheritedFromType PermissionInheritanceType
-  priority          Int
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  createdById       String
-
-  guestId String?
+  id                  String                    @id @default(cuid())
+  userId              String?
+  guestCollaboratorId String?
+  docId               String
+  doc                 Doc                       @relation(fields: [docId], references: [id], onDelete: Cascade)
+  permission          PermissionLevel
+  inheritedFromId     String? // for inheritance
+  inheritedFromType   PermissionInheritanceType
+  priority            Int
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  createdById         String
 
   inheritedFrom DocumentPermission?  @relation("DocumentPermissionInheritance", fields: [inheritedFromId], references: [id])
   children      DocumentPermission[] @relation("DocumentPermissionInheritance")
 
-  user      User?              @relation("UserDocumentPermissions", fields: [userId], references: [id])
-  createdBy User               @relation("CreatedDocumentPermissions", fields: [createdById], references: [id])
-  guest     GuestCollaborator? @relation(fields: [guestId], references: [id])
+  user              User?              @relation("UserDocumentPermissions", fields: [userId], references: [id])
+  guestCollaborator GuestCollaborator? @relation(fields: [guestCollaboratorId], references: [id])
+  createdBy         User               @relation("CreatedDocumentPermissions", fields: [createdById], references: [id])
 
-  @@unique([userId, guestId, docId, inheritedFromType])
+  @@unique([userId, docId, inheritedFromType])
+  @@unique([guestCollaboratorId, docId, inheritedFromType])
   @@index([userId, docId])
-  @@index([guestId, docId])
+  @@index([guestCollaboratorId, docId])
   @@index([docId])
   @@index([priority])
 }

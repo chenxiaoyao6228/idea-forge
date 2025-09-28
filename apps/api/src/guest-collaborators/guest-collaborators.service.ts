@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { InviteGuestDto, UpdateGuestPermissionDto, GetWorkspaceGuestsDto, RemoveGuestFromDocumentDto } from "./guest-collaborators.dto";
+import { InviteGuestDto, BatchInviteGuestsDto, UpdateGuestPermissionDto, GetWorkspaceGuestsDto, RemoveGuestFromDocumentDto } from "./guest-collaborators.dto";
 import { GuestCollaboratorResponse, WorkspaceGuestsResponse } from "@idea/contracts";
 
 @Injectable()
@@ -20,19 +20,6 @@ export class GuestCollaboratorsService {
 
     if (!document) {
       throw new ApiException(ErrorCodeEnum.DocumentNotFound);
-    }
-
-    // Check if user has permission to invite guests to this document
-    const userPermission = await this.prisma.documentPermission.findFirst({
-      where: {
-        docId: documentId,
-        userId: userId,
-        permission: { in: ["EDIT", "MANAGE"] },
-      },
-    });
-
-    if (!userPermission) {
-      throw new ApiException(ErrorCodeEnum.PermissionDenied);
     }
 
     // Check if guest already exists in workspace
@@ -58,11 +45,9 @@ export class GuestCollaboratorsService {
     }
 
     // Create or update document permission for guest
-    // First, try to find existing permission
     const existingPermission = await this.prisma.documentPermission.findFirst({
       where: {
-        userId: null,
-        guestId: guest.id,
+        guestCollaboratorId: guest.id, // Use guestCollaboratorId for guest permissions
         docId: documentId,
         inheritedFromType: "GUEST",
       },
@@ -81,8 +66,8 @@ export class GuestCollaboratorsService {
       // Create new permission
       await this.prisma.documentPermission.create({
         data: {
+          guestCollaboratorId: guest.id, // Use guestCollaboratorId for guest permissions
           docId: documentId,
-          guestId: guest.id,
           permission,
           inheritedFromType: "GUEST",
           priority: 7,
@@ -95,29 +80,83 @@ export class GuestCollaboratorsService {
     return this.getGuestWithDocuments(guest.id);
   }
 
+  async batchInviteGuestsToDocument(userId: string, dto: BatchInviteGuestsDto): Promise<GuestCollaboratorResponse[]> {
+    const { documentId, guests } = dto;
+
+    // Verify user has access to the document and workspace
+    const document = await this.prisma.doc.findUnique({
+      where: { id: documentId },
+      include: { workspace: true },
+    });
+
+    if (!document) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Process each guest in the batch
+    const results: GuestCollaboratorResponse[] = [];
+
+    for (const guestData of guests) {
+      try {
+        // Check if guest exists
+        const existingGuest = await this.prisma.guestCollaborator.findUnique({
+          where: { id: guestData.guestId },
+        });
+
+        if (!existingGuest) {
+          console.warn(`Guest with ID ${guestData.guestId} not found, skipping`);
+          continue;
+        }
+
+        // Check if guest already has access to this document
+        const existingPermission = await this.prisma.documentPermission.findFirst({
+          where: {
+            guestCollaboratorId: guestData.guestId, // Use guestCollaboratorId for guest permissions
+            docId: documentId,
+            inheritedFromType: "GUEST",
+          },
+        });
+
+        if (existingPermission) {
+          // Update existing permission
+          await this.prisma.documentPermission.update({
+            where: { id: existingPermission.id },
+            data: { permission: guestData.permission },
+          });
+        } else {
+          // Create new document permission
+          await this.prisma.documentPermission.create({
+            data: {
+              guestCollaboratorId: guestData.guestId, // Use guestCollaboratorId for guest permissions
+              docId: documentId,
+              permission: guestData.permission,
+              inheritedFromType: "GUEST",
+              priority: 7,
+              createdById: userId,
+            },
+          });
+        }
+
+        // Get the updated guest with documents
+        const guestWithDocuments = await this.getGuestWithDocuments(guestData.guestId);
+        results.push(guestWithDocuments);
+      } catch (error) {
+        console.error(`Failed to process guest ${guestData.guestId}:`, error);
+        // Continue with other guests even if one fails
+      }
+    }
+
+    return results;
+  }
+
   async getWorkspaceGuests(userId: string, dto: GetWorkspaceGuestsDto): Promise<WorkspaceGuestsResponse> {
     const { workspaceId, page = 1, limit = 10 } = dto;
 
-    // Verify user has access to workspace
-    const workspaceMember = await this.prisma.workspaceMember.findFirst({
-      where: {
-        workspaceId,
-        userId,
-      },
-    });
-
-    if (!workspaceMember) {
-      throw new ApiException(ErrorCodeEnum.PermissionDenied);
-    }
-
-    // Get total count
-    const total = await this.prisma.guestCollaborator.count({
+    const { data: guests, pagination } = await (this.prisma.guestCollaborator as any).paginateWithApiFormat({
       where: { workspaceId },
-    });
-
-    // Get guests with pagination
-    const guests = await this.prisma.guestCollaborator.findMany({
-      where: { workspaceId },
+      page,
+      limit,
+      orderBy: { createdAt: "desc" },
       include: {
         invitedBy: {
           select: {
@@ -126,45 +165,63 @@ export class GuestCollaboratorsService {
             displayName: true,
           },
         },
-        documentPermissions: {
-          include: {
-            doc: {
-              select: {
-                id: true,
-                title: true,
-              },
-            },
+      },
+    });
+
+    // Get document permissions for all these guests
+    const guestIds = guests.map((g) => g.id);
+    const allPermissions = await this.prisma.documentPermission.findMany({
+      where: {
+        guestCollaboratorId: { in: guestIds },
+        inheritedFromType: "GUEST",
+      },
+      include: {
+        doc: {
+          select: {
+            id: true,
+            title: true,
           },
         },
       },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: "desc" },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
-    const data = guests.map((guest) => ({
-      id: guest.id,
-      email: guest.email,
-      name: guest.name,
-      status: guest.status,
-      expireAt: guest.expireAt,
-      createdAt: guest.createdAt,
-      updatedAt: guest.updatedAt,
-      invitedBy: guest.invitedBy,
-      documents: guest.documentPermissions.map((dp) => ({
-        documentId: dp.docId,
-        documentTitle: dp.doc.title,
-        permission: dp.permission,
-        createdAt: dp.createdAt,
-      })),
-    }));
+    // Group permissions by guest ID
+    const permissionsByGuestId = new Map<string, typeof allPermissions>();
+    allPermissions.forEach((permission) => {
+      if (permission.guestCollaboratorId) {
+        if (!permissionsByGuestId.has(permission.guestCollaboratorId)) {
+          permissionsByGuestId.set(permission.guestCollaboratorId, []);
+        }
+        permissionsByGuestId.get(permission.guestCollaboratorId)!.push(permission);
+      }
+    });
+
+    const data = guests.map((guest) => {
+      const permissions = permissionsByGuestId.get(guest.id) || [];
+
+      return {
+        id: guest.id,
+        email: guest.email,
+        name: guest.name,
+        status: guest.status,
+        expireAt: guest.expireAt,
+        createdAt: guest.createdAt,
+        updatedAt: guest.updatedAt,
+        invitedBy: guest.invitedBy,
+        documents: permissions.map((permission) => ({
+          documentId: permission.docId,
+          documentTitle: permission.doc.title,
+          permission: permission.permission,
+          createdAt: permission.createdAt,
+        })),
+      };
+    });
 
     return {
-      pagination: {
-        page,
-        limit,
-        total,
-      },
+      pagination,
       data,
     };
   }
@@ -175,7 +232,16 @@ export class GuestCollaboratorsService {
     // Verify guest exists and user has permission to modify
     const guest = await this.prisma.guestCollaborator.findUnique({
       where: { id: guestId },
-      include: { workspace: true },
+      include: {
+        workspace: true,
+        invitedBy: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+      },
     });
 
     if (!guest) {
@@ -195,10 +261,23 @@ export class GuestCollaboratorsService {
       throw new ApiException(ErrorCodeEnum.PermissionDenied);
     }
 
+    // Check if permission record exists before updating
+    const existingPermission = await this.prisma.documentPermission.findFirst({
+      where: {
+        guestCollaboratorId: guestId, // Use guestCollaboratorId for guest permissions
+        docId: documentId,
+        inheritedFromType: "GUEST",
+      },
+    });
+
+    if (!existingPermission) {
+      throw new ApiException(ErrorCodeEnum.ResourceNotFound);
+    }
+
     // Update guest permission
     await this.prisma.documentPermission.updateMany({
       where: {
-        guestId,
+        guestCollaboratorId: guestId, // Use guestCollaboratorId for guest permissions
         docId: documentId,
         inheritedFromType: "GUEST",
       },
@@ -207,7 +286,50 @@ export class GuestCollaboratorsService {
       },
     });
 
-    return this.getGuestWithDocuments(guestId);
+    // Get the updated document permission
+    const updatedPermission = await this.prisma.documentPermission.findFirst({
+      where: {
+        guestCollaboratorId: guestId, // Use guestCollaboratorId for guest permissions
+        docId: documentId,
+        inheritedFromType: "GUEST",
+      },
+      include: {
+        doc: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    if (!updatedPermission) {
+      throw new ApiException(ErrorCodeEnum.ResourceNotFound);
+    }
+
+    // Return guest with only the current document permission
+    return {
+      id: guest.id,
+      email: guest.email,
+      name: guest.name,
+      status: guest.status,
+      expireAt: guest.expireAt,
+      createdAt: guest.createdAt,
+      updatedAt: guest.updatedAt,
+      invitedBy: {
+        id: guest.invitedBy.id,
+        email: guest.invitedBy.email,
+        displayName: guest.invitedBy.displayName,
+      },
+      documents: [
+        {
+          documentId: updatedPermission.docId,
+          documentTitle: updatedPermission.doc.title,
+          permission: updatedPermission.permission,
+          createdAt: updatedPermission.createdAt,
+        },
+      ],
+    };
   }
 
   async removeGuestFromWorkspace(userId: string, guestId: string): Promise<void> {
@@ -238,7 +360,10 @@ export class GuestCollaboratorsService {
     await this.prisma.$transaction(async (tx) => {
       // Remove all document permissions for this guest
       await tx.documentPermission.deleteMany({
-        where: { guestId },
+        where: {
+          userId: guestId,
+          inheritedFromType: "GUEST",
+        },
       });
 
       // Remove the guest
@@ -260,23 +385,10 @@ export class GuestCollaboratorsService {
       throw new ApiException(ErrorCodeEnum.ResourceNotFound);
     }
 
-    // Check if user has permission to modify document permissions
-    const userPermission = await this.prisma.documentPermission.findFirst({
-      where: {
-        docId: documentId,
-        userId: userId,
-        permission: { in: ["EDIT", "MANAGE"] },
-      },
-    });
-
-    if (!userPermission) {
-      throw new ApiException(ErrorCodeEnum.PermissionDenied);
-    }
-
     // Remove guest permission for this document
     await this.prisma.documentPermission.deleteMany({
       where: {
-        guestId,
+        guestCollaboratorId: guestId, // Use guestCollaboratorId for guest permissions
         docId: documentId,
         inheritedFromType: "GUEST",
       },
@@ -294,22 +406,31 @@ export class GuestCollaboratorsService {
             displayName: true,
           },
         },
-        documentPermissions: {
-          include: {
-            doc: {
-              select: {
-                id: true,
-                title: true,
-              },
-            },
-          },
-        },
       },
     });
 
     if (!guest) {
       throw new ApiException(ErrorCodeEnum.ResourceNotFound);
     }
+
+    // Get document permissions for this guest
+    const permissions = await this.prisma.documentPermission.findMany({
+      where: {
+        guestCollaboratorId: guestId,
+        inheritedFromType: "GUEST",
+      },
+      include: {
+        doc: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
     return {
       id: guest.id,
@@ -320,12 +441,97 @@ export class GuestCollaboratorsService {
       createdAt: guest.createdAt,
       updatedAt: guest.updatedAt,
       invitedBy: guest.invitedBy,
-      documents: guest.documentPermissions.map((dp) => ({
-        documentId: dp.docId,
-        documentTitle: dp.doc.title,
-        permission: dp.permission,
-        createdAt: dp.createdAt,
+      documents: permissions.map((permission) => ({
+        documentId: permission.docId,
+        documentTitle: permission.doc.title,
+        permission: permission.permission,
+        createdAt: permission.createdAt,
       })),
     };
+  }
+
+  async getGuestsOfDocument(documentId: string): Promise<GuestCollaboratorResponse[]> {
+    // Verify user has access to the document
+    const document = await this.prisma.doc.findUnique({
+      where: { id: documentId },
+      include: { workspace: true },
+    });
+
+    if (!document) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Get document permissions for guests
+    const guestPermissions = await this.prisma.documentPermission.findMany({
+      where: {
+        docId: documentId,
+        inheritedFromType: "GUEST",
+      },
+      include: {
+        doc: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Get unique guest IDs from the permissions
+    const guestIds = [...new Set(guestPermissions.map((p) => p.guestCollaboratorId).filter(Boolean))];
+
+    if (guestIds.length === 0) {
+      return [];
+    }
+
+    // Fetch guest collaborator data for these IDs
+    const guests = await this.prisma.guestCollaborator.findMany({
+      where: {
+        id: { in: guestIds as string[] },
+        workspaceId: document.workspaceId,
+      },
+      include: {
+        invitedBy: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    // Create a map of guest permissions by guest ID
+    const permissionsByGuestId = new Map<string, typeof guestPermissions>();
+    guestPermissions.forEach((permission) => {
+      if (permission.guestCollaboratorId) {
+        if (!permissionsByGuestId.has(permission.guestCollaboratorId)) {
+          permissionsByGuestId.set(permission.guestCollaboratorId, []);
+        }
+        permissionsByGuestId.get(permission.guestCollaboratorId)!.push(permission);
+      }
+    });
+
+    return guests.map((guest) => {
+      const permissions = permissionsByGuestId.get(guest.id) || [];
+
+      return {
+        id: guest.id,
+        email: guest.email,
+        name: guest.name,
+        status: guest.status,
+        expireAt: guest.expireAt,
+        createdAt: guest.createdAt,
+        updatedAt: guest.updatedAt,
+        invitedBy: guest.invitedBy,
+        documents: permissions.map((permission) => ({
+          documentId: permission.docId,
+          documentTitle: permission.doc.title,
+          permission: permission.permission,
+          createdAt: permission.createdAt,
+        })),
+      };
+    });
   }
 }

@@ -9,6 +9,16 @@ export const inviteGuestSchema = z.object({
   permission: PermissionLevelSchema,
 });
 
+export const batchInviteGuestsSchema = z.object({
+  documentId: z.string().cuid(),
+  guests: z.array(
+    z.object({
+      guestId: z.string(),
+      permission: PermissionLevelSchema,
+    }),
+  ),
+});
+
 export const updateGuestPermissionSchema = z.object({
   documentId: z.string().cuid(),
   permission: PermissionLevelSchema,
@@ -16,10 +26,6 @@ export const updateGuestPermissionSchema = z.object({
 
 export const getWorkspaceGuestsSchema = basePagerSchema.extend({
   workspaceId: z.string().cuid(),
-});
-
-export const removeGuestFromDocumentSchema = z.object({
-  documentId: z.string().cuid(),
 });
 
 // Response schemas
@@ -55,8 +61,13 @@ export const workspaceGuestsResponseSchema = z.object({
   data: z.array(guestCollaboratorResponseSchema),
 });
 
+export const removeGuestFromDocumentSchema = z.object({
+  documentId: z.string().cuid(),
+});
+
 // Type exports
 export type InviteGuestRequest = z.infer<typeof inviteGuestSchema>;
+export type BatchInviteGuestsRequest = z.infer<typeof batchInviteGuestsSchema>;
 export type UpdateGuestPermissionRequest = z.infer<typeof updateGuestPermissionSchema>;
 export type GetWorkspaceGuestsRequest = z.infer<typeof getWorkspaceGuestsSchema>;
 export type RemoveGuestFromDocumentRequest = z.infer<typeof removeGuestFromDocumentSchema>;

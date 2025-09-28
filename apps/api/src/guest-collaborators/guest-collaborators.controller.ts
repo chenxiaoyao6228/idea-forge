@@ -1,10 +1,9 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from "@nestjs/common";
 import { GuestCollaboratorsService } from "./guest-collaborators.service";
-import { InviteGuestDto, UpdateGuestPermissionDto, GetWorkspaceGuestsDto, RemoveGuestFromDocumentDto } from "./guest-collaborators.dto";
+import { InviteGuestDto, BatchInviteGuestsDto, UpdateGuestPermissionDto, GetWorkspaceGuestsDto, RemoveGuestFromDocumentDto } from "./guest-collaborators.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
 import { CheckPolicy } from "@/_shared/casl/policy.decorator";
-import { AppAbility } from "@/_shared/casl/ability.class";
 import { Action } from "@/_shared/casl/ability.class";
 
 @UseGuards(PolicyGuard)
@@ -18,18 +17,22 @@ export class GuestCollaboratorsController {
     return this.guestCollaboratorsService.inviteGuestToDocument(userId, dto);
   }
 
-  @Get("workspace/:workspaceId")
+  @Post("batch-invite")
+  @CheckPolicy(Action.Create, "GuestCollaborator")
+  async batchInviteGuests(@GetUser("id") userId: string, @Body() dto: BatchInviteGuestsDto) {
+    return this.guestCollaboratorsService.batchInviteGuestsToDocument(userId, dto);
+  }
+
+  @Post("workspace/guests")
   @CheckPolicy(Action.Read, "GuestCollaborator")
-  async getWorkspaceGuests(
-    @GetUser("id") userId: string,
-    @Param("workspaceId") workspaceId: string,
-    @Query() query: Omit<GetWorkspaceGuestsDto, "workspaceId">,
-  ) {
-    const dto: GetWorkspaceGuestsDto = {
-      workspaceId,
-      ...query,
-    };
+  async getWorkspaceGuests(@GetUser("id") userId: string, @Body() dto: GetWorkspaceGuestsDto) {
     return this.guestCollaboratorsService.getWorkspaceGuests(userId, dto);
+  }
+
+  @Get("document/:documentId")
+  @CheckPolicy(Action.Read, "GuestCollaborator")
+  async getGuestsOfDocument(@Param("documentId") documentId: string) {
+    return this.guestCollaboratorsService.getGuestsOfDocument(documentId);
   }
 
   @Patch(":guestId/permission")
