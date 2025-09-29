@@ -49,7 +49,7 @@ export default function SharedWithMe() {
   }, [sharedDocuments.length, isOpen, userToggled]);
 
   // Don't render if no documents and not loading (use computed state)
-  if (!isVisible) {
+  if (!isVisible || !hasDocuments) {
     return null;
   }
 

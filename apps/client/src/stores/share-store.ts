@@ -206,11 +206,25 @@ export const useSharedWithMeWebsocketHandlers = () => {
 
   const handleWebsocketDocumentShare = useRefCallback((document: DocumentEntity) => {
     const state = useSharedWithMeStore.getState();
-    useSharedWithMeStore.setState({
-      documents: [document, ...state.documents],
-      // Note: isOpen and userToggled are now local component state
-      // Auto-expand logic will be handled in the component
-    });
+
+    // Check if document already exists to avoid duplicates
+    const existingIndex = state.documents.findIndex((doc) => doc.id === document.id);
+    if (existingIndex >= 0) {
+      // Update existing document
+      const updatedDocuments = [...state.documents];
+      updatedDocuments[existingIndex] = document;
+      useSharedWithMeStore.setState({
+        documents: updatedDocuments,
+        total: updatedDocuments.length,
+      });
+    } else {
+      // Add new document to the beginning
+      const updatedDocuments = [document, ...state.documents];
+      useSharedWithMeStore.setState({
+        documents: updatedDocuments,
+        total: updatedDocuments.length,
+      });
+    }
   });
 
   const handleWebsocketReconnect = useRefCallback(() => {

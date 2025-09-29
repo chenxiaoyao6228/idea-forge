@@ -26,6 +26,8 @@ export default function Doc() {
   // Type guard to ensure we have a proper document
   const isDocumentLoaded = currentDocument && !currentDocument.isLoading && "id" in currentDocument;
 
+  console.log("[current document]: isDocumentLoaded", isDocumentLoaded);
+
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   useTitle(`Idea Forge ${isDocumentLoaded && currentDocument?.title ? `- ${currentDocument.title}` : ""}`);
 
@@ -46,7 +48,11 @@ export default function Doc() {
 
   // Handle loading state
   if (currentDocument?.isLoading) {
-    return <Loading />;
+    return (
+      <div className="w-full h-full absolute top-0 left-0 ">
+        <Loading size="lg" />
+      </div>
+    );
   }
 
   if (isHomeDoc) {

@@ -73,10 +73,10 @@ export enum SocketEvents {
 
   // Permission events
   PERMISSION_CHANGED = "permission.changed",
-  ACCESS_REVOKED = "permission.access_revoked",
-  DOCUMENT_SHARED = "permission.document_shared",
-  SUBSPACE_PERMISSION_UPDATED = "permission.subspace_updated",
-  PERMISSION_INHERITANCE_CHANGED = "permission.inheritance_changed",
+  ACCESS_REVOKED = "permission.access.revoked",
+  DOCUMENT_SHARED = "permission.document.shared",
+  SUBSPACE_PERMISSION_UPDATED = "permission.subspace.updated",
+  PERMISSION_INHERITANCE_CHANGED = "permission.inheritance.changed",
 }
 
 // Interface for gateway message structure

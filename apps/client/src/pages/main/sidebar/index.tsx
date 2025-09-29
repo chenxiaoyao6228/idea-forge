@@ -176,7 +176,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
           <SidebarRail />
         </Sidebar>
         {/* content */}
-        <SidebarInset className={cn("h-full relative")}>{content}</SidebarInset>
+        <SidebarInset className={cn("h-full w-full relative")}>{content}</SidebarInset>
       </SidebarProvider>
     </DndContext>
   );

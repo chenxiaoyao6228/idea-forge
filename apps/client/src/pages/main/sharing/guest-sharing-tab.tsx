@@ -97,10 +97,10 @@ export function GuestSharingTab({ documentId }: GuestSharingTabProps) {
         )}
       </div>
 
-      <Separator />
+      {/* <Separator /> */}
 
       {/* Public Sharing Section */}
-      <PublicSharingSection />
+      {/* <PublicSharingSection /> */}
     </div>
   );
 }

@@ -10,49 +10,6 @@ import useWorkspaceStore from "./workspace-store";
 import { NavigationNode, CreateStarDto } from "@idea/contracts";
 import { orderBy } from "lodash-es";
 
-// Direct functions for navigation node finding (can be called from within star store)
-const findNavigationNodeInPersonalSubspace = (documentId: string) => {
-  const subspaces = useSubSpaceStore.getState().subspaces;
-  const personalSubspace = Object.values(subspaces).find((s) => s.type === "PERSONAL");
-  if (!personalSubspace?.navigationTree) return null;
-
-  const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
-    for (const node of nodes) {
-      if (node.id === targetId) {
-        return node;
-      }
-      if (node.children && node.children.length > 0) {
-        const found = findNavigationNodeInTree(node.children, targetId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  return findNavigationNodeInTree(personalSubspace.navigationTree, documentId);
-};
-
-const findNavigationNodeInSubspace = (subspaceId: string, documentId: string) => {
-  const subspaces = useSubSpaceStore.getState().subspaces;
-  const subspace = subspaces[subspaceId];
-  if (!subspace?.navigationTree) return null;
-
-  const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
-    for (const node of nodes) {
-      if (node.id === targetId) {
-        return node;
-      }
-      if (node.children && node.children.length > 0) {
-        const found = findNavigationNodeInTree(node.children, targetId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  return findNavigationNodeInTree(subspace.navigationTree, documentId);
-};
-
 export interface StarEntity {
   id: string;
   docId: string; // Only documents can be starred, so this is required
@@ -177,14 +134,10 @@ export const useDeleteStar = () => {
   );
 };
 
-// Check if document is starred
-export const useCheckStarred = () => {
+export const useIsStarred = (docId: string) => {
   const stars = useStarStore((state) => state.stars);
-
-  return useRefCallback((docId?: string) => {
-    if (!docId) return false;
-    return stars.some((star) => star.docId === docId);
-  });
+  if (!docId) return false;
+  return stars.some((star) => star.docId === docId);
 };
 
 // Find star by document ID
@@ -198,8 +151,8 @@ export const useFindStar = () => {
 };
 
 // Toggle star status
-export const useToggleStar = () => {
-  const checkStarred = useCheckStarred();
+export const useToggleStar = (docId: string) => {
+  const isStarred = useIsStarred(docId);
   const findStar = useFindStar();
   const createStar = useCreateStar();
   const deleteStar = useDeleteStar();
@@ -209,8 +162,7 @@ export const useToggleStar = () => {
       throw new Error("Document ID is required to star/unstar");
     }
 
-    const starred = checkStarred(docId);
-    if (starred) {
+    if (isStarred) {
       const star = findStar(docId);
       if (star) await deleteStar.run(star.id);
     } else {
@@ -222,6 +174,8 @@ export const useToggleStar = () => {
 // Navigation logic
 export const useStarNavigation = () => {
   const findNavigationNodeInSharedDocuments = useFindNavigationNodeInSharedDocuments();
+  const findNavigationNodeInPersonalSubspace = useFindNavigationNodeInPersonalSubspace();
+  const findNavigationNodeInSubspace = useFindNavigationNodeInSubspace();
 
   // ✅ Make it reactive to subspace changes
   const subspaces = useSubSpaceStore((state) => state.subspaces);

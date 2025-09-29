@@ -1,18 +1,18 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { EditIcon, PlusIcon, StarIcon } from "lucide-react";
+import { EditIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavigationNode } from "@idea/contracts";
 import useDocumentStore, { useCreateDocument, useFetchDocumentChildren } from "@/stores/document-store";
 import { SidebarLink } from "./sidebar-link";
 import useSubSpaceStore from "@/stores/subspace-store";
-import { useCheckStarred, useToggleStar, useCreateStar, useDeleteStar } from "@/stores/star-store";
 import { useEffect, useMemo, useState } from "react";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { useNavigate } from "react-router-dom";
 import { EditableTitle } from "./editable-title";
 import { documentApi } from "@/apis/document";
 import { DraggableDocumentContainer } from "./draggable-document-container";
+import { StarButton } from "@/components/star-button";
 
 export interface DocumentLinkProps {
   node: NavigationNode;
@@ -38,12 +38,6 @@ export function DocumentLink(props: DocumentLinkProps) {
   const [isEditing, setIsEditing] = useState(false);
   const isActiveDocument = activeDocumentId === node.id;
   const hasChildren = node.children && node.children.length > 0;
-
-  const checkStarred = useCheckStarred();
-  const toggleStar = useToggleStar();
-  const createStar = useCreateStar();
-  const deleteStar = useDeleteStar();
-  const isToggling = createStar.loading || deleteStar.loading;
 
   // Load children details when document is active and has children in navigation tree
   const fetchChildrenData = useRefCallback(async () => {
@@ -140,21 +134,10 @@ export function DocumentLink(props: DocumentLinkProps) {
     editableTitleRef.current?.setIsEditing(true);
   });
 
-  // ✅ Simple star handler using action hook
-  const handleStar = useRefCallback(async (ev: React.MouseEvent) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    await toggleStar(node.id);
-  });
-
-  const isDocStarred = checkStarred(node.id);
-
   const menu = useMemo(
     () => (
       <>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleStar} disabled={isToggling} title={isDocStarred ? "Remove star" : "Add star"}>
-          <StarIcon className={`h-3 w-3 ${isDocStarred ? "text-yellow-500" : ""}`} />
-        </Button>
+        <StarButton documentId={node.id} size="sm" showTooltip={false} />
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating}>
           <PlusIcon className="h-3 w-3" />
         </Button>
@@ -164,7 +147,7 @@ export function DocumentLink(props: DocumentLinkProps) {
         {/* TODO:  more operations  */}
       </>
     ),
-    [handleStar, handleCreateChild, handleRename, isToggling, isCreating, isEditing, isDocStarred],
+    [handleCreateChild, handleRename, isCreating, isEditing, node.id],
   );
 
   const isExpandedAndNotDragging = isExpanded && !isDragging;

@@ -4,10 +4,15 @@ import { CommonSharedDocumentResponse, RemoveShareDto, RemoveGroupShareDto, Shar
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionInheritanceType, PermissionLevel } from "@idea/contracts";
+import { EventPublisherService } from "@/_shared/events/event-publisher.service";
+import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
 export class ShareDocumentService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly eventPublisher: EventPublisherService,
+  ) {}
 
   async getSharedDocuments(userId: string): Promise<CommonSharedDocumentResponse[]> {
     // Get all documents shared with this user through DocumentPermission (direct shares only)
@@ -189,7 +194,22 @@ export class ShareDocumentService {
     // Send notifications to each newly shared user
     for (const sharedUserId of allSharedUserIds) {
       const shareType = dto.targetGroupIds && dto.targetGroupIds.length > 0 ? "GROUP" : "DIRECT";
-      // await this.permissionWebsocketService.notifyDocumentShared(docId, sharedUserId, dto.permission, userId, shareType);
+
+      // Send websocket notification to the newly shared user
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.DOCUMENT_SHARED,
+        workspaceId: doc.workspaceId,
+        actorId: userId,
+        data: {
+          docId: docId,
+          sharedUserId: sharedUserId,
+          document: doc,
+          permission: dto.permission,
+          shareType: shareType,
+          sharedByUserId: userId,
+        },
+        timestamp: new Date().toISOString(),
+      });
     }
 
     return this.getDocShares(docId, userId);
@@ -355,6 +375,19 @@ export class ShareDocumentService {
         userId: dto.targetUserId,
         inheritedFromType: PermissionInheritanceType.DIRECT,
       },
+    });
+
+    // Send websocket notification to the user whose access was revoked
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.ACCESS_REVOKED,
+      workspaceId: doc.workspaceId,
+      actorId: userId,
+      data: {
+        docId: id,
+        revokedUserId: dto.targetUserId,
+        revokedByUserId: userId,
+      },
+      timestamp: new Date().toISOString(),
     });
 
     return this.getDocShares(id, userId);

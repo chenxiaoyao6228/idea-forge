@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar.tsx";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import DocumentBreadcrumb from "../../main/sidebar/doc-breadcrumb";
@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useCurrentDocumentId } from "@/hooks/use-current-document";
 import { SharePopover } from "@/pages/main/sharing";
+import { StarButton } from "@/components/star-button";
 
 export default function DocumentHeader() {
   const activeDocumentId = useCurrentDocumentId();
@@ -53,6 +54,7 @@ export default function DocumentHeader() {
       <div className="flex items-center mr-2 sm:mr-4 ">
         <CollabUsers className="mr-2" />
         {activeDocumentId && <SharePopover documentId={activeDocumentId}></SharePopover>}
+        {activeDocumentId && <StarButton documentId={activeDocumentId} showTooltip={true} size="sm" />}
         <TopBarHandlers />
       </div>
     </header>
@@ -64,7 +66,7 @@ function TopBarHandlers() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="sm">
           <Ellipsis className="h-4 w-4" />
         </Button>
       </PopoverTrigger>

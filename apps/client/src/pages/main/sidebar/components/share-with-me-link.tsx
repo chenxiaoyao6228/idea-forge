@@ -23,10 +23,12 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
   const getDocumentAsNavigationNode = useGetDocumentAsNavigationNode();
   // const hasPermission = useHasAbility();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [document, setDocument] = useState<DocumentEntity>(initialDocument);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [childrenLoaded, setChildrenLoaded] = useState(false);
   const [userToggled, setUserToggled] = useState(false);
+
+  // Get the current document from the store, which will be updated by websocket events
+  const document = useDocumentStore((state) => state.documents[initialDocument.id]) || initialDocument;
 
   // Auto-expand if contains active document or is in path to active document
   /**
@@ -60,21 +62,12 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
   const node = useMemo(() => {
     if (!document?.id) return null;
     return getDocumentAsNavigationNode(document.id);
-  }, [document?.id, getDocumentAsNavigationNode]);
+  }, [document?.id, document?.title, document?.updatedAt, getDocumentAsNavigationNode]);
 
   const childDocuments = useMemo(() => node?.children || [], [node?.children]);
   const hasChildDocuments = childDocuments.length > 0;
 
-  // Load document details if not fully loaded
-  useEffect(() => {
-    if (document?.id && !document?.title) {
-      fetchDetail(document.id).then((result) => {
-        if (result?.document) {
-          setDocument(result.document);
-        }
-      });
-    }
-  }, [document?.id, fetchDetail]);
+  // Document details are now managed by the document store and updated via websocket events
 
   // Auto-expand when active or in path to active
   useEffect(() => {

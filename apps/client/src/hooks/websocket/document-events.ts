@@ -5,6 +5,7 @@ import useDocumentStore, { useHandleDocumentUpdate, useHandleDocumentRemove } fr
 import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
 import useUserStore from "@/stores/user-store";
 import useSubSpaceStore, { useRefreshNavigationTree } from "@/stores/subspace-store";
+import useSharedWithMeStore from "@/stores/share-store";
 import { toast } from "sonner";
 
 export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) | null {
@@ -22,18 +23,80 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
       const { name, document, subspaceId } = message;
       if (!document) return;
 
-      // Update document in store using new hook-based approach
-      useDocumentStore.setState((state) => ({
-        documents: {
-          ...state.documents,
-          [document.id]: {
-            ...state.documents[document.id],
-            title: document.title,
-            content: document.content,
-            updatedAt: new Date(document.updatedAt).toISOString(),
+      // Get current state to check if document exists
+      const currentState = useDocumentStore.getState();
+      const existingDocument = currentState.documents[document.id];
+
+      // Update document in store with all provided fields
+      useDocumentStore.setState((state) => {
+        // If document doesn't exist in store, add it
+        if (!existingDocument) {
+          console.log(`[websocket]: Adding new document to store: ${document.id}`);
+          return {
+            documents: {
+              ...state.documents,
+              [document.id]: {
+                ...document,
+                // Ensure updatedAt is properly formatted
+                updatedAt: document.updatedAt ? new Date(document.updatedAt).toISOString() : document.updatedAt,
+              },
+            },
+          };
+        }
+
+        // Merge the incoming document data with existing document data
+        // This ensures all fields are updated while preserving any existing fields not in the update
+        const updatedDocument = {
+          ...existingDocument,
+          ...document,
+          // Ensure updatedAt is properly formatted
+          updatedAt: document.updatedAt ? new Date(document.updatedAt).toISOString() : existingDocument.updatedAt,
+        };
+
+        return {
+          documents: {
+            ...state.documents,
+            [document.id]: updatedDocument,
           },
-        },
-      }));
+        };
+      });
+
+      // Also update the subspace navigation tree if the document title changed
+      if (subspaceId && (existingDocument?.title !== document.title || !existingDocument)) {
+        const subspaceStore = useSubSpaceStore.getState();
+        const subspace = subspaceStore.subspaces[subspaceId];
+
+        if (subspace?.navigationTree) {
+          const updateNavigationTree = (nodes: any[]): any[] => {
+            return nodes.map((node) => {
+              if (node.id === document.id) {
+                return {
+                  ...node,
+                  title: document.title,
+                  icon: document.icon,
+                };
+              }
+              if (node.children) {
+                return {
+                  ...node,
+                  children: updateNavigationTree(node.children),
+                };
+              }
+              return node;
+            });
+          };
+
+          useSubSpaceStore.setState((state) => ({
+            subspaces: {
+              ...state.subspaces,
+              [subspaceId]: {
+                ...state.subspaces[subspaceId],
+                navigationTree: updateNavigationTree(subspace.navigationTree),
+              },
+            },
+          }));
+        }
+      }
     };
 
     const onDocumentAddUser = (message: any) => {
@@ -48,6 +111,38 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
         // Update abilities and shared documents using new hook-based handlers
         handleWebsocketAbilityChange(abilities);
         handleWebsocketDocumentShare(document);
+      }
+    };
+
+    const onDocumentShared = (message: any) => {
+      console.log(`[websocket]: Received event ${SocketEvents.DOCUMENT_SHARED}:`, message);
+      const { docId, sharedUserId, document, permission, shareType, sharedByUserId } = message;
+      if (!docId || !document) return;
+
+      const userInfo = useUserStore.getState().userInfo;
+
+      // If the current user was shared this document
+      if (sharedUserId === userInfo?.id) {
+        // Update shared documents using the hook-based handler
+        handleWebsocketDocumentShare(document);
+      }
+    };
+
+    const onAccessRevoked = (message: any) => {
+      console.log(`[websocket]: Received event ${SocketEvents.ACCESS_REVOKED}:`, message);
+      const { docId, revokedUserId, revokedByUserId } = message;
+      if (!docId) return;
+
+      const userInfo = useUserStore.getState().userInfo;
+
+      // If the current user's access was revoked
+      if (revokedUserId === userInfo?.id) {
+        console.log(`[websocket]: Access revoked for current user`, { docId });
+        // Remove document from shared documents store
+        useSharedWithMeStore.setState((state) => ({
+          documents: state.documents.filter((doc) => doc.id !== docId),
+          total: Math.max(0, state.total - 1),
+        }));
       }
     };
 
@@ -120,12 +215,16 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
     // Register listeners
     socket.on(SocketEvents.DOCUMENT_UPDATE, onDocumentUpdate);
     socket.on(SocketEvents.DOCUMENT_ADD_USER, onDocumentAddUser);
+    socket.on(SocketEvents.DOCUMENT_SHARED, onDocumentShared);
+    socket.on(SocketEvents.ACCESS_REVOKED, onAccessRevoked);
     socket.on(SocketEvents.ENTITIES, onEntities);
 
     // Return cleanup function
     return () => {
       socket.off(SocketEvents.DOCUMENT_UPDATE, onDocumentUpdate);
       socket.off(SocketEvents.DOCUMENT_ADD_USER, onDocumentAddUser);
+      socket.off(SocketEvents.DOCUMENT_SHARED, onDocumentShared);
+      socket.off(SocketEvents.ACCESS_REVOKED, onAccessRevoked);
       socket.off(SocketEvents.ENTITIES, onEntities);
     };
   }, [socket, handleWebsocketAbilityChange, handleWebsocketDocumentShare, handleDocumentUpdate, handleDocumentRemove, refreshNavigationTree]);

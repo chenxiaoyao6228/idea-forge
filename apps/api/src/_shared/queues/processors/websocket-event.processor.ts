@@ -98,6 +98,12 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.DOCUMENT_ADD_USER:
           await this.handleDocumentAddUserEvent(event, server);
           break;
+        case BusinessEvents.DOCUMENT_SHARED:
+          await this.handleDocumentSharedEvent(event, server);
+          break;
+        case BusinessEvents.ACCESS_REVOKED:
+          await this.handleAccessRevokedEvent(event, server);
+          break;
       }
     } catch (error) {
       console.error(`Error processing websocket event: ${event.name}`, error);
@@ -117,6 +123,37 @@ export class WebsocketEventProcessor extends WorkerHost {
         document,
         abilities,
         includeChildDocuments,
+      });
+    }
+  }
+
+  private async handleDocumentSharedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId, actorId } = event;
+    const { docId, sharedUserId, document, permission, shareType, sharedByUserId } = data;
+
+    if (sharedUserId) {
+      // Notify the shared user about the document share
+      server.to(`user:${sharedUserId}`).emit(BusinessEvents.DOCUMENT_SHARED, {
+        docId,
+        sharedUserId,
+        document,
+        permission,
+        shareType,
+        sharedByUserId,
+      });
+    }
+  }
+
+  private async handleAccessRevokedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId, actorId } = event;
+    const { docId, revokedUserId, revokedByUserId } = data;
+
+    if (revokedUserId) {
+      // Notify the user whose access was revoked
+      server.to(`user:${revokedUserId}`).emit(BusinessEvents.ACCESS_REVOKED, {
+        docId,
+        revokedUserId,
+        revokedByUserId,
       });
     }
   }

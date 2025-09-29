@@ -1,62 +1,19 @@
 import { useParams } from "react-router-dom";
-import { useState } from "react";
-import useDocumentStore, { useGetDocument } from "@/stores/document-store";
+import useDocumentStore from "@/stores/document-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
-import useSubSpaceStore from "@/stores/subspace-store";
+import useSubSpaceStore, { useFindNavigationNodeInPersonalSubspace, useFindNavigationNodeInSubspace } from "@/stores/subspace-store";
 import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";
 import { NavigationNode } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useRequest from "@ahooksjs/use-request";
-import { useDebounce } from "react-use";
 import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
 import { useInitializeSubjectAbilities } from "@/stores/ability-store";
-
-// Direct functions for navigation node finding (can be called from within hooks)
-const findNavigationNodeInPersonalSubspace = (documentId: string) => {
-  const subspaces = useSubSpaceStore.getState().subspaces;
-  const personalSubspace = Object.values(subspaces).find((s) => s.type === "PERSONAL");
-  if (!personalSubspace?.navigationTree) return null;
-
-  const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
-    for (const node of nodes) {
-      if (node.id === targetId) {
-        return node;
-      }
-      if (node.children && node.children.length > 0) {
-        const found = findNavigationNodeInTree(node.children, targetId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  return findNavigationNodeInTree(personalSubspace.navigationTree, documentId);
-};
-
-const findNavigationNodeInSubspace = (subspaceId: string, documentId: string) => {
-  const subspaces = useSubSpaceStore.getState().subspaces;
-  const subspace = subspaces[subspaceId];
-  if (!subspace?.navigationTree) return null;
-
-  const findNavigationNodeInTree = (nodes: NavigationNode[], targetId: string): NavigationNode | null => {
-    for (const node of nodes) {
-      if (node.id === targetId) {
-        return node;
-      }
-      if (node.children && node.children.length > 0) {
-        const found = findNavigationNodeInTree(node.children, targetId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  return findNavigationNodeInTree(subspace.navigationTree, documentId);
-};
 
 // ✅ Custom hook to find navigation node for a document ID across all subspaces and shared documents
 export const useNavigationNodeForDocument = () => {
   const findNavigationNodeInSharedDocuments = useFindNavigationNodeInSharedDocuments();
+  const findNavigationNodeInPersonalSubspace = useFindNavigationNodeInPersonalSubspace();
+  const findNavigationNodeInSubspace = useFindNavigationNodeInSubspace();
 
   const getNavigationNodeForDocument = useRefCallback((documentId: string): NavigationNode | null => {
     if (!documentId) return null;
@@ -82,54 +39,39 @@ export const useNavigationNodeForDocument = () => {
   return { getNavigationNodeForDocument };
 };
 
-// ✅ Updated hook to get current document with auto-fetching using useRequest
+// ✅ Simplified hook to get current document with fresh data using useRequest debounce
 export const useCurrentDocument = () => {
   const { docId: activeDocumentId } = useParams();
-  const [debouncedDocumentId, setDebouncedDocumentId] = useState<string | null>(null);
   const initializeSubjectAbilities = useInitializeSubjectAbilities();
 
-  // Get the full document from the document store (for cached data)
-  const getDocument = useGetDocument();
-  const cachedDocument = activeDocumentId ? getDocument(activeDocumentId) : null;
-
-  // Debounce the document ID to prevent rapid API calls
-  useDebounce(
-    () => {
-      console.log("🔄 useCurrentDocument: Debouncing document ID", { activeDocumentId, cachedDocument: !!cachedDocument });
-      setDebouncedDocumentId(activeDocumentId || null);
-    },
-    300, // 300ms debounce delay
-    [activeDocumentId],
-  );
-
-  // Use useRequest to fetch document details with caching
+  // Use useRequest with built-in debounce for fresh data fetching
   const {
-    data: fetchedDocument,
+    data: document,
     loading,
     error,
   } = useRequest(
     async () => {
-      console.log("🚀 useCurrentDocument: Starting API call", { debouncedDocumentId, cachedDocument: !!cachedDocument });
+      console.log("🚀 useCurrentDocument: Fetching document", { documentId: activeDocumentId });
 
-      if (!debouncedDocumentId) {
+      if (!activeDocumentId) {
         return null;
       }
 
-      const response = (await documentApi.getDocument(debouncedDocumentId)) as any;
+      const response = (await documentApi.getDocument(activeDocumentId)) as any;
       const { doc, permissions } = response;
 
       if (!doc) {
         throw new Error(ErrorCodeEnum.DocumentNotFound);
       }
 
-      console.log("✅ useCurrentDocument: API call successful", { documentId: doc.id, title: doc.title });
+      console.log("✅ useCurrentDocument: Document fetched successfully", { documentId: doc.id, title: doc.title });
 
       // Update the store for caching
       useDocumentStore.setState((state) => ({
         documents: { ...state.documents, [doc.id]: doc },
       }));
 
-      // Deserialize and store document abilities
+      // Initialize document abilities
       if (permissions && Object.keys(permissions).length > 0) {
         console.log("🔄 useCurrentDocument: Initializing subject abilities", { permissions });
         initializeSubjectAbilities(permissions);
@@ -138,16 +80,13 @@ export const useCurrentDocument = () => {
       return doc;
     },
     {
-      ready: !!debouncedDocumentId && !cachedDocument, // Only run if we have a debounced ID and no cached data
-      refreshDeps: [debouncedDocumentId], // Re-run when debouncedDocumentId changes
-      onError: (err) => {
-        console.error("❌ useCurrentDocument: API call failed:", err);
-      },
+      ready: !!activeDocumentId, // Always fetch when we have a document ID
+      refreshDeps: [activeDocumentId], // Re-fetch when document ID changes
     },
   );
 
   // Return loading state if we're fetching
-  if (activeDocumentId && !cachedDocument && loading) {
+  if (loading) {
     return { isLoading: true };
   }
 
@@ -156,8 +95,8 @@ export const useCurrentDocument = () => {
     return { error };
   }
 
-  // Return cached document if available, otherwise return fetched document data
-  return cachedDocument || fetchedDocument;
+  // Return the fresh document data
+  return document;
 };
 
 // ✅ Hook to get current document ID from URL params

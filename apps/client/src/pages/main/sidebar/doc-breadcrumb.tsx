@@ -8,6 +8,7 @@ import { Emoji } from "emoji-picker-react";
 import { useCurrentDocumentId } from "@/hooks/use-current-document";
 import useSubSpaceStore, { useGetPathToDocument, usePersonalSubspace } from "@/stores/subspace-store";
 import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";
+import { useActiveDocument } from "@/stores/document-store";
 
 interface BreadcrumbItemData {
   id: string;
@@ -20,6 +21,7 @@ export default function DocumentBreadcrumb() {
   const findNavigationNodeInSharedDocuments = useFindNavigationNodeInSharedDocuments();
   const getPathToDocument = useGetPathToDocument();
   const personalSubspace = usePersonalSubspace();
+  const activeDocument = useActiveDocument();
 
   const navigate = useNavigate();
 
@@ -71,7 +73,7 @@ export default function DocumentBreadcrumb() {
     }
 
     return [];
-  }, [activeDocumentId, getPathToDocument, findNavigationNodeInSharedDocuments]);
+  }, [activeDocumentId, getPathToDocument, findNavigationNodeInSharedDocuments, activeDocument, personalSubspace]);
 
   const handleNavigate = (id: string) => {
     navigate(`/${id}`);
