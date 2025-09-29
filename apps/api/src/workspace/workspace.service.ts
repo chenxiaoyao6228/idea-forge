@@ -228,7 +228,20 @@ export class WorkspaceService {
    * Get all workspaces accessible to the current user
    * Returns empty array if user has no workspaces (no auto-creation)
    */
-  async getUserWorkspaces(currentUserId: string) {
+  async getUserWorkspaces(currentUserId: string): Promise<
+    Array<{
+      accessLevel: "member" | "guest";
+      createdAt: Date;
+      type: "PERSONAL" | "TEAM";
+      id: string;
+      updatedAt: Date;
+      name: string;
+      description: string | null;
+      avatar: string | null;
+      memberSubspaceCreate: boolean;
+      settings: any;
+    }>
+  > {
     const user = await this.prismaService.user.findUnique({
       where: { id: currentUserId },
       include: {
@@ -263,12 +276,12 @@ export class WorkspaceService {
     });
 
     // Create a map to merge member and guest workspaces
-    const workspaceMap = new Map<string, { workspace: any; accessLevel: "member" | "guest" }>();
+    const workspaceMap = new Map<string, { workspace: any & { accessLevel: "member" | "guest" }; accessLevel: "member" | "guest" }>();
 
     // Add member workspaces first (they take precedence)
     user.workspaceMembers.forEach((member) => {
       workspaceMap.set(member.workspace.id, {
-        workspace: member.workspace,
+        workspace: { ...member.workspace, accessLevel: "member" } as const,
         accessLevel: "member" as const,
       });
     });
@@ -277,7 +290,7 @@ export class WorkspaceService {
     guestCollaborators.forEach((guest) => {
       if (!workspaceMap.has(guest.workspace.id)) {
         workspaceMap.set(guest.workspace.id, {
-          workspace: guest.workspace,
+          workspace: { ...guest.workspace, accessLevel: "guest" } as const,
           accessLevel: "guest" as const,
         });
       }
@@ -301,7 +314,27 @@ export class WorkspaceService {
       return 0;
     });
 
-    return workspaces.map(({ workspace, accessLevel }) => presentWorkspace(workspace, accessLevel));
+    const result = workspaces.map(({ workspace, accessLevel }) => {
+      // Create workspace object with accessLevel for the contract
+      const workspaceWithAccessLevel = {
+        ...workspace,
+        accessLevel: accessLevel as "member" | "guest",
+      } as const;
+      return presentWorkspace(workspaceWithAccessLevel, accessLevel);
+    });
+
+    return result as Array<{
+      accessLevel: "member" | "guest";
+      createdAt: Date;
+      type: "PERSONAL" | "TEAM";
+      id: string;
+      updatedAt: Date;
+      name: string;
+      description: string | null;
+      avatar: string | null;
+      memberSubspaceCreate: boolean;
+      settings: any;
+    }>;
   }
 
   /**
@@ -686,10 +719,24 @@ export class WorkspaceService {
       where: { workspaceId_userId: { workspaceId, userId } },
     });
 
-    // 2. Remove the user's personal subspaces in this workspace
+    // 2. Publish workspace member left event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.WORKSPACE_MEMBER_LEFT,
+      workspaceId,
+      actorId: checkLastOwner ? userId : undefined, // If leaving, user removed themselves
+      data: {
+        userId,
+        workspaceName: workspace.name,
+        userRole: member.role,
+        removedBy: checkLastOwner ? userId : undefined, // If leaving, user removed themselves
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // 3. Remove the user's personal subspaces in this workspace
     await this.subspaceService.removePersonalSubspacesForUser(userId, workspaceId);
 
-    // 3. TODO: Clean up all related permissions across workspace hierarchy
+    // 4. TODO: Clean up all related permissions across workspace hierarchy
     // This could include:
     // - Document permissions
     // - Subspace permissions

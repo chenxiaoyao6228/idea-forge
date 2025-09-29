@@ -55,6 +55,7 @@ export enum BusinessEvents {
   WORKSPACE_MEMBER_ADDED = "workspace.member.added",
   WORKSPACE_MEMBERS_BATCH_ADDED = "workspace.members.batch.added",
   WORKSPACE_MEMBER_ROLE_UPDATED = "workspace.member.role.updated",
+  WORKSPACE_MEMBER_LEFT = "workspace.member.left",
   // WORKSPACE_UPDATE = "workspace.update",
   // WORKSPACE_MEMBER_UPDATE = "workspace.member.update",
 

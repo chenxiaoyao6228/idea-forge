@@ -1,16 +1,20 @@
 import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import { SocketEvents } from "@/lib/websocket";
-import useWorkspaceStore, { useFetchMembers, useFetchWorkspaces } from "@/stores/workspace-store";
+import useWorkspaceStore, { useFetchMembers, useFetchWorkspaces, useSwitchToFirstWorkspace } from "@/stores/workspace-store";
 import useUserStore from "@/stores/user-store";
 import { toast } from "sonner";
 import { useInitializeSubjectAbilities } from "@/stores/ability-store";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { useTranslation } from "react-i18next";
 
 export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void) | null {
   const cleanupRef = useRef<(() => void) | null>(null);
+  const { t } = useTranslation();
   // Use the existing useFetchMembers hook
   const { run: fetchMembers } = useFetchMembers();
   const { run: fetchWorkspaces } = useFetchWorkspaces();
+  const switchToFirstWorkspace = useSwitchToFirstWorkspace();
   const initializeSubjectAbilities = useInitializeSubjectAbilities();
 
   useEffect(() => {
@@ -76,21 +80,93 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void)
       }
     };
 
+    const onWorkspaceMemberLeft = async (message: any) => {
+      console.log(`[websocket]: Received event ${SocketEvents.WORKSPACE_MEMBER_LEFT}:`, message);
+      const { workspaceId, userId, workspaceName, userRole, removedBy, memberLeft } = message || {};
+
+      if (!workspaceId || !userId) return;
+
+      const userInfo = useUserStore.getState().userInfo;
+      const currentWorkspace = useWorkspaceStore.getState().currentWorkspace;
+
+      // Ignore events that don't target the current user
+      if (userInfo?.id !== userId) return;
+
+      // Only handle if this affects the current workspace
+      if (currentWorkspace?.id !== workspaceId) return;
+
+      // Re-fetch workspaces to get updated state before prompting
+      await fetchWorkspaces();
+
+      // Check if user still has workspaces after refresh
+      const updatedWorkspaces = useWorkspaceStore.getState().workspaces;
+      const hasWorkspaces = Object.keys(updatedWorkspaces).length > 0;
+
+      if (hasWorkspaces) {
+        // Show confirmation modal
+        const confirmed = await showConfirmModal({
+          title: t("Workspace Access Removed"),
+          description: t('You\'ve been removed from the workspace "{{workspaceName}}". Would you like to switch to another available workspace?', {
+            workspaceName: workspaceName || "Unknown Workspace",
+          }),
+          confirmText: t("Switch Workspace"),
+          cancelText: t("Stay Here"),
+          confirmVariant: "default",
+        });
+
+        if (confirmed) {
+          // Switch to first available workspace
+          await switchToFirstWorkspace();
+        } else {
+          // Clear current workspace state to prevent API errors
+          useWorkspaceStore.setState({
+            currentWorkspace: undefined,
+            workspaceMembers: [],
+          });
+          // Also clear user store current workspace
+          if (userInfo) {
+            userInfo.currentWorkspaceId = undefined;
+            useUserStore.setState({ userInfo });
+          }
+          // Clear localStorage
+          localStorage.removeItem("workspaceId");
+        }
+      } else {
+        // No workspaces remaining, redirect to create workspace
+        const confirmed = await showConfirmModal({
+          title: t("No Workspaces Available"),
+          description: t("You no longer have access to any workspaces. You'll be redirected to create a new workspace."),
+          confirmText: t("Create Workspace"),
+          cancelText: t("Close"),
+          confirmVariant: "default",
+        });
+
+        if (confirmed) {
+          window.location.href = "/create-workspace";
+        } else {
+          // Still redirect since they have no workspaces
+          window.location.href = "/create-workspace";
+        }
+      }
+    };
+
     // Register listeners
     socket.on(SocketEvents.WORKSPACE_MEMBER_ADDED, onWorkspaceMemberAdded);
     socket.on(SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED, onWorkspaceMembersBatchAdded);
     socket.on(SocketEvents.WORKSPACE_MEMBER_ROLE_UPDATED, onWorkspaceMemberRoleUpdated);
+    socket.on(SocketEvents.WORKSPACE_MEMBER_LEFT, onWorkspaceMemberLeft);
 
     // Create cleanup function
     const cleanup = () => {
       socket.off(SocketEvents.WORKSPACE_MEMBER_ADDED, onWorkspaceMemberAdded);
       socket.off(SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED, onWorkspaceMembersBatchAdded);
       socket.off(SocketEvents.WORKSPACE_MEMBER_ROLE_UPDATED, onWorkspaceMemberRoleUpdated);
+      socket.off(SocketEvents.WORKSPACE_MEMBER_LEFT, onWorkspaceMemberLeft);
     };
 
     cleanupRef.current = cleanup;
     return cleanup;
-  }, [socket, fetchMembers, fetchWorkspaces, initializeSubjectAbilities]);
+  }, [socket, fetchMembers, fetchWorkspaces, switchToFirstWorkspace, initializeSubjectAbilities, t]);
 
   return cleanupRef.current;
 }

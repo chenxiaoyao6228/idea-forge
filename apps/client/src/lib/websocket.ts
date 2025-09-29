@@ -58,6 +58,7 @@ export enum SocketEvents {
   WORKSPACE_MEMBER_ADDED = "workspace.member.added",
   WORKSPACE_MEMBERS_BATCH_ADDED = "workspace.members.batch.added",
   WORKSPACE_MEMBER_ROLE_UPDATED = "workspace.member.role.updated",
+  WORKSPACE_MEMBER_LEFT = "workspace.member.left",
 
   JOIN = "join",
   JOIN_SUCCESS = "join.success",

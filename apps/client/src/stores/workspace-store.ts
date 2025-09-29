@@ -403,6 +403,41 @@ export const useClearWorkspace = () => {
   });
 };
 
+// Helper to switch to first available workspace without page reload
+export const useSwitchToFirstWorkspace = () => {
+  return useRefCallback(async () => {
+    const workspaces = useWorkspaceStore.getState().workspaces;
+    const firstWorkspace = Object.values(workspaces)[0];
+
+    if (firstWorkspace) {
+      // Update user store with new currentWorkspaceId
+      const userInfo = useUserStore.getState().userInfo;
+      if (userInfo) {
+        userInfo.currentWorkspaceId = firstWorkspace.id;
+        useUserStore.setState({ userInfo });
+      }
+
+      // Update workspace store current workspace
+      useWorkspaceStore.setState({ currentWorkspace: firstWorkspace });
+
+      // Keep localStorage for backward compatibility
+      localStorage.setItem("workspaceId", firstWorkspace.id);
+
+      // Call the API to switch workspace on the server
+      try {
+        await workspaceApi.switchWorkspace(firstWorkspace.id);
+      } catch (error) {
+        console.error("Failed to switch workspace on server:", error);
+        // Continue anyway since local state is updated
+      }
+
+      return firstWorkspace;
+    }
+
+    return null;
+  });
+};
+
 // Hook for fetching workspace members
 export const useFetchMembers = () => {
   return useRequest(

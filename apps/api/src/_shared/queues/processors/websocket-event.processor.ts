@@ -56,6 +56,10 @@ export class WebsocketEventProcessor extends WorkerHost {
           await this.handleWorkspaceMemberRoleUpdatedEvent(event, server);
           break;
 
+        case BusinessEvents.WORKSPACE_MEMBER_LEFT:
+          await this.handleWorkspaceMemberLeftEvent(event, server);
+          break;
+
         case BusinessEvents.SUBSPACE_MEMBER_LEFT:
           await this.handleSubspaceMemberLeftEvent(event, server);
           break;
@@ -407,6 +411,32 @@ export class WebsocketEventProcessor extends WorkerHost {
       userId,
       role,
       member,
+    });
+  }
+
+  // Handle workspace member left events
+  private async handleWorkspaceMemberLeftEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { userId, workspaceName, userRole, removedBy } = data;
+
+    // Emit to the removed user's channel so they can react immediately
+    server.to(`user:${userId}`).emit(BusinessEvents.WORKSPACE_MEMBER_LEFT, {
+      workspaceId,
+      userId,
+      workspaceName,
+      userRole,
+      removedBy,
+      memberLeft: true,
+    });
+
+    // Also emit to workspace channel so remaining members are aware
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.WORKSPACE_MEMBER_LEFT, {
+      workspaceId,
+      userId,
+      workspaceName,
+      userRole,
+      removedBy,
+      memberLeft: true,
     });
   }
 
