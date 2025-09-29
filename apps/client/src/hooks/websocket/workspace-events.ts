@@ -89,64 +89,89 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void)
       const userInfo = useUserStore.getState().userInfo;
       const currentWorkspace = useWorkspaceStore.getState().currentWorkspace;
 
-      // Ignore events that don't target the current user
-      if (userInfo?.id !== userId) return;
+      const handleCurrentUserRemoved = async (workspaceName: string) => {
+        // Re-fetch workspaces to get updated state before prompting
+        await fetchWorkspaces();
 
-      // Only handle if this affects the current workspace
-      if (currentWorkspace?.id !== workspaceId) return;
+        // Check if user still has workspaces after refresh
+        const updatedWorkspaces = useWorkspaceStore.getState().workspaces;
+        const hasWorkspaces = Object.keys(updatedWorkspaces).length > 0;
 
-      // Re-fetch workspaces to get updated state before prompting
-      await fetchWorkspaces();
-
-      // Check if user still has workspaces after refresh
-      const updatedWorkspaces = useWorkspaceStore.getState().workspaces;
-      const hasWorkspaces = Object.keys(updatedWorkspaces).length > 0;
-
-      if (hasWorkspaces) {
-        // Show confirmation modal
-        const confirmed = await showConfirmModal({
-          title: t("Workspace Access Removed"),
-          description: t('You\'ve been removed from the workspace "{{workspaceName}}". Would you like to switch to another available workspace?', {
-            workspaceName: workspaceName || "Unknown Workspace",
-          }),
-          confirmText: t("Switch Workspace"),
-          cancelText: t("Stay Here"),
-          confirmVariant: "default",
-        });
-
-        if (confirmed) {
-          // Switch to first available workspace
-          await switchToFirstWorkspace();
-        } else {
-          // Clear current workspace state to prevent API errors
-          useWorkspaceStore.setState({
-            currentWorkspace: undefined,
-            workspaceMembers: [],
+        if (hasWorkspaces) {
+          // Show confirmation modal
+          const confirmed = await showConfirmModal({
+            title: t("Workspace Access Removed"),
+            description: t('You\'ve been removed from the workspace "{{workspaceName}}". Would you like to switch to another available workspace?', {
+              workspaceName: workspaceName || "Unknown Workspace",
+            }),
+            confirmText: t("Switch Workspace"),
+            cancelText: t("Stay Here"),
+            confirmVariant: "default",
           });
-          // Also clear user store current workspace
-          if (userInfo) {
-            userInfo.currentWorkspaceId = undefined;
-            useUserStore.setState({ userInfo });
-          }
-          // Clear localStorage
-          localStorage.removeItem("workspaceId");
-        }
-      } else {
-        // No workspaces remaining, redirect to create workspace
-        const confirmed = await showConfirmModal({
-          title: t("No Workspaces Available"),
-          description: t("You no longer have access to any workspaces. You'll be redirected to create a new workspace."),
-          confirmText: t("Create Workspace"),
-          cancelText: t("Close"),
-          confirmVariant: "default",
-        });
 
-        if (confirmed) {
-          window.location.href = "/create-workspace";
+          if (confirmed) {
+            // Switch to first available workspace
+            await switchToFirstWorkspace();
+            toast.success(t("Workspace switched"), {
+              description: t("You've been switched to another workspace."),
+            });
+          } else {
+            // Clear current workspace state to prevent API errors
+            useWorkspaceStore.setState({
+              currentWorkspace: undefined,
+              workspaceMembers: [],
+            });
+            // Also clear user store current workspace
+            const userInfo = useUserStore.getState().userInfo;
+            if (userInfo) {
+              userInfo.currentWorkspaceId = undefined;
+              useUserStore.setState({ userInfo });
+            }
+            // Clear localStorage
+            localStorage.removeItem("workspaceId");
+          }
         } else {
-          // Still redirect since they have no workspaces
-          window.location.href = "/create-workspace";
+          // No workspaces remaining, redirect to create workspace
+          const confirmed = await showConfirmModal({
+            title: t("No Workspaces Available"),
+            description: t("You no longer have access to any workspaces. You'll be redirected to create a new workspace."),
+            confirmText: t("Create Workspace"),
+            cancelText: t("Close"),
+            confirmVariant: "default",
+          });
+
+          if (confirmed) {
+            window.location.href = "/create-workspace";
+          } else {
+            // Still redirect since they have no workspaces
+            window.location.href = "/create-workspace";
+          }
         }
+      };
+
+      const handleOtherUserRemoved = (removedUserId: string) => {
+        // Another user was removed from the current workspace - remove from store directly
+        const workspaceStore = useWorkspaceStore.getState();
+
+        // Remove the user from workspace members if they're in the current workspace
+        if (workspaceStore.currentWorkspace) {
+          const memberExists = workspaceStore.workspaceMembers.some((member) => member.userId === removedUserId);
+
+          if (memberExists) {
+            useWorkspaceStore.setState((state) => ({
+              workspaceMembers: state.workspaceMembers.filter((member) => member.userId !== removedUserId),
+            }));
+          }
+        }
+      };
+
+      // Handle case where current user was removed
+      if (userInfo?.id === userId && currentWorkspace?.id === workspaceId) {
+        // Current user was removed from their active workspace
+        await handleCurrentUserRemoved(workspaceName);
+      } else if (currentWorkspace?.id === workspaceId) {
+        // Another user was removed from the current workspace - remove from store
+        handleOtherUserRemoved(userId);
       }
     };
 
@@ -166,7 +191,7 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void)
 
     cleanupRef.current = cleanup;
     return cleanup;
-  }, [socket, fetchMembers, fetchWorkspaces, switchToFirstWorkspace, initializeSubjectAbilities, t]);
+  }, [socket, fetchWorkspaces, switchToFirstWorkspace, initializeSubjectAbilities, t]);
 
   return cleanupRef.current;
 }
