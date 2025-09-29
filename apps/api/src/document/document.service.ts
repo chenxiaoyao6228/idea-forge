@@ -83,33 +83,7 @@ export class DocumentService {
     const doc = await this.prismaService.doc.findUnique({ where: { id: parentId } });
     if (!doc) throw new NotFoundException("Parent document not found");
 
-    let hasAccess = doc.authorId === userId;
-
-    if (!hasAccess && doc.workspaceId) {
-      const workspace = await this.prismaService.workspace.findUnique({
-        where: { id: doc.workspaceId },
-        include: { members: true },
-      });
-      hasAccess = !!workspace?.members.some((m) => m.userId === userId);
-    }
-
-    if (!hasAccess) {
-      // Check for permissions (all users have userId, guests use inheritedFromType: "GUEST")
-      const perm = await this.prismaService.documentPermission.findFirst({
-        where: {
-          userId,
-          docId: parentId,
-          inheritedFromType: {
-            in: [PermissionInheritanceType.DIRECT, PermissionInheritanceType.GROUP, PermissionInheritanceType.GUEST],
-          },
-        },
-        orderBy: { priority: "asc" },
-      });
-
-      hasAccess = !!perm && perm.permission !== PermissionLevel.NONE;
-    }
-
-    if (!hasAccess) throw new ForbiddenException("No access to this document");
+    // TODO: check if user has access to this document, with casl permission check
 
     const validSortFields = ["archivedAt", "publishedAt", "deletedAt", "updatedAt", "createdAt"];
     const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
@@ -516,6 +490,15 @@ export class DocumentService {
   async getSharedRootDocsWithMe(userId: string, query: PermissionListRequestDto): Promise<SharedWithMeResponse> {
     const { page = 1, limit = 10, workspaceId } = query;
 
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true },
+    });
+
+    if (!user) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
     // Get all direct permissions for documents (excluding user's own docs)
     // Check both user permissions and guest permissions
     const userPermissions = await this.prismaService.documentPermission.findMany({
@@ -528,13 +511,24 @@ export class DocumentService {
       orderBy: [{ docId: "asc" }, { priority: "asc" }],
     });
 
-    const guestPermissions = await this.prismaService.documentPermission.findMany({
-      where: {
-        userId,
-        inheritedFromType: PermissionInheritanceType.GUEST,
-      },
-      orderBy: [{ docId: "asc" }, { priority: "asc" }],
-    });
+    let guestPermissions: DocumentPermission[] = [];
+    if (user.email) {
+      const guestCollaborators = await this.prismaService.guestCollaborator.findMany({
+        where: { email: user.email },
+        select: { id: true },
+      });
+
+      if (guestCollaborators.length > 0) {
+        const guestIds = guestCollaborators.map((guest) => guest.id);
+        guestPermissions = await this.prismaService.documentPermission.findMany({
+          where: {
+            guestCollaboratorId: { in: guestIds },
+            inheritedFromType: PermissionInheritanceType.GUEST,
+          },
+          orderBy: [{ docId: "asc" }, { priority: "asc" }],
+        });
+      }
+    }
 
     const directPermissions = [...userPermissions, ...guestPermissions];
 

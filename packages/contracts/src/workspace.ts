@@ -91,7 +91,15 @@ export const UpdateWorkspaceMemberRequestSchema = z.object({
 });
 export type UpdateWorkspaceMemberRequest = z.infer<typeof UpdateWorkspaceMemberRequestSchema>;
 
-export const WorkspaceListResponseSchema = z.array(WorkspaceSchema);
+export const WorkspaceAccessLevelSchema = z.enum(["member", "guest"]);
+export type WorkspaceAccessLevel = z.infer<typeof WorkspaceAccessLevelSchema>;
+
+export const WorkspaceListItemSchema = WorkspaceSchema.extend({
+  accessLevel: WorkspaceAccessLevelSchema.default("member"),
+});
+export type WorkspaceListItem = z.infer<typeof WorkspaceListItemSchema>;
+
+export const WorkspaceListResponseSchema = z.array(WorkspaceListItemSchema);
 export type WorkspaceListResponse = z.infer<typeof WorkspaceListResponseSchema>;
 
 export const WorkspaceDetailResponseSchema = WorkspaceSchema.extend({
@@ -104,6 +112,7 @@ export const WorkspaceDetailResponseSchema = WorkspaceSchema.extend({
       updatedAt: z.string(),
     }),
   ),
+  accessLevel: WorkspaceAccessLevelSchema.optional(),
 });
 
 export type WorkspaceDetailResponse = z.infer<typeof WorkspaceDetailResponseSchema>;

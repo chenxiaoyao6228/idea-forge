@@ -15,8 +15,8 @@ export const GuestCollaboratorPanel = () => {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    // TODO: Remove this limit after we have a better way to paginate guests
-    fetchGuests({ page: 1, limit: 1000, sortBy: "createdAt" });
+    // Force fresh fetch for workspace-level management view with explicit pagination
+    fetchGuests();
   }, []);
 
   const guests = orderedGuests.filter(

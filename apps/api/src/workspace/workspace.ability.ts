@@ -28,24 +28,7 @@ export class WorkspaceAbility extends BaseAbility {
 
       if (currentWorkspaceId) {
         // Get permissions for current workspace only (optimized for workspace switching)
-        const workspaceMember = await this.prismaService.workspaceMember.findUnique({
-          where: {
-            workspaceId_userId: {
-              workspaceId: currentWorkspaceId,
-              userId: user.id,
-            },
-          },
-          select: {
-            role: true,
-            workspace: {
-              select: { type: true },
-            },
-          },
-        });
-
-        if (workspaceMember) {
-          this.defineWorkspacePermissions(can, currentWorkspaceId, workspaceMember.role, workspaceMember.workspace.type);
-        }
+        await this.defineWorkspacePermissionsForUser(can, user.id, currentWorkspaceId);
       } else {
         // Fallback: Get permissions for all workspaces (existing behavior)
         const workspaceMembers = await this.prismaService.workspaceMember.findMany({
@@ -62,8 +45,77 @@ export class WorkspaceAbility extends BaseAbility {
         for (const member of workspaceMembers) {
           this.defineWorkspacePermissions(can, member.workspaceId, member.role, member.workspace.type);
         }
+
+        // Also check for guest permissions
+        const userWithEmail = await this.prismaService.user.findUnique({
+          where: { id: user.id },
+          select: { email: true },
+        });
+
+        if (userWithEmail?.email) {
+          const guestCollaborators = await this.prismaService.guestCollaborator.findMany({
+            where: {
+              email: userWithEmail.email,
+              expireAt: {
+                gt: new Date(), // Only active guest collaborators
+              },
+            },
+            select: { workspaceId: true },
+          });
+
+          for (const guest of guestCollaborators) {
+            // Grant only read access for guest workspaces
+            can(Action.Read, "Workspace", { id: guest.workspaceId });
+          }
+        }
       }
     });
+  }
+
+  private async defineWorkspacePermissionsForUser(can: any, userId: string, workspaceId: string) {
+    // First check if user is a member
+    const workspaceMember = await this.prismaService.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId,
+        },
+      },
+      select: {
+        role: true,
+        workspace: {
+          select: { type: true },
+        },
+      },
+    });
+
+    if (workspaceMember) {
+      this.defineWorkspacePermissions(can, workspaceId, workspaceMember.role, workspaceMember.workspace.type);
+      return;
+    }
+
+    // If not a member, check if user is a guest collaborator
+    const userWithEmail = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+
+    if (userWithEmail?.email) {
+      const guestCollaborator = await this.prismaService.guestCollaborator.findFirst({
+        where: {
+          workspaceId,
+          email: userWithEmail.email,
+          expireAt: {
+            gt: new Date(), // Only active guest collaborators
+          },
+        },
+      });
+
+      if (guestCollaborator) {
+        // Grant only read access for guest workspaces
+        can(Action.Read, "Workspace", { id: workspaceId });
+      }
+    }
   }
 
   private defineWorkspacePermissions(can: any, workspaceId: string, role: WorkspaceRole, workspaceType: string) {

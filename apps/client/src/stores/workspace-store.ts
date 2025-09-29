@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { workspaceApi } from "@/apis/workspace";
 import { subspaceApi } from "@/apis/subspace";
-import { UpdateWorkspaceRequest, WorkspaceSettings, WorkspaceMemberListResponse } from "@idea/contracts";
+import { UpdateWorkspaceRequest, WorkspaceSettings, WorkspaceMemberListResponse, WorkspaceAccessLevel } from "@idea/contracts";
 import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useUserStore from "./user-store";
@@ -17,6 +17,7 @@ export interface WorkspaceEntity {
   settings?: WorkspaceSettings | null;
   memberSubspaceCreate?: boolean;
   type?: "PERSONAL" | "TEAM";
+  accessLevel?: WorkspaceAccessLevel;
 }
 
 // Minimal Zustand store
@@ -89,6 +90,7 @@ export const useFetchWorkspaces = () => {
             memberSubspaceCreate: workspace.memberSubspaceCreate,
             settings: workspace.settings as WorkspaceSettings | null,
             type: workspace.type,
+            accessLevel: workspace.accessLevel,
           }));
 
           // Update store with all workspaces
@@ -192,6 +194,7 @@ export const useReorderWorkspaces = () => {
             memberSubspaceCreate: workspace.memberSubspaceCreate,
             settings: workspace.settings as WorkspaceSettings | null,
             type: workspace.type,
+            accessLevel: workspace.accessLevel,
           }));
 
           const workspacesMap = workspaceEntities.reduce(

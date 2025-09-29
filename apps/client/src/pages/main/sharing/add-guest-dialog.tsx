@@ -51,9 +51,10 @@ const AddGuestDialog = ({ show = false, proceed, documentId }: ConfirmDialogProp
   useEffect(() => {
     if (show && workspaceId) {
       setShowDropdown(true);
+      // Use cached guests when available, fallback to fetch if cache missing
       fetchGuests();
     }
-  }, [show, workspaceId, fetchGuests]);
+  }, [show, workspaceId]);
 
   const addGuest = (guest: any) => {
     const newGuest: PendingGuest = {

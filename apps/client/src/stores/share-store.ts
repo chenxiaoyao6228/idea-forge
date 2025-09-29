@@ -22,7 +22,7 @@ const useSharedWithMeStore = create<{
 }>((set) => ({
   documents: [],
   page: 1,
-  limit: 20,
+  limit: 100,
   total: 0,
   isLoading: false,
   isLoadingMore: false,

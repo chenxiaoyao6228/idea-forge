@@ -8,6 +8,7 @@ import useDocumentStore, { useFetchDocumentDetail, useFetchDocumentChildren, use
 // import { useHasAbility } from "@/stores/ability-store";
 import { DocumentLink } from "./document-link";
 import type { DocumentEntity } from "@/stores/document-store";
+import { useRefCallback } from "@/hooks/use-ref-callback";
 
 interface ShareWithMeLinkProps {
   document: DocumentEntity;
@@ -86,8 +87,9 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
    * Load child documents with permission filtering
    * Only loads children that the user has permission to access
    */
-  const loadChildDocuments = useCallback(async () => {
-    if (!document?.id) return;
+  const loadChildDocuments = useRefCallback(async () => {
+    const shouldTriggerLoad = document?.id && document.id === activeDocumentId && isExpanded && !childrenLoaded && !isLoadingChildren;
+    if (!shouldTriggerLoad) return;
 
     setIsLoadingChildren(true);
     try {
@@ -98,17 +100,19 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
     } finally {
       setIsLoadingChildren(false);
     }
-  }, [document?.id, fetchChildren]);
+  });
 
   /**
    * Dynamically load child documents when expanded
    * This implements lazy loading for better performance with large document trees
    */
   useEffect(() => {
-    if (document?.id && document.id === activeDocumentId && !childrenLoaded && !isLoadingChildren) {
+    // Only load children when the document is active AND expanded (user explicitly opened it)
+    // This prevents infinite loops when navigating to a document
+    if (isExpanded) {
       loadChildDocuments();
     }
-  }, [document?.id, activeDocumentId, childrenLoaded, isLoadingChildren, loadChildDocuments]);
+  }, [isExpanded]);
 
   const handleDisclosureClick = useCallback(
     (ev?: React.MouseEvent<HTMLButtonElement>) => {

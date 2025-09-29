@@ -26,19 +26,12 @@ export interface SettingModalProps {
   proceed?: (value: any) => void;
 }
 
-const SettingModal = ({
-  show = false,
-  proceed,
-  title = "Settings",
-  description,
-  tab = "profile",
-  subspaceId,
-  content,
-}: ConfirmDialogProps<SettingModalProps, boolean>) => {
+const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, content }: ConfirmDialogProps<SettingModalProps, boolean>) => {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const workspaceSubject = currentWorkspace ? { id: currentWorkspace.id } : undefined;
   const { can: canManageSubspaces } = useAbilityCan("Workspace", Action.ManageSubspaces, workspaceSubject);
+  const { can: canManageWorkspace } = useAbilityCan("Workspace", Action.Manage, workspaceSubject);
 
   const [activeTab, setActiveTab] = useState(tab);
   const [activeSubspaceId, setActiveSubspaceId] = useState<string | undefined>(subspaceId);
@@ -50,7 +43,7 @@ const SettingModal = ({
   }, [tab, subspaceId]);
 
   const tabList = useMemo(() => {
-    const baseTabs = [
+    let baseTabs = [
       {
         key: "profile",
         name: t("Account"),
@@ -75,11 +68,14 @@ const SettingModal = ({
 
     // Filter out subspaces tab for users without ManageSubspaces permission
     if (!canManageSubspaces) {
-      return baseTabs.filter((tab) => tab.key !== "subspaces");
+      baseTabs = baseTabs.filter((tab) => tab.key !== "subspaces");
+    }
+    if (!canManageWorkspace) {
+      baseTabs = baseTabs.filter((tab) => tab.key !== "members");
     }
 
     return baseTabs;
-  }, [t, canManageSubspaces]);
+  }, [t, canManageSubspaces, canManageWorkspace]);
 
   const handleClose = () => {
     proceed?.(null);
@@ -103,9 +99,11 @@ const SettingModal = ({
             <TabsContent tabIndex={-1} value="profile" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
               <Account />
             </TabsContent>
-            <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-              <Members />
-            </TabsContent>
+            {canManageWorkspace && (
+              <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
+                <Members />
+              </TabsContent>
+            )}
             {canManageSubspaces && (
               <TabsContent tabIndex={-1} value="subspaces" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
                 <Subspace activeSubspaceId={activeSubspaceId} />

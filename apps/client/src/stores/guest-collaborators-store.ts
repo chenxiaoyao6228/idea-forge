@@ -13,10 +13,12 @@ import type {
 import { guestCollaboratorsApi } from "@/apis/guest-collaborator";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "./workspace-store";
+import useUserStore from "./user-store";
 
 // Store state only - no business logic in store
 const useGuestCollaboratorsStore = create<{
   guests: GuestCollaboratorResponse[];
+  guestLoaded: boolean;
   // Pagination state
   page: number;
   limit: number;
@@ -26,10 +28,11 @@ const useGuestCollaboratorsStore = create<{
 }>((set) => ({
   guests: [],
   page: 1,
-  limit: 20,
+  limit: 1000,
   total: 0,
   isLoading: false,
   error: null,
+  guestLoaded: false,
 }));
 
 // Computed values using useMemo
@@ -88,18 +91,32 @@ export const updateGuest = (guestId: string, updates: Partial<GuestCollaboratorR
 
 export const setGuests = (guests: GuestCollaboratorResponse[]) => useGuestCollaboratorsStore.setState({ guests });
 
+export const useIsGuestCollaborator = () => {
+  const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
+
+  return useMemo(() => {
+    return currentWorkspace?.accessLevel === "guest";
+  }, [currentWorkspace?.accessLevel]);
+};
+
 // Hook for fetching workspace guests
 export const useFetchGuests = () => {
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
   const workspaceId = currentWorkspace?.id;
+
   return useRequest(
     async (params?: Omit<GetWorkspaceGuestsRequest, "workspaceId">) => {
       try {
-        const response = await guestCollaboratorsApi.getWorkspaceGuests(workspaceId!, params);
+        if (!workspaceId) {
+          return [];
+        }
+
+        const response = await guestCollaboratorsApi.getWorkspaceGuests(workspaceId, params);
         setGuests(response.data);
         useGuestCollaboratorsStore.setState({
           page: response.pagination.page,
           total: response.pagination.total,
+          guestLoaded: true,
         });
         return response.data;
       } catch (error) {

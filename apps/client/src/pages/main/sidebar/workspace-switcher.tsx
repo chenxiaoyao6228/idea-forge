@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, ChevronDown, MoreHorizontal, User, Check } from "lucide-react";
+import { Plus, ChevronDown, MoreHorizontal, User, Check, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import useUserStore from "@/stores/user-store";
@@ -39,9 +40,13 @@ export default function WorkspaceSwitcher() {
   };
 
   const handleReorder = async (reorderedWorkspaces: typeof workspaces) => {
+    // Filter out guest workspaces from reordering
+    const memberWorkspaces = reorderedWorkspaces.filter((w) => w.accessLevel !== "guest");
+    if (memberWorkspaces.length === 0) return;
+
     // update the server
     try {
-      await reorderWorkspaces(reorderedWorkspaces.map((w) => w.id));
+      await reorderWorkspaces(memberWorkspaces.map((w) => w.id));
     } catch (error) {
       console.error("Failed to reorder workspaces:", error);
     }
@@ -121,7 +126,10 @@ export default function WorkspaceSwitcher() {
               renderItem={(workspace) => (
                 <div
                   key={workspace.id}
-                  className={cn("flex flex-1 items-center gap-2 px-1 py-1 transition-colors group cursor-pointer")}
+                  className={cn(
+                    "flex flex-1 items-center gap-2 px-1 py-1 transition-colors group cursor-pointer",
+                    workspace.accessLevel === "guest" && "opacity-75",
+                  )}
                   onClick={() => {
                     if (!isSwitching) {
                       switchWorkspace(workspace.id);
@@ -133,7 +141,15 @@ export default function WorkspaceSwitcher() {
                       {getWorkspaceInitial(workspace.name)}
                     </div> */}
                     <div className="flex flex-col flex-1">
-                      <span className="text-sm truncate">{workspace.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm truncate">{workspace.name}</span>
+                        {workspace.accessLevel === "guest" && (
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4">
+                            <Eye className="h-3 w-3 mr-1" />
+                            Guest
+                          </Badge>
+                        )}
+                      </div>
                       <span className="text-xs text-muted-foreground">{t(workspace.type === "PERSONAL" ? "Personal Workspace" : "Team Workspace")}</span>
                     </div>
                     {currentWorkspace?.id === workspace.id && (

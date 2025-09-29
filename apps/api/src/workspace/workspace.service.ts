@@ -253,13 +253,63 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
     }
 
-    // Return empty array if user has no workspaces - no auto-creation
-    if (user.workspaceMembers.length === 0) {
-      return [];
-    }
+    // Get user email for guest collaborator lookup
+    const userEmail = user.email;
 
-    const workspaces = user.workspaceMembers.map((member) => member.workspace);
-    return workspaces.map(presentWorkspace);
+    // Fetch guest collaborator workspaces for this user
+    const guestCollaborators = await this.prismaService.guestCollaborator.findMany({
+      where: {
+        email: userEmail,
+        expireAt: {
+          gt: new Date(), // Only active guest collaborators
+        },
+      },
+      include: {
+        workspace: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Create a map to merge member and guest workspaces
+    const workspaceMap = new Map<string, { workspace: any; accessLevel: "member" | "guest" }>();
+
+    // Add member workspaces first (they take precedence)
+    user.workspaceMembers.forEach((member) => {
+      workspaceMap.set(member.workspace.id, {
+        workspace: member.workspace,
+        accessLevel: "member" as const,
+      });
+    });
+
+    // Add guest workspaces only if not already present (member takes precedence)
+    guestCollaborators.forEach((guest) => {
+      if (!workspaceMap.has(guest.workspace.id)) {
+        workspaceMap.set(guest.workspace.id, {
+          workspace: guest.workspace,
+          accessLevel: "guest" as const,
+        });
+      }
+    });
+
+    // Convert map to array and sort (members first, then guests by creation date)
+    const workspaces = Array.from(workspaceMap.values()).sort((a, b) => {
+      // Members come first
+      if (a.accessLevel === "member" && b.accessLevel === "guest") return -1;
+      if (a.accessLevel === "guest" && b.accessLevel === "member") return 1;
+
+      // Within same access level, sort by creation date (newest first for members, oldest first for guests)
+      if (a.accessLevel === "member" && b.accessLevel === "member") {
+        return new Date(b.workspace.createdAt).getTime() - new Date(a.workspace.createdAt).getTime();
+      }
+
+      if (a.accessLevel === "guest" && b.accessLevel === "guest") {
+        return new Date(a.workspace.createdAt).getTime() - new Date(b.workspace.createdAt).getTime();
+      }
+
+      return 0;
+    });
+
+    return workspaces.map(({ workspace, accessLevel }) => presentWorkspace(workspace, accessLevel));
   }
 
   /**
@@ -321,30 +371,6 @@ export class WorkspaceService {
     });
 
     return members;
-  }
-
-  /**
-   * Get all subspace IDs within a workspace
-   * Used for permission cleanup operations
-   */
-  private async getWorkspaceSubspaceIds(workspaceId: string): Promise<string[]> {
-    const subspaces = await this.prismaService.subspace.findMany({
-      where: { workspaceId },
-      select: { id: true },
-    });
-    return subspaces.map((s) => s.id);
-  }
-
-  /**
-   * Get all document IDs within a workspace
-   * Used for permission cleanup operations
-   */
-  private async getWorkspaceDocumentIds(workspaceId: string): Promise<string[]> {
-    const docs = await this.prismaService.doc.findMany({
-      where: { workspaceId },
-      select: { id: true },
-    });
-    return docs.map((d) => d.id);
   }
 
   /**
@@ -666,7 +692,7 @@ export class WorkspaceService {
       return false;
     }
 
-    // Then check if user is a member
+    // First check if user is a member
     const workspaceMember = await this.prismaService.workspaceMember.findUnique({
       where: {
         workspaceId_userId: {
@@ -676,7 +702,32 @@ export class WorkspaceService {
       },
     });
 
-    return !!workspaceMember;
+    if (workspaceMember) {
+      return true;
+    }
+
+    // If not a member, check if user is a guest collaborator
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+
+    if (!user) {
+      return false;
+    }
+
+    // Check for guest collaborator with matching email
+    const guestCollaborator = await this.prismaService.guestCollaborator.findFirst({
+      where: {
+        workspaceId,
+        email: user.email,
+        expireAt: {
+          gt: new Date(), // Only active guest collaborators
+        },
+      },
+    });
+
+    return !!guestCollaborator;
   }
 
   /**
