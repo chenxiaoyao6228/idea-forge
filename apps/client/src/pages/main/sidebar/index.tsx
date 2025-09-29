@@ -28,8 +28,6 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   const { isPersonalWorkspace } = useWorkspaceType();
   const isGuestCollaborator = useIsGuestCollaborator();
 
-  console.log("isGuestCollaborator", isGuestCollaborator);
-
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragMove={handleDragMove} onDragOver={handleDragOver}>
       <SidebarProvider defaultOpen={true}>

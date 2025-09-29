@@ -70,6 +70,7 @@ const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, cont
     if (!canManageSubspaces) {
       baseTabs = baseTabs.filter((tab) => tab.key !== "subspaces");
     }
+    // TODO: more fine-grained permission check for workspace tab
     if (!canManageWorkspace) {
       baseTabs = baseTabs.filter((tab) => tab.key !== "members");
     }

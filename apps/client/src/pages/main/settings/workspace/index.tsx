@@ -8,12 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImageCropper } from "@/components/image-cropper";
-import useWorkspaceStore, { useUpdateWorkspace } from "@/stores/workspace-store";
+import useWorkspaceStore, { useUpdateWorkspace, useLeaveWorkspace } from "@/stores/workspace-store";
 import { uploadFile } from "@/lib/upload";
 import { dataURLtoFile } from "@/lib/file";
 import { Action, type UpdateWorkspaceRequest, type WorkspaceSettings } from "@idea/contracts";
 import { useAbilityCan } from "@/hooks/use-ability";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface FileWithPreview extends File {
   preview: string;
@@ -50,6 +50,7 @@ export const Workspace = () => {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const { run: updateWorkspace } = useUpdateWorkspace();
+  const { run: leaveWorkspace } = useLeaveWorkspace();
   const workspaceId = currentWorkspace?.id;
   const workspaceSubject = useMemo(() => (workspaceId ? { id: workspaceId } : undefined), [workspaceId]);
   const { can: canManageSettings } = useAbilityCan("Workspace", Action.ManageSettings, workspaceSubject);
@@ -386,6 +387,13 @@ export const Workspace = () => {
         setSelectedFile={setSelectedFile}
         onCropComplete={handleCroppedImage}
       />
+
+      {/* Leave Workspace Button */}
+      <div className="pt-4 flex justify-end">
+        <Button variant="destructive" onClick={() => leaveWorkspace(workspaceId || "", currentWorkspace?.name || "")} disabled={!workspaceId}>
+          {t("Leave Workspace")}
+        </Button>
+      </div>
     </div>
   );
 };

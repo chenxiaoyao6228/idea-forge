@@ -1,10 +1,13 @@
 import { create } from "zustand";
 import { workspaceApi } from "@/apis/workspace";
 import { subspaceApi } from "@/apis/subspace";
-import { UpdateWorkspaceRequest, WorkspaceSettings, WorkspaceMemberListResponse, WorkspaceAccessLevel } from "@idea/contracts";
 import useRequest from "@ahooksjs/use-request";
+import { UpdateWorkspaceRequest, WorkspaceSettings, WorkspaceMemberListResponse, WorkspaceAccessLevel, WorkspaceRole } from "@idea/contracts";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useUserStore from "./user-store";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
 
 export interface WorkspaceEntity {
   id: string;
@@ -420,6 +423,138 @@ export const useFetchMembers = () => {
     },
     { manual: true },
   );
+};
+
+export const useCreateWorkspace = () => {
+  const { t } = useTranslation();
+
+  return useRequest(
+    async (params: { name: string; description: string; avatar: string; type: "PERSONAL" | "TEAM" }) => {
+      try {
+        const workspace = await workspaceApi.createWorkspace({
+          name: params.name,
+          description: params.description,
+          avatar: params.avatar,
+          type: params.type,
+        });
+
+        toast.success(t("Workspace created successfully"), {
+          description: t("Your new workspace has been created and you have been automatically switched to it."),
+        });
+
+        return workspace;
+      } catch (error) {
+        console.error("Failed to create workspace:", error);
+        toast.error(t("Failed to create workspace"), {
+          description: (error as any)?.message || t("An unexpected error occurred while creating the workspace."),
+        });
+        throw error;
+      }
+    },
+    { manual: true },
+  );
+};
+
+export const useLeaveWorkspace = () => {
+  const { t } = useTranslation();
+
+  const leaveWorkspace = async (workspaceId: string, workspaceName: string) => {
+    const confirmed = await showConfirmModal({
+      title: t("Leave Workspace"),
+      description: t(`Are you sure you want to leave workspace \"{{workspaceName}}\"? You will lose access to all documents and subspaces in this workspace.`, {
+        workspaceName,
+      }),
+      confirmText: t("Leave Workspace"),
+      cancelText: t("Cancel"),
+      confirmVariant: "destructive",
+    });
+
+    if (confirmed) {
+      try {
+        // Call the leave workspace API directly
+        await workspaceApi.leaveWorkspace(workspaceId);
+
+        // Remove the workspace from the store
+        useWorkspaceStore.setState((state) => {
+          const { [workspaceId]: removedWorkspace, ...remainingWorkspaces } = state.workspaces;
+          return {
+            workspaces: remainingWorkspaces,
+            currentWorkspace: state.currentWorkspace?.id === workspaceId ? undefined : state.currentWorkspace,
+            workspaceMembers: state.currentWorkspace?.id === workspaceId ? [] : state.workspaceMembers,
+          };
+        });
+
+        // Update user store to remove the current workspace ID if it was the one we left
+        const userInfo = useUserStore.getState().userInfo;
+        if (userInfo?.currentWorkspaceId === workspaceId) {
+          userInfo.currentWorkspaceId = undefined;
+          useUserStore.setState({ userInfo });
+        }
+
+        // Clear localStorage
+        if (localStorage.getItem("workspaceId") === workspaceId) {
+          localStorage.removeItem("workspaceId");
+        }
+
+        // Refresh the page to ensure all components get the new workspace context
+        window.location.href = "/";
+
+        toast.success(t("Successfully left workspace"), {
+          description: t("You have been removed from the workspace and redirected."),
+        });
+      } catch (error: any) {
+        console.error("Failed to leave workspace after confirmation:", error);
+
+        // Handle specific error for last owner
+        if (error?.code === "cannot_leave_as_last_owner") {
+          const deleteConfirmed = await showConfirmModal({
+            title: t("Cannot Leave Workspace"),
+            description: t(
+              `You are the last owner of this workspace. To leave, you must first delete the workspace. This action cannot be undone and will permanently remove all documents and data in this workspace.`,
+            ),
+            confirmText: t("Delete Workspace"),
+            cancelText: t("Cancel"),
+            confirmVariant: "destructive",
+          });
+
+          if (deleteConfirmed) {
+            try {
+              await workspaceApi.deleteWorkspace(workspaceId);
+
+              // Redirect to home page
+              window.location.href = "/";
+
+              toast.success(t("Workspace deleted successfully"), {
+                description: t("The workspace and all its contents have been permanently removed."),
+              });
+            } catch (deleteError: any) {
+              console.error("Failed to delete workspace:", deleteError);
+
+              // Handle workspace has documents error
+              if (deleteError?.code === "workspace_has_documents") {
+                toast.error(t("Cannot delete workspace"), {
+                  description: t("This workspace contains documents. Please delete all documents in the workspace before deleting it."),
+                });
+              } else {
+                toast.error(t("Failed to delete workspace"), {
+                  description: deleteError?.message || t("An error occurred while deleting the workspace."),
+                });
+              }
+            }
+          }
+        } else {
+          // Handle other errors with generic message
+          toast.error(t("Failed to leave workspace"), {
+            description: (error as any)?.message || t("An unexpected error occurred."),
+          });
+        }
+      }
+    }
+  };
+
+  return {
+    run: leaveWorkspace,
+  };
 };
 
 export default useWorkspaceStore;

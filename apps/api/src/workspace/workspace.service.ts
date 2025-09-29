@@ -162,17 +162,6 @@ export class WorkspaceService {
   }
 
   /**
-   * Initialize a new workspace with appropriate subspaces based on type
-   * Creates workspace and sets up initial structure
-   */
-  async initializeWorkspace(dto: CreateWorkspaceDto, userId: string) {
-    const workspace = await this.createWorkspace(dto, userId);
-    // The createWorkspace method already handles subspace creation based on type
-    // No need for additional subspace creation here
-    return { workspace };
-  }
-
-  /**
    * Create a new workspace with the user as owner
    * Automatically assigns workspace permissions and propagates to child resources
    */
@@ -204,6 +193,9 @@ export class WorkspaceService {
 
     // Always create personal subspace for the owner
     await this.subspaceService.createPersonalSubspace(userId, workspace.id);
+
+    // switch to the new workspace
+    await this.switchWorkspace(userId, workspace.id);
 
     return presentWorkspace(workspace);
   }
@@ -420,6 +412,20 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.WorkspaceHasMembers);
     }
 
+    // Check if workspace has any documents
+    const documentCount = await this.prismaService.doc.count({
+      where: { workspaceId: id },
+    });
+
+    if (documentCount > 0) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceHasDocuments);
+    }
+
+    // Delete workspace member records first to avoid foreign key constraint
+    await this.prismaService.workspaceMember.deleteMany({
+      where: { workspaceId: id },
+    });
+
     // TODO:  Clean up all related permissions across workspace hierarchy
 
     await this.prismaService.workspace.delete({ where: { id } });
@@ -632,10 +638,12 @@ export class WorkspaceService {
   }
 
   /**
-   * Remove a member from workspace
-   * Cleans up all associated permissions across the workspace hierarchy
+   * Remove a user from workspace with common cleanup logic
+   * @param workspaceId - The workspace ID
+   * @param userId - The user ID to remove
+   * @param checkLastOwner - Whether to check if this is the last owner (for leave operations)
    */
-  async removeWorkspaceMember(workspaceId: string, userId: string, adminId: string) {
+  private async removeUserFromWorkspace(workspaceId: string, userId: string, checkLastOwner = false) {
     // Verify workspace exists
     const workspace = await this.prismaService.workspace.findUnique({
       where: { id: workspaceId },
@@ -654,8 +662,16 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
     }
 
-    // Prevent removal of last owner
-    if (member.role === WorkspaceRole.OWNER) {
+    // Prevent removal/leaving as the last owner
+    if (checkLastOwner && member.role === WorkspaceRole.OWNER) {
+      const ownerCount = await this.prismaService.workspaceMember.count({
+        where: { workspaceId, role: WorkspaceRole.OWNER },
+      });
+
+      if (ownerCount <= 1) {
+        throw new ApiException(ErrorCodeEnum.CannotLeaveAsLastOwner);
+      }
+    } else if (member.role === WorkspaceRole.OWNER) {
       const ownerCount = await this.prismaService.workspaceMember.count({
         where: { workspaceId, role: WorkspaceRole.OWNER },
       });
@@ -670,10 +686,125 @@ export class WorkspaceService {
       where: { workspaceId_userId: { workspaceId, userId } },
     });
 
-    // --- Remove the user's personal subspaces in this workspace ---
+    // 2. Remove the user's personal subspaces in this workspace
     await this.subspaceService.removePersonalSubspacesForUser(userId, workspaceId);
 
-    // TODO: Clean up all related permissions across workspace hierarchy
+    // 3. TODO: Clean up all related permissions across workspace hierarchy
+    // This could include:
+    // - Document permissions
+    // - Subspace permissions
+    // - Shared document access
+    // - Collaboration cursors/sessions
+    // - WebSocket room cleanup
+
+    // For now, we'll add a placeholder for future permission cleanup
+    await this.cleanupUserPermissionsInWorkspace(userId, workspaceId);
+  }
+
+  /**
+   * Clean up all user permissions in a workspace
+   * This is a placeholder for future implementation of comprehensive permission cleanup
+   */
+  private async cleanupUserPermissionsInWorkspace(userId: string, workspaceId: string) {
+    // TODO: Implement comprehensive permission cleanup:
+    // 1. Remove document-specific permissions
+    // 2. Remove subspace-specific permissions
+    // 3. Clean up shared document access
+    // 4. Remove collaboration sessions/cursors
+    // 5. Clean up WebSocket room memberships
+    // 6. Remove any cached permissions
+
+    // For now, this is a placeholder that can be expanded
+    console.log(`Cleaning up permissions for user ${userId} in workspace ${workspaceId}`);
+  }
+
+  /**
+   * Send WebSocket notification when a user leaves a workspace
+   */
+  private async sendWorkspaceMemberLeftNotification(workspaceId: string, userId: string, workspaceName: string, userRole: string) {
+    try {
+      // TODO: Implement WebSocket notification system
+      // This should notify other workspace members that a user has left
+      // Example:
+      // await this.websocketService.sendToWorkspace(workspaceId, {
+      //   type: 'member_left',
+      //   data: {
+      //     userId,
+      //     workspaceId,
+      //     workspaceName,
+      //     userRole,
+      //     timestamp: new Date(),
+      //   }
+      // });
+
+      console.log(`User ${userId} left workspace ${workspaceName} (${workspaceId})`);
+    } catch (error) {
+      console.error("Failed to send workspace member left notification:", error);
+      // Don't throw here as this is not critical functionality
+    }
+  }
+
+  /**
+   * Remove a member from workspace
+   * Cleans up all associated permissions across the workspace hierarchy
+   */
+  async removeWorkspaceMember(workspaceId: string, userId: string) {
+    await this.removeUserFromWorkspace(workspaceId, userId, false);
+    return { success: true };
+  }
+
+  /**
+   * Leave workspace - allows a user to remove themselves from a workspace
+   */
+  async leaveWorkspace(workspaceId: string, userId: string) {
+    // Get workspace and member info before removal for notifications
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
+    // Verify user is a member of the workspace
+    const member = await this.prismaService.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+    });
+
+    if (!member) {
+      throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
+    }
+
+    // Use the shared removal logic
+    await this.removeUserFromWorkspace(workspaceId, userId, true);
+
+    // Handle workspace switching for the leaving user
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { currentWorkspaceId: true },
+    });
+
+    if (user?.currentWorkspaceId === workspaceId) {
+      // Find another workspace to switch to by getting all workspaces for the user
+      const userWorkspaces = await this.prismaService.workspaceMember.findMany({
+        where: { userId },
+        include: { workspace: { select: { id: true } } },
+      });
+
+      const otherWorkspace = userWorkspaces.find((wm) => wm.workspace.id !== workspaceId);
+      if (otherWorkspace) {
+        await this.switchWorkspace(userId, otherWorkspace.workspace.id);
+      } else {
+        // No other workspaces
+        await this.prismaService.user.update({
+          where: { id: userId },
+          data: { currentWorkspaceId: null },
+        });
+      }
+    }
+
+    // Send WebSocket notification about user leaving
+    await this.sendWorkspaceMemberLeftNotification(workspaceId, userId, workspace.name, member.role);
 
     return { success: true };
   }
@@ -1283,23 +1414,5 @@ export class WorkspaceService {
     }
 
     return this.getWorkspace(user.currentWorkspaceId, userId);
-  }
-
-  /**
-   * Set user's default workspace (first workspace they're a member of)
-   */
-  async setDefaultWorkspace(userId: string) {
-    const firstWorkspace = await this.prismaService.workspaceMember.findFirst({
-      where: { userId },
-      select: { workspaceId: true },
-      orderBy: { createdAt: "asc" },
-    });
-
-    if (firstWorkspace) {
-      await this.prismaService.user.update({
-        where: { id: userId },
-        data: { currentWorkspaceId: firstWorkspace.workspaceId },
-      });
-    }
   }
 }

@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { workspaceApi } from "@/apis/workspace";
 import { useTranslation } from "react-i18next";
-import useWorkspaceStore, { useSwitchWorkspace, useSetCurrentWorkspace } from "@/stores/workspace-store";
+import { useCreateWorkspace } from "@/stores/workspace-store";
 import { WorkspaceTypeEnum } from "@idea/contracts";
 import { Check, User, Users, Loader2 } from "lucide-react";
 
@@ -17,9 +16,8 @@ export default function CreateWorkspace() {
   const [currentStep, setCurrentStep] = useState<Step>("type-selection");
   const [workspaceType, setWorkspaceType] = useState<WorkspaceTypeEnum | null>(null);
   const [name, setName] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { run: switchWorkspace } = useSwitchWorkspace();
-  const setCurrentWorkspace = useSetCurrentWorkspace();
+
+  const { run: createWorkspace, loading: isCreating } = useCreateWorkspace();
 
   const handleTypeSelection = (type: WorkspaceTypeEnum) => {
     setWorkspaceType(type);
@@ -30,33 +28,28 @@ export default function CreateWorkspace() {
     e.preventDefault();
     if (!name.trim() || !workspaceType) return;
 
-    setIsSubmitting(true);
     setCurrentStep("initializing");
 
     try {
-      const res = await workspaceApi.initializeWorkspace({
+      await createWorkspace({
         name,
         description: "",
         avatar: "",
         type: workspaceType,
       });
 
-      localStorage.setItem("workspaceId", res.workspace.id);
-
-      // Navigate to workspace
-      navigate("/");
+      // Navigate to workspace after successful creation
+      window.location.href = "/";
     } catch (error) {
-      console.error(t("createWorkspaceFailed"), error);
+      // Error is handled by the hook, just go back to name input
       setCurrentStep("name-input");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleBack = () => {
     if (currentStep === "name-input") {
       setCurrentStep("type-selection");
-    } else if (currentStep === "initializing") {
+    } else if (currentStep === "initializing" && !isCreating) {
       setCurrentStep("name-input");
     }
   };
@@ -164,7 +157,7 @@ export default function CreateWorkspace() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-3">
-              <Button type="submit" disabled={!name.trim() || isSubmitting} className="w-full">
+              <Button type="submit" disabled={!name.trim() || isCreating} className="w-full">
                 {t("Create Space")}
               </Button>
               <Button type="button" variant="outline" onClick={handleBack} className="w-full">
@@ -184,11 +177,11 @@ export default function CreateWorkspace() {
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <div className="mb-6">
-              <Loader2 className="h-12 w-12 animate-spin text-gray-600 mx-auto mb-4" />
+              <Loader2 className={`h-12 w-12 animate-spin text-gray-600 mx-auto mb-4 ${isCreating ? "animate-spin" : ""}`} />
               <h2 className="text-xl font-semibold text-gray-900 mb-2">{t("Initializing workspace...")}</h2>
               <p className="text-gray-600">{t("Space initialization settings are in progress, please wait")}</p>
             </div>
-            <Button variant="outline" onClick={handleCancel} className="w-full">
+            <Button variant="outline" onClick={handleCancel} disabled={isCreating} className="w-full">
               {t("Cancel Operation")}
             </Button>
           </CardContent>

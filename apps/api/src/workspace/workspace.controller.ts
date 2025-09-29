@@ -17,11 +17,6 @@ export class WorkspaceController {
     return this.workspaceService.createWorkspace(dto, userId);
   }
 
-  @Post("initialize")
-  async initializeWorkspace(@Body() dto: CreateWorkspaceDto, @GetUser("id") userId: string) {
-    return this.workspaceService.initializeWorkspace(dto, userId);
-  }
-
   @Get()
   async getWorkspaces(@GetUser("id") userId: string): Promise<WorkspaceListResponse> {
     return this.workspaceService.getUserWorkspaces(userId);
@@ -70,7 +65,7 @@ export class WorkspaceController {
   @UseGuards(PolicyGuard)
   @CheckPolicy(Action.ManageMembers, "Workspace")
   async removeWorkspaceMember(@Param("id") workspaceId: string, @Param("userId") userId: string, @GetUser("id") adminId: string) {
-    return this.workspaceService.removeWorkspaceMember(workspaceId, userId, adminId);
+    return this.workspaceService.removeWorkspaceMember(workspaceId, userId);
   }
 
   @Get(":id/invite/public")
@@ -104,6 +99,11 @@ export class WorkspaceController {
   @CheckPolicy(Action.Update, "Workspace")
   async updateWorkspace(@Param("id") id: string, @Body() dto: UpdateWorkspaceDto, @GetUser("id") userId: string) {
     return this.workspaceService.updateWorkspace(id, dto, userId);
+  }
+
+  @Delete(":id/leave")
+  async leaveWorkspace(@Param("id") workspaceId: string, @GetUser("id") userId: string) {
+    return this.workspaceService.leaveWorkspace(workspaceId, userId);
   }
 
   @Delete(":id")

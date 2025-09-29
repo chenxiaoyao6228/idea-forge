@@ -54,9 +54,11 @@ export enum ErrorCodeEnum {
   // Workspace
   WorkspaceNotFoundOrNotInWorkspace = "workspace_not_found_or_user_not_in_workspace",
   WorkspaceHasMembers = "workspace_has_members",
+  WorkspaceHasDocuments = "workspace_has_documents",
   UserAlreadyInWorkspace = "user_already_in_workspace",
   UserNotInWorkspace = "user_not_in_workspace",
   CannotRemoveLastOwner = "cannot_remove_last_owner",
+  CannotLeaveAsLastOwner = "cannot_leave_as_last_owner",
   GuestNotFound = "guest_not_found",
   WorkspaceInvitationNotFound = "workspace_invitation_not_found",
   WorkspaceInvitationExpired = "workspace_invitation_expired",

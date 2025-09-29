@@ -19,9 +19,6 @@ export const workspaceApi = {
   // Workspace operations
   createWorkspace: async (data: CreateWorkspaceRequest) => request.post<CreateWorkspaceRequest, Workspace>("/api/workspaces", data),
 
-  initializeWorkspace: async (data: CreateWorkspaceRequest) =>
-    request.post<CreateWorkspaceRequest, { workspace: Workspace }>("/api/workspaces/initialize", data),
-
   getWorkspace: async (id: string) => request.get<void, Workspace>(`/api/workspaces/${id}`),
 
   getWorkspaces: async () => request.get<void, WorkspaceListResponse>("/api/workspaces"),
@@ -60,6 +57,9 @@ export const workspaceApi = {
   // Workspace switching
   switchWorkspace: async (workspaceId: string) =>
     request.patch<{ workspaceId: string }, { success: boolean; currentWorkspaceId: string }>("/api/workspaces/switch", { workspaceId }),
+
+  // Leave workspace
+  leaveWorkspace: async (workspaceId: string) => request.delete<void, { success: boolean }>(`/api/workspaces/${workspaceId}/leave`),
 
   getCurrentWorkspace: async () => request.get<void, Workspace>("/api/workspaces/current"),
 };
