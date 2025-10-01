@@ -2,7 +2,7 @@ import Loading from "@/components/ui/loading";
 import { LazyExoticComponent, Suspense } from "react";
 
 const LazyBoundary = (WrapComp: LazyExoticComponent<() => JSX.Element | null>) => (
-  <Suspense fallback={<Loading size="lg" />}>
+  <Suspense fallback={<Loading fullScreen size="lg" id="lazy-boundary" />}>
     <WrapComp />
   </Suspense>
 );

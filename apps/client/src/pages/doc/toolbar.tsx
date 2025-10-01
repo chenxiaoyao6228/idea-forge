@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import useDocumentStore, { DocumentEntity } from "@/stores/document-store";
 import { PRESET_CATEGORIES } from "./constants";
 import { documentApi } from "@/apis/document";
+import { TitleInput } from "./title-input";
 
 interface ToolbarProps {
   doc: DocumentEntity;
@@ -41,10 +42,6 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
     await documentApi.update(doc.id, { icon: "" });
   };
 
-  const onUpdateTitle = async (title: string) => {
-    await documentApi.update(doc.id, { title });
-  };
-
   return (
     <div className="group relative mx-10">
       <IconSelector doc={doc} editable={editable} onIconSelect={onIconSelect} onRemoveIcon={onRemoveIcon} />
@@ -65,7 +62,7 @@ export const Toolbar = ({ doc, editable }: ToolbarProps) => {
         )}
       </div>
 
-      <TitleInput doc={doc} editable={editable} onUpdateTitle={onUpdateTitle} />
+      <TitleInput editable={editable} />
     </div>
   );
 };
@@ -112,84 +109,3 @@ const IconSelector = ({ doc, editable, onIconSelect, onRemoveIcon }: IconSelecto
     </div>
   );
 };
-
-// Title Input
-
-interface TitleInputProps {
-  doc: DocumentEntity;
-  editable: boolean;
-  onUpdateTitle: (title: string) => void;
-}
-
-function TitleInput({ doc, editable, onUpdateTitle }: TitleInputProps) {
-  const { t } = useTranslation();
-  const inputRef = useRef<ElementRef<"textarea">>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState(doc?.title || t("Untitled"));
-
-  const debouncedUpdate = useMemo(
-    () =>
-      debounce((id: string, title: string) => {
-        onUpdateTitle(title);
-      }, 500),
-    [onUpdateTitle],
-  );
-
-  const onInput = (value: string) => {
-    setValue(value);
-    debouncedUpdate(doc.id, value);
-  };
-
-  useEffect(() => {
-    return () => {
-      debouncedUpdate.cancel();
-    };
-  }, [debouncedUpdate]);
-
-  // Sync local state with prop changes from WebSocket events
-  useEffect(() => {
-    if (!isEditing) {
-      setValue(doc?.title || t("Untitled"));
-    }
-  }, [doc.title, isEditing, t]);
-
-  const enableInput = () => {
-    if (!editable) return;
-
-    setIsEditing(true);
-    setTimeout(() => {
-      setValue(doc.title);
-      inputRef.current?.focus();
-    }, 0);
-  };
-
-  const disableInput = () => setIsEditing(false);
-
-  const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      disableInput();
-    }
-  };
-
-  if (isEditing && editable) {
-    return (
-      <TextareaAutosize
-        ref={inputRef}
-        onBlur={disableInput}
-        onKeyDown={onKeyDown}
-        value={value}
-        onChange={(e) => onInput(e.target.value)}
-        className={`text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF] bg-transparent resize-none`}
-        id={DOCUMENT_TITLE_ID}
-        placeholder={t("Type a title...")}
-      />
-    );
-  }
-
-  return (
-    <div onClick={enableInput} className={`text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF] pb-[11.5px]`} id={DOCUMENT_TITLE_ID}>
-      {doc.title || t("Untitled")}
-    </div>
-  );
-}

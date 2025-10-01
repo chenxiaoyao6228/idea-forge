@@ -14,9 +14,9 @@ import { useScrollTop } from "@/hooks/use-scroll-top";
 import ImportMarkdownButton from "./import-markdown";
 import { Separator } from "@/components/ui/separator";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { useCurrentDocumentId } from "@/hooks/use-current-document";
 import { SharePopover } from "@/pages/main/sharing";
 import { StarButton } from "@/components/star-button";
+import { useCurrentDocumentId } from "@/stores/document-store";
 
 export default function DocumentHeader() {
   const activeDocumentId = useCurrentDocumentId();

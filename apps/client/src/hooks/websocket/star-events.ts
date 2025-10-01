@@ -4,10 +4,6 @@ import { StarEntity } from "@/stores/star-store";
 import useStarStore from "@/stores/star-store";
 import type { Star } from "@idea/contracts";
 import { PartialExcept } from "@/types";
-import { useSubspaceWebsocketEvents } from "@/hooks/websocket/subspace-events";
-import { useDocumentWebsocketEvents } from "@/hooks/websocket/document-events";
-import { useWorkspaceWebsocketEvents } from "@/hooks/websocket/workspace-events";
-import { useSharedWithMeWebsocketEvents } from "@/hooks/websocket/shared-with-me-events";
 
 // Define SocketEvents enum locally to avoid import issues
 enum SocketEvents {
@@ -100,35 +96,4 @@ export function useStarWebsocketEvents(socket: Socket | null): (() => void) | nu
 
   // Return cleanup function for external use
   return cleanupRef.current;
-}
-
-/**
- * Hook to manage all WebSocket event handlers
- * This centralizes event registration and cleanup
- */
-export function useWebsocketEventHandlers(socket: Socket | null) {
-  const starCleanup = useStarWebsocketEvents(socket);
-  const subspaceCleanup = useSubspaceWebsocketEvents(socket);
-  const documentCleanup = useDocumentWebsocketEvents(socket);
-  const workspaceCleanup = useWorkspaceWebsocketEvents(socket);
-  const sharedWithMeCleanup = useSharedWithMeWebsocketEvents(socket);
-
-  // Return combined cleanup function
-  return () => {
-    if (starCleanup) {
-      starCleanup();
-    }
-    if (subspaceCleanup) {
-      subspaceCleanup();
-    }
-    if (documentCleanup) {
-      documentCleanup();
-    }
-    if (workspaceCleanup) {
-      workspaceCleanup();
-    }
-    if (sharedWithMeCleanup) {
-      sharedWithMeCleanup();
-    }
-  };
 }

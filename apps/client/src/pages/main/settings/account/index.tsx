@@ -211,7 +211,7 @@ export const Account = () => {
   };
 
   if (!userInfo) {
-    <Loading />;
+    <Loading size="lg" />;
   }
 
   const avatarComponent = (

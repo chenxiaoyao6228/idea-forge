@@ -2,7 +2,7 @@ import "./index.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
-import { useCollaborationProvider } from "./hooks/useCollaborationProvider";
+import { useCollaborationProvider } from "./hooks/use-collaboration-provider";
 import { getRandomElement } from "@/lib/utils";
 import useUserStore from "@/stores/user-store";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
@@ -18,7 +18,6 @@ import AIPanel from "./ai-panel";
 import { getHierarchicalIndexes } from "@tiptap/extension-table-of-contents";
 import TableOfContents from "@tiptap/extension-table-of-contents";
 import React from "react";
-import { useCurrentDocument } from "@/hooks/use-current-document";
 import { TextSelection } from "@tiptap/pm/state";
 
 interface Props {
@@ -30,11 +29,17 @@ interface Props {
 
 export default function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) {
   const menuContainerRef = useRef(null);
-  const { userInfo } = useUserStore();
-  const currentDocument = useCurrentDocument();
+  const userInfo = useUserStore((s) => s.userInfo);
+  const collaborationState = useEditorStore((state) => state.documents[id]);
+  const { status, error, lastSyncedAt, pendingChanges, isIndexedDBLoaded } = collaborationState || {
+    status: "loading",
+    error: undefined,
+    lastSyncedAt: undefined,
+    pendingChanges: false,
+    isIndexedDBLoaded: false,
+  };
   const setEditor = useEditorStore((state) => state.setEditor);
   const setTocItems = useEditorStore((state) => state.setTocItems);
-  const { status, error, lastSyncedAt, pendingChanges, isIndexedDBLoaded } = currentDocument || {};
 
   const user = useMemo(
     () => ({
@@ -57,14 +62,26 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
     editable,
     extensions: [
       ...extensions,
-      Collaboration.configure({
-        document: provider.document,
-      }),
+      ...(provider?.document
+        ? [
+            Collaboration.configure({
+              document: provider.document,
+            }),
+          ]
+        : []),
       // FIXME: the cursor will cause the editor to crash somehow, need to fix it later
-      // CollaborationCursor.configure({
-      //   provider,
-      //   user,
-      // }),
+      // if we have the condition 'provider?.awareness && provider.status === "connected"'
+      // the extension won't work somehow, need to update this when making the tiptap 3.x upgrade
+      // Only add CollaborationCursor if provider is available and ready
+      // Add a small delay to ensure provider is fully initialized
+      // ...(provider?.awareness && provider.status === "connected"
+      //   ? [
+      //       CollaborationCursor.configure({
+      //         provider,
+      //         user,
+      //       }),
+      //     ]
+      //   : []),
       TableOfContents.configure({
         scrollParent: () => document?.getElementById("WORK_CONTENT_SCROLL_CONTAINER") || window,
         getIndex: getHierarchicalIndexes,
@@ -88,12 +105,22 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
     onUpdate: ({ editor }) => {
       console.log("Editor content:", editor.getJSON());
     },
+    onDestroy: () => {
+      console.log("Editor destroyed");
+    },
   });
 
   useEffect(() => {
     if (editor) {
       setEditor(editor);
     }
+
+    // Cleanup on unmount or when editor changes
+    return () => {
+      if (editor && !editor.isDestroyed) {
+        editor.destroy();
+      }
+    };
   }, [editor, setEditor]);
 
   useEffect(() => {
@@ -139,6 +166,33 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
 
   // @ts-ignore for debug
   window._editor = editor;
+
+  // Add safety checks AFTER all hooks
+  if (!provider || !provider.document) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Skeleton className="h-8 w-32" />
+      </div>
+    );
+  }
+
+  if (!id || !collabToken || !collabWsUrl) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading editor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !editor) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Skeleton className="h-8 w-32" />
+      </div>
+    );
+  }
 
   const renderStatusBanner = () => {
     switch (status) {
@@ -202,8 +256,6 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
         return null;
     }
   };
-
-  if (!user || !editor) return null;
 
   return (
     <React.Fragment>

@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { useMemo } from "react";
 import useRequest from "@ahooksjs/use-request";
-import { toast } from "sonner";
 import { CoverImage, DocTypeSchema, DocVisibilitySchema, PermissionLevel, SubspaceTypeSchema, SerializedAbilityMap } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
@@ -9,6 +8,7 @@ import useSubSpaceStore, { usePersonalSubspace } from "./subspace-store";
 import useWorkspaceStore from "./workspace-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { useInitializeSubjectAbilities } from "@/stores/ability-store";
+import { useParams } from "react-router-dom";
 
 // Direct functions for subspace operations (can be called from within document store)
 const addDocumentToSubspace = (subspaceId: string, document: DocumentEntity) => {
@@ -572,51 +572,87 @@ export const useUpdateDocument = () => {
   );
 };
 
+// Helper function to merge document updates with proper updatedAt normalization
+// This ensures WebSocket updates compose with optimistic state instead of clobbering it
+const mergeDocumentUpdate = (existingDocument: DocumentEntity, updatedFields: Partial<DocumentEntity>): DocumentEntity => {
+  // Skip merge if update is stale (older than existing document)
+  if (updatedFields.updatedAt && existingDocument.updatedAt) {
+    const existingDate = new Date(existingDocument.updatedAt);
+    const updateDate = new Date(updatedFields.updatedAt);
+
+    if (updateDate <= existingDate) {
+      // Update is stale, ignore it
+      return existingDocument;
+    }
+  }
+
+  const merged = { ...existingDocument, ...updatedFields };
+
+  // Ensure updatedAt is properly normalized
+  if (updatedFields.updatedAt) {
+    merged.updatedAt = updatedFields.updatedAt;
+  } else if (Object.keys(updatedFields).length > 0) {
+    // If other fields were updated but no updatedAt provided, use current timestamp
+    merged.updatedAt = new Date().toISOString();
+  }
+
+  return merged;
+};
+
 export const useHandleDocumentUpdate = () => {
   const { run: fetchDetail } = useFetchDocumentDetail();
 
   return useRequest(
-    async (documentId: string, updatedAt?: string) => {
+    async (documentId: string, updatedFields: Partial<DocumentEntity>) => {
       try {
         const documents = useDocumentStore.getState().documents;
         const existing = documents[documentId];
 
-        if (existing && updatedAt && existing.updatedAt === updatedAt) {
+        if (!existing) {
+          // Document doesn't exist in store, fetch it
+          await fetchDetail(documentId, { force: true, silent: true });
           return;
         }
 
-        // Use silent mode to avoid setting active states during batch updates
-        await fetchDetail(documentId, { force: true, silent: true });
+        // Check if the update is actually newer (this check is now also in mergeDocumentUpdate)
+        if (updatedFields.updatedAt) {
+          const existingDate = new Date(existing.updatedAt);
+          const updateDate = new Date(updatedFields.updatedAt);
 
-        const updatedDocument = useDocumentStore.getState().documents[documentId];
+          if (existingDate >= updateDate) {
+            return; // No update needed - stale update
+          }
+        }
+
+        // Merge the update with existing document
+        const mergedDocument = mergeDocumentUpdate(existing, updatedFields);
+
+        useDocumentStore.setState((state) => ({
+          documents: { ...state.documents, [documentId]: mergedDocument },
+        }));
 
         // Handle my-docs reordering - check if document moved in/out of my-docs
-        if (updatedDocument && existing) {
+        if (existing) {
           const wasInMyDocs = !existing.subspaceId;
-          const isInMyDocs = !updatedDocument.subspaceId;
+          const isInMyDocs = !mergedDocument.subspaceId;
 
           // If document structure changed (moved between my-docs and subspace)
           if (wasInMyDocs !== isInMyDocs) {
             // Trigger my-docs refresh if needed
             if (wasInMyDocs || isInMyDocs) {
               // Could emit a custom event or call a refresh method
-              console.log(`Document ${documentId} moved between my-docs and subspace`);
             }
-          } else {
+          } else if (wasInMyDocs && isInMyDocs) {
             // my doc order changed
-            console.log(`Document ${documentId} order changed in my-docs`);
-            useDocumentStore.setState((state) => ({
-              documents: { ...state.documents, [documentId]: updatedDocument },
-            }));
           }
 
           // Handle subspace navigation tree updates
           if (
-            updatedDocument.subspaceId &&
-            (existing.title !== updatedDocument.title || existing.parentId !== updatedDocument.parentId || existing.index !== updatedDocument.index)
+            mergedDocument.subspaceId &&
+            (existing.title !== mergedDocument.title || existing.parentId !== mergedDocument.parentId || existing.index !== mergedDocument.index)
           ) {
             // Note: Navigation tree will be updated via WebSocket events
-            // await useSubSpaceStore.getState().fetchNavigationTree(updatedDocument.subspaceId, {
+            // await useSubSpaceStore.getState().fetchNavigationTree(mergedDocument.subspaceId, {
             //   force: true,
             // });
           }
@@ -696,6 +732,15 @@ export const useGetDocumentAsNavigationNode = () => {
   });
 };
 
+// Store selector hooks for current document
+export const useCurrentDocumentFromStore = () => {
+  const documents = useDocuments();
+  const activeDocumentId = useActiveDocumentId();
+  return useMemo(() => {
+    return activeDocumentId ? documents[activeDocumentId] : undefined;
+  }, [documents, activeDocumentId]);
+};
+
 // Computed value hooks
 export const useArchivedDocuments = () => {
   const documents = useDocuments();
@@ -723,14 +768,6 @@ export const usePublishedDocuments = () => {
   return useMemo(() => {
     return Object.values(documents).filter((doc) => !!doc.publishedAt);
   }, [documents]);
-};
-
-export const useActiveDocument = () => {
-  const documents = useDocuments();
-  const activeDocumentId = useActiveDocumentId();
-  return useMemo(() => {
-    return activeDocumentId ? documents[activeDocumentId] : undefined;
-  }, [documents, activeDocumentId]);
 };
 
 export const useDocumentsInSubspace = () => {
@@ -896,6 +933,11 @@ export const useFindDescendants = () => {
     findChildren(documentId);
     return result;
   });
+};
+
+export const useCurrentDocumentId = () => {
+  const { docId } = useParams();
+  return docId;
 };
 
 export default useDocumentStore;

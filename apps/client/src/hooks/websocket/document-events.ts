@@ -62,7 +62,7 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
       });
 
       // Also update the subspace navigation tree if the document title changed
-      if (subspaceId && (existingDocument?.title !== document.title || !existingDocument)) {
+      if (subspaceId && (existingDocument?.title !== document.title || existingDocument?.updatedAt !== document.updatedAt || !existingDocument)) {
         const subspaceStore = useSubSpaceStore.getState();
         const subspace = subspaceStore.subspaces[subspaceId];
 

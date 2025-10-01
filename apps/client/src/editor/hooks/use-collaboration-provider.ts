@@ -4,8 +4,6 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
 import { CollabUser, useEditorStore } from "../../stores/editor-store";
 import { useTranslation } from "react-i18next";
-// import { useCollaborationPermissionWebsocket } from "@/hooks/use-permission-websocket";
-import { getWebsocketService } from "@/lib/websocket";
 
 const CONNECTION_TIMEOUT = 10000;
 
@@ -24,27 +22,8 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
   const setCurrentDocument = useEditorStore((state) => state.setCurrentDocument);
   const { t } = useTranslation();
   const timeoutRef = useRef<any>();
-
-  // WebSocket service for permission events
-  const websocketService = getWebsocketService();
-
   // Provider ref to access in callbacks
   const providerRef = useRef<HocuspocusProvider | null>(null);
-
-  // Handle permission revocation during collaboration
-  const handlePermissionRevoked = () => {
-    console.log("[collaboration]: Permission revoked, disconnecting...");
-    if (providerRef.current) {
-      providerRef.current.disconnect();
-      setCollaborationState(documentId, {
-        status: "unauthorized",
-        error: "Access to this document has been revoked",
-      });
-    }
-  };
-
-  // Set up permission WebSocket events for this document
-  // useCollaborationPermissionWebsocket(websocketService.socket, documentId, handlePermissionRevoked);
 
   useEffect(() => {
     if (!editable) {
@@ -55,26 +34,26 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      // Only reset if we're actually switching to a different document
       resetDocumentState(documentId);
     };
-  }, [documentId, editable]);
+  }, [documentId, editable, setCurrentDocument, resetDocumentState]);
 
   const provider = useMemo(() => {
+    if (!documentId || !editable) {
+      return null;
+    }
+
     const doc = new Y.Doc();
-
-    // reset collaboration state
-    setCollaborationState(documentId, {
-      activeUsers: [],
-      isIndexedDBLoaded: false,
-      status: "loading",
-    });
-
     const indexeddbProvider = new IndexeddbPersistence(documentId, doc);
+
     indexeddbProvider.on("synced", () => {
       console.log("Content from IndexedDB loaded");
-      setCollaborationState(documentId, {
-        isIndexedDBLoaded: true,
-        status: "connecting",
+      queueMicrotask(() => {
+        setCollaborationState(documentId, {
+          isIndexedDBLoaded: true,
+          status: "connecting",
+        });
       });
     });
 
@@ -85,9 +64,11 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       token: collabToken,
       connect: false, // Don't connect immediately
       onAuthenticationFailed: ({ reason }) => {
-        setCollaborationState(documentId, {
-          status: "unauthorized",
-          error: reason || t("You don't have permission to access this document"),
+        queueMicrotask(() => {
+          setCollaborationState(documentId, {
+            status: "unauthorized",
+            error: reason || t("You don't have permission to access this document"),
+          });
         });
       },
       onAwarenessUpdate: ({ states }) => {
@@ -106,41 +87,48 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
           });
         });
 
-        setCollaborationState(documentId, {
-          activeUsers: Array.from(userMap.values()),
+        queueMicrotask(() => {
+          setCollaborationState(documentId, {
+            activeUsers: Array.from(userMap.values()),
+          });
         });
       },
       onConnect: () => {
-        setCollaborationState(documentId, {
-          status: "collaborating",
-          error: undefined,
-          lastSyncedAt: new Date(),
+        queueMicrotask(() => {
+          setCollaborationState(documentId, {
+            status: "collaborating",
+            error: undefined,
+            lastSyncedAt: new Date(),
+          });
         });
       },
       onSynced: ({ state }) => {
-        setCollaborationState(documentId, {
-          lastSyncedAt: state ? new Date() : undefined,
-          pendingChanges: !state,
+        queueMicrotask(() => {
+          setCollaborationState(documentId, {
+            lastSyncedAt: state ? new Date() : undefined,
+            pendingChanges: !state,
+          });
         });
       },
     });
 
     doc.on("update", () => {
       if (provider.status !== "connected") {
-        setCollaborationState(documentId, {
-          pendingChanges: true,
+        queueMicrotask(() => {
+          setCollaborationState(documentId, {
+            pendingChanges: true,
+          });
         });
       }
     });
 
-    setProvider(documentId, provider);
     providerRef.current = provider;
     return provider;
-  }, [documentId, editable]);
+  }, [documentId, editable, collabWsUrl, collabToken, t]);
 
   // Handle connection timeout
   useEffect(() => {
-    if (!editable) {
+    if (!editable || !provider) {
       return;
     }
     timeoutRef.current = setTimeout(() => {
@@ -159,9 +147,24 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
     };
   }, [provider, documentId, editable, t]);
 
-  // Add connect/disconnect handling
+  // Initialize state and setup provider
   useEffect(() => {
-    if (!editable) return;
+    if (!editable || !provider) return;
+
+    // Initialize collaboration state
+    setCollaborationState(documentId, {
+      activeUsers: [],
+      isIndexedDBLoaded: false,
+      status: "loading",
+    });
+
+    // Set provider in store
+    setProvider(documentId, provider);
+
+    // Set local awareness state with user info
+    if (provider.awareness && user) {
+      provider.awareness.setLocalState(user);
+    }
 
     // initiate connection if not connected
     if (provider.status !== "connected") {
@@ -170,6 +173,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
     }
 
     return () => {
+      if (!provider) return;
       const status = provider.status;
       if (status === "disconnected" || status === "connecting") return;
 
@@ -179,10 +183,12 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       provider.configuration.websocketProvider.disconnect();
       provider.disconnect();
     };
-  }, [documentId, provider, editable]);
+  }, [documentId, provider, editable, user, setCollaborationState, setProvider]);
 
   // Add disconnect detection
   useEffect(() => {
+    if (!provider) return;
+
     const onConnect = () => {
       console.log("Provider connected");
     };
@@ -191,11 +197,14 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       console.log("Provider disconnected", event);
       if (event.type === "close") {
         setTimeout(() => {
+          if (!provider) return;
           console.log("3s timeout after disconnect, Provider status is: ", provider.status);
-          if (provider.status === "connected") return; // maybe reconnect soon itself
-          setCollaborationState(documentId, {
-            status: "offline",
-            error: t("Disconnected from server"),
+          if (provider.status === "connected") return;
+          queueMicrotask(() => {
+            setCollaborationState(documentId, {
+              status: "offline",
+              error: t("Disconnected from server"),
+            });
           });
         }, 3000);
       }
@@ -205,15 +214,23 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
     provider.on("disconnect", onDisconnect);
 
     return () => {
-      provider.off("connect", onConnect);
-      provider.off("disconnect", onDisconnect);
+      if (provider) {
+        provider.off("connect", onConnect);
+        provider.off("disconnect", onDisconnect);
+      }
     };
-  }, [provider, documentId, t]);
+  }, [provider, documentId, t, setCollaborationState]);
 
   // Cleanup
   useEffect(() => {
     return () => {
-      provider.destroy();
+      if (provider) {
+        try {
+          provider.destroy();
+        } catch (error) {
+          console.warn("Error destroying collaboration provider:", error);
+        }
+      }
     };
   }, [provider]);
 

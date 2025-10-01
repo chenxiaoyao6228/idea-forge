@@ -3,8 +3,12 @@ import { FileIcon, FolderIcon, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useCurrentDocumentId } from "@/hooks/use-current-document";
-import useDocumentStore, { useFetchDocumentDetail, useFetchDocumentChildren, useGetDocumentAsNavigationNode } from "@/stores/document-store";
+import useDocumentStore, {
+  useFetchDocumentDetail,
+  useFetchDocumentChildren,
+  useGetDocumentAsNavigationNode,
+  useCurrentDocumentId,
+} from "@/stores/document-store";
 // import { useHasAbility } from "@/stores/ability-store";
 import { DocumentLink } from "./document-link";
 import type { DocumentEntity } from "@/stores/document-store";

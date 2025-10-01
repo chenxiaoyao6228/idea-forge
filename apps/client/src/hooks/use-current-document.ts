@@ -40,19 +40,16 @@ export const useNavigationNodeForDocument = () => {
 };
 
 // ✅ Simplified hook to get current document with fresh data using useRequest debounce
-export const useCurrentDocument = () => {
+export const useFetchCurrentDocument = () => {
   const { docId: activeDocumentId } = useParams();
   const initializeSubjectAbilities = useInitializeSubjectAbilities();
 
-  // Use useRequest with built-in debounce for fresh data fetching
   const {
     data: document,
     loading,
     error,
   } = useRequest(
     async () => {
-      console.log("🚀 useCurrentDocument: Fetching document", { documentId: activeDocumentId });
-
       if (!activeDocumentId) {
         return null;
       }
@@ -63,12 +60,12 @@ export const useCurrentDocument = () => {
       if (!doc) {
         throw new Error(ErrorCodeEnum.DocumentNotFound);
       }
-
       console.log("✅ useCurrentDocument: Document fetched successfully", { documentId: doc.id, title: doc.title });
 
       // Update the store for caching
       useDocumentStore.setState((state) => ({
         documents: { ...state.documents, [doc.id]: doc },
+        activeDocumentId: doc.id,
       }));
 
       // Initialize document abilities

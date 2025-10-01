@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { documentApi } from "@/apis/document";
 import useDocumentStore from "@/stores/document-store";
-import { useCurrentDocument } from "@/hooks/use-current-document";
+import { useCurrentDocumentFromStore } from "@/stores/document-store";
 
 interface CoverProps {
   cover?: {
@@ -25,7 +25,7 @@ export default function Cover({ cover = { url: "", scrollY: DEFAULT_SCROLL_Y }, 
   const { t } = useTranslation();
   const { isPickerOpen, setIsPickerOpen } = useCoverImageStore();
   const [isRepositioning, setIsRepositioning] = useState(false);
-  const currentDocument = useCurrentDocument();
+  const currentDocument = useCurrentDocumentFromStore();
   // Note: Loading state is now handled by useRequest in the document hooks
   const isCurrentDocLoading = false;
   const [imagePosition, setImagePosition] = useState(cover.scrollY || DEFAULT_SCROLL_Y);

@@ -5,11 +5,11 @@ import { FileDown } from "lucide-react";
 import { useEditorStore } from "../../../stores/editor-store";
 
 import { useTranslation } from "react-i18next";
-import { useCurrentDocument } from "@/hooks/use-current-document";
+import { useCurrentDocumentFromStore } from "@/stores/document-store";
 export default function ExportMarkdownButton() {
   const { t } = useTranslation();
   const editor = useEditorStore((state) => state.editor);
-  const currentDocument = useCurrentDocument();
+  const currentDocument = useCurrentDocumentFromStore();
 
   if (!editor) return null;
 

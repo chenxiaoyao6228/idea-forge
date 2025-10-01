@@ -1,17 +1,19 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/user-avatar";
-import { useCurrentDocument } from "@/hooks/use-current-document";
+import { useCurrentDocumentId } from "@/stores/document-store";
 import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/stores/editor-store";
+import { useMemo } from "react";
 
 export function CollabUsers({
   className,
 }: {
   className?: string;
 }) {
-  const currentDocument = useCurrentDocument();
-  const { activeUsers, status } = currentDocument || {};
-
+  const id = useCurrentDocumentId();
+  const documentState = useEditorStore((state) => state.documents[id || ""]);
+  const activeUsers = useMemo(() => documentState?.activeUsers, [documentState?.activeUsers]);
+  const status = documentState?.status;
   if (!activeUsers?.length || status !== "collaborating") return null;
 
   return (

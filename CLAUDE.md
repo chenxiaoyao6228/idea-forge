@@ -1,0 +1,205 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Idea Forge is a collaborative document platform combining Notion-like functionality with AI capabilities. Built as a modern monorepo with real-time collaboration, rich document editing, and multi-tenant workspace management.
+
+**Tech Stack:**
+- **Backend:** NestJS, PostgreSQL, Redis, Prisma ORM, Hocuspocus WebSocket server
+- **Frontend:** React, TypeScript, TailwindCSS, Shadcn UI, TipTap editor
+- **Collaboration:** Yjs for operational transforms, Socket.io for real-time features
+- **Build System:** Turbo monorepo, pnpm workspaces
+- **Code Quality:** Biome (linting/formatting), Lefthook (git hooks)
+
+## Essential Commands
+
+### Development
+```bash
+# Start full development environment (API + Client + Docker services)
+pnpm dev
+
+# Start individual services
+pnpm dev:api    # NestJS backend only
+pnpm dev:client # React frontend only
+
+# First-time setup (includes Docker services)
+pnpm install && pnpm run setup
+```
+
+### Building & Testing
+```bash
+# Build all packages
+pnpm build
+
+# Run all tests
+pnpm test                    # All tests via Turbo
+pnpm test:e2e               # Playwright e2e tests
+pnpm test:e2e:ui            # Playwright with UI
+pnpm test:e2e:debug         # Debug mode
+
+# Individual package tests
+pnpm -F @idea/api test:unit
+pnpm -F @idea/client test
+```
+
+### Code Quality
+```bash
+# Lint and format (uses Biome, not ESLint/Prettier)
+pnpm lint           # Check all packages
+pnpm lint:fix       # Fix auto-fixable issues
+pnpm format         # Check formatting
+pnpm format:fix     # Apply formatting
+
+# Type checking
+pnpm -F @idea/client typecheck
+```
+
+### Database Operations
+```bash
+# Prisma commands (run from API workspace)
+pnpm prisma:push      # Push schema changes
+pnpm prisma:studio    # Open database GUI
+pnpm migrate:dev      # Create and run migration
+pnpm migrate:deploy   # Deploy migrations (production)
+```
+
+## Project Architecture
+
+### Monorepo Structure
+```
+idea-forge/
+├── apps/
+│   ├── api/          # NestJS backend application
+│   └── client/       # React frontend application
+├── packages/
+│   ├── contracts/    # Shared TypeScript types and utilities
+│   ├── mindmap/      # Future mindmap package
+│   └── ui/           # Future shared UI components
+└── scripts/          # Build and deployment utilities
+```
+
+### Backend Architecture (apps/api)
+- **Module-based** NestJS structure with feature modules (auth, document, workspace, etc.)
+- **Database:** PostgreSQL with Prisma ORM, includes comprehensive permission system
+- **Real-time:** Hocuspocus WebSocket server for Yjs document collaboration
+- **Authentication:** JWT with multiple strategies (local, GitHub, Google)
+- **File Storage:** S3 integration for document attachments
+- **Background Jobs:** BullMQ for async processing
+
+Key modules: `auth`, `document`, `workspace`, `collaboration`, `file-store`, `user`, `permission`
+
+### Frontend Architecture (apps/client)
+- **Component-driven** React with TypeScript
+- **State Management:** Zustand stores with hook-based architecture
+- **Routing:** React Router for client-side navigation
+- **UI Framework:** Shadcn UI components with TailwindCSS
+- **Editor:** TipTap rich text editor with collaborative features
+- **Real-time:** Socket.io client for live features, Yjs provider for document sync
+
+Key directories: `components`, `pages`, `hooks`, `stores`, `editor`, `apis`
+
+### Real-time Collaboration System
+- **Document Sync:** Yjs operational transforms for conflict-free collaborative editing
+- **WebSocket Server:** Hocuspocus manages Yjs document state and persistence
+- **Live Features:** Socket.io for user presence, cursors, and instant notifications
+- **Conflict Resolution:** Automatic merge of concurrent edits using Yjs algorithms
+
+## Development Guidelines
+
+### API Development (NestJS)
+Follow patterns from `.cursor/rules/nestjs-api.mdc`:
+- **Module Structure:** Feature-based modules with controllers, services, DTOs
+- **Validation:** Zod schemas for request/response validation
+- **Database:** Prisma with transaction support via CLS
+- **Testing:** Vitest with test containers for integration tests
+- **Documentation:** Swagger/OpenAPI automatic generation
+
+### Client Development (React)
+Follow patterns from `.cursor/rules/react-client.mdc`:
+- **Components:** Functional components with TypeScript, Shadcn UI patterns
+- **State:** Zustand stores with computed values, hook-based access
+- **Styling:** TailwindCSS with CVA for component variants
+- **Forms:** React Hook Form with Zod validation
+- **Testing:** Vitest with React Testing Library
+
+### Code Quality Standards
+- **Linter:** Biome (configured in `biome.json`) - NOT ESLint
+- **Formatter:** Biome with 2-space indentation, 160 character line width
+- **Git Hooks:** Lefthook runs format/lint on pre-commit
+- **TypeScript:** Strict mode enabled across all packages
+
+## Key Patterns
+
+### Permission System
+Multi-level permissions with inheritance:
+- **Document-level:** Direct user/guest permissions on documents
+- **Workspace-level:** Inherited permissions from workspace membership
+- **Subspace-level:** Hierarchical permission inheritance
+
+### Document Collaboration
+- **Yjs Documents:** Stored as binary data in PostgreSQL
+- **Real-time Sync:** Hocuspocus WebSocket server manages document state
+- **Persistence:** Automatic saves to database with version history
+- **Conflict Resolution:** Operational transforms ensure consistency
+
+### API Integration
+- **Type Safety:** Shared contracts package ensures API/client type consistency
+- **Request Management:** @ahooksjs/use-request for async state management
+- **Error Handling:** Consistent error boundaries and user feedback
+
+## Testing Strategy
+
+### Unit Tests
+- **Framework:** Vitest for both API and client
+- **Coverage:** Focus on business logic, utilities, and complex components
+- **Mocking:** Test doubles for external dependencies
+
+### Integration Tests
+- **API:** Test containers with real PostgreSQL/Redis instances
+- **Database:** Prisma transactions and repository patterns
+- **Authentication:** End-to-end auth flow testing
+
+### E2E Tests
+- **Framework:** Playwright with TypeScript
+- **Scope:** Critical user journeys (document creation, collaboration, sharing)
+- **Environment:** Isolated test environment with seeded data
+
+## Common Development Tasks
+
+### Adding New Features
+1. **Backend:** Create feature module in `apps/api/src/`
+2. **Database:** Add Prisma models and generate types
+3. **Frontend:** Create components/pages in `apps/client/src/`
+4. **Types:** Update contracts package for shared types
+5. **Tests:** Add unit and integration test coverage
+
+### Database Changes
+1. Modify `apps/api/prisma/schema.prisma`
+2. Run `pnpm migrate:dev` to create migration
+3. Update generated types with `pnpm prisma:generate`
+4. Update API DTOs and validation schemas
+
+### Debugging Real-time Features
+- **Yjs State:** Use browser dev tools Yjs extension
+- **WebSocket:** Monitor Hocuspocus server logs
+- **Socket.io:** Debug panel available in development mode
+- **Document State:** Prisma Studio to inspect stored Yjs documents
+
+## Environment Setup
+
+### Required Services
+- **PostgreSQL:** Database for application data and Yjs documents
+- **Redis:** Session storage and real-time pub/sub
+- **S3-compatible:** File storage (MinIO for local development)
+
+### Development Environment
+- **Docker:** Automatic setup via `pnpm dev:docker` script
+- **Node.js:** Version 18+ required
+- **pnpm:** Version 8.5.1+ for workspace management
+
+### Configuration
+- **Environment:** `.env` files for local configuration
+- **Docker:** `apps/api/scripts/start-docker.sh` handles service startup
+- **Ports:** API (3000), Client (5000), Database (5432), Redis (6379)

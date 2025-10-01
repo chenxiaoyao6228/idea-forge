@@ -24,7 +24,7 @@ import {
   useRemoveDocumentGroupShare,
 } from "@/stores/document-shares-store";
 import { PermissionLevel } from "@idea/contracts";
-import { useCurrentDocument } from "@/hooks/use-current-document";
+import { useCurrentDocumentFromStore } from "@/stores/document-store";
 import { useFetchSubspaceSettings } from "@/stores/subspace-store";
 import useSubSpaceStore from "@/stores/subspace-store";
 import { documentApi } from "@/apis/document";
@@ -41,7 +41,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
 
   const currentUserId = useUserStore((s) => s.userInfo?.id);
   const workspaceId = currentWorkspace?.id;
-  const currentDocument = useCurrentDocument();
+  const currentDocument = useCurrentDocumentFromStore();
 
   // Use store hooks
   const sharedUsers = useDocumentUserShares(documentId);

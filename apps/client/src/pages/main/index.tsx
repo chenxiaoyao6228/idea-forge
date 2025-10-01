@@ -3,14 +3,14 @@ import Doc from "../doc";
 import { useAllWorkspaces, useFetchWorkspaces, useCurrentWorkspace } from "@/stores/workspace-store";
 import { useFetchGuests, useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
 import SidebarContainer from "./sidebar";
-import { useCurrentDocument } from "@/hooks/use-current-document";
 import { WebSocketProvider } from "@/components/websocket-provider";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect } from "react";
+import { useFetchCurrentDocument } from "@/hooks/use-current-document";
 
 export default function Main() {
   const { run: fetchWorkspaces } = useFetchWorkspaces();
   const { run: fetchGuests } = useFetchGuests();
-  const currentDocument = useCurrentDocument();
+  const currentDocument = useFetchCurrentDocument();
   const workspaces = useAllWorkspaces();
   const currentWorkspace = useCurrentWorkspace();
   const isGuestCollaborator = useIsGuestCollaborator();
@@ -27,7 +27,7 @@ export default function Main() {
   }, [currentWorkspace, isGuestCollaborator]);
 
   if (!workspaces.length) {
-    return <Loading />;
+    return <Loading fullScreen size="lg" />;
   }
 
   // TODO: handle when user is first login, no active docs

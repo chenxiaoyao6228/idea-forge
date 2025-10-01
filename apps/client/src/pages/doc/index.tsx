@@ -7,26 +7,24 @@ import { useTranslation } from "react-i18next";
 import { useTitle } from "react-use";
 import DocumentHeader from "./components/doc-header";
 import BackToTop from "@/components/ui/back-to-top";
-import { useCurrentDocument, useCurrentDocumentId } from "@/hooks/use-current-document";
 import { getEnvVariable } from "@/lib/env";
 import { Toolbar } from "./toolbar";
 import TiptapEditor from "@/editor";
 import { TableOfContent } from "./components/table-of-content";
 import { Action, useAbilityCan } from "@/hooks/use-ability";
+import { useCurrentDocumentFromStore, useCurrentDocumentId } from "@/stores/document-store";
 
 export default function Doc() {
   const { t } = useTranslation();
   const userId = useUserStore((s) => s.userInfo?.id);
   const activeDocumentId = useCurrentDocumentId();
   const collabToken = useUserStore((s) => s.userInfo?.collabToken);
-  const currentDocument = useCurrentDocument();
+  const currentDocument = useCurrentDocumentFromStore();
 
   const isHomeDoc = false;
 
   // Type guard to ensure we have a proper document
   const isDocumentLoaded = currentDocument && !currentDocument.isLoading && "id" in currentDocument;
-
-  console.log("[current document]: isDocumentLoaded", isDocumentLoaded);
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   useTitle(`Idea Forge ${isDocumentLoaded && currentDocument?.title ? `- ${currentDocument.title}` : ""}`);
@@ -44,13 +42,11 @@ export default function Doc() {
   const { can: canUpdateDoc } = useAbilityCan("Doc", Action.Update, docAbilitySubject);
   const { can: canManageDoc } = useAbilityCan("Doc", Action.Manage, docAbilitySubject);
 
-  console.log("[current doc permission]: canManageDoc, canUpdateDoc, canReadDoc", canManageDoc, canUpdateDoc, canReadDoc);
-
   // Handle loading state
   if (currentDocument?.isLoading) {
     return (
       <div className="w-full h-full absolute top-0 left-0 ">
-        <Loading size="lg" />
+        <Loading size="lg" fullScreen id="doc" />
       </div>
     );
   }
@@ -78,7 +74,13 @@ export default function Doc() {
         {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={canUpdateDoc} />}
         <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative">
           <Toolbar doc={currentDocument} editable={canUpdateDoc} />
-          <TiptapEditor id={currentDocument.id!} editable={canUpdateDoc} collabToken={collabToken} collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")} />
+          <TiptapEditor
+            key={currentDocument.id}
+            id={currentDocument.id!}
+            editable={canUpdateDoc}
+            collabToken={collabToken}
+            collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")}
+          />
           <TableOfContent />
         </div>
       </div>

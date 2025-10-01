@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useWebsocketEventHandlers } from "@/lib/websocket-hooks";
+import { useWebsocketEventHandlers } from "@/hooks/websocket";
 import { getWebsocketService } from "@/lib/websocket";
 
 /**
