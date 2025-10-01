@@ -156,32 +156,9 @@ export class ShareDocumentService {
       }
     }
 
-    // 6. Child document inheritance
-    if (dto.includeChildDocuments) {
-      // Get all child documents
-      const childDocs = await this.prismaService.doc.findMany({
-        where: {
-          parentId: docId,
-        },
-      });
+    // Child document inheritance is resolved on-demand, so includeChildDocuments requires no extra writes.
 
-      for (const childDoc of childDocs) {
-        for (const parentPerm of createdPermissions) {
-          const childPerm = await this.prismaService.documentPermission.create({
-            data: {
-              ...permissionBase,
-              docId: childDoc.id,
-              userId: parentPerm.userId,
-              inheritedFromType: parentPerm.inheritedFromType,
-              priority: parentPerm.priority,
-              inheritedFromId: null, // Child documents don't inherit from parent permissions directly
-            },
-          });
-        }
-      }
-    }
-
-    // 7. Send WebSocket notifications to newly shared users
+    // 6. Send WebSocket notifications to newly shared users
     const allSharedUserIds = new Set<string>();
 
     // Collect all users who received new permissions

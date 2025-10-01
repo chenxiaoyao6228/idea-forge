@@ -50,10 +50,6 @@ export class DocumentService {
       },
     });
 
-    if (doc.parentId) {
-      // await this.copyDocumentPermissionsFromAncestors(doc.id, doc.parentId);
-    }
-
     if (doc.publishedAt && doc.subspaceId) {
       await this.updateSubspaceNavigationTree(doc.subspaceId, "add", doc);
     }
@@ -260,6 +256,7 @@ export class DocumentService {
         doc: {
           id: document.id,
           workspaceId: document.workspaceId,
+          parentId: document.parentId,
           subspaceId: document.subspaceId,
           authorId: document.authorId,
         },
@@ -439,27 +436,7 @@ export class DocumentService {
       }
     }
 
-    // 6. Child document inheritance
-    if (dto.includeChildDocuments) {
-      const allChildren = await this.findAllDescendantDocuments(docId);
-      for (const child of allChildren) {
-        for (const parentPerm of createdPermissions) {
-          const childPerm = await this.prismaService.documentPermission.create({
-            data: {
-              ...permissionBase,
-              docId: child.id,
-              userId: parentPerm.userId,
-              inheritedFromType: parentPerm.inheritedFromType,
-              priority: parentPerm.priority,
-              inheritedFromId: parentPerm.id,
-            },
-          });
-          createdPermissions.push(childPerm);
-        }
-      }
-    }
-
-    // 7. Publish websocket event - simplified version
+    // 6. Publish websocket event - simplified version
     // Collect all affected user IDs
     const affectedUserIds = new Set<string>();
     for (const permission of createdPermissions) {
@@ -600,50 +577,6 @@ export class DocumentService {
       pagination,
       data: { documents },
     };
-  }
-
-  // Recursively find all child/descendant documents
-  private async findAllDescendantDocuments(parentId: string): Promise<any[]> {
-    const children = await this.prismaService.doc.findMany({ where: { parentId } });
-    let all: any[] = [];
-    for (const child of children) {
-      all.push(child);
-      const subChildren = await this.findAllDescendantDocuments(child.id);
-      all = all.concat(subChildren);
-    }
-    return all;
-  }
-
-  private async copyDocumentPermissionsFromAncestors(docId: string, parentDocumentId: string) {
-    // Find all ancestor IDs
-    const ancestorIds: string[] = [];
-    let currentId: string | null = parentDocumentId;
-    while (currentId) {
-      ancestorIds.push(currentId);
-      const parent = await this.prismaService.doc.findUnique({ where: { id: currentId }, select: { parentId: true } });
-      currentId = parent?.parentId;
-    }
-
-    // Get all direct permissions in one query
-    const parentPermissions = await this.prismaService.documentPermission.findMany({
-      where: {
-        docId: { in: ancestorIds },
-        inheritedFromId: null,
-      },
-    });
-
-    // Bulk insert permissions
-    await this.prismaService.documentPermission.createMany({
-      data: parentPermissions.map((permission) => ({
-        userId: permission.userId,
-        docId: docId,
-        permission: permission.permission,
-        inheritedFromType: permission.inheritedFromType,
-        inheritedFromId: permission.id,
-        priority: permission.priority,
-        createdById: permission.createdById,
-      })),
-    });
   }
 
   // ================ public share ========================

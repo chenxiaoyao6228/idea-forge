@@ -16,7 +16,6 @@ import { useCurrentDocumentFromStore, useCurrentDocumentId } from "@/stores/docu
 
 export default function Doc() {
   const { t } = useTranslation();
-  const userId = useUserStore((s) => s.userInfo?.id);
   const activeDocumentId = useCurrentDocumentId();
   const collabToken = useUserStore((s) => s.userInfo?.collabToken);
   const currentDocument = useCurrentDocumentFromStore();

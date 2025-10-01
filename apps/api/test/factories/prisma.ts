@@ -5,6 +5,7 @@ import {
   generateMockDocument,
   generateMockDocShare,
   generateMockWorkspaceMember,
+  generateMockDocumentPermission,
 } from "./zod";
 import { getTestPrisma } from "@test/setup/test-container-setup";
 
@@ -21,6 +22,29 @@ export async function buildDocument(overrides: any = {}) {
     overrides.createdById = user.id;
     overrides.lastModifiedById = user.id;
   }
+
+  // If subspaceId is provided, ensure the subspace exists
+  if (overrides.subspaceId) {
+    const subspaceExists = await prisma.subspace.findUnique({
+      where: { id: overrides.subspaceId },
+      select: { id: true },
+    });
+    if (!subspaceExists) {
+      throw new Error(`Subspace with id ${overrides.subspaceId} does not exist`);
+    }
+  }
+
+  // If parentId is provided, ensure the parent document exists
+  if (overrides.parentId && !overrides._skipParentCheck) {
+    const parentExists = await prisma.doc.findUnique({
+      where: { id: overrides.parentId },
+      select: { id: true },
+    });
+    if (!parentExists) {
+      throw new Error(`Parent document with id ${overrides.parentId} does not exist`);
+    }
+  }
+
   return await prisma.doc.create({
     data: {
       ...generateMockDocument(),
@@ -56,6 +80,13 @@ export async function buildWorkspace(overrides: any = {}) {
 
 export async function buildUser(overrides: any = {}) {
   const prisma = getTestPrisma();
+
+  // If workspace is not provided but user needs to be associated with one, create one
+  if (!overrides.currentWorkspaceId && !overrides.workspaceId) {
+    const workspace = await buildWorkspace();
+    overrides.currentWorkspaceId = workspace.id;
+  }
+
   return await prisma.user.create({
     data: {
       ...generateMockUser(),
@@ -99,6 +130,50 @@ export async function buildWorkspaceMember(overrides: any = {}) {
   return await prisma.workspaceMember.create({
     data: {
       ...generateMockWorkspaceMember(),
+      ...overrides,
+    },
+  });
+}
+
+export async function buildDocumentPermission(overrides: any = {}) {
+  const prisma = getTestPrisma();
+  if (!overrides.docId) {
+    const doc = await buildDocument();
+    overrides.docId = doc.id;
+  }
+  if (!overrides.userId && !overrides.guestCollaboratorId) {
+    const user = await buildUser();
+    overrides.userId = user.id;
+  }
+  if (!overrides.createdById) {
+    overrides.createdById = overrides.userId;
+  }
+
+  // If guestCollaboratorId is provided, ensure it exists
+  if (overrides.guestCollaboratorId) {
+    const guestExists = await prisma.guestCollaborator.findUnique({
+      where: { id: overrides.guestCollaboratorId },
+      select: { id: true },
+    });
+    if (!guestExists) {
+      throw new Error(`Guest collaborator with id ${overrides.guestCollaboratorId} does not exist`);
+    }
+  }
+
+  // If inheritedFromId is provided, ensure the permission exists
+  if (overrides.inheritedFromId) {
+    const inheritedPermissionExists = await prisma.documentPermission.findUnique({
+      where: { id: overrides.inheritedFromId },
+      select: { id: true },
+    });
+    if (!inheritedPermissionExists) {
+      throw new Error(`Inherited permission with id ${overrides.inheritedFromId} does not exist`);
+    }
+  }
+
+  return await prisma.documentPermission.create({
+    data: {
+      ...generateMockDocumentPermission(),
       ...overrides,
     },
   });

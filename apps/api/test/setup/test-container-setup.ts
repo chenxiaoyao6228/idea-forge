@@ -3,7 +3,7 @@ import {
   PostgreSqlContainer,
 } from "@testcontainers/postgresql";
 import { execSync } from "child_process";
-import { unlinkSync, writeFileSync } from "fs";
+import { unlinkSync, writeFileSync, existsSync } from "fs";
 
 import { RedisContainer, StartedRedisContainer } from "@testcontainers/redis";
 import { PrismaClient } from "@prisma/client";
@@ -64,7 +64,10 @@ export async function stopContainers() {
   if (testPrisma) await testPrisma.$disconnect();
   if (postgresContainer) await postgresContainer.stop();
   if (redisContainer) await redisContainer.stop();
-  unlinkSync(process.cwd() + "/.env.testcontainers");
+  const envFilePath = process.cwd() + "/.env.testcontainers";
+  if (existsSync(envFilePath)) {
+    unlinkSync(envFilePath);
+  }
 }
 
 export function getTestPrisma() {

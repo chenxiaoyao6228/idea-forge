@@ -13,6 +13,7 @@ type DocumentAbilityContext = {
     workspaceId: string;
     subspaceId?: string | null;
     authorId: string;
+    parentId?: string | null;
   };
 };
 
@@ -42,6 +43,7 @@ export class DocumentAbility extends BaseAbility {
     let level = await this.docPermissionResolveService.resolveUserPermissionForDocument(user.id, {
       id: contextDoc.id,
       workspaceId: contextDoc.workspaceId,
+      parentId: contextDoc.parentId ?? null,
       subspaceId: contextDoc.subspaceId ?? null,
     });
 
