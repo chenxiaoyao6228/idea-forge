@@ -28,13 +28,28 @@ export class DocumentService {
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
+    // Determine publishedAt based on subspace type
+    let publishedAt: Date | null = new Date();
+
+    if (dto.subspaceId) {
+      const subspace = await this.prismaService.subspace.findUnique({
+        where: { id: dto.subspaceId },
+        select: { type: true },
+      });
+
+      // Documents in personal subspace start as drafts (publishedAt = null)
+      if (subspace?.type === "PERSONAL") {
+        publishedAt = null;
+      }
+    }
+
     const doc = await this.prismaService.doc.create({
       data: {
         ...dto,
         authorId,
         createdById: authorId,
         lastModifiedById: authorId,
-        publishedAt: new Date(),
+        publishedAt,
       },
     });
 
@@ -197,6 +212,7 @@ export class DocumentService {
             name: true,
             description: true,
             avatar: true,
+            type: true,
           },
         },
         parent: {
@@ -259,6 +275,7 @@ export class DocumentService {
           parentId: document.parentId,
           subspaceId: document.subspaceId,
           authorId: document.authorId,
+          publishedAt: document.publishedAt,
         },
       },
     );

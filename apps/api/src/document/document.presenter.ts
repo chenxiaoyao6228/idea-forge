@@ -17,15 +17,15 @@ export function presentDocument(document: any, options?: { isPublic?: boolean })
       workspaceId: document.workspaceId,
       subspaceId: document.subspaceId,
       index: document.index,
-      // Include author info if not public
-      // author: options?.isPublic
-      //   ? undefined
-      //   : {
-      //       id: document.author.id,
-      //       displayName: document.author.displayName,
-      //       email: document.author.email,
-      //       imageUrl: document.author.imageUrl,
-      //     },
+      // Include author info
+      author: document.author
+        ? {
+            id: document.author.id,
+            displayName: document.author.displayName,
+            email: document.author.email,
+            imageUrl: document.author.imageUrl,
+          }
+        : undefined,
       // Include workspace/subspace info
       workspace: document.workspace,
       subspace: document.subspace,

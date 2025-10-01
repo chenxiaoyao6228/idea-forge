@@ -6,6 +6,7 @@ import { DefineAbility } from "@/_shared/casl/ability.decorator";
 import { Action, AppAbility, BaseAbility } from "@/_shared/casl/ability.class";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
+import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 
 type DocumentAbilityContext = {
   doc?: {
@@ -14,13 +15,17 @@ type DocumentAbilityContext = {
     subspaceId?: string | null;
     authorId: string;
     parentId?: string | null;
+    publishedAt?: Date | null;
   };
 };
 
 @Injectable()
 @DefineAbility("Doc" as ModelName)
 export class DocumentAbility extends BaseAbility {
-  constructor(private readonly docPermissionResolveService: DocPermissionResolveService) {
+  constructor(
+    private readonly docPermissionResolveService: DocPermissionResolveService,
+    private readonly prismaService: PrismaService,
+  ) {
     super();
   }
   // Will be called on each request that triggers a policy check
@@ -53,6 +58,9 @@ export class DocumentAbility extends BaseAbility {
     }
 
     this.defineContentPermissionsByLevel(can, contextDoc.id, level);
+
+    // Handle Share permission separately with draft/subspace logic
+    await this.defineSharePermission(can, user, contextDoc, level);
   }
 
   private async buildGlobalPermissions(can: any, user: User) {
@@ -64,10 +72,10 @@ export class DocumentAbility extends BaseAbility {
   private defineContentPermissionsByLevel(can: any, docId: string, level: PermissionLevel) {
     switch (level) {
       case PermissionLevel.MANAGE:
-        can([Action.Read, Action.Update, Action.Delete, Action.Share, Action.Move], "Doc", { id: docId });
+        can([Action.Read, Action.Comment, Action.Update, Action.Delete, Action.Manage], "Doc", { id: docId });
         break;
       case PermissionLevel.EDIT:
-        can([Action.Read, Action.Update], "Doc", { id: docId });
+        can([Action.Read, Action.Comment, Action.Update], "Doc", { id: docId });
         break;
       case PermissionLevel.COMMENT:
         can([Action.Read, Action.Comment], "Doc", { id: docId });
@@ -75,6 +83,63 @@ export class DocumentAbility extends BaseAbility {
       case PermissionLevel.READ:
         can(Action.Read, "Doc", { id: docId });
         break;
+    }
+  }
+
+  /**
+   * Define Share permission with special logic for draft/published state and subspace type
+   *
+   * Rules:
+   * 1. Personal subspace):
+   *    - Only the author can share
+  
+   * 2. Other subspaces:
+   *    - Subspace admins can share (if memberInvitePermission allows)
+   *    - Document author can share
+   *    - Users with MANAGE permission can share
+   */
+  private async defineSharePermission(can: any, user: User, contextDoc: DocumentAbilityContext["doc"], level: PermissionLevel) {
+    if (!contextDoc || !contextDoc.subspaceId) return;
+
+    const isAuthor = contextDoc.authorId === user.id;
+    let shouldShare = false;
+
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: contextDoc.subspaceId },
+      select: {
+        type: true,
+        memberInvitePermission: true,
+      },
+    });
+
+    if (subspace?.type === "PERSONAL") {
+      // Only author can share documents in personal subspace
+      if (isAuthor) {
+        shouldShare = true;
+      }
+      return;
+    }
+
+    const subspaceMember = await this.prismaService.subspaceMember.findFirst({
+      where: {
+        subspaceId: contextDoc.subspaceId,
+        userId: user.id,
+      },
+      select: { role: true },
+    });
+
+    const isSubspaceAdmin = subspaceMember?.role === "ADMIN";
+
+    if (isAuthor || level === PermissionLevel.MANAGE || (isSubspaceAdmin && subspace?.memberInvitePermission === "ALL_MEMBERS")) {
+      shouldShare = true;
+    }
+    // Document not in a subspace - only author or MANAGE permission can share
+    if (isAuthor || level === PermissionLevel.MANAGE) {
+      shouldShare = true;
+    }
+
+    if (shouldShare) {
+      can(Action.Share, "Doc", { id: contextDoc.id });
     }
   }
 }

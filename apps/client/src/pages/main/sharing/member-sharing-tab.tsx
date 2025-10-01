@@ -11,6 +11,7 @@ import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "@/stores/workspace-store";
 import useUserStore from "@/stores/user-store";
 import useDocumentStore from "@/stores/document-store";
+import { useAbilityCheck, Action } from "@/hooks/use-ability";
 import { showAddMembersModal } from "./add-members-dialog";
 import type { SharedUser } from "./add-members-dialog";
 import {
@@ -55,6 +56,10 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
 
   // Get subspace settings from store
   const subspaceSettings = useSubSpaceStore((state) => state.subspaceSettings);
+
+  // Check if user can share this document (all logic is server-side in CASL)
+  const canShare = useAbilityCheck("Doc", Action.Share, currentDocument ? { id: currentDocument.id } : undefined);
+  const canManage = useAbilityCheck("Subspace", Action.Manage, currentDocument ? { id: currentDocument.subspaceId } : undefined);
 
   // Fetch subspace settings if document is in a subspace
   const { run: fetchSubspaceSettings } = useFetchSubspaceSettings(currentDocument?.subspaceId || "");
@@ -226,7 +231,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   return (
     <div className="space-y-2">
       {/* Subspace Role-Based Permissions Section */}
-      {currentDocument?.subspaceId && subspaceSettings && (
+      {currentDocument?.subspaceId && subspaceSettings && currentDocument?.subspace?.type !== "PERSONAL" && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -249,7 +254,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                 <PermissionLevelSelector
                   value={currentDocument.subspaceAdminPermission ?? subspaceSettings.subspace.subspaceAdminPermission}
                   onChange={(value) => handleUpdateDocumentSubspacePermission("subspaceAdminPermission", value)}
-                  disabled={isUpdatingPermissions}
+                  disabled={isUpdatingPermissions || !canManage}
                 />
               </div>
             </div>
@@ -267,7 +272,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                 <PermissionLevelSelector
                   value={currentDocument.subspaceMemberPermission ?? subspaceSettings.subspace.subspaceMemberPermission}
                   onChange={(value) => handleUpdateDocumentSubspacePermission("subspaceMemberPermission", value)}
-                  disabled={isUpdatingPermissions}
+                  disabled={isUpdatingPermissions || !canManage}
                 />
               </div>
             </div>
@@ -284,7 +289,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                   <PermissionLevelSelector
                     value={currentDocument.nonSubspaceMemberPermission ?? subspaceSettings.subspace.nonSubspaceMemberPermission}
                     onChange={(value) => handleUpdateDocumentSubspacePermission("nonSubspaceMemberPermission", value)}
-                    disabled={isUpdatingPermissions}
+                    disabled={isUpdatingPermissions || !canManage}
                   />
                 </div>
               </div>
@@ -304,7 +309,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
         <div className="flex items-center justify-between">
           <Label className="text-sm font-medium flex items-center gap-2">{t("User/Group Permissions")}</Label>
 
-          <Button variant="outline" size="sm" className="h-8 bg-transparent" onClick={handleAddMembers}>
+          <Button variant="outline" size="sm" className="h-8 bg-transparent" onClick={handleAddMembers} disabled={!canShare}>
             <Plus className="h-4 w-4 mr-1" />
             {t("Add")}
           </Button>
