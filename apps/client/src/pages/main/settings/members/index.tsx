@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupManagementPanel } from "./group-management";
 import MemberManagementPanel from "./member-management";
-import { GuestCollaboratorPanel } from "./visitor-management";
+import { GuestCollaboratorPanel } from "./guest-management";
 
 export const Members = () => {
   const { t } = useTranslation();
@@ -18,7 +18,7 @@ export const Members = () => {
             {t("Group Management")}
           </TabsTrigger>
           <TabsTrigger value="visitors" className="justify-center gap-2 font-normal data-[state=active]:bg-muted data-[state=active]:font-medium">
-            {t("Collaborative Visitors")}
+            {t("Guest Management")}
           </TabsTrigger>
         </TabsList>
         <div className="flex-1 overflow-y-auto p-6">

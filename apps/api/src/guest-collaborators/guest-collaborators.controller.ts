@@ -1,6 +1,13 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from "@nestjs/common";
 import { GuestCollaboratorsService } from "./guest-collaborators.service";
-import { InviteGuestDto, BatchInviteGuestsDto, UpdateGuestPermissionDto, GetWorkspaceGuestsDto, RemoveGuestFromDocumentDto } from "./guest-collaborators.dto";
+import {
+  InviteGuestDto,
+  InviteGuestToWorkspaceDto,
+  BatchInviteGuestsDto,
+  UpdateGuestPermissionDto,
+  GetWorkspaceGuestsDto,
+  RemoveGuestFromDocumentDto,
+} from "./guest-collaborators.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
 import { CheckPolicy } from "@/_shared/casl/policy.decorator";
@@ -10,6 +17,18 @@ import { Action } from "@/_shared/casl/ability.class";
 @Controller("/api/guest-collaborators")
 export class GuestCollaboratorsController {
   constructor(private readonly guestCollaboratorsService: GuestCollaboratorsService) {}
+
+  @Post("workspace/invite")
+  @CheckPolicy(Action.Create, "GuestCollaborator")
+  async inviteGuestToWorkspace(@GetUser("id") userId: string, @Body() dto: InviteGuestToWorkspaceDto) {
+    return this.guestCollaboratorsService.inviteGuestToWorkspace(userId, dto);
+  }
+
+  @Post(":guestId/accept")
+  @CheckPolicy(Action.Update, "GuestCollaborator")
+  async acceptGuestInvitation(@GetUser("id") userId: string, @Param("guestId") guestId: string) {
+    return this.guestCollaboratorsService.acceptWorkspaceInvitation(userId, guestId);
+  }
 
   @Post("invite")
   @CheckPolicy(Action.Create, "GuestCollaborator")

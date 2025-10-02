@@ -240,6 +240,8 @@ export class WorkspaceService {
       avatar: string | null;
       memberSubspaceCreate: boolean;
       settings: any;
+      isPendingGuest?: boolean;
+      guestId?: string;
     }>
   > {
     const user = await this.prismaService.user.findUnique({
@@ -261,12 +263,23 @@ export class WorkspaceService {
     // Get user email for guest collaborator lookup
     const userEmail = user.email;
 
-    // Fetch guest collaborator workspaces for this user
+    // Fetch guest collaborator workspaces for this user (both by userId and email)
     const guestCollaborators = await this.prismaService.guestCollaborator.findMany({
       where: {
-        email: userEmail,
+        OR: [
+          { userId: currentUserId },
+          {
+            email: {
+              equals: userEmail,
+              mode: "insensitive",
+            },
+          },
+        ],
+        status: {
+          in: ["PENDING", "ACTIVE"],
+        },
         expireAt: {
-          gt: new Date(), // Only active guest collaborators
+          gt: new Date(),
         },
       },
       include: {
@@ -276,7 +289,15 @@ export class WorkspaceService {
     });
 
     // Create a map to merge member and guest workspaces
-    const workspaceMap = new Map<string, { workspace: any & { accessLevel: "member" | "guest" }; accessLevel: "member" | "guest" }>();
+    const workspaceMap = new Map<
+      string,
+      {
+        workspace: any & { accessLevel: "member" | "guest" };
+        accessLevel: "member" | "guest";
+        isPendingGuest?: boolean;
+        guestId?: string;
+      }
+    >();
 
     // Add member workspaces first (they take precedence)
     user.workspaceMembers.forEach((member) => {
@@ -292,6 +313,8 @@ export class WorkspaceService {
         workspaceMap.set(guest.workspace.id, {
           workspace: { ...guest.workspace, accessLevel: "guest" } as const,
           accessLevel: "guest" as const,
+          isPendingGuest: guest.status === "PENDING",
+          guestId: guest.id,
         });
       }
     });
@@ -314,13 +337,24 @@ export class WorkspaceService {
       return 0;
     });
 
-    const result = workspaces.map(({ workspace, accessLevel }) => {
+    const result = workspaces.map(({ workspace, accessLevel, isPendingGuest, guestId }) => {
       // Create workspace object with accessLevel for the contract
       const workspaceWithAccessLevel = {
         ...workspace,
         accessLevel: accessLevel as "member" | "guest",
       } as const;
-      return presentWorkspace(workspaceWithAccessLevel, accessLevel);
+      const presented = presentWorkspace(workspaceWithAccessLevel, accessLevel);
+
+      // Add guest-specific fields
+      if (accessLevel === "guest" && isPendingGuest !== undefined) {
+        return {
+          ...presented,
+          isPendingGuest,
+          guestId,
+        };
+      }
+
+      return presented;
     });
 
     return result as Array<{
@@ -1254,179 +1288,6 @@ export class WorkspaceService {
     return descriptions[format] || format;
   }
 
-  // /**
-  //  * Invite guest collaborator to specific document
-  //  * Creates guest record and assigns document-level permissions
-  //  */
-  // async inviteGuestCollaborator(workspaceId: string, guestEmail: string, documentId: string, permission: string, inviterId: string) {
-  //   // Verify workspace exists and inviter has permission
-  //   const hasAccess = await this.hasWorkspaceAccess(inviterId, workspaceId);
-  //   if (!hasAccess) {
-  //     throw new ApiException(ErrorCodeEnum.PermissionDenied);
-  //   }
-
-  //   // Create or update guest collaborator
-  //   const guest = await this.prismaService.guestCollaborator.upsert({
-  //     where: {
-  //       email_workspaceId: {
-  //         email: guestEmail,
-  //         workspaceId,
-  //       },
-  //     },
-  //     update: {
-  //       status: GuestStatus.PENDING,
-  //       expireAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-  //     },
-  //     create: {
-  //       email: guestEmail,
-  //       workspaceId,
-  //       invitedById: inviterId,
-  //       status: GuestStatus.PENDING,
-  //       expireAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-  //     },
-  //   });
-
-  //   // Assign document permission to guest
-  //   await this.prismaService.documentPermission.create({
-  //     data: {
-  //       guestId: guest.id,
-  //       resourceType: ResourceType.DOCUMENT,
-  //       documentId: documentId,
-  //       permission: permission as PermissionLevel,
-  //       sourceType: PermissionInheritanceType.GUEST,
-  //       priority: 7,
-  //       createdById: inviterId,
-  //     },
-  //   });
-
-  //   return guest;
-  // }
-
-  // /**
-  //  * Get all guest collaborators in workspace
-  //  * Returns guests with their accessible document count
-  //  */
-  // async getGuestCollaborators(workspaceId: string, userId: string) {
-  //   // Verify user has access to workspace
-  //   const hasAccess = await this.hasWorkspaceAccess(userId, workspaceId);
-  //   if (!hasAccess) {
-  //     throw new ApiException(ErrorCodeEnum.PermissionDenied);
-  //   }
-
-  //   const guests = await this.prismaService.guestCollaborator.findMany({
-  //     where: { workspaceId },
-  //     include: {
-  //       invitedBy: {
-  //         select: { id: true, email: true, displayName: true },
-  //       },
-  //       DocumentPermissions: {
-  //         select: { documentId: true, permission: true },
-  //       },
-  //       _count: {
-  //         select: { DocumentPermissions: true },
-  //       },
-  //     },
-  //     orderBy: { createdAt: "desc" },
-  //   });
-
-  //   return guests;
-  // }
-
-  // /**
-  //  * Remove guest collaborator from workspace
-  //  * Cleans up all associated permissions
-  //  */
-  // async removeGuestCollaborator(workspaceId: string, guestId: string, adminId: string) {
-  //   // Verify admin has access to workspace
-  //   const hasAccess = await this.hasWorkspaceAccess(adminId, workspaceId);
-  //   if (!hasAccess) {
-  //     throw new ApiException(ErrorCodeEnum.PermissionDenied);
-  //   }
-
-  //   // Verify guest exists in this workspace
-  //   const guest = await this.prismaService.guestCollaborator.findUnique({
-  //     where: { id: guestId },
-  //   });
-
-  //   if (!guest || guest.workspaceId !== workspaceId) {
-  //     throw new ApiException(ErrorCodeEnum.GuestNotFound);
-  //   }
-
-  //   // Remove all guest permissions
-  //   await this.prismaService.documentPermission.deleteMany({
-  //     where: { guestId },
-  //   });
-
-  //   // Remove guest collaborator record
-  //   await this.prismaService.guestCollaborator.delete({
-  //     where: { id: guestId },
-  //   });
-
-  //   return { success: true };
-  // }
-
-  // /**
-  //  * Promote guest collaborator to workspace member
-  //  * Migrates guest permissions to user permissions
-  //  */
-  // async promoteGuestToMember(workspaceId: string, guestId: string, role: WorkspaceRole, adminId: string) {
-  //   // Verify admin has access to workspace
-  //   const hasAccess = await this.hasWorkspaceAccess(adminId, workspaceId);
-  //   if (!hasAccess) {
-  //     throw new ApiException(ErrorCodeEnum.PermissionDenied);
-  //   }
-
-  //   // Get guest information
-  //   const guest = await this.prismaService.guestCollaborator.findUnique({
-  //     where: { id: guestId },
-  //     include: {
-  //       DocumentPermissions: true,
-  //     },
-  //   });
-
-  //   if (!guest || guest.workspaceId !== workspaceId) {
-  //     throw new ApiException(ErrorCodeEnum.GuestNotFound);
-  //   }
-
-  //   // Find or create user account for guest email
-  //   let user = await this.prismaService.user.findUnique({
-  //     where: { email: guest.email },
-  //   });
-
-  //   if (!user) {
-  //     // Create user account if doesn't exist
-  //     user = await this.prismaService.user.create({
-  //       data: {
-  //         email: guest.email,
-  //         displayName: guest.name || guest.email,
-  //       },
-  //     });
-  //   }
-
-  //   // Add user as workspace member
-  //   const member = await this.addWorkspaceMember(workspaceId, user.id, role, adminId);
-
-  //   // Migrate guest permissions to user permissions
-  //   for (const guestPermission of guest.documentPermissions) {
-  //     await this.prismaService.documentPermission.create({
-  //       data: {
-  //         userId: user.id,
-  //         resourceType: guestPermission.resourceType,
-  //         documentId: guestPermission.documentId,
-  //         permission: guestPermission.permission,
-  //         sourceType: PermissionInheritanceType.DIRECT,
-  //         priority: 1,
-  //         createdById: adminId,
-  //       },
-  //     });
-  //   }
-
-  //   // Remove guest collaborator and their permissions
-  //   await this.removeGuestCollaborator(workspaceId, guestId, adminId);
-
-  //   return member;
-  // }
-
   /**
    * Switch user's current workspace
    * Validates user has access to the workspace before switching
@@ -1438,13 +1299,46 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.PermissionDenied);
     }
 
+    // Check if user is a guest collaborator and track first visit
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+
+    let isFirstGuestVisit = false;
+
+    if (user) {
+      const guestCollaborator = await this.prismaService.guestCollaborator.findFirst({
+        where: {
+          workspaceId,
+          OR: [{ userId }, { email: { equals: user.email, mode: "insensitive" } }],
+          status: "ACTIVE",
+        },
+      });
+
+      if (guestCollaborator) {
+        // Track if this is the first visit (lastVisitedAt is null)
+        isFirstGuestVisit = guestCollaborator.lastVisitedAt === null;
+
+        // Update lastVisitedAt
+        await this.prismaService.guestCollaborator.update({
+          where: { id: guestCollaborator.id },
+          data: { lastVisitedAt: new Date() },
+        });
+      }
+    }
+
     // Update user's current workspace
     await this.prismaService.user.update({
       where: { id: userId },
       data: { currentWorkspaceId: workspaceId },
     });
 
-    return { success: true, currentWorkspaceId: workspaceId };
+    return {
+      success: true,
+      currentWorkspaceId: workspaceId,
+      isFirstGuestVisit,
+    };
   }
 
   /**

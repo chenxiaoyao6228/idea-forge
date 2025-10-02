@@ -2,7 +2,14 @@ import { create } from "zustand";
 import { workspaceApi } from "@/apis/workspace";
 import { subspaceApi } from "@/apis/subspace";
 import useRequest from "@ahooksjs/use-request";
-import { UpdateWorkspaceRequest, WorkspaceSettings, WorkspaceMemberListResponse, WorkspaceAccessLevel, WorkspaceRole } from "@idea/contracts";
+import {
+  UpdateWorkspaceRequest,
+  WorkspaceSettings,
+  WorkspaceMemberListResponse,
+  WorkspaceAccessLevel,
+  WorkspaceRole,
+  WorkspaceListItem,
+} from "@idea/contracts";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import useUserStore from "./user-store";
 import { useTranslation } from "react-i18next";
@@ -21,6 +28,8 @@ export interface WorkspaceEntity {
   memberSubspaceCreate?: boolean;
   type?: "PERSONAL" | "TEAM";
   accessLevel?: WorkspaceAccessLevel;
+  isPendingGuest?: boolean;
+  guestId?: string;
 }
 
 // Minimal Zustand store
@@ -80,24 +89,10 @@ export const useFetchWorkspaces = () => {
   return useRequest(
     async () => {
       try {
-        const response = await workspaceApi.getWorkspaces();
-        if (response && Array.isArray(response)) {
-          // Convert API response to WorkspaceEntity format
-          const workspaceEntities: WorkspaceEntity[] = response.map((workspace) => ({
-            id: workspace.id,
-            name: workspace.name,
-            description: workspace.description,
-            avatar: workspace.avatar,
-            createdAt: workspace.createdAt,
-            updatedAt: workspace.updatedAt,
-            memberSubspaceCreate: workspace.memberSubspaceCreate,
-            settings: workspace.settings as WorkspaceSettings | null,
-            type: workspace.type,
-            accessLevel: workspace.accessLevel,
-          }));
-
-          // Update store with all workspaces
-          const workspacesMap = workspaceEntities.reduce(
+        // FIXME: ts errors
+        const workspaces = (await workspaceApi.getWorkspaces()) as WorkspaceEntity[];
+        if (workspaces && Array.isArray(workspaces)) {
+          const workspacesMap = workspaces.reduce(
             (acc, workspace) => {
               acc[workspace.id] = workspace;
               return acc;
@@ -113,8 +108,8 @@ export const useFetchWorkspaces = () => {
 
           // If no current workspace, set the first one as the current workspace
           // remove the current workspace if not matching the new workspace list in case the user have been removed from the workspace
-          if (!currentWorkspaceId || !workspaceEntities.find((workspace) => workspace.id === currentWorkspaceId)) {
-            const firstWorkspace = workspaceEntities[0];
+          if (!currentWorkspaceId || !workspaces.find((workspace) => workspace.id === currentWorkspaceId)) {
+            const firstWorkspace = workspaces[0];
             if (firstWorkspace) {
               useWorkspaceStore.setState({ currentWorkspace: firstWorkspace });
               localStorage.setItem("workspaceId", firstWorkspace.id);
@@ -126,13 +121,13 @@ export const useFetchWorkspaces = () => {
               }
             }
           } else {
-            const currentWorkspace = workspaceEntities.find((workspace) => workspace.id === currentWorkspaceId);
+            const currentWorkspace = workspaces.find((workspace) => workspace.id === currentWorkspaceId);
             if (currentWorkspace) {
               useWorkspaceStore.setState({ currentWorkspace });
               localStorage.setItem("workspaceId", currentWorkspace.id);
             }
           }
-          return workspaceEntities;
+          return workspaces;
         }
         return [];
       } catch (error) {
@@ -145,11 +140,13 @@ export const useFetchWorkspaces = () => {
 };
 
 export const useSwitchWorkspace = () => {
+  const { t } = useTranslation();
+
   return useRequest(
     async (workspaceId: string) => {
       try {
         // Call the new API to switch workspace
-        await workspaceApi.switchWorkspace(workspaceId);
+        const response = await workspaceApi.switchWorkspace(workspaceId);
 
         // Update user store with new currentWorkspaceId
         const userInfo = useUserStore.getState().userInfo;
@@ -167,6 +164,25 @@ export const useSwitchWorkspace = () => {
 
         // Keep localStorage for backward compatibility
         localStorage.setItem("workspaceId", workspaceId);
+
+        // Show welcome modal for first-time guest visitors
+        if (response.isFirstGuestVisit && newCurrentWorkspace) {
+          const guestName = userInfo?.displayName || userInfo?.email || t("Guest");
+          const workspaceName = newCurrentWorkspace.name;
+
+          showConfirmModal({
+            title: t("Hello {{name}}, welcome to {{workspace}} space", { name: guestName, workspace: workspaceName }),
+            description: t(
+              "Your identity in the current space is a collaborative guest, you can only participate in viewing or collaborative editing of designated pages. If you need to access all public content in the entire space, you can contact the administrator to upgrade you to a space member.",
+            ),
+            confirmText: t("Got it"),
+            hideCancel: true,
+            onConfirm: () => {
+              // Modal will close automatically
+              return true;
+            },
+          });
+        }
 
         // Refresh the page to ensure all components get the new workspace context
         window.location.href = "/";

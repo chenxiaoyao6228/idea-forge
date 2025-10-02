@@ -65,7 +65,7 @@ export class DocumentService {
       },
     });
 
-    if (doc.publishedAt && doc.subspaceId) {
+    if (doc.subspaceId) {
       await this.updateSubspaceNavigationTree(doc.subspaceId, "add", doc);
     }
 
@@ -124,8 +124,7 @@ export class DocumentService {
       data,
     });
 
-    const shouldUpdateStructure =
-      updatedDoc.subspaceId && updatedDoc.publishedAt && !updatedDoc.archivedAt && (dto.title !== undefined || dto.icon !== undefined);
+    const shouldUpdateStructure = updatedDoc.subspaceId && !updatedDoc.archivedAt && (dto.title !== undefined || dto.icon !== undefined);
 
     if (shouldUpdateStructure) {
       await this.updateSubspaceNavigationTree(updatedDoc.subspaceId!, "update", updatedDoc);

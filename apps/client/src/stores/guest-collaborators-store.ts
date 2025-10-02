@@ -6,6 +6,7 @@ import useRequest from "@ahooksjs/use-request";
 import type {
   GuestCollaboratorResponse,
   InviteGuestRequest,
+  InviteGuestToWorkspaceRequest,
   BatchInviteGuestsRequest,
   UpdateGuestPermissionRequest,
   GetWorkspaceGuestsRequest,
@@ -13,7 +14,6 @@ import type {
 import { guestCollaboratorsApi } from "@/apis/guest-collaborator";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "./workspace-store";
-import useUserStore from "./user-store";
 
 // Store state only - no business logic in store
 const useGuestCollaboratorsStore = create<{
@@ -222,28 +222,33 @@ export const useUpdateGuestPermission = () => {
 
 // Hook for removing guest from workspace
 export const useRemoveGuest = () => {
-  return useRequest(
-    async (guestId: string) => {
-      try {
-        await guestCollaboratorsApi.removeGuestFromWorkspace(guestId);
-        // Remove from store
-        removeGuest(guestId);
-        toast.success("Guest removed successfully");
-        return true;
-      } catch (error) {
-        console.error("Failed to remove guest:", error);
-        toast.error("Failed to remove guest");
-        throw error;
-      }
-    },
-    { manual: true },
-  );
+  return (guestId: string, guestName: string) => {
+    showConfirmModal({
+      title: "Remove Guest from Workspace",
+      description: `Are you sure you want to remove '${guestName}' from this workspace? They will lose access to all documents in this workspace.`,
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        try {
+          // Call the API directly instead of the hook to avoid double execution
+          await guestCollaboratorsApi.removeGuestFromWorkspace(guestId);
+          // Remove from store
+          removeGuest(guestId);
+          toast.success("Guest removed successfully");
+          return true;
+        } catch (error) {
+          console.error("Failed to remove guest:", error);
+          toast.error("Failed to remove guest");
+          return false;
+        }
+      },
+    });
+  };
 };
 
 // Hook for removing guest from specific document
 export const useRemoveGuestFromDocument = () => {
-  const { run: fetchDocumentGuests } = useFetchDocumentGuests();
-  const { run: removeGuestFromDocument, ...rest } = useRequest(
+  const { run: fetchGuests, loading: isFetchingGuests } = useFetchGuests();
+  const { run: removeGuestFromDocument, loading: isRemovingGuestFromDocument } = useRequest(
     async (params: { guestId: string; documentId: string }) => {
       const { guestId, documentId } = params;
       try {
@@ -258,10 +263,9 @@ export const useRemoveGuestFromDocument = () => {
           };
           updateGuest(guestId, updatedGuest);
         }
-        // Refresh document guests list
-        fetchDocumentGuests(documentId);
+
+        fetchGuests();
         toast.success("Guest access removed successfully");
-        return true;
       } catch (error) {
         console.error("Failed to remove guest access:", error);
         toast.error("Failed to remove guest access");
@@ -272,7 +276,7 @@ export const useRemoveGuestFromDocument = () => {
   );
 
   return {
-    ...rest,
+    loading: isFetchingGuests || isRemovingGuestFromDocument,
     run: (params: { guestId: string; documentId: string; documentTitle?: string }) => {
       const title = params.documentTitle || "this document";
       showConfirmModal({
@@ -281,16 +285,54 @@ export const useRemoveGuestFromDocument = () => {
         confirmVariant: "destructive",
         onConfirm: async () => {
           try {
-            await removeGuestFromDocument({ guestId: params.guestId, documentId: params.documentId });
+            await removeGuestFromDocument(params);
             return true;
           } catch (error) {
             console.error("Failed to remove document access:", error);
+            toast.error("Failed to remove guest access");
             return false;
           }
         },
       });
     },
   };
+};
+
+// Hook for inviting guest to workspace (without document)
+export const useInviteGuestToWorkspace = () => {
+  return useRequest(
+    async (params: InviteGuestToWorkspaceRequest) => {
+      try {
+        const response = await guestCollaboratorsApi.inviteGuestToWorkspace(params);
+        addGuest(response);
+        toast.success("Guest invited to workspace successfully");
+        return response;
+      } catch (error) {
+        console.error("Failed to invite guest to workspace:", error);
+        toast.error("Failed to invite guest");
+        throw error;
+      }
+    },
+    { manual: true },
+  );
+};
+
+// Hook for accepting guest invitation
+export const useAcceptGuestInvitation = () => {
+  return useRequest(
+    async (guestId: string) => {
+      try {
+        await guestCollaboratorsApi.acceptGuestInvitation(guestId);
+        toast.success("Invitation accepted successfully");
+        return true;
+      } catch (error) {
+        console.error("Failed to accept invitation:", error);
+        toast.error("Failed to accept invitation");
+        throw error;
+      }
+    },
+    { manual: true },
+  );
 };
 
 export default useGuestCollaboratorsStore;

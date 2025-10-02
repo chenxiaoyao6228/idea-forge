@@ -6,8 +6,7 @@ import useUserStore from "@/stores/user-store";
 import { toast } from "sonner";
 import { useFetchStars } from "@/stores/star-store";
 
-export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) | null {
-  const cleanupRef = useRef<(() => void) | null>(null);
+export function useSubspaceWebsocketEvents(socket: Socket | null) {
   const fetchSubspace = useFetchSubspace();
 
   useEffect(() => {
@@ -216,6 +215,4 @@ export function useSubspaceWebsocketEvents(socket: Socket | null): (() => void) 
       socket.off(SocketEvents.SUBSPACE_UPDATE, onSubspaceUpdate);
     };
   }, [socket, fetchSubspace]);
-
-  return null;
 }

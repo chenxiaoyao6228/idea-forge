@@ -64,4 +64,9 @@ export enum BusinessEvents {
   STAR_CREATE = "stars.create",
   STAR_UPDATE = "stars.update",
   STAR_DELETE = "stars.delete",
+
+  // Guest collaborator events
+  GUEST_INVITED = "guest.invited",
+  GUEST_ACCEPTED = "guest.accepted",
+  GUEST_REMOVED = "guest.removed",
 }

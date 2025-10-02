@@ -96,6 +96,8 @@ export type WorkspaceAccessLevel = z.infer<typeof WorkspaceAccessLevelSchema>;
 
 export const WorkspaceListItemSchema = WorkspaceSchema.extend({
   accessLevel: WorkspaceAccessLevelSchema.default("member"),
+  isPendingGuest: z.boolean().optional(),
+  guestId: z.string().optional(),
 });
 export type WorkspaceListItem = z.infer<typeof WorkspaceListItemSchema>;
 

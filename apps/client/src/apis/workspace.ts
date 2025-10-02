@@ -56,7 +56,9 @@ export const workspaceApi = {
 
   // Workspace switching
   switchWorkspace: async (workspaceId: string) =>
-    request.patch<{ workspaceId: string }, { success: boolean; currentWorkspaceId: string }>("/api/workspaces/switch", { workspaceId }),
+    request.patch<{ workspaceId: string }, { success: boolean; currentWorkspaceId: string; isFirstGuestVisit?: boolean }>("/api/workspaces/switch", {
+      workspaceId,
+    }),
 
   // Leave workspace
   leaveWorkspace: async (workspaceId: string) => request.delete<void, { success: boolean }>(`/api/workspaces/${workspaceId}/leave`),

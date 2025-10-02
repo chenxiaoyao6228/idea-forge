@@ -6,9 +6,8 @@ import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
 import useUserStore from "@/stores/user-store";
 import useSubSpaceStore, { useRefreshNavigationTree } from "@/stores/subspace-store";
 import useSharedWithMeStore from "@/stores/share-store";
-import { toast } from "sonner";
 
-export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) | null {
+export function useDocumentWebsocketEvents(socket: Socket | null) {
   const { handleWebsocketAbilityChange, handleWebsocketDocumentShare } = useSharedWithMeWebsocketHandlers();
   const { run: handleDocumentUpdate } = useHandleDocumentUpdate();
   const handleDocumentRemove = useHandleDocumentRemove();
@@ -228,6 +227,4 @@ export function useDocumentWebsocketEvents(socket: Socket | null): (() => void) 
       socket.off(SocketEvents.ENTITIES, onEntities);
     };
   }, [socket, handleWebsocketAbilityChange, handleWebsocketDocumentShare, handleDocumentUpdate, handleDocumentRemove, refreshNavigationTree]);
-
-  return null;
 }

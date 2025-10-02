@@ -5,8 +5,7 @@ import { useSharedWithMeWebsocketHandlers } from "@/stores/share-store";
 import useUserStore from "@/stores/user-store";
 import useSharedWithMeStore from "@/stores/share-store";
 
-export function useSharedWithMeWebsocketEvents(socket: Socket | null): (() => void) | null {
-  const cleanupRef = useRef<(() => void) | null>(null);
+export function useSharedWithMeWebsocketEvents(socket: Socket | null) {
   const { handleWebsocketAbilityChange, handleWebsocketDocumentShare, handleWebsocketReconnect } = useSharedWithMeWebsocketHandlers();
 
   useEffect(() => {
@@ -30,21 +29,36 @@ export function useSharedWithMeWebsocketEvents(socket: Socket | null): (() => vo
 
     const onDocumentShared = (message: any) => {
       console.log(`[websocket]: Received event ${SocketEvents.DOCUMENT_SHARED}:`, message);
-      const { docId, sharedUserId, document, permission, shareType, sharedByUserId } = message;
-      if (!docId || !document) {
-        console.log(`[websocket]: Missing docId or document in DOCUMENT_SHARED event`, { docId, document });
+      const { docId, sharedUserId, guestEmail, document, permission, shareType, sharedByUserId } = message;
+
+      if (!docId && !document) {
+        console.log(`[websocket]: Missing docId/documentId or document in DOCUMENT_SHARED event`, message);
         return;
       }
 
       const userInfo = useUserStore.getState().userInfo;
 
-      // If the current user was shared this document
-      if (sharedUserId === userInfo?.id) {
+      // Check if current user was shared this document
+      // Match by userId (for regular shares) or email (for guest shares)
+      const isForCurrentUser = sharedUserId === userInfo?.id || (guestEmail && userInfo?.email && guestEmail.toLowerCase() === userInfo.email.toLowerCase());
+
+      if (isForCurrentUser) {
         console.log(`[websocket]: Processing document share for current user`, { docId, document });
-        // Update shared documents using the hook-based handler
-        handleWebsocketDocumentShare(document);
+
+        // If we have the full document object, use it
+        if (document) {
+          handleWebsocketDocumentShare(document);
+        } else {
+          // Otherwise, trigger a refetch of shared documents
+          handleWebsocketReconnect();
+        }
       } else {
-        console.log(`[websocket]: Document shared with different user`, { sharedUserId, currentUserId: userInfo?.id });
+        console.log(`[websocket]: Document shared with different user`, {
+          sharedUserId,
+          guestEmail,
+          currentUserId: userInfo?.id,
+          currentEmail: userInfo?.email,
+        });
       }
     };
 
@@ -85,16 +99,11 @@ export function useSharedWithMeWebsocketEvents(socket: Socket | null): (() => vo
     socket.on("connect", onReconnect);
 
     // Create cleanup function
-    const cleanup = () => {
+    return () => {
       socket.off(SocketEvents.DOCUMENT_ADD_USER, onDocumentAddUser);
       socket.off(SocketEvents.DOCUMENT_SHARED, onDocumentShared);
       socket.off(SocketEvents.ACCESS_REVOKED, onAccessRevoked);
       socket.off("connect", onReconnect);
     };
-
-    cleanupRef.current = cleanup;
-    return cleanup;
   }, [socket, handleWebsocketAbilityChange, handleWebsocketDocumentShare, handleWebsocketReconnect]);
-
-  return cleanupRef.current;
 }

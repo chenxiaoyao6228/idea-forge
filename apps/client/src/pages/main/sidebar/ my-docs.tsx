@@ -9,6 +9,9 @@ import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
 import useSubSpaceStore, { usePersonalSubspace } from "@/stores/subspace-store";
 import { DraggableDocumentContainer } from "./components/draggable-document-container";
+import { useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { useNavigate } from "react-router-dom";
 
 export default function MyDocsArea() {
   const { t } = useTranslation();
@@ -16,9 +19,25 @@ export default function MyDocsArea() {
   const [isCreating, setIsCreating] = useState(false);
   const { run: createMyDocsDocument } = useCreateDocument();
   const personalSubspace = usePersonalSubspace();
+  const isGuestCollaborator = useIsGuestCollaborator();
   const navigationTree = personalSubspace?.navigationTree || [];
+  const navigate = useNavigate();
 
   const handleCreateDocument = async () => {
+    if (isGuestCollaborator) {
+      const result = await showConfirmModal({
+        title: t('Private pages are only open to "space members"'),
+        description: t("If you need to use it, you can contact the administrator to upgrade you to a space member or open your own space."),
+        confirmText: t("Create Space"),
+        cancelVariant: "default",
+        onConfirm: () => {
+          navigate("/create-workspace");
+          return true;
+        },
+      });
+      return;
+    }
+
     setIsCreating(true);
     try {
       await createMyDocsDocument({

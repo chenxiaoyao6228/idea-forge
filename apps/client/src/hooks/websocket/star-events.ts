@@ -4,21 +4,13 @@ import { StarEntity } from "@/stores/star-store";
 import useStarStore from "@/stores/star-store";
 import type { Star } from "@idea/contracts";
 import { PartialExcept } from "@/types";
-
-// Define SocketEvents enum locally to avoid import issues
-enum SocketEvents {
-  STAR_CREATE = "stars.create",
-  STAR_UPDATE = "stars.update",
-  STAR_DELETE = "stars.delete",
-}
+import { SocketEvents } from "@/lib/websocket";
 
 /**
  * Hook to handle star-related WebSocket events
  * Returns cleanup function for proper event listener removal
  */
-export function useStarWebsocketEvents(socket: Socket | null): (() => void) | null {
-  const cleanupRef = useRef<(() => void) | null>(null);
-
+export function useStarWebsocketEvents(socket: Socket | null) {
   useEffect(() => {
     if (!socket) return;
 
@@ -82,18 +74,10 @@ export function useStarWebsocketEvents(socket: Socket | null): (() => void) | nu
     socket.on(SocketEvents.STAR_DELETE, onStarDelete);
 
     // Create cleanup function
-    const cleanup = () => {
+    return () => {
       socket.off(SocketEvents.STAR_CREATE, onStarCreate);
       socket.off(SocketEvents.STAR_UPDATE, onStarUpdate);
       socket.off(SocketEvents.STAR_DELETE, onStarDelete);
     };
-
-    cleanupRef.current = cleanup;
-
-    // Return cleanup function
-    return cleanup;
   }, [socket]);
-
-  // Return cleanup function for external use
-  return cleanupRef.current;
 }

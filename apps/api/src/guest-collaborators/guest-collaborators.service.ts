@@ -2,12 +2,178 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
-import { InviteGuestDto, BatchInviteGuestsDto, UpdateGuestPermissionDto, GetWorkspaceGuestsDto, RemoveGuestFromDocumentDto } from "./guest-collaborators.dto";
+import {
+  InviteGuestDto,
+  InviteGuestToWorkspaceDto,
+  BatchInviteGuestsDto,
+  UpdateGuestPermissionDto,
+  GetWorkspaceGuestsDto,
+  RemoveGuestFromDocumentDto,
+} from "./guest-collaborators.dto";
 import { GuestCollaboratorResponse, WorkspaceGuestsResponse } from "@idea/contracts";
+import { EventPublisherService } from "@/_shared/events/event-publisher.service";
+import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
 export class GuestCollaboratorsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventPublisher: EventPublisherService,
+  ) {}
+
+  async inviteGuestToWorkspace(userId: string, dto: InviteGuestToWorkspaceDto): Promise<GuestCollaboratorResponse> {
+    const { workspaceId, email, name } = dto;
+
+    // Verify user is workspace admin
+    const workspaceMember = await this.prisma.workspaceMember.findFirst({
+      where: {
+        workspaceId,
+        userId,
+        role: {
+          in: ["ADMIN", "OWNER"],
+        },
+      },
+    });
+
+    if (!workspaceMember) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied);
+    }
+
+    // Check if guest email matches existing user (case-insensitive)
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: "insensitive",
+        },
+      },
+    });
+
+    // Check if guest already exists in workspace
+    let guest = await this.prisma.guestCollaborator.findUnique({
+      where: {
+        email_workspaceId: {
+          email,
+          workspaceId,
+        },
+      },
+    });
+
+    if (guest) {
+      // Handle existing guest scenarios
+      if (guest.status === "PENDING" || guest.status === "ACTIVE") {
+        throw new ApiException(ErrorCodeEnum.UserAlreadyInWorkspace, 400, "Guest already invited");
+      }
+
+      // Re-invite if expired or revoked
+      if (guest.status === "EXPIRED" || guest.status === "REVOKED") {
+        guest = await this.prisma.guestCollaborator.update({
+          where: { id: guest.id },
+          data: {
+            status: "PENDING",
+            expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            userId: existingUser?.id ?? undefined,
+            name: name || guest.name,
+            lastVisitedAt: null,
+          },
+        });
+      }
+    } else {
+      // Create new guest
+      guest = await this.prisma.guestCollaborator.create({
+        data: {
+          email,
+          name: name || null,
+          workspaceId,
+          invitedById: userId,
+          userId: existingUser?.id ?? undefined,
+          status: "PENDING",
+          expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          lastVisitedAt: null,
+        },
+      });
+    }
+
+    // Publish WebSocket event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.GUEST_INVITED,
+      workspaceId,
+      actorId: userId,
+      data: {
+        guestId: guest.id,
+        guestEmail: guest.email,
+        invitedByUserId: userId,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // If guest is existing user, send targeted event
+    if (existingUser) {
+      // TODO: Send targeted WebSocket event to userId
+    }
+
+    // TODO: Send invitation email
+
+    return this.getGuestWithDocuments(guest.id);
+  }
+
+  async acceptWorkspaceInvitation(userId: string, guestId: string): Promise<{ message: string }> {
+    // Verify guest exists
+    const guest = await this.prisma.guestCollaborator.findUnique({
+      where: { id: guestId },
+      include: {
+        user: true,
+        workspace: true,
+      },
+    });
+
+    if (!guest) {
+      throw new ApiException(ErrorCodeEnum.ResourceNotFound);
+    }
+
+    // Verify user's email matches guest's email
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || user.email.toLowerCase() !== guest.email.toLowerCase()) {
+      throw new ApiException(ErrorCodeEnum.PermissionDenied, 403, "Email does not match guest invitation");
+    }
+
+    // Check guest status
+    if (guest.status !== "PENDING") {
+      throw new ApiException(ErrorCodeEnum.WorkspaceInvitationExpired, 400, "Invitation is not pending");
+    }
+
+    // Check expiration
+    if (guest.expireAt < new Date()) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceInvitationExpired, 400, "Invitation has expired");
+    }
+
+    // Update guest status and link to user
+    await this.prisma.guestCollaborator.update({
+      where: { id: guestId },
+      data: {
+        status: "ACTIVE",
+        userId,
+      },
+    });
+
+    // Publish WebSocket event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.GUEST_ACCEPTED,
+      workspaceId: guest.workspaceId,
+      actorId: userId,
+      data: {
+        guestId,
+        userId,
+        guestEmail: guest.email,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    return { message: "Invitation accepted successfully" };
+  }
 
   async inviteGuestToDocument(userId: string, dto: InviteGuestDto): Promise<GuestCollaboratorResponse> {
     const { documentId, email, permission } = dto;
@@ -21,6 +187,16 @@ export class GuestCollaboratorsService {
     if (!document) {
       throw new ApiException(ErrorCodeEnum.DocumentNotFound);
     }
+
+    // Check if guest email matches existing user (case-insensitive)
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: "insensitive",
+        },
+      },
+    });
 
     // Check if guest already exists in workspace
     let guest = await this.prisma.guestCollaborator.findUnique({
@@ -39,7 +215,10 @@ export class GuestCollaboratorsService {
           email,
           workspaceId: document.workspaceId,
           invitedById: userId,
+          userId: existingUser?.id ?? undefined,
+          status: "PENDING",
           expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          lastVisitedAt: null,
         },
       });
     }
@@ -76,6 +255,37 @@ export class GuestCollaboratorsService {
       });
     }
 
+    // Publish WebSocket event for document sharing
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.DOCUMENT_SHARED,
+      workspaceId: document.workspaceId,
+      actorId: userId,
+      data: {
+        docId: documentId,
+        guestId: guest.id,
+        guestEmail: guest.email,
+        permission,
+        sharedByUserId: userId,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // If guest is existing user in the system, also send guest invited event
+    if (existingUser) {
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.GUEST_INVITED,
+        workspaceId: document.workspaceId,
+        actorId: userId,
+        data: {
+          guestId: guest.id,
+          guestEmail: guest.email,
+          invitedByUserId: userId,
+          documentId, // Include document context
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     // Return guest with document permissions
     return this.getGuestWithDocuments(guest.id);
   }
@@ -101,6 +311,7 @@ export class GuestCollaboratorsService {
         // Check if guest exists
         const existingGuest = await this.prisma.guestCollaborator.findUnique({
           where: { id: guestData.guestId },
+          include: { user: true },
         });
 
         if (!existingGuest) {
@@ -134,6 +345,37 @@ export class GuestCollaboratorsService {
               priority: 7,
               createdById: userId,
             },
+          });
+        }
+
+        // Publish WebSocket event for document sharing
+        await this.eventPublisher.publishWebsocketEvent({
+          name: BusinessEvents.DOCUMENT_SHARED,
+          workspaceId: document.workspaceId,
+          actorId: userId,
+          data: {
+            docId: documentId,
+            guestId: existingGuest.id,
+            guestEmail: existingGuest.email,
+            permission: guestData.permission,
+            sharedByUserId: userId,
+          },
+          timestamp: new Date().toISOString(),
+        });
+
+        // If guest is existing user, also send guest invited event
+        if (existingGuest.user) {
+          await this.eventPublisher.publishWebsocketEvent({
+            name: BusinessEvents.GUEST_INVITED,
+            workspaceId: document.workspaceId,
+            actorId: userId,
+            data: {
+              guestId: existingGuest.id,
+              guestEmail: existingGuest.email,
+              invitedByUserId: userId,
+              documentId, // Include document context
+            },
+            timestamp: new Date().toISOString(),
           });
         }
 
@@ -208,6 +450,7 @@ export class GuestCollaboratorsService {
         name: guest.name,
         status: guest.status,
         expireAt: guest.expireAt,
+        lastVisitedAt: guest.lastVisitedAt,
         createdAt: guest.createdAt,
         updatedAt: guest.updatedAt,
         invitedBy: guest.invitedBy,
@@ -314,6 +557,7 @@ export class GuestCollaboratorsService {
       name: guest.name,
       status: guest.status,
       expireAt: guest.expireAt,
+      lastVisitedAt: guest.lastVisitedAt,
       createdAt: guest.createdAt,
       updatedAt: guest.updatedAt,
       invitedBy: {
@@ -348,7 +592,9 @@ export class GuestCollaboratorsService {
       where: {
         workspaceId: guest.workspaceId,
         userId: userId,
-        role: "ADMIN",
+        role: {
+          in: ["ADMIN", "OWNER"],
+        },
       },
     });
 
@@ -370,6 +616,19 @@ export class GuestCollaboratorsService {
       await tx.guestCollaborator.delete({
         where: { id: guestId },
       });
+    });
+
+    // Publish WebSocket event to notify guest and workspace members
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.GUEST_REMOVED,
+      workspaceId: guest.workspaceId,
+      actorId: userId,
+      data: {
+        guestId,
+        userId: guest.userId,
+        removedByUserId: userId,
+      },
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -438,6 +697,7 @@ export class GuestCollaboratorsService {
       name: guest.name,
       status: guest.status,
       expireAt: guest.expireAt,
+      lastVisitedAt: guest.lastVisitedAt,
       createdAt: guest.createdAt,
       updatedAt: guest.updatedAt,
       invitedBy: guest.invitedBy,
@@ -522,6 +782,7 @@ export class GuestCollaboratorsService {
         name: guest.name,
         status: guest.status,
         expireAt: guest.expireAt,
+        lastVisitedAt: guest.lastVisitedAt,
         createdAt: guest.createdAt,
         updatedAt: guest.updatedAt,
         invitedBy: guest.invitedBy,

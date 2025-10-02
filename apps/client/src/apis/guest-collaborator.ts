@@ -1,5 +1,6 @@
 import type {
   InviteGuestRequest,
+  InviteGuestToWorkspaceRequest,
   BatchInviteGuestsRequest,
   UpdateGuestPermissionRequest,
   GetWorkspaceGuestsRequest,
@@ -10,6 +11,14 @@ import type {
 import request from "@/lib/request";
 
 export const guestCollaboratorsApi = {
+  inviteGuestToWorkspace: async (data: InviteGuestToWorkspaceRequest) => {
+    return request.post<InviteGuestToWorkspaceRequest, GuestCollaboratorResponse>("/api/guest-collaborators/workspace/invite", data);
+  },
+
+  acceptGuestInvitation: async (guestId: string) => {
+    return request.post<void, { message: string }>(`/api/guest-collaborators/${guestId}/accept`, {});
+  },
+
   inviteGuest: async (data: InviteGuestRequest) => {
     return request.post<InviteGuestRequest, GuestCollaboratorResponse>("/api/guest-collaborators/invite", data);
   },

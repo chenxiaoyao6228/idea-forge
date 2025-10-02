@@ -6,11 +6,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, ChevronDown, MoreHorizontal, User, Check, Eye } from "lucide-react";
+import { Plus, ChevronDown, MoreHorizontal, User, Check, Eye, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import useUserStore from "@/stores/user-store";
-import { useAllWorkspaces, useCurrentWorkspace, useSwitchWorkspace, useReorderWorkspaces } from "@/stores/workspace-store";
+import { useAllWorkspaces, useCurrentWorkspace, useSwitchWorkspace, useReorderWorkspaces, useFetchWorkspaces } from "@/stores/workspace-store";
+import { useAcceptGuestInvitation } from "@/stores/guest-collaborators-store";
 import { SortableList } from "@/components/sortable-list";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";
 import { displayUserName } from "@/lib/auth";
@@ -24,7 +25,29 @@ export default function WorkspaceSwitcher() {
   const currentWorkspace = useCurrentWorkspace();
   const { run: switchWorkspace, loading: isSwitching } = useSwitchWorkspace();
   const { run: reorderWorkspaces, loading: isReordering } = useReorderWorkspaces();
+  const { run: fetchWorkspaces } = useFetchWorkspaces();
+  const { run: acceptInvitation, loading: isAccepting } = useAcceptGuestInvitation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const handleWorkspaceClick = async (workspace: any) => {
+    if (isSwitching || isAccepting) return;
+
+    // If it's a pending guest invitation, accept it first
+    if (workspace.isPendingGuest && workspace.guestId) {
+      try {
+        await acceptInvitation(workspace.guestId);
+        // Refresh workspace list to update status
+        await fetchWorkspaces();
+        // Then switch to the workspace
+        await switchWorkspace(workspace.id);
+      } catch (error) {
+        console.error("Failed to accept invitation:", error);
+      }
+    } else {
+      // Normal workspace switch
+      await switchWorkspace(workspace.id);
+    }
+  };
 
   const createWorkspace = async () => {
     navigate("/create-workspace");
@@ -130,11 +153,7 @@ export default function WorkspaceSwitcher() {
                     "flex flex-1 items-center gap-2 px-1 py-1 transition-colors group cursor-pointer",
                     workspace.accessLevel === "guest" && "opacity-75",
                   )}
-                  onClick={() => {
-                    if (!isSwitching) {
-                      switchWorkspace(workspace.id);
-                    }
-                  }}
+                  onClick={() => handleWorkspaceClick(workspace)}
                 >
                   <div className="flex items-center gap-2 w-full">
                     {/* <div className="flex items-center justify-center h-8 w-8 rounded bg-gray-200 text-gray-700 text-xs font-medium">
@@ -143,10 +162,16 @@ export default function WorkspaceSwitcher() {
                     <div className="flex flex-col flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm truncate">{workspace.name}</span>
-                        {workspace.accessLevel === "guest" && (
+                        {workspace.accessLevel === "guest" && workspace.isPendingGuest && (
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4 bg-orange-100 text-orange-800">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {t("Pending")}
+                          </Badge>
+                        )}
+                        {workspace.accessLevel === "guest" && !workspace.isPendingGuest && (
                           <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4">
                             <Eye className="h-3 w-3 mr-1" />
-                            Guest
+                            {t("Guest")}
                           </Badge>
                         )}
                       </div>

@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus } from "lucide-react";
 import { MemberSharingTab } from "./member-sharing-tab";
 import { GuestSharingTab } from "./guest-sharing-tab";
+import { useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
 
 interface ShareButtonProps {
   documentId: string;
@@ -12,6 +13,12 @@ interface ShareButtonProps {
 
 export function SharePopover({ documentId }: ShareButtonProps) {
   const { t } = useTranslation();
+
+  const isGuestCollaborator = useIsGuestCollaborator();
+
+  if (isGuestCollaborator) {
+    return null;
+  }
 
   return (
     <Popover>

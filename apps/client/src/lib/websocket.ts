@@ -65,6 +65,7 @@ export enum SocketEvents {
   JOIN_ERROR = "join.error",
   ENTITIES = "entities",
   DOCUMENT_UPDATE = "document.update",
+
   STAR_CREATE = "stars.create",
   STAR_UPDATE = "stars.update",
   STAR_DELETE = "stars.delete",
@@ -77,6 +78,10 @@ export enum SocketEvents {
   DOCUMENT_SHARED = "permission.document.shared",
   SUBSPACE_PERMISSION_UPDATED = "permission.subspace.updated",
   PERMISSION_INHERITANCE_CHANGED = "permission.inheritance.changed",
+
+  GUEST_INVITED = "guest.invited",
+  GUEST_ACCEPTED = "guest.accepted",
+  GUEST_REMOVED = "guest.removed",
 }
 
 // Interface for gateway message structure

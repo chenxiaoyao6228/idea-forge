@@ -8,8 +8,7 @@ import { useInitializeSubjectAbilities } from "@/stores/ability-store";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
 import { useTranslation } from "react-i18next";
 
-export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void) | null {
-  const cleanupRef = useRef<(() => void) | null>(null);
+export function useWorkspaceWebsocketEvents(socket: Socket | null) {
   const { t } = useTranslation();
   // Use the existing useFetchMembers hook
   const { run: fetchMembers } = useFetchMembers();
@@ -182,16 +181,11 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null): (() => void)
     socket.on(SocketEvents.WORKSPACE_MEMBER_LEFT, onWorkspaceMemberLeft);
 
     // Create cleanup function
-    const cleanup = () => {
+    return () => {
       socket.off(SocketEvents.WORKSPACE_MEMBER_ADDED, onWorkspaceMemberAdded);
       socket.off(SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED, onWorkspaceMembersBatchAdded);
       socket.off(SocketEvents.WORKSPACE_MEMBER_ROLE_UPDATED, onWorkspaceMemberRoleUpdated);
       socket.off(SocketEvents.WORKSPACE_MEMBER_LEFT, onWorkspaceMemberLeft);
     };
-
-    cleanupRef.current = cleanup;
-    return cleanup;
   }, [socket, fetchWorkspaces, switchToFirstWorkspace, initializeSubjectAbilities, t]);
-
-  return cleanupRef.current;
 }

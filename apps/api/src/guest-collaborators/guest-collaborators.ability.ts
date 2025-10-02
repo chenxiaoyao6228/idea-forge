@@ -23,7 +23,7 @@ export class GuestCollaboratorsAbility extends BaseAbility {
       const { can } = builder;
 
       // Get current workspace from user object
-      const currentWorkspaceId = user.currentWorkspaceId;
+      const currentWorkspaceId = user.currentWorkspaceId || (_context?.workspaceId as string);
 
       if (currentWorkspaceId) {
         // Get permissions for current workspace only
@@ -74,7 +74,7 @@ export class GuestCollaboratorsAbility extends BaseAbility {
       case WorkspaceRole.OWNER:
       case WorkspaceRole.ADMIN:
         // OWNER/ADMIN: Can manage all guest collaborators
-        can([Action.Create, Action.Read, Action.Update, Action.Delete], "GuestCollaborator", { workspaceId });
+        can([Action.Create, Action.Read, Action.Update, Action.Delete, Action.Manage], "GuestCollaborator", { workspaceId });
         break;
 
       case WorkspaceRole.MEMBER:

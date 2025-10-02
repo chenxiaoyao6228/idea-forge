@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { useDragAndDropContext } from "./hooks/use-dnd";
 import { DndContext } from "@dnd-kit/core";
 import WorkspaceSwitcher from "./workspace-switcher";
-import { showTrashModal } from "./trash-dialog";
 import { showTemplateModal } from "./template-dialog";
 import { showSearchModal } from "./search-doc-dialog";
 import { showImportFilesModal } from "./import-files-dialog";
@@ -15,18 +14,22 @@ import SharedWithMe from "./shared-with-me";
 import SubspacesArea from "./subspaces";
 import MyDocsArea from "./ my-docs";
 import React from "react";
-import { Search as SearchIcon, Download, Users, Trash2, Box, Inbox, Settings } from "lucide-react";
+import { Search as SearchIcon, Download, Users, Trash2, Box, Inbox, Settings, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWorkspaceType } from "@/hooks/use-workspace-type";
 import { useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
   const { t } = useTranslation();
   const { isPersonalWorkspace } = useWorkspaceType();
   const isGuestCollaborator = useIsGuestCollaborator();
+  const navigate = useNavigate();
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragMove={handleDragMove} onDragOver={handleDragOver}>
@@ -139,7 +142,10 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
           <SidebarContent className="custom-scrollbar">
             {isGuestCollaborator ? (
               // Guest-only view: only show WorkspaceSwitcher and SharedWithMe
-              <SharedWithMe />
+              <>
+                <SharedWithMe />
+                <MyDocsArea />
+              </>
             ) : (
               // Full workspace view for regular users
               <>
@@ -170,6 +176,25 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                   <Box className="h-4 w-4 mr-2 shrink-0" />
                   <span className="truncate">{t("Templates")}</span>
                 </button>
+              </div>
+            </SidebarFooter>
+          )}
+          {isGuestCollaborator && (
+            <SidebarFooter className="p-0 gap-0">
+              <div className="p-4">
+                <Alert>
+                  <AlertDescription className="text-sm ">
+                    {t(
+                      "Your identity in the current space is a collaborative guest, and you can only participate in viewing or collaborative editing of specified pages. If you need to access all public content in the entire space, you can contact the administrator to upgrade you to a space member.",
+                    )}
+                  </AlertDescription>
+                </Alert>
+              </div>
+              <div className="p-4 border-t">
+                <Button onClick={() => navigate("/create-workspace")} className="w-full" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t("Create My Space")}
+                </Button>
               </div>
             </SidebarFooter>
           )}

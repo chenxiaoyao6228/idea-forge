@@ -1,15 +1,21 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { Separator } from "@/components/ui/separator";
-import { UserPlus, X, Plus } from "lucide-react";
+import { UserPlus, X, Plus, Link } from "lucide-react";
 import { showAddGuestModal } from "./add-guest-dialog";
 import { PublicSharingSection } from "./public-sharing-section";
-import useGuestCollaboratorsStore, { useFetchDocumentGuests, useUpdateGuestPermission, useRemoveGuestFromDocument } from "@/stores/guest-collaborators-store";
+import useGuestCollaboratorsStore, {
+  useFetchDocumentGuests,
+  useUpdateGuestPermission,
+  useRemoveGuestFromDocument,
+  useIsGuestCollaborator,
+} from "@/stores/guest-collaborators-store";
 import { PermissionLevel } from "@idea/contracts";
+import { toast } from "sonner";
 
 interface GuestSharingTabProps {
   documentId: string;
@@ -32,8 +38,14 @@ export function GuestSharingTab({ documentId }: GuestSharingTabProps) {
     await updateGuestPermissionHook({ guestId, permission, documentId });
   };
 
+  const copyPageAccessLink = () => {
+    // Copy the current page URL from the browser address bar
+    navigator.clipboard.writeText(window.location.href);
+    toast.success(t("Link copied to clipboard"));
+  };
+
   // Fetch document-specific guests when component mounts
-  React.useEffect(() => {
+  useEffect(() => {
     if (documentId) {
       fetchDocumentGuests(documentId);
     }
@@ -101,6 +113,14 @@ export function GuestSharingTab({ documentId }: GuestSharingTabProps) {
 
       {/* Public Sharing Section */}
       {/* <PublicSharingSection /> */}
+
+      <Separator />
+      <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-md transition-colors" onClick={copyPageAccessLink}>
+        <div className="text-sm  flex items-center gap-2 p-1 cursor-pointer">
+          <Link className="h-4 w-4" />
+          {t("Copy page access link")}
+        </div>
+      </div>
     </div>
   );
 }

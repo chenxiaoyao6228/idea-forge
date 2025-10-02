@@ -9,6 +9,12 @@ export const inviteGuestSchema = z.object({
   permission: PermissionLevelSchema,
 });
 
+export const inviteGuestToWorkspaceSchema = z.object({
+  workspaceId: z.string().cuid(),
+  email: z.string().email(),
+  name: z.string().optional(),
+});
+
 export const batchInviteGuestsSchema = z.object({
   documentId: z.string().cuid(),
   guests: z.array(
@@ -35,6 +41,7 @@ export const guestCollaboratorResponseSchema = z.object({
   name: z.string().nullable(),
   status: GuestStatusSchema,
   expireAt: z.date(),
+  lastVisitedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
   invitedBy: z.object({
@@ -67,6 +74,7 @@ export const removeGuestFromDocumentSchema = z.object({
 
 // Type exports
 export type InviteGuestRequest = z.infer<typeof inviteGuestSchema>;
+export type InviteGuestToWorkspaceRequest = z.infer<typeof inviteGuestToWorkspaceSchema>;
 export type BatchInviteGuestsRequest = z.infer<typeof batchInviteGuestsSchema>;
 export type UpdateGuestPermissionRequest = z.infer<typeof updateGuestPermissionSchema>;
 export type GetWorkspaceGuestsRequest = z.infer<typeof getWorkspaceGuestsSchema>;

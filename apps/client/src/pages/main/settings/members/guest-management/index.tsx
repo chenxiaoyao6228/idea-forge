@@ -1,18 +1,33 @@
 import { useEffect, useState } from "react";
-import { useOrderedGuests, useFetchGuests, useUpdateGuestPermission, useRemoveGuestFromDocument } from "@/stores/guest-collaborators-store";
+import { useOrderedGuests, useFetchGuests, useUpdateGuestPermission, useRemoveGuestFromDocument, useRemoveGuest } from "@/stores/guest-collaborators-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { Search, Plus, Users } from "lucide-react";
 import { GuestCard } from "./guest-card";
+import { showInviteGuestDialog } from "./invite-guest-dialog";
+import useWorkspaceStore from "@/stores/workspace-store";
 
 export const GuestCollaboratorPanel = () => {
   const { t } = useTranslation();
+  const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
   const orderedGuests = useOrderedGuests();
   const { run: fetchGuests } = useFetchGuests();
   const { run: updateGuestPermission } = useUpdateGuestPermission();
   const { run: removeGuestFromDocument } = useRemoveGuestFromDocument();
+  const removeGuest = useRemoveGuest();
   const [search, setSearch] = useState("");
+
+  const handleInviteGuest = () => {
+    if (!currentWorkspace?.id) return;
+
+    showInviteGuestDialog({
+      workspaceId: currentWorkspace.id,
+      onSuccess: () => {
+        fetchGuests();
+      },
+    });
+  };
 
   useEffect(() => {
     // Force fresh fetch for workspace-level management view with explicit pagination
@@ -39,6 +54,10 @@ export const GuestCollaboratorPanel = () => {
     });
   };
 
+  const handleRemoveGuest = (guestId: string, guestName: string) => {
+    removeGuest(guestId, guestName);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with search and add button */}
@@ -47,12 +66,7 @@ export const GuestCollaboratorPanel = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input placeholder={t("Search guests...")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" aria-label="Search guests" />
         </div>
-        <Button
-          onClick={() => {
-            /* TODO: Implement add guest without document */
-          }}
-          className="bg-black hover:bg-gray-800 text-white"
-        >
+        <Button onClick={handleInviteGuest} className="bg-black hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4 mr-2" />
           {t("Invite Guest")}
         </Button>
@@ -61,7 +75,13 @@ export const GuestCollaboratorPanel = () => {
       {/* Guests grid */}
       <div className="grid gap-4 grid-cols-1">
         {guests.map((guest) => (
-          <GuestCard key={guest.id} guest={guest} onUpdatePermission={handleUpdatePermission} onRemoveDocumentAccess={handleRemoveDocumentAccess} />
+          <GuestCard
+            key={guest.id}
+            guest={guest}
+            onUpdatePermission={handleUpdatePermission}
+            onRemoveDocumentAccess={handleRemoveDocumentAccess}
+            onRemoveGuest={handleRemoveGuest}
+          />
         ))}
       </div>
 
@@ -72,12 +92,7 @@ export const GuestCollaboratorPanel = () => {
           <h3 className="text-lg font-semibold mb-2 text-black">{t("No guests found")}</h3>
           <p className="text-muted-foreground mb-4">{search ? t("Try adjusting your search terms") : t("Invite your first guest to get started")}</p>
           {!search && (
-            <Button
-              onClick={() => {
-                /* TODO: Implement add guest without document */
-              }}
-              className="bg-black hover:bg-gray-800 text-white"
-            >
+            <Button onClick={handleInviteGuest} className="bg-black hover:bg-gray-800 text-white">
               <Plus className="h-4 w-4 mr-2" />
               {t("Invite Guest")}
             </Button>

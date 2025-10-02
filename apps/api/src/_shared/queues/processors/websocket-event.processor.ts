@@ -104,6 +104,15 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.ACCESS_REVOKED:
           await this.handleAccessRevokedEvent(event, server);
           break;
+        case BusinessEvents.GUEST_INVITED:
+          await this.handleGuestInvitedEvent(event, server);
+          break;
+        case BusinessEvents.GUEST_ACCEPTED:
+          await this.handleGuestAcceptedEvent(event, server);
+          break;
+        case BusinessEvents.GUEST_REMOVED:
+          await this.handleGuestRemovedEvent(event, server);
+          break;
       }
     } catch (error) {
       console.error(`Error processing websocket event: ${event.name}`, error);
@@ -129,8 +138,9 @@ export class WebsocketEventProcessor extends WorkerHost {
 
   private async handleDocumentSharedEvent(event: WebsocketEvent<any>, server: any) {
     const { data, workspaceId, actorId } = event;
-    const { docId, sharedUserId, document, permission, shareType, sharedByUserId } = data;
+    const { docId, sharedUserId, guestEmail, document, permission, shareType, sharedByUserId } = data;
 
+    // Handle regular user share
     if (sharedUserId) {
       // Notify the shared user about the document share
       server.to(`user:${sharedUserId}`).emit(BusinessEvents.DOCUMENT_SHARED, {
@@ -141,6 +151,39 @@ export class WebsocketEventProcessor extends WorkerHost {
         shareType,
         sharedByUserId,
       });
+      return;
+    }
+
+    // Handle guest share
+    if (guestEmail && docId) {
+      // Find the user by email (case-insensitive)
+      const user = await this.prismaService.user.findFirst({
+        where: {
+          email: {
+            equals: guestEmail,
+            mode: "insensitive",
+          },
+        },
+      });
+
+      if (user) {
+        // Fetch the document if not provided
+        let documentData = document;
+        if (!documentData) {
+          documentData = await this.prismaService.doc.findUnique({
+            where: { id: docId },
+          });
+        }
+
+        // Notify the guest user about the document share
+        server.to(`user:${user.id}`).emit(BusinessEvents.DOCUMENT_SHARED, {
+          docId,
+          guestEmail,
+          document: documentData,
+          permission,
+          sharedByUserId,
+        });
+      }
     }
   }
 
@@ -558,5 +601,74 @@ export class WebsocketEventProcessor extends WorkerHost {
     }
 
     return channels;
+  }
+
+  // Handle guest invited event
+  private async handleGuestInvitedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { guestId, guestEmail, invitedByUserId } = data;
+
+    // Find the user by email (case-insensitive) to notify them
+    const user = await this.prismaService.user.findFirst({
+      where: {
+        email: {
+          equals: guestEmail,
+          mode: "insensitive",
+        },
+      },
+    });
+
+    if (user) {
+      // Notify the invited user to refresh their workspace list
+      server.to(`user:${user.id}`).emit(BusinessEvents.GUEST_INVITED, {
+        guestId,
+        workspaceId,
+        guestEmail,
+        invitedByUserId,
+      });
+
+      // Tell the user to join the workspace room
+      server.to(`user:${user.id}`).emit(BusinessEvents.JOIN, {
+        event: BusinessEvents.GUEST_INVITED,
+        workspaceId,
+      });
+    }
+  }
+
+  // Handle guest accepted event
+  private async handleGuestAcceptedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { guestId, userId, guestEmail } = data;
+
+    // Notify workspace room (admins) to refresh guest list
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.GUEST_ACCEPTED, {
+      guestId,
+      userId,
+      workspaceId,
+      guestEmail,
+    });
+  }
+
+  // Handle guest removed event
+  private async handleGuestRemovedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { guestId, userId, removedByUserId } = data;
+
+    // Notify the removed guest to switch workspace
+    if (userId) {
+      server.to(`user:${userId}`).emit(BusinessEvents.GUEST_REMOVED, {
+        guestId,
+        workspaceId,
+        removedByUserId,
+      });
+    }
+
+    // Notify workspace room (admins) to refresh guest list
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.GUEST_REMOVED, {
+      guestId,
+      userId,
+      workspaceId,
+      removedByUserId,
+    });
   }
 }

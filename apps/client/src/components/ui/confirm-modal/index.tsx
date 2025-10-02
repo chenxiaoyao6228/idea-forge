@@ -129,12 +129,12 @@ const ConfirmModal: React.FC<ConfirmDialogProps<ConfirmModalProps, boolean>> = (
     <>
       {!hideCancel && (
         <Button variant={cancelVariant} onClick={handleCancel} disabled={isLoading}>
-          {t("Cancel") || cancelText}
+          {cancelText || t("Cancel")}
         </Button>
       )}
       <Button variant={confirmVariant} onClick={handleConfirm} disabled={isLoading}>
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {t("Confirm") || confirmText}
+        {confirmText || t("Confirm")}
       </Button>
     </>
   );
