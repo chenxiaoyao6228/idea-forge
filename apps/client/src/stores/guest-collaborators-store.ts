@@ -335,4 +335,28 @@ export const useAcceptGuestInvitation = () => {
   );
 };
 
+// Hook for promoting guest to member
+export const usePromoteGuest = () => {
+  return (guestId: string, guestName: string) => {
+    showConfirmModal({
+      title: "Promote Guest to Member",
+      description: `Are you sure you want to promote '${guestName}' as workspace member?`,
+      confirmVariant: "default",
+      onConfirm: async () => {
+        try {
+          await guestCollaboratorsApi.promoteGuestToMember(guestId);
+          // Remove from guest store since they are now a member
+          removeGuest(guestId);
+          toast.success("Guest promoted to member successfully");
+          return true;
+        } catch (error) {
+          console.error("Failed to promote guest:", error);
+          toast.error("Failed to promote guest");
+          return false;
+        }
+      },
+    });
+  };
+};
+
 export default useGuestCollaboratorsStore;

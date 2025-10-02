@@ -62,6 +62,7 @@ export enum ErrorCodeEnum {
   GuestNotFound = "guest_not_found",
   WorkspaceInvitationNotFound = "workspace_invitation_not_found",
   WorkspaceInvitationExpired = "workspace_invitation_expired",
+  GuestNotLinkedToUser = "guest_not_linked_to_user",
 
   // Subspace related errors (using subspace prefix for subspaces)
   SubspaceNotFound = "subspace_not_found",

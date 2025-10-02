@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
@@ -9,16 +9,20 @@ import {
   UpdateGuestPermissionDto,
   GetWorkspaceGuestsDto,
   RemoveGuestFromDocumentDto,
+  PromoteGuestToMemberDto,
 } from "./guest-collaborators.dto";
-import { GuestCollaboratorResponse, WorkspaceGuestsResponse } from "@idea/contracts";
+import { GuestCollaboratorResponse, WorkspaceGuestsResponse, PromoteGuestToMemberResponse, WorkspaceRole, PermissionLevel } from "@idea/contracts";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
+import { WorkspaceService } from "@/workspace/workspace.service";
 
 @Injectable()
 export class GuestCollaboratorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventPublisher: EventPublisherService,
+    @Inject(forwardRef(() => WorkspaceService))
+    private readonly workspaceService: WorkspaceService,
   ) {}
 
   async inviteGuestToWorkspace(userId: string, dto: InviteGuestToWorkspaceDto): Promise<GuestCollaboratorResponse> {
@@ -794,5 +798,106 @@ export class GuestCollaboratorsService {
         })),
       };
     });
+  }
+
+  /**
+   * Promote a guest collaborator to workspace member
+   * Migrates permissions and cleans up guest record
+   */
+  async promoteGuestToMember(adminId: string, guestId: string, dto: PromoteGuestToMemberDto): Promise<PromoteGuestToMemberResponse> {
+    const role = (dto.role as WorkspaceRole) || WorkspaceRole.MEMBER;
+
+    // 1. Validation - Verify guest exists and belongs to workspace
+    const guest = await this.prisma.guestCollaborator.findUnique({
+      where: { id: guestId },
+      include: { user: true, workspace: true },
+    });
+
+    if (!guest) {
+      throw new ApiException(ErrorCodeEnum.ResourceNotFound);
+    }
+
+    if (!guest.userId) {
+      throw new ApiException(ErrorCodeEnum.GuestNotLinkedToUser);
+    }
+
+    // Verify user is not already a workspace member
+    const existingMember = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: guest.workspaceId, userId: guest.userId } },
+    });
+
+    if (existingMember) {
+      throw new ApiException(ErrorCodeEnum.UserAlreadyInWorkspace);
+    }
+
+    // 2. Permission migration in transaction
+    await this.prisma.$transaction(async (tx) => {
+      // Fetch guest permissions
+      const guestPermissions = await tx.documentPermission.findMany({
+        where: { guestCollaboratorId: guestId, inheritedFromType: "GUEST" },
+        include: { doc: true },
+      });
+
+      // Migrate permissions
+      for (const perm of guestPermissions) {
+        // Determine if workspace member would have lower access
+        // WORKSPACE_MEMBER and WORKSPACE_ADMIN both get READ by default
+        const workspaceMemberLevel = PermissionLevel.READ;
+
+        if (this.comparePermissionLevels(perm.permission, workspaceMemberLevel) > 0) {
+          // Guest has higher permission - convert to DIRECT
+          await tx.documentPermission.update({
+            where: { id: perm.id },
+            data: {
+              userId: guest.userId,
+              guestCollaboratorId: null,
+              inheritedFromType: "DIRECT",
+              priority: 1,
+            },
+          });
+        } else {
+          // Workspace access is sufficient - delete guest permission
+          await tx.documentPermission.delete({ where: { id: perm.id } });
+        }
+      }
+
+      // Delete guest record
+      await tx.guestCollaborator.delete({ where: { id: guestId } });
+    });
+
+    // 3. Add as workspace member (outside transaction)
+    await this.workspaceService.addWorkspaceMember(guest.workspaceId, guest.userId, role, adminId);
+
+    // 4. Emit WebSocket event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.GUEST_PROMOTED,
+      workspaceId: guest.workspaceId,
+      actorId: adminId,
+      data: {
+        guestId,
+        userId: guest.userId,
+        promotedByUserId: adminId,
+        newRole: role,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    return { message: "Guest promoted to member successfully" };
+  }
+
+  /**
+   * Compare permission levels
+   * Returns: >0 if a > b, 0 if equal, <0 if a < b
+   */
+  private comparePermissionLevels(a: PermissionLevel, b: PermissionLevel): number {
+    const levels = {
+      [PermissionLevel.NONE]: 0,
+      [PermissionLevel.READ]: 1,
+      [PermissionLevel.COMMENT]: 2,
+      [PermissionLevel.EDIT]: 3,
+      [PermissionLevel.MANAGE]: 4,
+    };
+
+    return levels[a] - levels[b];
   }
 }

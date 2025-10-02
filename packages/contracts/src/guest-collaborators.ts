@@ -72,6 +72,10 @@ export const removeGuestFromDocumentSchema = z.object({
   documentId: z.string().cuid(),
 });
 
+export const promoteGuestToMemberSchema = z.object({
+  role: z.enum(["MEMBER", "ADMIN"]).optional().default("MEMBER"),
+});
+
 // Type exports
 export type InviteGuestRequest = z.infer<typeof inviteGuestSchema>;
 export type InviteGuestToWorkspaceRequest = z.infer<typeof inviteGuestToWorkspaceSchema>;
@@ -79,5 +83,7 @@ export type BatchInviteGuestsRequest = z.infer<typeof batchInviteGuestsSchema>;
 export type UpdateGuestPermissionRequest = z.infer<typeof updateGuestPermissionSchema>;
 export type GetWorkspaceGuestsRequest = z.infer<typeof getWorkspaceGuestsSchema>;
 export type RemoveGuestFromDocumentRequest = z.infer<typeof removeGuestFromDocumentSchema>;
+export type PromoteGuestToMemberRequest = z.infer<typeof promoteGuestToMemberSchema>;
+export type PromoteGuestToMemberResponse = { message: string };
 export type GuestCollaboratorResponse = z.infer<typeof guestCollaboratorResponseSchema>;
 export type WorkspaceGuestsResponse = z.infer<typeof workspaceGuestsResponseSchema>;

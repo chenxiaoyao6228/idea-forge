@@ -69,4 +69,5 @@ export enum BusinessEvents {
   GUEST_INVITED = "guest.invited",
   GUEST_ACCEPTED = "guest.accepted",
   GUEST_REMOVED = "guest.removed",
+  GUEST_PROMOTED = "guest.promoted",
 }

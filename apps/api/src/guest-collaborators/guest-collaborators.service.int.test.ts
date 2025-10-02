@@ -9,6 +9,7 @@ import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { ClsModule } from "@/_shared/utils/cls.module";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
+import { WorkspaceService } from "@/workspace/workspace.service";
 
 async function createMockData(tx: PrismaClient) {
   // Generate UUIDs for all entities
@@ -91,11 +92,35 @@ describe("GuestCollaboratorsService (integration)", () => {
 
     module = await Test.createTestingModule({
       imports: [ConfigsModule, ClsModule, PrismaModule],
-      providers: [GuestCollaboratorsService, { provide: EventPublisherService, useValue: eventPublisherMock }],
+      providers: [
+        GuestCollaboratorsService,
+        { provide: EventPublisherService, useValue: eventPublisherMock },
+        {
+          provide: WorkspaceService,
+          useValue: {
+            addWorkspaceMember: vi.fn().mockImplementation(async (workspaceId, userId, role, adminId) => {
+              // This will be set after prisma is available
+              return { workspaceId, userId, role };
+            }),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get(GuestCollaboratorsService);
     prisma = module.get(PrismaService);
+
+    // Update the mock to use the actual prisma instance
+    const workspaceService = module.get(WorkspaceService);
+    workspaceService.addWorkspaceMember = vi.fn().mockImplementation(async (workspaceId, userId, role, adminId) => {
+      return await prisma.workspaceMember.create({
+        data: {
+          workspaceId,
+          userId,
+          role,
+        },
+      });
+    });
 
     mockData = await createMockData(prisma);
   });
@@ -1420,6 +1445,232 @@ describe("GuestCollaboratorsService (integration)", () => {
       expect(result).toBeDefined();
       expect(result.email).toBe(email.toLowerCase());
       expect(result.documents[0].permission).toBe("READ");
+    });
+  });
+
+  describe("promoteGuestToMember", () => {
+    it("should successfully promote guest to workspace member", async () => {
+      // Create a user linked to the guest
+      const linkedUserId = uuidv4();
+      await prisma.user.create({
+        data: {
+          id: linkedUserId,
+          displayName: "Linked User",
+          email: "linked@test.com",
+        },
+      });
+
+      // Create guest linked to user
+      const guest = await prisma.guestCollaborator.create({
+        data: {
+          email: "linked@test.com",
+          userId: linkedUserId,
+          workspaceId: mockData.ids.workspaceId,
+          invitedById: mockData.ids.adminUserId,
+          status: "ACTIVE",
+          expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      // Create document permissions for the guest
+      await prisma.documentPermission.create({
+        data: {
+          guestCollaboratorId: guest.id,
+          docId: mockData.ids.documentId,
+          permission: "EDIT",
+          inheritedFromType: "GUEST",
+          priority: 7,
+          createdById: mockData.ids.adminUserId,
+        },
+      });
+
+      const result = await service.promoteGuestToMember(mockData.ids.adminUserId, guest.id, { role: "MEMBER" });
+
+      expect(result).toBeDefined();
+      expect(result.message).toContain("promoted to member successfully");
+
+      // Verify guest was deleted
+      const deletedGuest = await prisma.guestCollaborator.findUnique({
+        where: { id: guest.id },
+      });
+      expect(deletedGuest).toBeNull();
+
+      // Verify workspace member was created
+      const member = await prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: mockData.ids.workspaceId,
+            userId: linkedUserId,
+          },
+        },
+      });
+      expect(member).toBeDefined();
+      expect(member?.role).toBe("MEMBER");
+
+      // Verify guest permissions were migrated to direct permissions
+      const directPermission = await prisma.documentPermission.findFirst({
+        where: {
+          userId: linkedUserId,
+          docId: mockData.ids.documentId,
+          inheritedFromType: "DIRECT",
+        },
+      });
+      expect(directPermission).toBeDefined();
+      expect(directPermission?.permission).toBe("EDIT");
+    });
+
+    it("should delete READ permissions when promoting guest", async () => {
+      // Create a user linked to the guest
+      const linkedUserId = uuidv4();
+      await prisma.user.create({
+        data: {
+          id: linkedUserId,
+          displayName: "Linked User",
+          email: "linked2@test.com",
+        },
+      });
+
+      // Create guest linked to user
+      const guest = await prisma.guestCollaborator.create({
+        data: {
+          email: "linked2@test.com",
+          userId: linkedUserId,
+          workspaceId: mockData.ids.workspaceId,
+          invitedById: mockData.ids.adminUserId,
+          status: "ACTIVE",
+          expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      // Create READ permission that should be deleted
+      await prisma.documentPermission.create({
+        data: {
+          guestCollaboratorId: guest.id,
+          docId: mockData.ids.documentId,
+          permission: "READ",
+          inheritedFromType: "GUEST",
+          priority: 7,
+          createdById: mockData.ids.adminUserId,
+        },
+      });
+
+      await service.promoteGuestToMember(mockData.ids.adminUserId, guest.id, { role: "MEMBER" });
+
+      // Verify READ permission was deleted (not migrated)
+      const readPermission = await prisma.documentPermission.findFirst({
+        where: {
+          userId: linkedUserId,
+          docId: mockData.ids.documentId,
+        },
+      });
+      expect(readPermission).toBeNull();
+    });
+
+    it("should throw GuestNotLinkedToUser when guest is not linked to a user", async () => {
+      // Create guest WITHOUT linked user
+      const guest = await prisma.guestCollaborator.create({
+        data: {
+          email: "notlinked@test.com",
+          workspaceId: mockData.ids.workspaceId,
+          invitedById: mockData.ids.adminUserId,
+          status: "PENDING",
+          expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      await expect(service.promoteGuestToMember(mockData.ids.adminUserId, guest.id, { role: "MEMBER" })).rejects.toThrow(ApiException);
+
+      await expect(service.promoteGuestToMember(mockData.ids.adminUserId, guest.id, { role: "MEMBER" })).rejects.toThrow(
+        new ApiException(ErrorCodeEnum.GuestNotLinkedToUser),
+      );
+    });
+
+    it("should throw ResourceNotFound when guest doesn't exist", async () => {
+      await expect(service.promoteGuestToMember(mockData.ids.adminUserId, "non-existent-id", { role: "MEMBER" })).rejects.toThrow(ApiException);
+
+      await expect(service.promoteGuestToMember(mockData.ids.adminUserId, "non-existent-id", { role: "MEMBER" })).rejects.toThrow(
+        new ApiException(ErrorCodeEnum.ResourceNotFound),
+      );
+    });
+
+    it("should promote guest to ADMIN role when specified", async () => {
+      // Create a user linked to the guest
+      const linkedUserId = uuidv4();
+      await prisma.user.create({
+        data: {
+          id: linkedUserId,
+          displayName: "Future Admin",
+          email: "futureadmin@test.com",
+        },
+      });
+
+      // Create guest linked to user
+      const guest = await prisma.guestCollaborator.create({
+        data: {
+          email: "futureadmin@test.com",
+          userId: linkedUserId,
+          workspaceId: mockData.ids.workspaceId,
+          invitedById: mockData.ids.adminUserId,
+          status: "ACTIVE",
+          expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      await service.promoteGuestToMember(mockData.ids.adminUserId, guest.id, { role: "ADMIN" });
+
+      // Verify workspace member was created with ADMIN role
+      const member = await prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: mockData.ids.workspaceId,
+            userId: linkedUserId,
+          },
+        },
+      });
+      expect(member).toBeDefined();
+      expect(member?.role).toBe("ADMIN");
+    });
+
+    it("should publish GUEST_PROMOTED WebSocket event", async () => {
+      // Clear previous mock calls
+      eventPublisherMock.publishWebsocketEvent.mockClear();
+
+      // Create a user linked to the guest
+      const linkedUserId = uuidv4();
+      await prisma.user.create({
+        data: {
+          id: linkedUserId,
+          displayName: "Event Test User",
+          email: "eventtest@test.com",
+        },
+      });
+
+      // Create guest linked to user
+      const guest = await prisma.guestCollaborator.create({
+        data: {
+          email: "eventtest@test.com",
+          userId: linkedUserId,
+          workspaceId: mockData.ids.workspaceId,
+          invitedById: mockData.ids.adminUserId,
+          status: "ACTIVE",
+          expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      await service.promoteGuestToMember(mockData.ids.adminUserId, guest.id, { role: "MEMBER" });
+
+      // Verify WebSocket event was published
+      expect(eventPublisherMock.publishWebsocketEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "guest.promoted",
+          workspaceId: mockData.ids.workspaceId,
+          data: expect.objectContaining({
+            guestId: guest.id,
+            userId: linkedUserId,
+            newRole: "MEMBER",
+          }),
+        }),
+      );
     });
   });
 });

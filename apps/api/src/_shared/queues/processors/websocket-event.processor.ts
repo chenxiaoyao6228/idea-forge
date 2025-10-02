@@ -113,6 +113,9 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.GUEST_REMOVED:
           await this.handleGuestRemovedEvent(event, server);
           break;
+        case BusinessEvents.GUEST_PROMOTED:
+          await this.handleGuestPromotedEvent(event, server);
+          break;
       }
     } catch (error) {
       console.error(`Error processing websocket event: ${event.name}`, error);
@@ -669,6 +672,31 @@ export class WebsocketEventProcessor extends WorkerHost {
       userId,
       workspaceId,
       removedByUserId,
+    });
+  }
+
+  // Handle guest promoted event
+  private async handleGuestPromotedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { guestId, userId, promotedByUserId, newRole } = data;
+
+    // Notify the promoted user to refresh workspace list and switch to member view
+    if (userId) {
+      server.to(`user:${userId}`).emit(BusinessEvents.GUEST_PROMOTED, {
+        guestId,
+        workspaceId,
+        promotedByUserId,
+        newRole,
+      });
+    }
+
+    // Notify workspace room (members/admins) to refresh member/guest lists
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.GUEST_PROMOTED, {
+      guestId,
+      userId,
+      workspaceId,
+      promotedByUserId,
+      newRole,
     });
   }
 }

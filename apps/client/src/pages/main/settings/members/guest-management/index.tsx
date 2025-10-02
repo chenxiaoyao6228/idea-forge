@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOrderedGuests, useFetchGuests, useUpdateGuestPermission, useRemoveGuestFromDocument, useRemoveGuest } from "@/stores/guest-collaborators-store";
+import { useOrderedGuests, useFetchGuests, useUpdateGuestPermission, useRemoveGuestFromDocument, useRemoveGuest, usePromoteGuest } from "@/stores/guest-collaborators-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -16,6 +16,7 @@ export const GuestCollaboratorPanel = () => {
   const { run: updateGuestPermission } = useUpdateGuestPermission();
   const { run: removeGuestFromDocument } = useRemoveGuestFromDocument();
   const removeGuest = useRemoveGuest();
+  const promoteGuest = usePromoteGuest();
   const [search, setSearch] = useState("");
 
   const handleInviteGuest = () => {
@@ -58,6 +59,10 @@ export const GuestCollaboratorPanel = () => {
     removeGuest(guestId, guestName);
   };
 
+  const handlePromoteGuest = (guestId: string, guestName: string) => {
+    promoteGuest(guestId, guestName);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with search and add button */}
@@ -81,6 +86,7 @@ export const GuestCollaboratorPanel = () => {
             onUpdatePermission={handleUpdatePermission}
             onRemoveDocumentAccess={handleRemoveDocumentAccess}
             onRemoveGuest={handleRemoveGuest}
+            onPromoteGuest={handlePromoteGuest}
           />
         ))}
       </div>

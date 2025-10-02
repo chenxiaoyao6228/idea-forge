@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, X, User, Mail, Calendar, FileText, MoreVertical, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, X, User, Mail, Calendar, FileText, MoreVertical, Trash2, UserPlus } from "lucide-react";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { GuestCollaboratorResponse } from "@idea/contracts";
 import { useTimeFormat } from "@/hooks/use-time-format";
@@ -14,9 +14,10 @@ interface GuestCardProps {
   onUpdatePermission: (guestId: string, documentId: string, permission: string) => void;
   onRemoveDocumentAccess: (guestId: string, documentId: string, documentTitle: string) => void;
   onRemoveGuest: (guestId: string, guestName: string) => void;
+  onPromoteGuest: (guestId: string, guestName: string) => void;
 }
 
-export const GuestCard = ({ guest, onUpdatePermission, onRemoveDocumentAccess, onRemoveGuest }: GuestCardProps) => {
+export const GuestCard = ({ guest, onUpdatePermission, onRemoveDocumentAccess, onRemoveGuest, onPromoteGuest }: GuestCardProps) => {
   const { t } = useTranslation();
   const { formatDate } = useTimeFormat();
   const [expanded, setExpanded] = useState(false);
@@ -45,6 +46,10 @@ export const GuestCard = ({ guest, onUpdatePermission, onRemoveDocumentAccess, o
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onPromoteGuest(guest.id, guest.name || guest.email)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  {t("Promote to member")}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onRemoveGuest(guest.id, guest.name || guest.email)} className="text-red-600 focus:text-red-600">
                   <Trash2 className="h-4 w-4 mr-2" />
                   {t("Remove from workspace")}

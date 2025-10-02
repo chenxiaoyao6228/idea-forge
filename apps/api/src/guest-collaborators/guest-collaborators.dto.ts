@@ -6,6 +6,7 @@ import {
   updateGuestPermissionSchema,
   getWorkspaceGuestsSchema,
   removeGuestFromDocumentSchema,
+  promoteGuestToMemberSchema,
 } from "@idea/contracts";
 
 export class InviteGuestDto extends createZodDto(inviteGuestSchema) {}
@@ -14,3 +15,4 @@ export class BatchInviteGuestsDto extends createZodDto(batchInviteGuestsSchema) 
 export class UpdateGuestPermissionDto extends createZodDto(updateGuestPermissionSchema) {}
 export class GetWorkspaceGuestsDto extends createZodDto(getWorkspaceGuestsSchema) {}
 export class RemoveGuestFromDocumentDto extends createZodDto(removeGuestFromDocumentSchema) {}
+export class PromoteGuestToMemberDto extends createZodDto(promoteGuestToMemberSchema) {}

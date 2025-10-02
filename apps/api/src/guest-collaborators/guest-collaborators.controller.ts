@@ -7,6 +7,7 @@ import {
   UpdateGuestPermissionDto,
   GetWorkspaceGuestsDto,
   RemoveGuestFromDocumentDto,
+  PromoteGuestToMemberDto,
 } from "./guest-collaborators.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
@@ -73,5 +74,11 @@ export class GuestCollaboratorsController {
     const dto: RemoveGuestFromDocumentDto = { documentId };
     await this.guestCollaboratorsService.removeGuestFromDocument(userId, guestId, dto);
     return { message: "Guest access removed successfully" };
+  }
+
+  @Post(":guestId/promote")
+  @CheckPolicy(Action.Update, "GuestCollaborator")
+  async promoteGuestToMember(@GetUser("id") userId: string, @Param("guestId") guestId: string, @Body() dto: PromoteGuestToMemberDto) {
+    return this.guestCollaboratorsService.promoteGuestToMember(userId, guestId, dto);
   }
 }

@@ -5,6 +5,8 @@ import type {
   UpdateGuestPermissionRequest,
   GetWorkspaceGuestsRequest,
   RemoveGuestFromDocumentRequest,
+  PromoteGuestToMemberRequest,
+  PromoteGuestToMemberResponse,
   GuestCollaboratorResponse,
   WorkspaceGuestsResponse,
 } from "@idea/contracts";
@@ -48,5 +50,9 @@ export const guestCollaboratorsApi = {
 
   removeGuestFromDocument: async (guestId: string, documentId: string) => {
     return request.delete<void, { message: string }>(`/api/guest-collaborators/${guestId}/documents/${documentId}`);
+  },
+
+  promoteGuestToMember: async (guestId: string, data?: PromoteGuestToMemberRequest) => {
+    return request.post<PromoteGuestToMemberRequest | undefined, PromoteGuestToMemberResponse>(`/api/guest-collaborators/${guestId}/promote`, data || {});
   },
 };
