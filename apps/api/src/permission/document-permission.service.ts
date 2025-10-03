@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { PermissionLevel, PermissionInheritanceType } from "@idea/contracts";
+import { PermissionLevel, PermissionInheritanceType, PermissionResolutionResult } from "@idea/contracts";
 
 type DocContext = {
   id: string;
@@ -27,7 +27,7 @@ export class DocPermissionResolveService {
    * 6. Guest permissions (GUEST)
    * 7. NONE (no access)
    */
-  async resolveUserPermissionForDocument(userId: string, doc: DocContext): Promise<PermissionLevel> {
+  async resolveUserPermissionForDocument(userId: string, doc: DocContext): Promise<PermissionResolutionResult> {
     // 1. Check for direct document-level permissions (DIRECT, GROUP)
     const docPerms = await this.prismaService.documentPermission.findMany({
       where: {
@@ -36,13 +36,20 @@ export class DocPermissionResolveService {
       },
       orderBy: { priority: "asc" },
     });
-    if (docPerms.length) return docPerms[0].permission;
+    if (docPerms.length) {
+      const perm = docPerms[0];
+      return {
+        level: perm.permission,
+        source: perm.inheritedFromType === PermissionInheritanceType.DIRECT ? "direct" : "group",
+        priority: perm.priority,
+      };
+    }
 
     // 2. Traverse ancestor chain for inherited permissions
     // This implements live inheritance - no permission records are copied
-    const inheritedPermission = await this.getInheritedPermissionFromAncestors(userId, doc);
-    if (inheritedPermission !== PermissionLevel.NONE) {
-      return inheritedPermission;
+    const inheritedResult = await this.getInheritedPermissionFromAncestors(userId, doc);
+    if (inheritedResult.level !== PermissionLevel.NONE) {
+      return inheritedResult;
     }
 
     // 3. Check subspace-based permissions (only for workspace members)
@@ -58,12 +65,20 @@ export class DocPermissionResolveService {
         // 3a. Document-level subspace permission overrides
         const documentSubspacePermission = await this.getDocumentSubspaceRoleBasedPermission(userId, doc.id, doc.subspaceId);
         if (documentSubspacePermission !== PermissionLevel.NONE) {
-          return documentSubspacePermission;
+          return {
+            level: documentSubspacePermission,
+            source: "subspace",
+            priority: 4, // Subspace priority range is 3-4
+          };
         }
         // 3b. Subspace role-based permissions (SUBSPACE_ADMIN, SUBSPACE_MEMBER)
         const subspaceRolePermission = await this.getSubspaceRoleBasedPermission(userId, doc.subspaceId);
         if (subspaceRolePermission !== PermissionLevel.NONE) {
-          return subspaceRolePermission;
+          return {
+            level: subspaceRolePermission,
+            source: "subspace",
+            priority: 4,
+          };
         }
       }
     }
@@ -71,11 +86,19 @@ export class DocPermissionResolveService {
     // 4. Guest permissions (for users not in workspace)
     const guestPermission = await this.getGuestPermissionForDocument(userId, doc.id, doc.workspaceId);
     if (guestPermission !== PermissionLevel.NONE) {
-      return guestPermission;
+      return {
+        level: guestPermission,
+        source: "guest",
+        priority: 7,
+      };
     }
 
     // 5. Default: no access
-    return PermissionLevel.NONE;
+    return {
+      level: PermissionLevel.NONE,
+      source: "none",
+      priority: 999,
+    };
   }
 
   /**
@@ -210,8 +233,9 @@ export class DocPermissionResolveService {
    * Only DIRECT and GROUP permissions are inherited from parent documents.
    * This implements dynamic permission inheritance without copying permission records.
    */
-  private async getInheritedPermissionFromAncestors(userId: string, doc: DocContext, maxDepth = 25): Promise<PermissionLevel> {
+  private async getInheritedPermissionFromAncestors(userId: string, doc: DocContext, maxDepth = 25): Promise<PermissionResolutionResult> {
     const visited = new Set<string>();
+    const inheritanceChain: string[] = [doc.id];
     let depth = 0;
 
     // Ensure we have parentId - fetch if not provided
@@ -226,9 +250,14 @@ export class DocPermissionResolveService {
       // Detect circular references
       if (visited.has(currentParentId)) {
         this.logger.warn(`Circular document hierarchy detected while resolving permissions for document ${doc.id}`);
-        return PermissionLevel.NONE;
+        return {
+          level: PermissionLevel.NONE,
+          source: "none",
+          priority: 999,
+        };
       }
       visited.add(currentParentId);
+      inheritanceChain.push(currentParentId);
 
       // Check for DIRECT or GROUP permissions on the parent document
       // These are the only permission types that cascade to children
@@ -242,7 +271,21 @@ export class DocPermissionResolveService {
       });
 
       if (parentPerms.length) {
-        return parentPerms[0].permission;
+        const perm = parentPerms[0];
+        // Fetch parent doc title for better UX
+        const parentDoc = await this.prismaService.doc.findUnique({
+          where: { id: currentParentId },
+          select: { id: true, title: true },
+        });
+
+        return {
+          level: perm.permission,
+          source: "inherited",
+          sourceDocId: currentParentId,
+          sourceDocTitle: parentDoc?.title,
+          priority: perm.priority,
+          inheritanceChain,
+        };
       }
 
       // Fetch parent's parent to continue traversal
@@ -259,7 +302,11 @@ export class DocPermissionResolveService {
       this.logger.warn(`Permission inheritance depth limit (${maxDepth}) reached for document ${doc.id}`);
     }
 
-    return PermissionLevel.NONE;
+    return {
+      level: PermissionLevel.NONE,
+      source: "none",
+      priority: 999,
+    };
   }
 
   /**

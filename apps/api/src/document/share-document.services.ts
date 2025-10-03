@@ -6,12 +6,14 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionInheritanceType, PermissionLevel } from "@idea/contracts";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
+import { DocPermissionResolveService } from "@/permission/document-permission.service";
 
 @Injectable()
 export class ShareDocumentService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
+    private readonly docPermissionResolveService: DocPermissionResolveService,
   ) {}
 
   async getSharedDocuments(userId: string): Promise<CommonSharedDocumentResponse[]> {
@@ -198,12 +200,30 @@ export class ShareDocumentService {
   }
 
   async getDocShares(id: string, userId: string) {
-    const [userShares, groupShares] = await Promise.all([this.getDirectUserShares(id), this.getGroupShares(id)]);
+    // Get document context for permission resolution
+    const document = await this.prismaService.doc.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        workspaceId: true,
+        parentId: true,
+        subspaceId: true,
+      },
+    });
+
+    if (!document) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    const [userShares, groupShares] = await Promise.all([
+      this.getDirectUserShares(id, document),
+      this.getGroupShares(id, document),
+    ]);
 
     return [...userShares, ...groupShares];
   }
 
-  private async getDirectUserShares(docId: string) {
+  private async getDirectUserShares(docId: string, docContext: { id: string; workspaceId: string; parentId: string | null; subspaceId: string | null }) {
     // Get direct user permissions
     const userPermissions = await this.prismaService.documentPermission.findMany({
       where: {
@@ -234,20 +254,33 @@ export class ShareDocumentService {
     // Create user map for quick lookup
     const userMap = new Map(users.map((user) => [user.id, user]));
 
+    // Resolve permission sources for all users
+    const permissionSources = await Promise.all(
+      Array.from(userPermissionMap.keys()).map((userId) =>
+        this.docPermissionResolveService.resolveUserPermissionForDocument(userId, docContext)
+      )
+    );
+
+    const permissionSourceMap = new Map(
+      Array.from(userPermissionMap.keys()).map((userId, index) => [userId, permissionSources[index]])
+    );
+
     // Transform to expected format
     return Array.from(userPermissionMap.entries()).map(([userId, permissionLevel]) => {
       const user = userMap.get(userId);
+      const permissionSource = permissionSourceMap.get(userId);
       return {
         id: user?.id || userId,
         email: user?.email || "",
         displayName: user?.displayName,
         permission: { level: permissionLevel },
+        permissionSource, // NEW: Include permission source metadata
         type: "user" as const,
       };
     });
   }
 
-  private async getGroupShares(docId: string) {
+  private async getGroupShares(docId: string, docContext: { id: string; workspaceId: string; parentId: string | null; subspaceId: string | null }) {
     // Get group permissions with user and group information
     const groupPermissionsWithGroups = await this.prismaService.documentPermission.findMany({
       where: {
@@ -269,16 +302,18 @@ export class ShareDocumentService {
 
     // Process group permissions to get unique groups with highest permission level
     const groupPermissionMap = new Map<string, string>();
+    const groupUserMap = new Map<string, string>(); // Track a user ID for each group for permission resolution
     const permissionLevels = ["NONE", "READ", "COMMENT", "EDIT", "MANAGE"];
 
     groupPermissionsWithGroups.forEach((permission) => {
       const userGroup = permission.user?.memberGroups?.[0]?.group;
-      if (userGroup) {
+      if (userGroup && permission.userId) {
         const currentLevel = groupPermissionMap.get(userGroup.id);
         const newLevel = permission.permission;
 
         if (!currentLevel || permissionLevels.indexOf(newLevel) > permissionLevels.indexOf(currentLevel)) {
           groupPermissionMap.set(userGroup.id, newLevel);
+          groupUserMap.set(userGroup.id, permission.userId); // Track user for permission resolution
         }
       }
     });
@@ -306,15 +341,31 @@ export class ShareDocumentService {
     // Create group map for quick lookup
     const groupMap = new Map(groups.map((group) => [group.id, group]));
 
+    // Resolve permission sources for groups (using a representative user from each group)
+    const permissionSources = await Promise.all(
+      groupIds.map((groupId) => {
+        const userId = groupUserMap.get(groupId);
+        return userId
+          ? this.docPermissionResolveService.resolveUserPermissionForDocument(userId, docContext)
+          : Promise.resolve(null);
+      })
+    );
+
+    const permissionSourceMap = new Map(
+      groupIds.map((groupId, index) => [groupId, permissionSources[index]])
+    );
+
     // Transform to expected format
     return Array.from(groupPermissionMap.entries()).map(([groupId, permission]) => {
       const group = groupMap.get(groupId);
+      const permissionSource = permissionSourceMap.get(groupId);
       return {
         id: group?.id || groupId,
         name: group?.name || "",
         description: group?.description,
         memberCount: group?._count?.members || 0,
         permission: { level: permission },
+        permissionSource, // NEW: Include permission source metadata
         type: "group" as const,
       };
     });

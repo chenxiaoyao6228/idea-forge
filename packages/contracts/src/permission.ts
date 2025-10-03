@@ -1,6 +1,17 @@
 import { z } from "zod";
 import { basePagerSchema } from "./_base";
 import { PermissionLevelSchema, DocumentPermissionSchema } from "./prisma-type-generated";
+import type { PermissionLevel } from "./prisma-type-generated";
+
+// Permission resolution result with source metadata
+export interface PermissionResolutionResult {
+  level: PermissionLevel;
+  source: "direct" | "group" | "inherited" | "subspace" | "workspace" | "guest" | "none";
+  sourceDocId?: string; // If source='inherited', which ancestor granted access
+  sourceDocTitle?: string; // Title of the ancestor document
+  priority: number; // Priority value (1=highest)
+  inheritanceChain?: string[]; // Array of doc IDs from current doc to source doc
+}
 
 // Request schemas
 export const addUserPermissionSchema = z.object({

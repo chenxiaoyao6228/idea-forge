@@ -18,6 +18,7 @@ import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionListRequestDto } from "@/permission/permission.dto";
 import { AbilityService } from "@/_shared/casl/casl.service";
+import { DocPermissionResolveService } from "@/permission/document-permission.service";
 
 @Injectable()
 export class DocumentService {
@@ -25,6 +26,7 @@ export class DocumentService {
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly abilityService: AbilityService,
+    private readonly docPermissionResolveService: DocPermissionResolveService,
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
@@ -279,11 +281,21 @@ export class DocumentService {
       },
     );
 
+    // FIXME:  we have already called the resolveUserPermissionForDocument in serializeAbilityForUser-> document.ability.ts, need optimization
+    // Get permission source metadata for the user
+    const permissionSource = await this.docPermissionResolveService.resolveUserPermissionForDocument(userId, {
+      id: document.id,
+      workspaceId: document.workspaceId,
+      parentId: document.parentId,
+      subspaceId: document.subspaceId,
+    });
+
     return {
       doc,
       permissions: {
         Doc: serializedAbility,
       },
+      permissionSource, // NEW: Include permission source metadata
     };
   }
 

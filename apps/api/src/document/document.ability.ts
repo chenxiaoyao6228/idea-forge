@@ -45,12 +45,14 @@ export class DocumentAbility extends BaseAbility {
   private async buildContextSpecificPermissions(can: any, user: User, contextDoc: DocumentAbilityContext["doc"]) {
     if (!contextDoc) return;
 
-    let level = await this.docPermissionResolveService.resolveUserPermissionForDocument(user.id, {
+    const permissionResult = await this.docPermissionResolveService.resolveUserPermissionForDocument(user.id, {
       id: contextDoc.id,
       workspaceId: contextDoc.workspaceId,
       parentId: contextDoc.parentId ?? null,
       subspaceId: contextDoc.subspaceId ?? null,
     });
+
+    let level = permissionResult.level;
 
     // Author always has MANAGE level permissions on their own documents
     if (contextDoc.authorId === user.id && level !== PermissionLevel.MANAGE) {
