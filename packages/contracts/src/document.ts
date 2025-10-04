@@ -55,6 +55,8 @@ export const createDocumentSchema = DocSchema.pick({
   subspaceId: true,
   type: true,
   visibility: true,
+}).partial({
+  parentId: true, // parentId is optional - not all documents have a parent
 });
 export type CreateDocumentDto = z.infer<typeof createDocumentSchema>;
 
@@ -152,6 +154,16 @@ export const shareDocumentSchema = z.object({
 
 export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
 
+// Permission source metadata schema (reused from permission.ts)
+const permissionResolutionResultSchema = z.object({
+  level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),
+  source: z.enum(["direct", "group", "inherited", "subspace", "workspace", "guest", "none"]),
+  sourceDocId: z.string().optional(),
+  sourceDocTitle: z.string().optional(),
+  priority: z.number(),
+  inheritanceChain: z.array(z.string()).optional(),
+});
+
 // public share doc
 export const docShareUserSchema = z.object({
   id: z.string(),
@@ -160,6 +172,13 @@ export const docShareUserSchema = z.object({
   permission: z.object({
     level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),
   }),
+  permissionSource: permissionResolutionResultSchema.optional(), // Permission source metadata
+  hasParentPermission: z.boolean().optional(), // Indicates user has permission from parent
+  parentPermissionSource: permissionResolutionResultSchema.optional(), // Parent permission details
+  grantedBy: z.object({
+    displayName: z.string().nullable(),
+    email: z.string(),
+  }).optional(), // Who granted this permission
   type: z.literal("user"),
 });
 
@@ -174,6 +193,13 @@ export const docShareGroupSchema = z.object({
   permission: z.object({
     level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),
   }),
+  permissionSource: permissionResolutionResultSchema.optional(), // Permission source metadata
+  hasParentPermission: z.boolean().optional(), // Indicates group has permission from parent
+  parentPermissionSource: permissionResolutionResultSchema.optional(), // Parent permission details
+  grantedBy: z.object({
+    displayName: z.string().nullable(),
+    email: z.string(),
+  }).optional(), // Who granted this permission
   type: z.literal("group"),
 });
 
@@ -205,9 +231,9 @@ export type RemoveGroupShareDto = z.infer<typeof removeGroupShareSchema>;
 
 // update document subspace permissions
 export const updateDocumentSubspacePermissionsSchema = z.object({
-  subspaceAdminPermission: PermissionLevelSchema.optional(),
-  subspaceMemberPermission: PermissionLevelSchema.optional(),
-  nonSubspaceMemberPermission: PermissionLevelSchema.optional(),
+  subspaceAdminPermission: PermissionLevelSchema.nullable().optional(), // Allow null to reset to inherited
+  subspaceMemberPermission: PermissionLevelSchema.nullable().optional(), // Allow null to reset to inherited
+  nonSubspaceMemberPermission: PermissionLevelSchema.nullable().optional(), // Allow null to reset to inherited
 });
 
 export type UpdateDocumentSubspacePermissionsDto = z.infer<typeof updateDocumentSubspacePermissionsSchema>;

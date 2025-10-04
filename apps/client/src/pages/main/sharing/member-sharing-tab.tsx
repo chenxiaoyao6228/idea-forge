@@ -1,11 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Link, X, Plus, Users, UserCheck, RotateCcw } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Link, X, Plus, Users, UserCheck, RotateCcw, Info } from "lucide-react";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "@/stores/workspace-store";
@@ -14,6 +16,7 @@ import useDocumentStore from "@/stores/document-store";
 import { useAbilityCheck, Action } from "@/hooks/use-ability";
 import { showAddMembersModal } from "./add-members-dialog";
 import type { SharedUser } from "./add-members-dialog";
+import { showRequestPermissionModal } from "./request-permission-modal";
 import {
   useDocumentShares,
   useDocumentUserShares,
@@ -36,11 +39,68 @@ interface MemberSharingTabProps {
   documentId: string;
 }
 
+// Helper function to generate permission tooltip text based on permission state
+function getPermissionTooltip(
+  permissionSource: any,
+  hasParentPermission: boolean,
+  t: (key: string) => string,
+  grantedBy?: { displayName: string | null; email: string },
+  parentPermissionSource?: any,
+): string | null {
+  if (!permissionSource) return null;
+
+  const { source, sourceDocTitle } = permissionSource;
+
+  // State 1: Direct permission on child that overrides parent permission
+  // User has BOTH parent permission AND direct permission on child
+  if (source === "direct" && hasParentPermission) {
+    const parentDocTitle = parentPermissionSource?.sourceDocTitle || "parent document";
+    return t(
+      `Permission overridden from parent document '${parentDocTitle}' inherited permission. To restore inherited permission, select 'Restore Inherited' from dropdown`,
+    );
+  }
+
+  // State 2: Direct permission (not inherited, no parent permission)
+  // User ONLY has direct permission on this document, no parent permission exists
+  if (source === "direct") {
+    if (grantedBy) {
+      return t(`Granted by ${grantedBy.displayName || grantedBy.email}`);
+    }
+    return t("Direct permission granted on this document");
+  }
+
+  // State 3: Group permission (not inherited)
+  // User has group permission on this document
+  if (source === "group") {
+    if (grantedBy) {
+      return t(`Granted by ${grantedBy.displayName || grantedBy.email}`);
+    }
+    return t("Group permission granted on this document");
+  }
+
+  // State 4: Inherited from parent (no override)
+  // User does NOT have direct permission on this document, permission comes from parent
+  if (source === "inherited") {
+    return t(`Inherited from parent document: "${sourceDocTitle || "Unknown"}". If need to change the permission setting, you can overwrite`);
+  }
+
+  return null;
+}
+
+// Helper function for subspace permission tooltips
+function getSubspacePermissionTooltip(subspaceName: string, hasOverride: boolean, t: (key: string) => string): string {
+  if (hasOverride) {
+    return t(`Permission overridden from subspace '${subspaceName}' inherited permission. To restore default, select 'Restore Inherited' from dropdown`);
+  }
+  return t(`Permission inherited from subspace '${subspaceName}'. If need to change the permission setting, you can overwrite`);
+}
+
 export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
 
   const currentUserId = useUserStore((s) => s.userInfo?.id);
+  const currentUser = useUserStore((s) => s.userInfo);
   const workspaceId = currentWorkspace?.id;
   const currentDocument = useCurrentDocumentFromStore();
 
@@ -148,7 +208,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
 
   // Hook for updating document subspace permissions
   const { run: updateDocumentSubspacePermission, loading: isUpdatingPermissions } = useRequest(
-    async (params: { permissionType: string; value: PermissionLevel }) => {
+    async (params: { permissionType: string; value: PermissionLevel | null }) => {
       const { permissionType, value } = params;
 
       const updateData: UpdateDocumentSubspacePermissionsDto = {};
@@ -198,15 +258,13 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
     { manual: true },
   );
 
-  const handleUpdateDocumentSubspacePermission = (permissionType: string, value: PermissionLevel) => {
+  const handleUpdateDocumentSubspacePermission = (permissionType: string, value: PermissionLevel | null) => {
     updateDocumentSubspacePermission({ permissionType, value });
   };
 
-  // Check if document has any permission overrides
-  const hasDocumentOverrides =
-    currentDocument?.subspaceAdminPermission !== null ||
-    currentDocument?.subspaceMemberPermission !== null ||
-    currentDocument?.nonSubspaceMemberPermission !== null;
+  const hasSubspaceAdminDocumentPermissionOverrides = currentDocument?.subspaceAdminPermission !== null;
+  const hasSubspaceMemberDocumentPermissionOverrides = currentDocument?.subspaceMemberPermission !== null;
+  const hasNonSubspaceMemberPermissionDocumentPermissionOverrides = currentDocument?.nonSubspaceMemberPermission !== null;
 
   const handleAddMembers = () => {
     showAddMembersModal({
@@ -224,156 +282,328 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
     });
   };
 
+  const handlePermissionRequest = async (requestedPermission: string, reason: string) => {
+    // TODO: Implement API call to submit permission request
+    console.log("Permission request:", { documentId, requestedPermission, reason });
+    toast.success(t("Permission request submitted. An administrator will review your request."));
+  };
+
+  // Find current user's permission from share list
+  const currentUserPermission = currentUserId ? sharedUsers.find((user) => user.id === currentUserId) : null;
+
+  // Helper to get permission level display text
+  const getPermissionLevelText = (level: string) => {
+    switch (level) {
+      case "MANAGE":
+        return t("Manage");
+      case "EDIT":
+        return t("Edit");
+      case "COMMENT":
+        return t("Comment");
+      case "READ":
+        return t("View");
+      case "NONE":
+        return t("No Access");
+      default:
+        return level;
+    }
+  };
+
   if (!workspaceId) {
     return <div className="text-sm text-muted-foreground p-4">{t("No workspace selected")}</div>;
   }
 
   return (
-    <div className="space-y-2">
-      {/* Subspace Role-Based Permissions Section */}
-      {currentDocument?.subspaceId && subspaceSettings && currentDocument?.subspace?.type !== "PERSONAL" && (
-        <div className="space-y-2">
+    <div className="space-y-4">
+      {/* Current User Permission Section */}
+      {currentUserPermission && (
+        <div className="py-2 px-3 bg-gray-50 rounded-lg border">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium">{t("Subspace Role-Based Permissions")}</Label>
-              {hasDocumentOverrides ? <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">{t("Document Override")}</span> : null}
-            </div>
-          </div>
-
-          <div className="space-y-2 p-3 bg-blue-50 rounded-lg border">
-            {/* Admin Permissions */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium">{t("Subspace Admins")}</span>
-                <span className="text-xs text-muted-foreground">
-                  ({subspaceSettings.subspace.members.filter((m) => m.role === "ADMIN").length} {t("members")})
-                </span>
+                <span className="text-sm text-muted-foreground">{t("Your permission")}:</span>
+                <Badge variant="secondary" className="font-medium">
+                  {getPermissionLevelText(currentUserPermission.permission.level)}
+                </Badge>
               </div>
-              <div className="flex items-center gap-2">
-                <PermissionLevelSelector
-                  value={currentDocument.subspaceAdminPermission ?? subspaceSettings.subspace.subspaceAdminPermission}
-                  onChange={(value) => handleUpdateDocumentSubspacePermission("subspaceAdminPermission", value)}
-                  disabled={isUpdatingPermissions || !canManage}
-                />
-              </div>
+              {currentUserPermission.permissionSource && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[300px]">
+                      <p className="text-xs whitespace-normal">
+                        {getPermissionTooltip(
+                          currentUserPermission.permissionSource,
+                          currentUserPermission.hasParentPermission || false,
+                          t,
+                          currentUserPermission.grantedBy,
+                          currentUserPermission.parentPermissionSource,
+                        )}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
-
-            {/* Member Permissions */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium">{t("Subspace Members")}</span>
-                <span className="text-xs text-muted-foreground">
-                  ({subspaceSettings.subspace.members.filter((m) => m.role === "MEMBER").length} {t("members")})
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <PermissionLevelSelector
-                  value={currentDocument.subspaceMemberPermission ?? subspaceSettings.subspace.subspaceMemberPermission}
-                  onChange={(value) => handleUpdateDocumentSubspacePermission("subspaceMemberPermission", value)}
-                  disabled={isUpdatingPermissions || !canManage}
-                />
-              </div>
-            </div>
-
-            {/* All-Member Permissions */}
-            {
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm font-medium">{t("Other Members")}</span>
-                  <span className="text-xs text-muted-foreground">({t("-- members")})</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <PermissionLevelSelector
-                    value={currentDocument.nonSubspaceMemberPermission ?? subspaceSettings.subspace.nonSubspaceMemberPermission}
-                    onChange={(value) => handleUpdateDocumentSubspacePermission("nonSubspaceMemberPermission", value)}
-                    disabled={isUpdatingPermissions || !canManage}
-                  />
-                </div>
-              </div>
-            }
-
-            <div className="text-xs text-muted-foreground mt-2">
-              {hasDocumentOverrides
-                ? t("This document has custom permission settings that override the subspace defaults.")
-                : t("These permissions are inherited from the subspace settings and apply to all documents in this subspace.")}
-            </div>
+            {currentUserPermission.permission.level !== "MANAGE" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() =>
+                  showRequestPermissionModal({
+                    currentPermission: currentUserPermission.permission.level as any,
+                    onSubmit: handlePermissionRequest,
+                  })
+                }
+              >
+                {t("Request Permission")}
+              </Button>
+            )}
           </div>
         </div>
       )}
 
-      {/* Individual Document Shares Section */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label className="text-sm font-medium flex items-center gap-2">{t("User/Group Permissions")}</Label>
-
-          <Button variant="outline" size="sm" className="h-8 bg-transparent" onClick={handleAddMembers} disabled={!canShare}>
-            <Plus className="h-4 w-4 mr-1" />
-            {t("Add")}
-          </Button>
+      {/* Show tip when current user is not in the subspace */}
+      {/* {currentUser && !subspaceSettings?.subspace?.members.some((member) => member.userId === currentUser.id) && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-800">
+              {t(
+                "This page might be shared by others, but since you don't have parent page permissions or aren't in the subspace where the page is located, you can't access all permission information for the page.",
+              )}
+            </p>
+          </div>
         </div>
-      </div>
+      )} */}
 
-      {allShares.length > 0 && (
-        <div className="space-y-3">
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {/* Shared Groups List */}
-            {sharedGroups.map((group) => (
-              <div key={group.id} className="flex items-center gap-2 p-2 rounded-md border bg-card">
-                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Users className="h-4 w-4 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0 mr-2">
-                  <div className="font-medium text-sm truncate">{group.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {group.memberCount} {t("members")}
-                    {group.description && ` • ${group.description}`}
-                  </div>
-                </div>
-                <PermissionLevelSelector
-                  value={group.permission.level}
-                  onChange={(value) => handleUpdatePermission(group.id, value)}
-                  className="h-8 text-xs flex-shrink-0"
-                />
-                <Button variant="ghost" size="sm" onClick={() => handleRemoveGroup(group.id)} className="h-8 w-8 p-0 flex-shrink-0">
-                  <X className="h-4 w-4" />
-                </Button>
+      {/* Subspace  Permissions Section */}
+
+      <div>
+        {currentDocument?.subspaceId && subspaceSettings && currentDocument?.subspace?.type !== "PERSONAL" && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">{t("Subspace Member Permissions")}</Label>
               </div>
-            ))}
+              <Button variant="outline" size="sm" className="h-8 bg-transparent" onClick={handleAddMembers} disabled={!canShare}>
+                <Plus className="h-4 w-4 mr-1" />
+                {t("Add")}
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {/* Admin Permissions */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium">{t("Subspace Admins")}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({subspaceSettings.subspace.members.filter((m) => m.role === "ADMIN").length} {t("members")})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <PermissionLevelSelector
+                          value={currentDocument.subspaceAdminPermission ?? subspaceSettings.subspace.subspaceAdminPermission}
+                          onChange={(value) => handleUpdateDocumentSubspacePermission("subspaceAdminPermission", value)}
+                          disabled={isUpdatingPermissions || !canManage}
+                          showRestoreInherited={hasSubspaceAdminDocumentPermissionOverrides}
+                          onRestoreInherited={() => handleUpdateDocumentSubspacePermission("subspaceAdminPermission", null)}
+                        />
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[300px]">
+                    <p className="text-xs whitespace-normal">
+                      {getSubspacePermissionTooltip(subspaceSettings.subspace.name, currentDocument.subspaceAdminPermission !== null, t)}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Member Permissions */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium">{t("Subspace Members")}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({subspaceSettings.subspace.members.filter((m) => m.role === "MEMBER").length} {t("members")})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <PermissionLevelSelector
+                          value={currentDocument.subspaceMemberPermission ?? subspaceSettings.subspace.subspaceMemberPermission}
+                          onChange={(value) => handleUpdateDocumentSubspacePermission("subspaceMemberPermission", value)}
+                          disabled={isUpdatingPermissions || !canManage}
+                          showRestoreInherited={hasSubspaceMemberDocumentPermissionOverrides}
+                          onRestoreInherited={() => handleUpdateDocumentSubspacePermission("subspaceMemberPermission", null)}
+                        />
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[300px]">
+                    <p className="text-xs whitespace-normal">
+                      {getSubspacePermissionTooltip(subspaceSettings.subspace.name, currentDocument.subspaceMemberPermission !== null, t)}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* All-Member Permissions */}
+              {
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-gray-600" />
+                          <span className="text-sm font-medium">{t("Other Members")}</span>
+                          <span className="text-xs text-muted-foreground">({t("-- members")})</span>
+                        </div>
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <PermissionLevelSelector
+                            value={currentDocument.nonSubspaceMemberPermission ?? subspaceSettings.subspace.nonSubspaceMemberPermission}
+                            onChange={(value) => handleUpdateDocumentSubspacePermission("nonSubspaceMemberPermission", value)}
+                            disabled={isUpdatingPermissions || !canManage}
+                            showRestoreInherited={hasNonSubspaceMemberPermissionDocumentPermissionOverrides}
+                            onRestoreInherited={() => handleUpdateDocumentSubspacePermission("nonSubspaceMemberPermission", null)}
+                          />
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[300px]">
+                      <p className="text-xs whitespace-normal">
+                        {getSubspacePermissionTooltip(subspaceSettings.subspace.name, currentDocument.nonSubspaceMemberPermission !== null, t)}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              }
+            </div>
+          </div>
+        )}
+
+        {allShares.length > 0 && (
+          <div className="max-h-60 overflow-y-auto">
+            {/* Shared Groups List */}
+            {sharedGroups.map((group) => {
+              // Determine permission state using hasParentPermission flag
+              const hasParentPermission = group.hasParentPermission || false;
+              const isDirect = group.permissionSource?.source === "direct";
+
+              // Show "Restore Inherited" when user has DIRECT permission that overrides parent
+              // Show "Remove" only when user has DIRECT permission but NO parent permission to fall back to
+              const showRestoreInherited = hasParentPermission && isDirect;
+              const showRemove = isDirect && !hasParentPermission;
+
+              const tooltipText = getPermissionTooltip(group.permissionSource, hasParentPermission, t, group.grantedBy, group.parentPermissionSource);
+
+              return (
+                <TooltipProvider key={group.id}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 py-2 rounded-md ">
+                        <div className="h-8 w-8 flex-shrink-0 rounded-full flex items-center justify-center">
+                          <Users className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0 mr-2">
+                          <div className="font-medium text-sm truncate flex items-center gap-1">
+                            {group.name}
+                            {tooltipText && <Info className="h-3 w-3 text-blue-500" />}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {group.memberCount} {t("members")}
+                            {group.description && ` • ${group.description}`}
+                          </div>
+                        </div>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <PermissionLevelSelector
+                            value={group.permission.level}
+                            onChange={(value) => handleUpdatePermission(group.id, value)}
+                            className="h-8 text-xs flex-shrink-0"
+                            showRestoreInherited={showRestoreInherited}
+                            onRestoreInherited={() => handleRemoveGroup(group.id)}
+                            showRemove={showRemove}
+                            onRemove={() => handleRemoveGroup(group.id)}
+                            disabled={isUpdatingPermissions || !canManage}
+                          />
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    {tooltipText && (
+                      <TooltipContent className="max-w-[300px]">
+                        <p className="text-xs whitespace-normal">{tooltipText}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })}
 
             {/* Shared Users List */}
-            {sharedUsers.map((user) => (
-              <div key={user.id} className="flex items-center gap-2 p-2 rounded-md border bg-card">
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarFallback className="text-sm">{user.displayName?.charAt(0) || user.email.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0 mr-2">
-                  <div className="font-medium text-sm truncate">{user.displayName || user.email}</div>
-                  <div className="text-xs text-muted-foreground truncate">{user.email}</div>
-                </div>
-                <PermissionLevelSelector
-                  value={user.permission.level}
-                  onChange={(value) => handleUpdatePermission(user.id, value)}
-                  className="h-8 text-xs flex-shrink-0"
-                />
-                <Button variant="ghost" size="sm" onClick={() => handleRemoveUser(user.id)} className="h-8 w-8 p-0 flex-shrink-0">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+            {sharedUsers.map((user) => {
+              // Determine permission state using hasParentPermission flag
+              const hasParentPermission = user.hasParentPermission || false;
+              const isDirect = user.permissionSource?.source === "direct";
+              const isInherited = user.permissionSource?.source === "inherited";
 
-      {/* No shares message */}
-      {allShares.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">{t("No users or groups have been shared with this document")}</p>
-        </div>
-      )}
+              // Show "Restore Inherited" when user has DIRECT permission that overrides parent
+              // Show "Remove" only when user has DIRECT permission but NO parent permission to fall back to
+              const showRestoreInherited = hasParentPermission && isDirect;
+              const showRemove = isDirect && !hasParentPermission;
+
+              const tooltipText = getPermissionTooltip(user.permissionSource, hasParentPermission, t, user.grantedBy, user.parentPermissionSource);
+
+              return (
+                <TooltipProvider key={user.id}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 py-2 rounded-md">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarFallback className="text-sm">{user.displayName?.charAt(0) || user.email.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0 mr-2">
+                          <div className="font-medium text-sm truncate flex items-center gap-1">
+                            {user.displayName || user.email}
+                            {tooltipText && <Info className="h-3 w-3 text-blue-500" />}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                        </div>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <PermissionLevelSelector
+                            value={user.permission.level}
+                            onChange={(value) => handleUpdatePermission(user.id, value)}
+                            className="h-8 text-xs flex-shrink-0"
+                            showRestoreInherited={showRestoreInherited}
+                            onRestoreInherited={() => handleRemoveUser(user.id)}
+                            showRemove={showRemove}
+                            onRemove={() => handleRemoveUser(user.id)}
+                            disabled={isUpdatingPermissions || !canManage}
+                          />
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    {tooltipText && (
+                      <TooltipContent className="max-w-[300px]">
+                        <p className="text-xs whitespace-normal">{tooltipText}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <Separator />
 

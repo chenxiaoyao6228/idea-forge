@@ -38,9 +38,18 @@ export class DocPermissionResolveService {
     });
     if (docPerms.length) {
       const perm = docPerms[0];
+
+      // Fetch document title for source metadata
+      const document = await this.prismaService.doc.findUnique({
+        where: { id: doc.id },
+        select: { id: true, title: true },
+      });
+
       return {
         level: perm.permission,
         source: perm.inheritedFromType === PermissionInheritanceType.DIRECT ? "direct" : "group",
+        sourceDocId: doc.id,
+        sourceDocTitle: document?.title,
         priority: perm.priority,
       };
     }

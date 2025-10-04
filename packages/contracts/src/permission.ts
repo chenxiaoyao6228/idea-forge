@@ -63,6 +63,7 @@ export const sharedWithMeResponseSchema = z.object({
     page: z.number(),
     limit: z.number(),
     total: z.number(),
+    pageCount: z.number(),
   }),
   data: z.object({
     documents: z.array(z.any()),

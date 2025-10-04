@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
-# Create seed data: 4 users with team workspaces and personal subspaces
+# Create seed data: 4 users with team workspaces, subspaces, and document hierarchies
 node scripts/seed/create-seed.js
 
 # Show help
@@ -13,6 +13,15 @@ const { PrismaClient } = require('../../apps/api/node_modules/@prisma/client');
 // Configuration
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5000';
 const DEFAULT_PASSWORD = 'Aa111111';
+
+// Subspace types to create
+const SUBSPACE_TYPES = [
+  { type: 'WORKSPACE_WIDE', name: 'WorkspaceWide Subspace', description: 'All workspace members are automatically members' },
+  { type: 'PUBLIC', name: 'Public Subspace', description: 'Any workspace member can join and leave freely' },
+  { type: 'INVITE_ONLY', name: 'InviteOnly Subspace', description: 'Visible to all members but requires invitation to join' },
+  { type: 'PRIVATE', name: 'Private Subspace', description: 'Only visible to invited members' },
+  { type: 'PERSONAL', name: 'Personal Subspace', description: 'Only visible to the creator' },
+];
 
 // Initialize Prisma client (only for email verification bypass)
 const prisma = new PrismaClient({
@@ -38,10 +47,11 @@ Options:
   --help, -h            Show this help message
 
 Description:
-  Creates 4 test users (user1@test.com to user4@test.com) with their own team workspaces.
-  Each user gets a workspace named "User_X's Team" where X is the user number.
-  Each user also gets a personal subspace named "My Docs" for personal documents.
-  Uses API endpoints for user registration and workspace creation.
+  Creates 4 test users (user1@test.com to user4@test.com) with comprehensive workspace setup:
+  - Each user gets a Team workspace named "User_X's Team"
+  - Each workspace has 5 subspaces (one for each type: WORKSPACE_WIDE, PUBLIC, INVITE_ONLY, PRIVATE, PERSONAL)
+  - Each subspace has a 3-level document hierarchy: parent -> child -> grandchild
+  - Uses API endpoints for proper initialization
       `);
       process.exit(0);
     }
@@ -140,7 +150,7 @@ async function activateUser(userId) {
 }
 
 /**
- * Login user to get access token
+ * Login user to get cookies
  */
 async function loginUser(email, password) {
   try {
@@ -159,8 +169,13 @@ async function loginUser(email, password) {
       throw new Error(`Login failed: ${response.status} ${response.statusText}`);
     }
 
-    const result = await response.json();
-    return result.accessToken;
+    // Extract cookies from response headers
+    const cookies = response.headers.get('set-cookie');
+    if (!cookies) {
+      throw new Error('No authentication cookies received from login');
+    }
+
+    return cookies;
   } catch (error) {
     console.error(`Failed to login user ${email}:`, error.message);
     throw error;
@@ -168,18 +183,21 @@ async function loginUser(email, password) {
 }
 
 /**
- * Create workspace via API endpoint (with fallback to database)
+ * Create workspace via API endpoint
  */
-async function createWorkspaceViaAPI(workspaceName, accessToken) {
+async function createWorkspaceViaAPI(workspaceName, cookies) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/workspaces`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
+        'Cookie': cookies,
       },
       body: JSON.stringify({
         name: workspaceName,
+        description: `Team workspace for ${workspaceName}`,
+        avatar: '',
+        type: 'TEAM',
       }),
     });
 
@@ -189,35 +207,122 @@ async function createWorkspaceViaAPI(workspaceName, accessToken) {
     }
 
     const result = await response.json();
-    return result;
+    return result.data;
   } catch (error) {
-    console.log(`API workspace creation failed, falling back to database creation: ${error.message}`);
-    // Fallback to database creation
-    return await createWorkspaceInDatabase(workspaceName, accessToken);
-  }
-}
-
-/**
- * Create workspace directly in database (fallback method)
- */
-async function createWorkspaceInDatabase(workspaceName, accessToken) {
-  try {
-    const workspace = await prisma.workspace.create({
-      data: {
-        name: workspaceName,
-        type: 'TEAM',
-      },
-    });
-
-    return workspace;
-  } catch (error) {
-    console.error(`Failed to create workspace "${workspaceName}" in database:`, error.message);
+    console.error(`Failed to create workspace "${workspaceName}":`, error.message);
     throw error;
   }
 }
 
 /**
- * Create user with workspace
+ * Create subspace via API endpoint
+ */
+async function createSubspaceViaAPI(workspaceId, subspaceData, cookies) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/subspaces`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': cookies,
+      },
+      body: JSON.stringify({
+        ...subspaceData,
+        workspaceId,
+      }),
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(`Subspace creation failed: ${response.status} ${response.statusText} - ${JSON.stringify(result)}`);
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error(`Failed to create subspace "${subspaceData.name}":`, error.message);
+    throw error;
+  }
+}
+
+/**
+ * Create document via API endpoint
+ */
+async function createDocumentViaAPI(documentData, cookies) {
+  try {
+    // Remove undefined values from documentData to avoid validation errors
+    const cleanedData = Object.fromEntries(
+      Object.entries(documentData).filter(([_, value]) => value !== undefined)
+    );
+
+    const response = await fetch(`${API_BASE_URL}/api/documents`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': cookies,
+      },
+      body: JSON.stringify(cleanedData),
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(`Document creation failed: ${response.status} ${response.statusText} - ${JSON.stringify(result)}`);
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error(`Failed to create document "${documentData.title}":`, error.message);
+    throw error;
+  }
+}
+
+/**
+ * Create document hierarchy (parent -> child -> grandchild) for a subspace
+ */
+async function createDocumentHierarchy(workspaceId, subspace, cookies) {
+  const subspaceTypeName = subspace.name.toLowerCase().replace(/\s+/g, '-');
+
+  // Create parent document (no parentId)
+  const parent = await createDocumentViaAPI({
+    title: `parent-in-${subspaceTypeName}`,
+    workspaceId: workspaceId,
+    subspaceId: subspace.id,
+    type: 'NOTE',
+    visibility: 'PRIVATE',
+    content: JSON.stringify({ type: 'doc', content: [{ type: 'paragraph' }] }),
+    // parentId intentionally omitted for top-level document
+  }, cookies);
+  console.log(`    ✅ Created parent document: "${parent.title}" (ID: ${parent.id})`);
+
+  // Create child document
+  const child = await createDocumentViaAPI({
+    title: `child-in-${subspaceTypeName}`,
+    workspaceId: workspaceId,
+    subspaceId: subspace.id,
+    parentId: parent.id,
+    type: 'NOTE',
+    visibility: 'PRIVATE',
+    content: JSON.stringify({ type: 'doc', content: [{ type: 'paragraph' }] }),
+  }, cookies);
+  console.log(`    ✅ Created child document: "${child.title}" (ID: ${child.id})`);
+
+  // Create grandchild document
+  const grandchild = await createDocumentViaAPI({
+    title: `grandchild-in-${subspaceTypeName}`,
+    workspaceId: workspaceId,
+    subspaceId: subspace.id,
+    parentId: child.id,
+    type: 'NOTE',
+    visibility: 'PRIVATE',
+    content: JSON.stringify({ type: 'doc', content: [{ type: 'paragraph' }] }),
+  }, cookies);
+  console.log(`    ✅ Created grandchild document: "${grandchild.title}" (ID: ${grandchild.id})`);
+
+  return { parent, child, grandchild };
+}
+
+/**
+ * Create user with workspace, subspaces, and document hierarchies
  */
 async function createUserWithWorkspace(userNumber) {
   const email = `user${userNumber}@test.com`;
@@ -254,15 +359,10 @@ async function createUserWithWorkspace(userNumber) {
     // Step 2: Activate user (bypass email verification) - database operation
     await activateUser(userId);
 
-    // Step 3: Login to get access token (optional, for API calls)
-    let accessToken = null;
-    try {
-      console.log(`Logging in user: ${email}`);
-      accessToken = await loginUser(email, DEFAULT_PASSWORD);
-    } catch (error) {
-      console.log(`Login failed (API server may not be running): ${error.message}`);
-      console.log(`Continuing with database-only operations...`);
-    }
+    // Step 3: Login to get cookies
+    console.log(`Logging in user: ${email}`);
+    const cookies = await loginUser(email, DEFAULT_PASSWORD);
+    console.log(`✅ User logged in successfully`);
 
     // Step 4: Check if user already has a workspace with this name
     const existingWorkspace = await prisma.workspace.findFirst({
@@ -276,50 +376,56 @@ async function createUserWithWorkspace(userNumber) {
       },
     });
 
+    let workspace;
     if (existingWorkspace) {
       console.log(`Workspace "${workspaceName}" already exists (ID: ${existingWorkspace.id})`);
-      return {
-        user: { id: userId, email, displayName },
-        workspace: existingWorkspace,
-        accessToken,
-      };
-    }
-
-    // Step 5: Create workspace via API (with database fallback)
-    console.log(`Creating workspace: "${workspaceName}"`);
-    let workspace;
-    if (accessToken) {
-      workspace = await createWorkspaceViaAPI(workspaceName, accessToken);
+      workspace = existingWorkspace;
     } else {
-      console.log(`Creating workspace directly in database (API not available)`);
-      workspace = await createWorkspaceInDatabase(workspaceName, null);
+      // Step 5: Create workspace via API
+      console.log(`Creating workspace: "${workspaceName}"`);
+      workspace = await createWorkspaceViaAPI(workspaceName, cookies);
+      console.log(`✅ Created workspace: "${workspaceName}" (ID: ${workspace.id})`);
     }
-    console.log(`✅ Created workspace: "${workspaceName}" (ID: ${workspace.id})`);
 
-    // Step 6: Ensure user is added as workspace member (in case of database fallback)
-    const existingMember = await prisma.workspaceMember.findFirst({
-      where: {
-        workspaceId: workspace.id,
-        userId: userId,
-      },
-    });
+    // Step 6: Create all 5 subspace types
+    console.log(`\nCreating subspaces for workspace "${workspaceName}"...`);
+    const subspaces = [];
 
-    if (!existingMember) {
-      await prisma.workspaceMember.create({
-        data: {
+    for (const subspaceConfig of SUBSPACE_TYPES) {
+      // Check if subspace already exists
+      const existingSubspace = await prisma.subspace.findFirst({
+        where: {
           workspaceId: workspace.id,
-          userId: userId,
-          role: 'OWNER',
+          name: subspaceConfig.name,
         },
       });
-      console.log(`✅ Added user as workspace owner`);
-    }
 
+      let subspace;
+      if (existingSubspace) {
+        console.log(`  Subspace "${subspaceConfig.name}" already exists`);
+        subspace = existingSubspace;
+      } else {
+        console.log(`  Creating ${subspaceConfig.type} subspace: "${subspaceConfig.name}"`);
+        subspace = await createSubspaceViaAPI(workspace.id, {
+          name: subspaceConfig.name,
+          description: subspaceConfig.description,
+          type: subspaceConfig.type,
+        }, cookies);
+        console.log(`  ✅ Created subspace: "${subspace.name}" (ID: ${subspace.id})`);
+      }
+
+      subspaces.push(subspace);
+
+      // Step 7: Create document hierarchy for this subspace
+      console.log(`  Creating document hierarchy in "${subspace.name}"...`);
+      await createDocumentHierarchy(workspace.id, subspace, cookies);
+    }
 
     return {
       user: { id: userId, email, displayName },
       workspace,
-      accessToken,
+      subspaces,
+      cookies,
     };
   } catch (error) {
     console.error(`❌ Failed to create user ${email}:`, error.message);
@@ -332,7 +438,13 @@ async function createUserWithWorkspace(userNumber) {
  */
 async function main() {
   try {
-    console.log('🚀 Starting seed data creation...\n');
+    console.log('🚀 Starting comprehensive seed data creation...\n');
+    console.log('This will create:');
+    console.log('  - 4 users (user1@test.com to user4@test.com)');
+    console.log('  - 4 team workspaces (one per user)');
+    console.log('  - 5 subspaces per workspace (all types: WORKSPACE_WIDE, PUBLIC, INVITE_ONLY, PRIVATE, PERSONAL)');
+    console.log('  - 3-level document hierarchy per subspace (parent -> child -> grandchild)');
+    console.log('');
 
     // Parse command line arguments
     parseArguments();
@@ -341,29 +453,41 @@ async function main() {
 
     // Create 4 users with their workspaces
     for (let i = 1; i <= 4; i++) {
-      console.log(`\n👤 Creating user ${i}...`);
-      console.log('─'.repeat(60));
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`👤 Creating User ${i} with full workspace setup...`);
+      console.log('='.repeat(80));
       const result = await createUserWithWorkspace(i);
       results.push(result);
-      console.log('─'.repeat(60));
     }
 
-    console.log('\n🎉 Seed data creation completed!');
+    console.log(`\n${'='.repeat(80)}`);
+    console.log('🎉 Seed data creation completed!');
+    console.log('='.repeat(80));
     console.log('\n📊 Summary:');
-    console.log('═'.repeat(60));
+    console.log('═'.repeat(80));
+
     results.forEach((result, index) => {
-      console.log(`User ${index + 1}:`);
-      console.log(`  Email:     ${result.user.email}`);
-      console.log(`  Password:  ${DEFAULT_PASSWORD}`);
-      console.log(`  Workspace: ${result.workspace.name}`);
-      console.log(`  User ID:   ${result.user.id}`);
-      console.log(`  Personal:  My Docs (personal subspace)`);
-      console.log('');
+      console.log(`\nUser ${index + 1}:`);
+      console.log(`  Email:      ${result.user.email}`);
+      console.log(`  Password:   ${DEFAULT_PASSWORD}`);
+      console.log(`  Workspace:  ${result.workspace.name} (ID: ${result.workspace.id})`);
+      console.log(`  Subspaces:  ${result.subspaces.length} subspaces created`);
+      result.subspaces.forEach(subspace => {
+        console.log(`    - ${subspace.name} (${subspace.type})`);
+      });
+      console.log(`  Documents:  ${result.subspaces.length * 3} documents (3 per subspace)`);
     });
-    console.log('═'.repeat(60));
+
+    console.log('\n' + '═'.repeat(80));
+    console.log('\n✨ All users, workspaces, subspaces, and document hierarchies created successfully!');
+    console.log('\n🔑 Login credentials:');
+    console.log('   Email: user1@test.com to user4@test.com');
+    console.log(`   Password: ${DEFAULT_PASSWORD}`);
+    console.log('');
 
   } catch (error) {
-    console.error('💥 Script failed:', error.message);
+    console.error('\n💥 Script failed:', error.message);
+    console.error(error.stack);
     process.exit(1);
   } finally {
     await prisma.$disconnect();

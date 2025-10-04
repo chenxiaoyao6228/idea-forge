@@ -6,6 +6,7 @@ import {
   generateMockDocShare,
   generateMockWorkspaceMember,
   generateMockDocumentPermission,
+  generateMockSubspaceMember,
 } from "./zod";
 import { getTestPrisma } from "@test/setup/test-container-setup";
 
@@ -19,8 +20,13 @@ export async function buildDocument(overrides: any = {}) {
   if (!overrides.authorId) {
     const user = await buildUser();
     overrides.authorId = user.id;
-    overrides.createdById = user.id;
-    overrides.lastModifiedById = user.id;
+  }
+  // Always set createdById and lastModifiedById if not provided
+  if (!overrides.createdById) {
+    overrides.createdById = overrides.authorId;
+  }
+  if (!overrides.lastModifiedById) {
+    overrides.lastModifiedById = overrides.authorId;
   }
 
   // If subspaceId is provided, ensure the subspace exists
@@ -174,6 +180,24 @@ export async function buildDocumentPermission(overrides: any = {}) {
   return await prisma.documentPermission.create({
     data: {
       ...generateMockDocumentPermission(),
+      ...overrides,
+    },
+  });
+}
+
+export async function buildSubspaceMember(overrides: any = {}) {
+  const prisma = getTestPrisma();
+  if (!overrides.subspaceId) {
+    const subspace = await buildSubspace();
+    overrides.subspaceId = subspace.id;
+  }
+  if (!overrides.userId) {
+    const user = await buildUser();
+    overrides.userId = user.id;
+  }
+  return await prisma.subspaceMember.create({
+    data: {
+      ...generateMockSubspaceMember(),
       ...overrides,
     },
   });

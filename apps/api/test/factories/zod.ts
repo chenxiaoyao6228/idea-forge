@@ -8,6 +8,7 @@ import {
   WorkspaceMemberSchema,
   DocShareSchema,
   DocumentPermissionSchema,
+  SubspaceMemberSchema,
 } from "@idea/contracts";
 
 export const generateMockDocument = (overrides = {}) => {
@@ -76,3 +77,8 @@ export const generateMockDocumentPermission = (overrides = {}) => {
 
   return result;
 };
+
+export const generateMockSubspaceMember = (overrides = {}) => ({
+  ...createFixture(SubspaceMemberSchema),
+  ...overrides,
+});

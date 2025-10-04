@@ -245,22 +245,6 @@ export const useFetchDocumentChildren = () => {
             return { documents: newDocuments };
           });
         }
-
-        // Legacy ability store functionality removed - using CASL instead
-        // if (response.permissions) {
-        //   // Convert permissions to ability entities and update store directly
-        //   const entities = Object.entries(response.permissions).map(([id, abilities]) => ({
-        //     id,
-        //     abilities: { ...{ read: false, update: false, delete: false, share: false, comment: false }, ...(abilities as Record<string, boolean>) },
-        //   }));
-        //   useAbilityStore.setState((state) => {
-        //     const newAbilities = { ...state.abilities };
-        //     entities.forEach((entity) => {
-        //       newAbilities[entity.id] = entity;
-        //     });
-        //     return { abilities: newAbilities };
-        //   });
-        // }
       } catch (error) {
         console.error("Failed to fetch children:", error);
         throw error;

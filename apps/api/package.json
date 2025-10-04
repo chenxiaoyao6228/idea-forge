@@ -27,6 +27,7 @@
     "pm2:monitor": "pm2 monit",
     "pm2:stop": "pm2 stop all",
     "pm2:restart": "pm2 restart all",
+    "typecheck": "tsc --noEmit",
     "lint": "biome lint .",
     "lint:fix": "biome check --apply .",
     "format": "biome format . ",

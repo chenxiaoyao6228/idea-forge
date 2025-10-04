@@ -1,22 +1,12 @@
 import { Injectable, ForbiddenException, BadRequestException, NotFoundException } from "@nestjs/common";
 import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto, ShareDocumentDto } from "./document.dto";
-import {
-  NavigationNode,
-  NavigationNodeType,
-  PermissionInheritanceType,
-  DocumentPermission,
-  UpdateCoverDto,
-  SharedWithMeResponse,
-  PermissionLevel,
-  UpdateDocumentSubspacePermissionsDto,
-} from "@idea/contracts";
+import { NavigationNode, NavigationNodeType, UpdateCoverDto, PermissionLevel, UpdateDocumentSubspacePermissionsDto, DocumentPermission } from "@idea/contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { presentDocument } from "./document.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import { PermissionListRequestDto } from "@/permission/permission.dto";
 import { AbilityService } from "@/_shared/casl/casl.service";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
 
@@ -56,16 +46,34 @@ export class DocumentService {
     });
 
     // Create direct OWNER permission for the document author
-    await this.prismaService.documentPermission.create({
-      data: {
-        userId: authorId,
-        docId: doc.id,
-        permission: "MANAGE",
-        inheritedFromType: "DIRECT",
-        priority: 1,
-        createdById: authorId,
-      },
-    });
+    // ONLY if they don't already have MANAGE permission through parent inheritance
+    let shouldCreatePermission = true;
+
+    if (doc.parentId) {
+      // Check if author would inherit MANAGE from parent
+      const parentPermission = await this.docPermissionResolveService.resolveUserPermissionForDocument(
+        authorId,
+        { id: doc.parentId, workspaceId: doc.workspaceId, subspaceId: doc.subspaceId }
+      );
+
+      // If author already has MANAGE on parent (either direct or inherited), don't create redundant permission
+      if (parentPermission.level === "MANAGE") {
+        shouldCreatePermission = false;
+      }
+    }
+
+    if (shouldCreatePermission) {
+      await this.prismaService.documentPermission.create({
+        data: {
+          userId: authorId,
+          docId: doc.id,
+          permission: "MANAGE",
+          inheritedFromType: "DIRECT",
+          priority: 1,
+          createdById: authorId,
+        },
+      });
+    }
 
     if (doc.subspaceId) {
       await this.updateSubspaceNavigationTree(doc.subspaceId, "add", doc);
@@ -226,6 +234,9 @@ export class DocumentService {
           select: {
             id: true,
             title: true,
+            workspaceId: true,
+            parentId: true,
+            subspaceId: true,
           },
           orderBy: {
             createdAt: "asc",
@@ -259,11 +270,36 @@ export class DocumentService {
       throw new ApiException(ErrorCodeEnum.DocumentNotFound);
     }
 
+    // Filter children based on user permissions
+    const accessibleChildren: { id: string; title: string }[] = [];
+    for (const child of document.children) {
+      const childPermission = await this.docPermissionResolveService.resolveUserPermissionForDocument(userId, {
+        id: child.id,
+        workspaceId: child.workspaceId,
+        parentId: child.parentId,
+        subspaceId: child.subspaceId,
+      });
+
+      // Only include children that the user has at least VIEW permission for
+      if (childPermission.level !== PermissionLevel.NONE) {
+        accessibleChildren.push({
+          id: child.id,
+          title: child.title,
+        });
+      }
+    }
+
+    // Replace children with filtered list
+    const documentWithFilteredChildren = {
+      ...document,
+      children: accessibleChildren,
+    };
+
     // Check basic visibility (simplified, no complex permissions yet)
     const isPublic = document.visibility === "PUBLIC";
 
     // Present document data (similar to presentDocument)
-    const doc = presentDocument(document, { isPublic });
+    const doc = presentDocument(documentWithFilteredChildren, { isPublic });
 
     // Get and serialize document abilities for the user scoped to this document
     const serializedAbility = await this.abilityService.serializeAbilityForUser(
@@ -492,121 +528,6 @@ export class DocumentService {
     return { success: true };
   }
 
-  async getSharedRootDocsWithMe(userId: string, query: PermissionListRequestDto): Promise<SharedWithMeResponse> {
-    const { page = 1, limit = 10, workspaceId } = query;
-
-    const user = await this.prismaService.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true },
-    });
-
-    if (!user) {
-      throw new ApiException(ErrorCodeEnum.UserNotFound);
-    }
-
-    // Get all direct permissions for documents (excluding user's own docs)
-    // Check both user permissions and guest permissions
-    const userPermissions = await this.prismaService.documentPermission.findMany({
-      where: {
-        userId,
-        inheritedFromType: { in: [PermissionInheritanceType.DIRECT, PermissionInheritanceType.GROUP] },
-        inheritedFromId: null,
-        createdById: { not: userId },
-      },
-      orderBy: [{ docId: "asc" }, { priority: "asc" }],
-    });
-
-    let guestPermissions: DocumentPermission[] = [];
-    if (user.email) {
-      const guestCollaborators = await this.prismaService.guestCollaborator.findMany({
-        where: { email: user.email },
-        select: { id: true },
-      });
-
-      if (guestCollaborators.length > 0) {
-        const guestIds = guestCollaborators.map((guest) => guest.id);
-        guestPermissions = await this.prismaService.documentPermission.findMany({
-          where: {
-            guestCollaboratorId: { in: guestIds },
-            inheritedFromType: PermissionInheritanceType.GUEST,
-          },
-          orderBy: [{ docId: "asc" }, { priority: "asc" }],
-        });
-      }
-    }
-
-    const directPermissions = [...userPermissions, ...guestPermissions];
-
-    // Get document IDs from permissions
-    const docIds = directPermissions.map((perm) => perm.docId);
-
-    // Filter documents by workspace if specified
-    let filteredDocIds = docIds;
-    if (workspaceId && docIds.length > 0) {
-      const docsInWorkspace = await this.prismaService.doc.findMany({
-        where: {
-          id: { in: docIds },
-          workspaceId,
-        },
-        select: { id: true },
-      });
-      filteredDocIds = docsInWorkspace.map((doc) => doc.id);
-    }
-
-    // Apply pagination to filtered document IDs
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedDocIds = filteredDocIds.slice(startIndex, endIndex);
-
-    // Get permissions for paginated documents
-    const paginatedPermissions = directPermissions.filter((perm) => paginatedDocIds.includes(perm.docId));
-
-    // For page 1, fetch all GROUP permissions (not paginated)
-    let groupPermissions: DocumentPermission[] = [];
-    if (page === 1) {
-      groupPermissions = await this.prismaService.documentPermission.findMany({
-        where: {
-          userId,
-          inheritedFromType: PermissionInheritanceType.GROUP,
-          createdById: { not: userId },
-          docId: { in: filteredDocIds },
-        },
-        orderBy: [{ docId: "asc" }, { priority: "asc" }],
-      });
-    }
-
-    // Merge permissions, deduplicate by docId, keep highest priority
-    const allPermissions = [...paginatedPermissions, ...groupPermissions];
-    const resolvedPermissions = new Map<string, DocumentPermission>();
-    for (const perm of allPermissions) {
-      const existing = resolvedPermissions.get(perm.docId);
-      if (!existing || perm.priority < existing.priority) {
-        resolvedPermissions.set(perm.docId, perm);
-      }
-    }
-
-    const finalDocIds = Array.from(resolvedPermissions.keys());
-
-    // Fetch document details
-    const documents = await this.prismaService.doc.findMany({
-      where: { id: { in: finalDocIds } },
-    });
-
-    // Create pagination object
-    const total = filteredDocIds.length;
-    const pagination = {
-      page,
-      limit,
-      total,
-      pageCount: Math.ceil(total / limit),
-    };
-
-    return {
-      pagination,
-      data: { documents },
-    };
-  }
-
   // ================ public share ========================
   //TODO:
 
@@ -736,16 +657,7 @@ export class DocumentService {
     if (!originalDoc) {
       throw new ApiException(ErrorCodeEnum.DocumentNotFound);
     }
-    // Get siblings to calculate position
-    const siblings = await this.prismaService.doc.findMany({
-      where: {
-        parentId: originalDoc.parentId,
-        authorId: userId,
-        archivedAt: null,
-      },
-      orderBy: { createdAt: "asc" },
-      take: 1,
-    });
+
     // Create duplicate document
     const duplicatedDoc = await this.prismaService.doc.create({
       data: {

@@ -9,12 +9,12 @@ export class ShareDocumentController {
 
   @Get("shared-docs")
   async getSharedDocuments(@GetUser("id") userId: string) {
-    return this.shareDocumentService.getSharedDocuments(userId);
+    return this.shareDocumentService.getSharedWithMeDocuments(userId);
   }
 
   @Get(":id")
   getDocShares(@GetUser("id") userId: string, @Param("id") id: string) {
-    return this.shareDocumentService.getDocShares(id, userId);
+    return this.shareDocumentService.getDocumentCollaborators(id, userId);
   }
 
   @Post()

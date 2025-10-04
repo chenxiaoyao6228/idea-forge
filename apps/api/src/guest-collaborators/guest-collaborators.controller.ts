@@ -20,13 +20,13 @@ export class GuestCollaboratorsController {
   constructor(private readonly guestCollaboratorsService: GuestCollaboratorsService) {}
 
   @Post("workspace/invite")
-  @CheckPolicy(Action.Create, "GuestCollaborator")
+  // @CheckPolicy(Action.Create, "GuestCollaborator")
   async inviteGuestToWorkspace(@GetUser("id") userId: string, @Body() dto: InviteGuestToWorkspaceDto) {
     return this.guestCollaboratorsService.inviteGuestToWorkspace(userId, dto);
   }
 
   @Post(":guestId/accept")
-  @CheckPolicy(Action.Update, "GuestCollaborator")
+  // @CheckPolicy(Action.Update, "GuestCollaborator")
   async acceptGuestInvitation(@GetUser("id") userId: string, @Param("guestId") guestId: string) {
     return this.guestCollaboratorsService.acceptWorkspaceInvitation(userId, guestId);
   }

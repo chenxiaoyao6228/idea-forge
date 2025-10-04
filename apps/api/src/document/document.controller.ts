@@ -30,7 +30,7 @@ export class DocumentController {
 
   @Get("shared-with-me")
   async getSharedWithMe(@GetUser("id") userId: string, @Query() query: PermissionListRequestDto) {
-    return this.documentService.getSharedRootDocsWithMe(userId, query);
+    return this.shareDocumentService.getSharedWithMeDocuments(userId, query);
   }
 
   // FIXME: change to get method

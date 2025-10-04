@@ -1,31 +1,26 @@
 import * as React from "react";
-import { FileIcon, FolderIcon, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import useDocumentStore, {
-  useFetchDocumentDetail,
-  useFetchDocumentChildren,
-  useGetDocumentAsNavigationNode,
-  useCurrentDocumentId,
-} from "@/stores/document-store";
-// import { useHasAbility } from "@/stores/ability-store";
-import { DocumentLink } from "./document-link";
+import useDocumentStore, { useFetchDocumentChildren, useGetDocumentAsNavigationNode, useCurrentDocumentId } from "@/stores/document-store";
 import type { DocumentEntity } from "@/stores/document-store";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 
 interface ShareWithMeLinkProps {
   document: DocumentEntity;
   depth?: number;
+  rootSharedDocumentId?: string;
 }
 
-export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareWithMeLinkProps) {
+export function ShareWithMeLink({ document: initialDocument, depth = 0, rootSharedDocumentId }: ShareWithMeLinkProps) {
+  // For root shared documents, use the document's own ID as the root shared document ID
+  const sharedDocId = rootSharedDocumentId || initialDocument.id;
   const { t } = useTranslation();
   const activeDocumentId = useCurrentDocumentId();
-  const { run: fetchDetail } = useFetchDocumentDetail();
   const { run: fetchChildren } = useFetchDocumentChildren();
   const getDocumentAsNavigationNode = useGetDocumentAsNavigationNode();
-  // const hasPermission = useHasAbility();
+  const allDocuments = useDocumentStore((state) => state.documents);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [childrenLoaded, setChildrenLoaded] = useState(false);
@@ -66,7 +61,7 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
   const node = useMemo(() => {
     if (!document?.id) return null;
     return getDocumentAsNavigationNode(document.id);
-  }, [document?.id, document?.title, document?.updatedAt, getDocumentAsNavigationNode]);
+  }, [document?.id, getDocumentAsNavigationNode, allDocuments]);
 
   const childDocuments = useMemo(() => node?.children || [], [node?.children]);
   const hasChildDocuments = childDocuments.length > 0;
@@ -90,7 +85,7 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
 
     setIsLoadingChildren(true);
     try {
-      await fetchChildren({ parentId: document.id, subspaceId: document.subspaceId || null, sharedDocumentId: document.id, options: { force: true } });
+      await fetchChildren({ parentId: document.id, subspaceId: document.subspaceId || null, sharedDocumentId: sharedDocId, options: { force: true } });
       setChildrenLoaded(true);
     } catch (error) {
       console.warn(`Failed to load children for document ${document.id}:`, error);
@@ -150,9 +145,12 @@ export function ShareWithMeLink({ document: initialDocument, depth = 0 }: ShareW
               <span className="text-xs text-muted-foreground">{t("Loading children...")}</span>
             </div>
           ) : (
-            childDocuments.map((childDoc, index) => (
-              <DocumentLink key={childDoc.id} node={childDoc} depth={depth + 1} index={index} parentId={document.id} subspaceId={document.subspaceId || null} />
-            ))
+            childDocuments.map((childDoc) => {
+              // Get the actual document from the store
+              const childDocFromStore = useDocumentStore.getState().documents[childDoc.id];
+              if (!childDocFromStore) return null;
+              return <ShareWithMeLink key={childDoc.id} document={childDocFromStore} depth={depth + 1} rootSharedDocumentId={sharedDocId} />;
+            })
           )}
         </div>
       )}

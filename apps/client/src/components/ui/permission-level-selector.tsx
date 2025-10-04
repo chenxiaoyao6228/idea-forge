@@ -11,9 +11,23 @@ interface PermissionLevelSelectorProps {
   disabled?: boolean;
   className?: string;
   id?: string;
+  showRestoreInherited?: boolean;
+  onRestoreInherited?: () => void;
+  showRemove?: boolean;
+  onRemove?: () => void;
 }
 
-export function PermissionLevelSelector({ value, onChange, disabled = false, className, id }: PermissionLevelSelectorProps) {
+export function PermissionLevelSelector({
+  value,
+  onChange,
+  disabled = false,
+  className,
+  id,
+  showRestoreInherited = false,
+  onRestoreInherited,
+  showRemove = false,
+  onRemove,
+}: PermissionLevelSelectorProps) {
   const { t } = useTranslation();
 
   const permissionLevels = [
@@ -51,8 +65,18 @@ export function PermissionLevelSelector({ value, onChange, disabled = false, cla
 
   const selectedPermission = permissionLevels.find((level) => level.value === value);
 
+  const handleValueChange = (newValue: string) => {
+    if (newValue === "RESTORE_INHERITED" && onRestoreInherited) {
+      onRestoreInherited();
+    } else if (newValue === "REMOVE" && onRemove) {
+      onRemove();
+    } else {
+      onChange(newValue as PermissionLevel);
+    }
+  };
+
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
+    <Select value={value} onValueChange={handleValueChange} disabled={disabled}>
       <SelectTrigger className={cx("w-auto px-2", className)} id={id}>
         <SelectValue placeholder={t("Select permission level")}>
           {selectedPermission && (
@@ -73,6 +97,16 @@ export function PermissionLevelSelector({ value, onChange, disabled = false, cla
             </div>
           </SelectItem>
         ))}
+        {showRestoreInherited && (
+          <SelectItem key="RESTORE_INHERITED" value="RESTORE_INHERITED" className="text-orange-600 font-medium border-t rounded-none">
+            {t("Restore Inherited")}
+          </SelectItem>
+        )}
+        {showRemove && (
+          <SelectItem key="REMOVE" value="REMOVE" className="text-red-600 font-medium border-t rounded-none">
+            {t("Remove")}
+          </SelectItem>
+        )}
       </SelectContent>
     </Select>
   );
