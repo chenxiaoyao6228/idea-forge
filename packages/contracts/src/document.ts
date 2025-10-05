@@ -209,10 +209,13 @@ export type DocShareGroup = z.infer<typeof docShareGroupSchema>;
 export const docShareSchema = z.union([docShareUserSchema, docShareGroupSchema]);
 export type DocShareItem = z.infer<typeof docShareSchema>;
 
-// update doc
+// update doc - supports both user and group permission updates
 export const updateSharePermissionSchema = z.object({
-  userId: z.string(),
+  userId: z.string().optional(),
+  groupId: z.string().optional(),
   permission: PermissionLevelSchema,
+}).refine(data => data.userId || data.groupId, {
+  message: "Either userId or groupId must be provided",
 });
 
 export type UpdateSharePermissionDto = z.infer<typeof updateSharePermissionSchema>;

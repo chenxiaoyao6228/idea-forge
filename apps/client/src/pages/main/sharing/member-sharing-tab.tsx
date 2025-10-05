@@ -51,9 +51,9 @@ function getPermissionTooltip(
 
   const { source, sourceDocTitle } = permissionSource;
 
-  // State 1: Direct permission on child that overrides parent permission
-  // User has BOTH parent permission AND direct permission on child
-  if (source === "direct" && hasParentPermission) {
+  // State 1: Direct/Group permission on child that overrides parent permission
+  // User/Group has BOTH parent permission AND direct/group permission on child
+  if ((source === "direct" || source === "group") && hasParentPermission) {
     const parentDocTitle = parentPermissionSource?.sourceDocTitle || "parent document";
     return t(
       `Permission overridden from parent document '${parentDocTitle}' inherited permission. To restore inherited permission, select 'Restore Inherited' from dropdown`,
@@ -69,8 +69,8 @@ function getPermissionTooltip(
     return t("Direct permission granted on this document");
   }
 
-  // State 3: Group permission (not inherited)
-  // User has group permission on this document
+  // State 3: Group permission (not inherited, no parent permission)
+  // Group ONLY has permission on this document, no parent permission exists
   if (source === "group") {
     if (grantedBy) {
       return t(`Granted by ${grantedBy.displayName || grantedBy.email}`);
@@ -82,6 +82,16 @@ function getPermissionTooltip(
   // User does NOT have direct permission on this document, permission comes from parent
   if (source === "inherited") {
     return t(`Inherited from parent document: "${sourceDocTitle || "Unknown"}". If need to change the permission setting, you can overwrite`);
+  }
+
+  // State 5: Subspace permission
+  if (source === "subspace") {
+    return t("Permission from subspace membership");
+  }
+
+  // State 6: Workspace permission
+  if (source === "workspace") {
+    return t("Permission from workspace membership");
   }
 
   return null;
@@ -164,6 +174,10 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
 
   const handleRemoveGroup = async (groupId: string) => {
     await removeGroupShare({ targetGroupId: groupId });
+  };
+
+  const handleUpdateGroupPermission = async (groupId: string, permission: PermissionLevel) => {
+    await updatePermission({ groupId, permission });
   };
 
   const handleUpdatePermission = async (userId: string, permission: PermissionLevel) => {
@@ -268,6 +282,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
 
   const handleAddMembers = () => {
     showAddMembersModal({
+      existingShares: allShares.map((share) => share.id),
       onAddUsers: async (users: SharedUser[]) => {
         if (workspaceId && users.length > 0) {
           await addShare({
@@ -289,6 +304,8 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   };
 
   // Find current user's permission from share list
+  // This shows the final resolved permission (highest level from all sources)
+  // The API now always includes the current user if they have any permission
   const currentUserPermission = currentUserId ? sharedUsers.find((user) => user.id === currentUserId) : null;
 
   // Helper to get permission level display text
@@ -493,17 +510,17 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
         )}
 
         {allShares.length > 0 && (
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-60 overflow-y-auto custom-scrollbar">
             {/* Shared Groups List */}
             {sharedGroups.map((group) => {
               // Determine permission state using hasParentPermission flag
               const hasParentPermission = group.hasParentPermission || false;
-              const isDirect = group.permissionSource?.source === "direct";
+              const isDirectGroupShare = group.permissionSource?.source === "group";
 
               // Show "Restore Inherited" when user has DIRECT permission that overrides parent
               // Show "Remove" only when user has DIRECT permission but NO parent permission to fall back to
-              const showRestoreInherited = hasParentPermission && isDirect;
-              const showRemove = isDirect && !hasParentPermission;
+              const showRestoreInherited = hasParentPermission && isDirectGroupShare;
+              const showRemove = isDirectGroupShare && !hasParentPermission;
 
               const tooltipText = getPermissionTooltip(group.permissionSource, hasParentPermission, t, group.grantedBy, group.parentPermissionSource);
 
@@ -528,7 +545,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                         <div onClick={(e) => e.stopPropagation()}>
                           <PermissionLevelSelector
                             value={group.permission.level}
-                            onChange={(value) => handleUpdatePermission(group.id, value)}
+                            onChange={(value) => handleUpdateGroupPermission(group.id, value)}
                             className="h-8 text-xs flex-shrink-0"
                             showRestoreInherited={showRestoreInherited}
                             onRestoreInherited={() => handleRemoveGroup(group.id)}
@@ -554,7 +571,6 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
               // Determine permission state using hasParentPermission flag
               const hasParentPermission = user.hasParentPermission || false;
               const isDirect = user.permissionSource?.source === "direct";
-              const isInherited = user.permissionSource?.source === "inherited";
 
               // Show "Restore Inherited" when user has DIRECT permission that overrides parent
               // Show "Remove" only when user has DIRECT permission but NO parent permission to fall back to

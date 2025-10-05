@@ -6,11 +6,12 @@
 3. [Permission Resolution Order](#permission-resolution-order)
 4. [Inheritance Behavior](#inheritance-behavior)
 5. [Permission Override](#permission-override)
-6. [Shared-With-Me Area](#shared-with-me-area)
-7. [UI/UX Guidelines](#uiux-guidelines)
-8. [API Design](#api-design)
-9. [Testing](#testing)
-10. [Common Scenarios](#common-scenarios)
+6. [Guest Collaborator Permissions](#guest-collaborator-permissions)
+7. [Shared-With-Me Area](#shared-with-me-area)
+8. [UI/UX Guidelines](#uiux-guidelines)
+9. [API Design](#api-design)
+10. [Testing](#testing)
+11. [Common Scenarios](#common-scenarios)
 
 ---
 
@@ -237,6 +238,574 @@ await prisma.documentPermission.delete({
 ```
 
 **UI**: The "Restore Inherited" option in the permission dropdown triggers this deletion.
+
+---
+
+## Group Permissions
+
+Groups provide a powerful way to manage permissions for multiple users at once. When a document is shared with a group, all group members receive GROUP permissions that work similarly to DIRECT permissions but with some key differences.
+
+### Key Characteristics
+
+| Feature | GROUP Permission | DIRECT Permission |
+|---------|------------------|-------------------|
+| **Inheritance** | ✅ Inherits to child documents | ✅ Inherits to child documents |
+| **Priority** | 2 (lower than DIRECT) | 1 (highest) |
+| **Can Override** | ✅ Yes, child can override parent GROUP | ✅ Yes, child can override parent DIRECT |
+| **Source Tracking** | `sourceGroupId` field tracks which group | `createdById` tracks who granted it |
+| **Multi-Group** | ✅ User can have multiple GROUP permissions | ❌ User has single DIRECT permission |
+
+### Basic Group Permission Flow
+
+```
+Setup:
+  - Group "Engineering" contains: Alice, Bob, Carol
+  - Document "Project Plan" shared with Engineering (EDIT)
+
+Result:
+  - Alice, Bob, Carol each have GROUP permission (EDIT) on "Project Plan"
+  - Database has 3 DocumentPermission records:
+    - userId: alice.id, inheritedFromType: GROUP, sourceGroupId: engineering.id
+    - userId: bob.id, inheritedFromType: GROUP, sourceGroupId: engineering.id
+    - userId: carol.id, inheritedFromType: GROUP, sourceGroupId: engineering.id
+```
+
+**Database State**:
+```sql
+DocumentPermission {
+  userId: alice.id,
+  docId: projectPlan.id,
+  permission: EDIT,
+  inheritedFromType: GROUP,
+  priority: 2,
+  sourceGroupId: engineering.id
+}
+```
+
+### GROUP Permission Inheritance
+
+GROUP permissions inherit to child documents just like DIRECT permissions:
+
+```
+Setup:
+  - Parent: Shared with "Engineering" (EDIT)
+  - Child: No direct share with "Engineering"
+
+Result:
+  - Engineering members have EDIT on parent (GROUP)
+  - Engineering members have EDIT on child (inherited GROUP from parent)
+  - NO permission records created on child (resolved at runtime)
+```
+
+### Multi-Group Permissions
+
+**CRITICAL DIFFERENCE**: Unlike DIRECT permissions, a user can have **multiple GROUP permissions** on the same document when they belong to multiple groups.
+
+```
+Setup:
+  - User Alice is in: "Engineering" and "Design"
+  - Document shared with "Engineering" (EDIT)
+  - Document shared with "Design" (READ)
+
+Database State:
+  - Alice has TWO GROUP permissions on the document:
+    1. GROUP EDIT (sourceGroupId: engineering.id)
+    2. GROUP READ (sourceGroupId: design.id)
+
+Resolution:
+  - Permission resolver returns HIGHEST: EDIT
+  - Alice sees EDIT permission in UI
+```
+
+**Implementation Note**: The `resolveUserPermissionForDocument` function queries all permissions and picks the HIGHEST when multiple GROUP permissions exist with the same priority.
+
+### GROUP vs DIRECT Priority
+
+When a user has both GROUP and DIRECT permissions, DIRECT always wins:
+
+```
+Setup:
+  - Alice is in "Engineering" group
+  - Document shared with "Engineering" (EDIT)  → GROUP permission
+  - Document shared directly with Alice (READ)   → DIRECT permission
+
+Result:
+  - Alice has READ (DIRECT wins over GROUP due to priority 1 < 2)
+```
+
+**Priority Order**:
+```
+1. DIRECT permission (priority 1)
+2. GROUP permission (priority 2)
+3. Inherited DIRECT/GROUP from parent
+4. Subspace permissions (priority 3-4)
+5. Workspace permissions (priority 5)
+```
+
+### Group Permission Override on Child
+
+Just like DIRECT permissions, GROUP permissions can be overridden on child documents:
+
+```
+Setup:
+  - Parent: Shared with "Engineering" (READ)
+  - Child: Shared with "Engineering" (MANAGE)  → Override
+
+Result for Alice (in Engineering):
+  - Parent: GROUP READ (direct on parent)
+  - Child: GROUP MANAGE (direct on child, overrides inherited READ)
+  - hasParentPermission: true (override detected)
+  - parentPermissionSource: { level: READ, source: "inherited", sourceDocTitle: "Parent" }
+```
+
+**UI Behavior**:
+- Shows "Permission overridden from parent document 'Parent' inherited permission"
+- Displays "Restore Inherited" option
+- Clicking "Restore Inherited" removes child's GROUP permissions → inherits parent's READ
+
+### Updating Group Permissions
+
+When updating a group's permission on a document:
+
+```typescript
+// API: PATCH /api/share-documents/:docId
+{ groupId: "engineering-id", permission: "MANAGE" }
+
+// Implementation:
+// 1. Calls shareDocument internally with targetGroupIds
+// 2. Creates/updates GROUP permissions for all group members
+// 3. Sets sourceGroupId to track which group granted it
+```
+
+**Result**:
+- All current group members get updated GROUP permission
+- If document has children, they inherit the new permission
+- Previous GROUP permissions for that group are replaced
+
+### Group Membership Changes
+
+**Adding User to Group**:
+```
+1. User Bob added to "Engineering" group
+2. Query documents shared with "Engineering"
+3. Create GROUP permissions for Bob on all those documents
+4. Bob immediately sees all Engineering-shared documents
+```
+
+**Removing User from Group**:
+```
+1. User Bob removed from "Engineering" group
+2. Delete Bob's GROUP permissions where sourceGroupId = "Engineering"
+3. Bob loses access to Engineering-shared documents
+4. If Bob is in other groups, those GROUP permissions remain
+```
+
+**Edge Case - User in Multiple Groups**:
+```
+Setup:
+  - Bob in "Engineering" and "Design"
+  - Document shared with both groups (EDIT)
+  - Bob removed from "Engineering"
+
+Result:
+  - Bob's Engineering GROUP permission deleted
+  - Bob's Design GROUP permission remains
+  - Bob still has EDIT access via Design group
+```
+
+### API Response Format
+
+When fetching document collaborators, groups are returned separately from users:
+
+```typescript
+GET /api/share-documents/:docId
+
+Response: {
+  data: [
+    // Users (from DIRECT + GROUP + inherited)
+    {
+      id: "alice-id",
+      type: "user",
+      permission: { level: "EDIT" },
+      permissionSource: { source: "group", level: "EDIT" },
+      hasParentPermission: false
+    },
+
+    // Groups
+    {
+      id: "engineering-id",
+      type: "group",
+      name: "Engineering",
+      memberCount: 15,
+      permission: { level: "EDIT" },
+      permissionSource: { source: "group", level: "EDIT" },
+      hasParentPermission: true,  // If child overrides parent
+      parentPermissionSource: { level: "READ", sourceDocTitle: "Parent" }
+    }
+  ]
+}
+```
+
+### Common Scenarios
+
+#### Scenario 1: Share with Multiple Groups
+
+```
+Goal: Give both Engineering (EDIT) and Design (READ) access
+
+Steps:
+1. Share with "Engineering" group (EDIT)
+2. Share with "Design" group (READ)
+
+Result for Alice (in both groups):
+- Two GROUP permissions in database
+- Resolver returns EDIT (highest)
+- UI shows EDIT permission
+```
+
+#### Scenario 2: Override Group Permission on Child
+
+```
+Goal: Engineering has EDIT on folder, but specific doc should be read-only
+
+Steps:
+1. Parent shared with "Engineering" (EDIT)
+2. Child shared with "Engineering" (READ) → Override
+
+Result:
+- Engineering members: EDIT on parent, READ on child
+- hasParentPermission: true on child
+- UI shows "Restore Inherited" option
+```
+
+#### Scenario 3: Mix GROUP and DIRECT
+
+```
+Goal: Engineering has READ, but Alice needs MANAGE
+
+Steps:
+1. Share with "Engineering" (READ) → GROUP permission for all
+2. Share with Alice directly (MANAGE) → DIRECT permission
+
+Result for Alice:
+- Has both GROUP READ and DIRECT MANAGE
+- DIRECT wins (priority 1 < 2)
+- Alice sees MANAGE
+```
+
+#### Scenario 4: Remove Group Permission (Restore Inherited)
+
+```
+Setup:
+  - Parent: "Engineering" (READ)
+  - Child: "Engineering" (MANAGE) - override
+
+Action: Remove Engineering from child (restore inherited)
+
+API: DELETE /api/share-documents/:childId/group
+{ targetGroupId: "engineering-id" }
+
+Result:
+- Deletes GROUP permissions for all Engineering members on child
+- Members inherit parent's READ permission
+- hasParentPermission: false (no override anymore)
+```
+
+### Testing GROUP Permissions
+
+Required test coverage:
+
+```typescript
+describe("GROUP Permissions", () => {
+  it("should create GROUP permission for all group members");
+  it("should allow multiple GROUP permissions for user in multiple groups");
+  it("should resolve HIGHEST permission when multiple GROUP permissions exist");
+  it("should allow GROUP permission to override inherited GROUP from parent");
+  it("should prefer DIRECT over GROUP permission");
+  it("should inherit GROUP permissions to child documents");
+  it("should set hasParentPermission when GROUP overrides parent GROUP");
+  it("should clean up GROUP permissions when user removed from group");
+  it("should keep other GROUP permissions when user removed from one group");
+});
+```
+
+---
+
+## Guest Collaborator Permissions
+
+Guest collaborators have **fundamentally different permission behavior** compared to workspace members and regular users. Understanding these differences is critical for proper implementation.
+
+### Key Differences from Regular Users
+
+| Feature | Regular Users (DIRECT/GROUP) | Guest Collaborators (GUEST) |
+|---------|------------------------------|----------------------------|
+| **Inheritance** | ✅ Inherits from parent docs | ❌ NO inheritance - document-specific only |
+| **Workspace access** | ✅ Has workspace membership | ❌ No workspace membership |
+| **Subspace access** | ✅ Can be subspace member | ❌ No subspace membership |
+| **Share list API** | ✅ Included in `/api/documents/{id}/shares` | ❌ Separate API `/api/guest-collaborators/documents/{id}/guests` |
+| **Navigation** | ✅ Can browse subspace trees | ❌ Only "Shared with me" |
+
+### CRITICAL: Guest Permissions Do NOT Inherit
+
+**Guest permissions are document-specific and do not cascade to child documents.**
+
+```
+Parent Doc (Guest Alice has EDIT via guestCollaboratorId)
+  ├─ Child Doc A (Guest Alice has NO access - must be explicitly shared) ❌
+  └─ Child Doc B (Guest Alice explicitly shared READ) ✅
+
+Result:
+- Alice can access Parent (EDIT)
+- Alice can access Child B (READ) - explicitly shared
+- Alice CANNOT access Child A - guest permissions don't inherit
+```
+
+**Implementation Detail** (share-document.services.ts:118):
+```typescript
+// Include both DIRECT and GROUP permissions, but exclude GUEST (handled separately if needed)
+where: {
+  docId,
+  inheritedFromType: { in: ['DIRECT', 'GROUP'] }, // GUEST excluded from inheritance
+  userId: { not: null }
+}
+```
+
+### Why Guest Permissions Don't Inherit
+
+1. **Security**: Guests are external collaborators - inheritance could grant unintended access
+2. **Explicit Control**: Document owners must explicitly share each document with guests
+3. **Workspace Isolation**: Guests don't have workspace-level context for inheritance
+4. **Permission Model**: `inheritedFromType: "GUEST"` has priority 7 (lowest) and is document-scoped
+
+### Guest Permission Resolution Algorithm
+
+When resolving permissions for a guest user:
+
+```typescript
+function resolveGuestPermission(guestId: string, doc: Document): PermissionLevel {
+  // Step 1: Check DIRECT permission (if guest accepted and is now a user)
+  // Step 2: Check GROUP permission (if guest was promoted and added to groups)
+  // Step 3: SKIP inherited permissions ❌ (guests don't inherit)
+  // Step 4: Check document-level subspace overrides
+  // Step 5: SKIP subspace role permissions ❌ (guests have no membership)
+  // Step 6: SKIP workspace permissions ❌ (guests are not members)
+  // Step 7: Check GUEST permission via guestCollaboratorId ✅
+  // Step 8: Return NONE (no access)
+
+  const guestPermission = await prisma.documentPermission.findFirst({
+    where: {
+      guestCollaboratorId: guestId,
+      docId: doc.id,
+      inheritedFromType: "GUEST"
+    }
+  });
+
+  return guestPermission?.permission || PermissionLevel.NONE;
+}
+```
+
+**Critical**: Only steps 1, 2, 4, and 7 apply to guests - inheritance (step 3) and workspace/subspace access (steps 5-6) are skipped.
+
+### Guest Collaborators NOT in Share List
+
+The `getDocumentCollaborators` API **does not include guest collaborators**. They are managed through separate endpoints.
+
+**API Structure**:
+```typescript
+// For workspace members and groups
+GET /api/documents/{docId}/shares
+Response: {
+  users: UserShareData[],    // DIRECT + GROUP + inherited
+  groups: GroupShareData[]   // DIRECT + GROUP + inherited
+  // NO guests here ❌
+}
+
+// For guest collaborators (separate endpoint)
+GET /api/guest-collaborators/documents/{docId}/guests
+Response: GuestCollaboratorResponse[]  // GUEST only, no inheritance
+```
+
+**UI Implication**: Sharing UI must make **TWO separate API calls** to display all collaborators:
+1. `/api/documents/{id}/shares` - Get users and groups (includes inherited)
+2. `/api/guest-collaborators/documents/{id}/guests` - Get guests (no inherited)
+
+### Sharing Documents with Guests
+
+To give a guest access to parent and child documents:
+
+**❌ Wrong Approach** (doesn't work):
+```typescript
+// Share parent with guest
+POST /api/guest-collaborators/documents/invite
+{
+  "documentId": "parent-id",
+  "email": "guest@example.com",
+  "permission": "EDIT"
+}
+
+// Child documents are NOT automatically accessible ❌
+// Guest CANNOT access children via inheritance
+```
+
+**✅ Correct Approach** (explicit sharing):
+```typescript
+// 1. Share parent
+POST /api/guest-collaborators/documents/invite
+{
+  "documentId": "parent-id",
+  "email": "guest@example.com",
+  "permission": "EDIT"
+}
+
+// 2. Batch share all children
+POST /api/guest-collaborators/documents/batch-invite
+{
+  "documentId": "child-id",
+  "guests": [
+    { "guestId": "guest-123", "permission": "EDIT" }
+  ]
+}
+```
+
+### Guest Navigation of Child Documents
+
+Guests can see child documents in the navigation tree **only if**:
+1. Guest has **explicit GUEST permission** on the child document
+2. The child is shared directly with the guest (no inheritance)
+
+**Example**:
+```
+Marketing Campaign (Guest Bob has EDIT)
+  ├─ Strategy Doc (Guest Bob has READ - explicitly shared) ✅ Visible
+  ├─ Budget (NOT shared with Guest Bob) ❌ Hidden
+  └─ Timeline (Guest Bob has COMMENT - explicitly shared) ✅ Visible
+
+Bob's Navigation Tree:
+Marketing Campaign (EDIT)
+  ├─ Strategy Doc (READ)
+  └─ Timeline (COMMENT)
+```
+
+**Note**: Even though Bob has EDIT on the parent, he cannot see "Budget" because guest permissions don't inherit.
+
+### Guest Promotion to Workspace Member
+
+When a guest is promoted to a workspace member, permissions are migrated with special logic:
+
+**Permission Migration Algorithm**:
+```typescript
+async function promoteGuestToMember(guestId: string, role: WorkspaceRole) {
+  const guestPermissions = await getGuestPermissions(guestId);
+
+  for (const perm of guestPermissions) {
+    const workspaceDefaultPermission = PermissionLevel.READ; // MEMBER/ADMIN default
+
+    if (perm.permission > workspaceDefaultPermission) {
+      // Guest has HIGHER permission than workspace default
+      // Convert GUEST → DIRECT to preserve access
+      await updatePermission({
+        ...perm,
+        userId: guest.userId,
+        guestCollaboratorId: null,
+        inheritedFromType: "DIRECT",
+        priority: 1
+      });
+    } else {
+      // Workspace permission is sufficient
+      // Delete GUEST permission (workspace READ is enough)
+      await deletePermission(perm.id);
+    }
+  }
+
+  await deleteGuest(guestId);
+  await addWorkspaceMember(guest.userId, role);
+}
+```
+
+**Example**:
+```
+Before Promotion (Guest Alice):
+- Doc A: GUEST permission MANAGE (guestCollaboratorId=alice-guest-id)
+- Doc B: GUEST permission READ (guestCollaboratorId=alice-guest-id)
+
+After Promotion (Member Alice):
+- Doc A: DIRECT permission MANAGE (userId=alice-user-id, priority=1) ✅ Preserved
+- Doc B: No permission record ✅ Deleted (workspace READ is sufficient)
+- Workspace: Alice is now MEMBER (default READ on all docs)
+
+Key Benefit:
+- Alice can NOW inherit parent permissions (guests couldn't)
+- Doc A retains MANAGE (higher than workspace READ)
+- Doc B uses workspace READ (no need for redundant record)
+```
+
+### Shared-With-Me for Guests
+
+**ALL** documents shared with a guest appear in "Shared with me" because:
+- Guests have no workspace membership → can't browse workspace trees
+- Guests have no subspace membership → can't browse subspace trees
+- Guest permissions don't inherit → each document is standalone
+
+**Example**:
+```
+Workspace "Acme Corp"
+  Public Subspace:
+    - handbook (Guest Eve has READ)
+  Marketing Subspace:
+    - campaign (Guest Eve has EDIT)
+  Alice's "My Docs":
+    - meeting-notes (Guest Eve has COMMENT)
+
+Eve's Shared-With-Me Shows:
+✅ handbook (READ)
+✅ campaign (EDIT)
+✅ meeting-notes (COMMENT)
+
+All three appear because Eve has no subspace access - she's a guest!
+```
+
+### Testing Guest Permissions
+
+**Required Test Coverage**:
+
+```typescript
+describe("Guest Collaborator Permission Inheritance", () => {
+  it("should NOT inherit guest permission to child documents", async () => {
+    // Given: Parent has guest permission EDIT
+    // When: Child document is created
+    // Then: Guest has NONE on child (no inheritance)
+  });
+
+  it("should require explicit sharing for guest to access children", async () => {
+    // Given: Parent shared with guest
+    // When: Child explicitly shared with same guest
+    // Then: Guest can access both parent and child
+  });
+
+  it("should exclude guests from /shares API endpoint", async () => {
+    // Given: Document has user shares and guest shares
+    // When: GET /api/documents/{id}/shares
+    // Then: Response includes users, NOT guests
+  });
+
+  it("should convert guest MANAGE to DIRECT when promoted", async () => {
+    // Given: Guest has MANAGE on document
+    // When: Guest promoted to MEMBER (workspace READ default)
+    // Then: Guest permission becomes DIRECT MANAGE (preserved)
+  });
+
+  it("should delete guest READ when promoted to MEMBER", async () => {
+    // Given: Guest has READ on document
+    // When: Guest promoted to MEMBER (workspace READ default)
+    // Then: Guest permission deleted (workspace READ sufficient)
+  });
+
+  it("should allow promoted member to inherit (unlike guests)", async () => {
+    // Before: Guest has EDIT on parent, NO access to child
+    // After promotion: Member inherits EDIT on child
+  });
+});
+```
 
 ---
 

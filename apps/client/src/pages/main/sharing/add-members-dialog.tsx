@@ -29,9 +29,10 @@ interface AddMembersDialogProps {
   show?: boolean;
   proceed?: (value: any) => void;
   onAddUsers?: (users: SharedUser[]) => void;
+  existingShares?: string[]; // IDs of users/groups already shared
 }
 
-const AddMembersDialog = ({ show = false, proceed, onAddUsers }: ConfirmDialogProps<AddMembersDialogProps, boolean>) => {
+const AddMembersDialog = ({ show = false, proceed, onAddUsers, existingShares = [] }: ConfirmDialogProps<AddMembersDialogProps, boolean>) => {
   const { t } = useTranslation();
   const [searchValue, setSearchValue] = React.useState("");
   const [notifyUsers, setNotifyUsers] = React.useState(true);
@@ -84,9 +85,10 @@ const AddMembersDialog = ({ show = false, proceed, onAddUsers }: ConfirmDialogPr
         member?.id &&
         member?.name &&
         !pendingUsers.find((pending) => pending.id === member.id) &&
+        !existingShares.includes(member.id) &&
         (member?.name.toLowerCase().includes(searchValue.toLowerCase()) || member?.email?.toLowerCase().includes(searchValue.toLowerCase())),
     );
-  }, [availableMembers, pendingUsers, searchValue]);
+  }, [availableMembers, pendingUsers, searchValue, existingShares]);
 
   const handleConfirm = () => {
     if (pendingUsers.length > 0) {

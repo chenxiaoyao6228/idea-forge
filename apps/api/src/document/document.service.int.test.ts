@@ -61,6 +61,9 @@ describe("DocumentService - Permission Creation on Document Create", () => {
 
     // Create root document (no parent)
     const rootDoc = await documentService.create(author.id, {
+      type: "NOTE",
+      content: "",
+      visibility: "PRIVATE",
       title: "Root Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -109,6 +112,9 @@ describe("DocumentService - Permission Creation on Document Create", () => {
 
     // Create child document
     const childDoc = await documentService.create(author.id, {
+      type: "NOTE",
+      content: "",
+      visibility: "PRIVATE",
       title: "Child Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -167,6 +173,9 @@ describe("DocumentService - Permission Creation on Document Create", () => {
 
     // Create parent (should not create permission)
     const parentDoc = await documentService.create(author.id, {
+      type: "NOTE",
+      content: "",
+      visibility: "PRIVATE",
       title: "Parent Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -175,6 +184,9 @@ describe("DocumentService - Permission Creation on Document Create", () => {
 
     // Create grandchild (should not create permission)
     const grandchildDoc = await documentService.create(author.id, {
+      type: "NOTE",
+      content: "",
+      visibility: "PRIVATE",
       title: "Grandchild Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -255,6 +267,9 @@ describe("DocumentService - Permission Creation on Document Create", () => {
 
     // Create child authored by author
     const childDoc = await documentService.create(author.id, {
+      type: "NOTE",
+      content: "",
+      visibility: "PRIVATE",
       title: "Child Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -316,6 +331,9 @@ describe("DocumentService - Permission Creation on Document Create", () => {
 
     // Create child authored by author (parent has no permission for author)
     const childDoc = await documentService.create(author.id, {
+      type: "NOTE",
+      content: "",
+      visibility: "PRIVATE",
       title: "Child Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,

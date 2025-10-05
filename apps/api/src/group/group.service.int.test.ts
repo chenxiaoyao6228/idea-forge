@@ -92,11 +92,13 @@ describe("GroupService - GROUP Permission Cleanup", () => {
 
     // Share documents with group (this creates GROUP permissions for userA)
     await shareService.shareDocument(owner.id, doc1.id, {
+      workspaceId: workspace.id,
       targetGroupIds: [group.id],
       permission: PermissionLevel.EDIT,
     });
 
     await shareService.shareDocument(owner.id, doc2.id, {
+      workspaceId: workspace.id,
       targetGroupIds: [group.id],
       permission: PermissionLevel.READ,
     });
@@ -186,11 +188,13 @@ describe("GroupService - GROUP Permission Cleanup", () => {
 
     // Share documents with group
     await shareService.shareDocument(owner.id, doc1.id, {
+      workspaceId: workspace.id,
       targetGroupIds: [group.id],
       permission: PermissionLevel.MANAGE,
     });
 
     await shareService.shareDocument(owner.id, doc2.id, {
+      workspaceId: workspace.id,
       targetGroupIds: [group.id],
       permission: PermissionLevel.EDIT,
     });
@@ -266,12 +270,14 @@ describe("GroupService - GROUP Permission Cleanup", () => {
 
     // Share with userA directly (DIRECT permission)
     await shareService.shareDocument(owner.id, doc.id, {
+      workspaceId: workspace.id,
       targetUserIds: [userA.id],
       permission: PermissionLevel.MANAGE,
     });
 
     // Share with group (GROUP permission)
     await shareService.shareDocument(owner.id, doc.id, {
+      workspaceId: workspace.id,
       targetGroupIds: [group.id],
       permission: PermissionLevel.READ,
     });
@@ -351,18 +357,18 @@ describe("GroupService - GROUP Permission Cleanup", () => {
 
     // Share with both groups (creates 2 GROUP permissions for userA)
     await shareService.shareDocument(owner.id, doc.id, {
+      workspaceId: workspace.id,
       targetGroupIds: [group1.id],
       permission: PermissionLevel.EDIT,
     });
 
     await shareService.shareDocument(owner.id, doc.id, {
+      workspaceId: workspace.id,
       targetGroupIds: [group2.id],
       permission: PermissionLevel.READ,
     });
 
-    // Verify userA has GROUP permission (only 1, not 2!)
-    // NOTE: When sharing same doc with multiple groups, only the LAST share persists
-    // because shareDocument deletes existing GROUP permissions before creating new ones
+    // Verify userA has 2 GROUP permissions (one from each group)
     const permissionsBefore = await prisma.documentPermission.findMany({
       where: {
         userId: userA.id,
@@ -371,13 +377,16 @@ describe("GroupService - GROUP Permission Cleanup", () => {
       },
     });
 
-    expect(permissionsBefore.length).toBe(1); // Only last share (group2 READ)
+    expect(permissionsBefore.length).toBe(2); // Both groups create separate permissions
+    const group1Perm = permissionsBefore.find((p) => p.sourceGroupId === group1.id);
+    const group2Perm = permissionsBefore.find((p) => p.sourceGroupId === group2.id);
+    expect(group1Perm?.permission).toBe(PermissionLevel.EDIT);
+    expect(group2Perm?.permission).toBe(PermissionLevel.READ);
 
-    // Delete group1 - this should delete ALL GROUP permissions for userA
-    // (because we can't distinguish which GROUP permission came from which group)
+    // Delete group1 - should only delete GROUP permissions from group1
     await groupService.deleteGroup(owner.id, { id: group1.id });
 
-    // Verify ALL GROUP permissions are deleted (this is the current behavior)
+    // Verify only group1 permissions are deleted, group2 permissions remain
     const permissionsAfter = await prisma.documentPermission.findMany({
       where: {
         userId: userA.id,
@@ -386,9 +395,9 @@ describe("GroupService - GROUP Permission Cleanup", () => {
       },
     });
 
-    // IMPORTANT: Current implementation deletes ALL GROUP permissions
-    // when user is removed from ANY group. This is a known limitation.
-    expect(permissionsAfter.length).toBe(0);
+    expect(permissionsAfter.length).toBe(1); // Only group2 permission remains
+    expect(permissionsAfter[0].sourceGroupId).toBe(group2.id);
+    expect(permissionsAfter[0].permission).toBe(PermissionLevel.READ);
 
     // userA should still be in group2
     const group2Membership = await prisma.memberGroupUser.findUnique({

@@ -294,7 +294,21 @@ export class DocPermissionResolveService {
       });
 
       if (parentPerms.length) {
-        const perm = parentPerms[0];
+        // If multiple permissions with same priority exist (e.g., multiple GROUP permissions from different groups),
+        // pick the one with highest permission level
+        const permissionLevels = ["NONE", "READ", "COMMENT", "EDIT", "MANAGE"];
+        const highestPriorityGroup = parentPerms.filter((p) => p.priority === parentPerms[0].priority);
+
+        let perm = highestPriorityGroup[0];
+        if (highestPriorityGroup.length > 1) {
+          // Multiple permissions with same priority - pick highest level
+          perm = highestPriorityGroup.reduce((highest, current) => {
+            const highestIndex = permissionLevels.indexOf(highest.permission);
+            const currentIndex = permissionLevels.indexOf(current.permission);
+            return currentIndex > highestIndex ? current : highest;
+          }, highestPriorityGroup[0]);
+        }
+
         // Fetch parent doc title for better UX
         const parentDoc = await this.prismaService.doc.findUnique({
           where: { id: currentParentId },

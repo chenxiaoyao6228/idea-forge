@@ -89,7 +89,7 @@ export const useAddDocumentShare = (documentId: string) => {
 // Update permission operation
 export const useUpdateDocumentSharePermission = (documentId: string) => {
   return useRequest(
-    async (data: { userId: string; permission: PermissionLevel }) => {
+    async (data: { userId?: string; groupId?: string; permission: PermissionLevel }) => {
       try {
         const response = await documentApi.updateSharePermission(documentId, data);
 

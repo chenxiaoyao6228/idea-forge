@@ -358,7 +358,9 @@ describe("ShareDocumentService - Inherited Permissions in Share List", () => {
 
     const workspace = await buildWorkspace({ name: "Test Workspace" });
     await buildWorkspaceMember({ workspaceId: workspace.id, userId: owner.id, role: "OWNER" });
+    await buildWorkspaceMember({ workspaceId: workspace.id, userId: userA.id, role: "MEMBER" });
     const subspace = await buildSubspace({ workspaceId: workspace.id, name: "Test Subspace", type: "PUBLIC" });
+    // NOTE: userA is workspace member but NOT subspace member, so documents should appear in shared-with-me
 
     // Create parent document
     const parentDoc = await buildDocument({
@@ -426,7 +428,9 @@ describe("ShareDocumentService - Inherited Permissions in Share List", () => {
 
     const workspace = await buildWorkspace({ name: "Test Workspace" });
     await buildWorkspaceMember({ workspaceId: workspace.id, userId: owner.id, role: "OWNER" });
+    await buildWorkspaceMember({ workspaceId: workspace.id, userId: userA.id, role: "MEMBER" });
     const subspace = await buildSubspace({ workspaceId: workspace.id, name: "Test Subspace", type: "PUBLIC" });
+    // NOTE: userA is workspace member but NOT subspace member, so documents should appear in shared-with-me
 
     // Create parent document (NOT shared with userA)
     const parentDoc = await buildDocument({
