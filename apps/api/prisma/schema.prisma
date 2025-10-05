@@ -46,6 +46,7 @@ model DocumentPermission {
   permission          PermissionLevel
   inheritedFromId     String? // for inheritance
   inheritedFromType   PermissionInheritanceType
+  sourceGroupId       String? // ID of the group that granted this GROUP permission (null for DIRECT/GUEST/SUBSPACE)
   priority            Int
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
@@ -57,13 +58,15 @@ model DocumentPermission {
   user              User?              @relation("UserDocumentPermissions", fields: [userId], references: [id])
   guestCollaborator GuestCollaborator? @relation(fields: [guestCollaboratorId], references: [id])
   createdBy         User               @relation("CreatedDocumentPermissions", fields: [createdById], references: [id])
+  sourceGroup       MemberGroup?       @relation("GroupDocumentPermissions", fields: [sourceGroupId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, docId, inheritedFromType])
+  @@unique([userId, docId, inheritedFromType, sourceGroupId])
   @@unique([guestCollaboratorId, docId, inheritedFromType])
   @@index([userId, docId])
   @@index([guestCollaboratorId, docId])
   @@index([docId])
   @@index([priority])
+  @@index([sourceGroupId])
 }
 
 enum PermissionInheritanceType {
@@ -355,9 +358,10 @@ model MemberGroup {
   updatedAt   DateTime  @updatedAt
   validUntil  DateTime?
 
-  workspace   Workspace         @relation(fields: [workspaceId], references: [id])
-  workspaceId String
-  members     MemberGroupUser[]
+  workspace          Workspace            @relation(fields: [workspaceId], references: [id])
+  workspaceId        String
+  members            MemberGroupUser[]
+  grantedPermissions DocumentPermission[] @relation("GroupDocumentPermissions")
 }
 
 model MemberGroupUser {

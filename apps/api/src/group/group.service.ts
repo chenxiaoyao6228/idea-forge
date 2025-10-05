@@ -104,14 +104,29 @@ export class GroupService {
   }
 
   async deleteGroup(userId: string, dto: { id: string }) {
-    // First, delete all group members
-    await this.prismaService.memberGroupUser.deleteMany({
-      where: { groupId: dto.id },
-    });
+    // Transaction to ensure atomicity:
+    // 1. Delete all GROUP permissions granted by this group (using sourceGroupId)
+    // 2. Delete group memberships
+    // 3. Delete the group
+    await this.prismaService.$transaction(async (tx) => {
+      // Delete all GROUP permissions granted by this specific group
+      // This is more precise than deleting all GROUP permissions for all members
+      await tx.documentPermission.deleteMany({
+        where: {
+          sourceGroupId: dto.id,
+          inheritedFromType: "GROUP",
+        },
+      });
 
-    // Then, delete the group itself
-    await this.prismaService.memberGroup.delete({
-      where: { id: dto.id },
+      // Delete all group memberships
+      await tx.memberGroupUser.deleteMany({
+        where: { groupId: dto.id },
+      });
+
+      // Delete the group itself
+      await tx.memberGroup.delete({
+        where: { id: dto.id },
+      });
     });
 
     return { success: true };
@@ -165,14 +180,29 @@ export class GroupService {
   }
 
   async removeUserFromGroup(userId: string, dto: RemoveGroupUserDto) {
-    // First delete the member
-    await this.prismaService.memberGroupUser.deleteMany({
-      where: {
-        AND: [{ userId: dto.userId }, { groupId: dto.id }],
-      },
+    // Transaction to ensure atomicity:
+    // 1. Delete group membership
+    // 2. Delete all GROUP permissions for this user
+    await this.prismaService.$transaction(async (tx) => {
+      // Delete the member from group
+      await tx.memberGroupUser.deleteMany({
+        where: {
+          AND: [{ userId: dto.userId }, { groupId: dto.id }],
+        },
+      });
+
+      // Delete GROUP permissions granted by this specific group for this user
+      // This preserves GROUP permissions from other groups the user might be in
+      await tx.documentPermission.deleteMany({
+        where: {
+          userId: dto.userId,
+          sourceGroupId: dto.id,
+          inheritedFromType: "GROUP",
+        },
+      });
     });
 
-    // Then get the updated group
+    // Get the updated group
     const group = await this.prismaService.memberGroup.findUnique({
       where: { id: dto.id },
       include: {

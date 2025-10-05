@@ -177,6 +177,22 @@ export async function buildDocumentPermission(overrides: any = {}) {
     }
   }
 
+  // If sourceGroupId is provided, ensure the group exists
+  if (overrides.sourceGroupId) {
+    const groupExists = await prisma.memberGroup.findUnique({
+      where: { id: overrides.sourceGroupId },
+      select: { id: true },
+    });
+    if (!groupExists) {
+      throw new Error(`Member group with id ${overrides.sourceGroupId} does not exist`);
+    }
+  }
+
+  // Set sourceGroupId to null for non-GROUP permissions if not explicitly provided
+  if (overrides.sourceGroupId === undefined && overrides.inheritedFromType !== "GROUP") {
+    overrides.sourceGroupId = null;
+  }
+
   return await prisma.documentPermission.create({
     data: {
       ...generateMockDocumentPermission(),
@@ -200,5 +216,35 @@ export async function buildSubspaceMember(overrides: any = {}) {
       ...generateMockSubspaceMember(),
       ...overrides,
     },
+  });
+}
+
+export async function buildMemberGroup(overrides: any = {}) {
+  const prisma = getTestPrisma();
+  if (!overrides.workspaceId) {
+    const workspace = await buildWorkspace();
+    overrides.workspaceId = workspace.id;
+  }
+  return await prisma.memberGroup.create({
+    data: {
+      name: `Test Group ${Date.now()}`,
+      description: "Test group description",
+      ...overrides,
+    },
+  });
+}
+
+export async function buildMemberGroupUser(overrides: any = {}) {
+  const prisma = getTestPrisma();
+  if (!overrides.groupId) {
+    const group = await buildMemberGroup();
+    overrides.groupId = group.id;
+  }
+  if (!overrides.userId) {
+    const user = await buildUser();
+    overrides.userId = user.id;
+  }
+  return await prisma.memberGroupUser.create({
+    data: overrides,
   });
 }

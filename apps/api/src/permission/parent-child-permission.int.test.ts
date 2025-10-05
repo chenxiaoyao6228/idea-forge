@@ -178,6 +178,7 @@ describe("Parent-Child Document Permission Inheritance", () => {
         docId: parentDoc.id,
         permission: PermissionLevel.EDIT,
         inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: groupA.id,
         priority: 2,
       });
 
@@ -186,6 +187,7 @@ describe("Parent-Child Document Permission Inheritance", () => {
         docId: parentDoc.id,
         permission: PermissionLevel.EDIT,
         inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: groupA.id,
         priority: 2,
       });
 
@@ -269,6 +271,7 @@ describe("Parent-Child Document Permission Inheritance", () => {
         docId: parentDoc.id,
         permission: PermissionLevel.EDIT,
         inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: groupA.id,
         priority: 2,
       });
 
@@ -279,6 +282,7 @@ describe("Parent-Child Document Permission Inheritance", () => {
         docId: parentDoc.id,
         permission: PermissionLevel.EDIT,
         inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: groupA.id,
         priority: 2,
       });
 
@@ -468,6 +472,7 @@ describe("Parent-Child Document Permission Inheritance", () => {
         docId: childDoc.id,
         permission: PermissionLevel.READ,
         inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group.id,
         priority: 2,
       });
 
@@ -716,6 +721,378 @@ describe("Parent-Child Document Permission Inheritance", () => {
         subspaceId: subspace.id,
       });
       expect(childPermission.level).toBe(PermissionLevel.EDIT);
+    });
+  });
+
+  describe("Multi-Group Permission Resolution", () => {
+    it("should resolve highest permission when user is in multiple groups sharing same document", async () => {
+      const workspace = await buildWorkspace();
+      const userA = await buildUser({ email: "userA@test.com" });
+
+      const subspace = await buildSubspace({
+        workspaceId: workspace.id,
+        type: "PUBLIC",
+      });
+
+      await buildWorkspaceMember({ workspaceId: workspace.id, userId: userA.id, role: "MEMBER" });
+
+      // Create two groups
+      const group1 = await prisma.memberGroup.create({
+        data: {
+          name: "Group 1",
+          workspaceId: workspace.id,
+        },
+      });
+
+      const group2 = await prisma.memberGroup.create({
+        data: {
+          name: "Group 2",
+          workspaceId: workspace.id,
+        },
+      });
+
+      // Add userA to both groups
+      await prisma.memberGroupUser.createMany({
+        data: [
+          { groupId: group1.id, userId: userA.id },
+          { groupId: group2.id, userId: userA.id },
+        ],
+      });
+
+      // Create document
+      const doc = await buildDocument({
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+        title: "Shared Document",
+      });
+
+      // Share with group1 (EDIT)
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: doc.id,
+        permission: PermissionLevel.EDIT,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group1.id,
+        priority: 2,
+      });
+
+      // Share with group2 (MANAGE - higher)
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: doc.id,
+        permission: PermissionLevel.MANAGE,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group2.id,
+        priority: 2,
+      });
+
+      // Verify userA has 2 GROUP permissions
+      const permissions = await prisma.documentPermission.findMany({
+        where: {
+          userId: userA.id,
+          docId: doc.id,
+          inheritedFromType: PermissionInheritanceType.GROUP,
+        },
+      });
+      expect(permissions.length).toBe(2);
+
+      // Verify resolver returns MANAGE (highest)
+      const result = await service.resolveUserPermissionForDocument(userA.id, {
+        id: doc.id,
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+      });
+      expect(result.level).toBe(PermissionLevel.MANAGE);
+      expect(result.source).toBe("group");
+    });
+
+    it("should handle user in multiple groups - parent has both, child has one override", async () => {
+      const workspace = await buildWorkspace();
+      const userA = await buildUser({ email: "userA@test.com" });
+
+      const subspace = await buildSubspace({
+        workspaceId: workspace.id,
+        type: "PUBLIC",
+      });
+
+      await buildWorkspaceMember({ workspaceId: workspace.id, userId: userA.id, role: "MEMBER" });
+
+      const group1 = await prisma.memberGroup.create({
+        data: { name: "Group 1", workspaceId: workspace.id },
+      });
+
+      const group2 = await prisma.memberGroup.create({
+        data: { name: "Group 2", workspaceId: workspace.id },
+      });
+
+      await prisma.memberGroupUser.createMany({
+        data: [
+          { groupId: group1.id, userId: userA.id },
+          { groupId: group2.id, userId: userA.id },
+        ],
+      });
+
+      // Create parent and child
+      const parentDoc = await buildDocument({
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+        title: "Parent",
+      });
+
+      const childDoc = await buildDocument({
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+        parentId: parentDoc.id,
+        title: "Child",
+      });
+
+      // Parent: Group1 MANAGE, Group2 READ
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: parentDoc.id,
+        permission: PermissionLevel.MANAGE,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group1.id,
+        priority: 2,
+      });
+
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: parentDoc.id,
+        permission: PermissionLevel.READ,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group2.id,
+        priority: 2,
+      });
+
+      // Child: Group2 EDIT (override)
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: childDoc.id,
+        permission: PermissionLevel.EDIT,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group2.id,
+        priority: 2,
+      });
+
+      // Verify parent resolves to MANAGE (highest from groups)
+      const parentResult = await service.resolveUserPermissionForDocument(userA.id, {
+        id: parentDoc.id,
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+      });
+      expect(parentResult.level).toBe(PermissionLevel.MANAGE);
+
+      // Verify child resolves to EDIT (child's GROUP permission wins over inherited MANAGE)
+      const childResult = await service.resolveUserPermissionForDocument(userA.id, {
+        id: childDoc.id,
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+      });
+      expect(childResult.level).toBe(PermissionLevel.EDIT);
+      expect(childResult.source).toBe("group");
+    });
+
+    it("should handle user in multiple groups - parent has both, child has both", async () => {
+      const workspace = await buildWorkspace();
+      const userA = await buildUser({ email: "userA@test.com" });
+
+      const subspace = await buildSubspace({
+        workspaceId: workspace.id,
+        type: "PUBLIC",
+      });
+
+      await buildWorkspaceMember({ workspaceId: workspace.id, userId: userA.id, role: "MEMBER" });
+
+      const group1 = await prisma.memberGroup.create({
+        data: { name: "Group 1", workspaceId: workspace.id },
+      });
+
+      const group2 = await prisma.memberGroup.create({
+        data: { name: "Group 2", workspaceId: workspace.id },
+      });
+
+      await prisma.memberGroupUser.createMany({
+        data: [
+          { groupId: group1.id, userId: userA.id },
+          { groupId: group2.id, userId: userA.id },
+        ],
+      });
+
+      const parentDoc = await buildDocument({
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+        title: "Parent",
+      });
+
+      const childDoc = await buildDocument({
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+        parentId: parentDoc.id,
+        title: "Child",
+      });
+
+      // Parent: Group1 EDIT, Group2 READ
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: parentDoc.id,
+        permission: PermissionLevel.EDIT,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group1.id,
+        priority: 2,
+      });
+
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: parentDoc.id,
+        permission: PermissionLevel.READ,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group2.id,
+        priority: 2,
+      });
+
+      // Child: Group1 MANAGE, Group2 COMMENT
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: childDoc.id,
+        permission: PermissionLevel.MANAGE,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group1.id,
+        priority: 2,
+      });
+
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: childDoc.id,
+        permission: PermissionLevel.COMMENT,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group2.id,
+        priority: 2,
+      });
+
+      // Verify parent resolves to EDIT (highest from parent's groups)
+      const parentResult = await service.resolveUserPermissionForDocument(userA.id, {
+        id: parentDoc.id,
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+      });
+      expect(parentResult.level).toBe(PermissionLevel.EDIT);
+
+      // Verify child resolves to MANAGE (highest from child's groups, not inherited)
+      const childResult = await service.resolveUserPermissionForDocument(userA.id, {
+        id: childDoc.id,
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+      });
+      expect(childResult.level).toBe(PermissionLevel.MANAGE);
+    });
+
+    it("should handle user in 3 groups - parent has 3, child has 2", async () => {
+      const workspace = await buildWorkspace();
+      const userA = await buildUser({ email: "userA@test.com" });
+
+      const subspace = await buildSubspace({
+        workspaceId: workspace.id,
+        type: "PUBLIC",
+      });
+
+      await buildWorkspaceMember({ workspaceId: workspace.id, userId: userA.id, role: "MEMBER" });
+
+      const group1 = await prisma.memberGroup.create({
+        data: { name: "Group 1", workspaceId: workspace.id },
+      });
+
+      const group2 = await prisma.memberGroup.create({
+        data: { name: "Group 2", workspaceId: workspace.id },
+      });
+
+      const group3 = await prisma.memberGroup.create({
+        data: { name: "Group 3", workspaceId: workspace.id },
+      });
+
+      await prisma.memberGroupUser.createMany({
+        data: [
+          { groupId: group1.id, userId: userA.id },
+          { groupId: group2.id, userId: userA.id },
+          { groupId: group3.id, userId: userA.id },
+        ],
+      });
+
+      const parentDoc = await buildDocument({
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+        title: "Parent",
+      });
+
+      const childDoc = await buildDocument({
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+        parentId: parentDoc.id,
+        title: "Child",
+      });
+
+      // Parent: Group1 MANAGE, Group2 EDIT, Group3 READ
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: parentDoc.id,
+        permission: PermissionLevel.MANAGE,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group1.id,
+        priority: 2,
+      });
+
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: parentDoc.id,
+        permission: PermissionLevel.EDIT,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group2.id,
+        priority: 2,
+      });
+
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: parentDoc.id,
+        permission: PermissionLevel.READ,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group3.id,
+        priority: 2,
+      });
+
+      // Child: Group2 COMMENT, Group3 EDIT
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: childDoc.id,
+        permission: PermissionLevel.COMMENT,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group2.id,
+        priority: 2,
+      });
+
+      await buildDocumentPermission({
+        userId: userA.id,
+        docId: childDoc.id,
+        permission: PermissionLevel.EDIT,
+        inheritedFromType: PermissionInheritanceType.GROUP,
+        sourceGroupId: group3.id,
+        priority: 2,
+      });
+
+      // Verify parent resolves to MANAGE (highest from 3 groups)
+      const parentResult = await service.resolveUserPermissionForDocument(userA.id, {
+        id: parentDoc.id,
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+      });
+      expect(parentResult.level).toBe(PermissionLevel.MANAGE);
+
+      // Verify child resolves to EDIT (highest from child's 2 groups, overrides inherited MANAGE)
+      const childResult = await service.resolveUserPermissionForDocument(userA.id, {
+        id: childDoc.id,
+        workspaceId: workspace.id,
+        subspaceId: subspace.id,
+      });
+      expect(childResult.level).toBe(PermissionLevel.EDIT);
     });
   });
 });

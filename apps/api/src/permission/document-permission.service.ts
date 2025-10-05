@@ -33,11 +33,25 @@ export class DocPermissionResolveService {
       where: {
         userId,
         docId: doc.id,
+        inheritedFromType: { in: [PermissionInheritanceType.DIRECT, PermissionInheritanceType.GROUP] },
       },
       orderBy: { priority: "asc" },
     });
     if (docPerms.length) {
-      const perm = docPerms[0];
+      // If multiple permissions with same priority exist (e.g., multiple GROUP permissions),
+      // pick the one with highest permission level
+      const permissionLevels = ["NONE", "READ", "COMMENT", "EDIT", "MANAGE"];
+      const highestPriorityGroup = docPerms.filter((p) => p.priority === docPerms[0].priority);
+
+      let perm = highestPriorityGroup[0];
+      if (highestPriorityGroup.length > 1) {
+        // Multiple permissions with same priority - pick highest level
+        perm = highestPriorityGroup.reduce((highest, current) => {
+          const highestIndex = permissionLevels.indexOf(highest.permission);
+          const currentIndex = permissionLevels.indexOf(current.permission);
+          return currentIndex > highestIndex ? current : highest;
+        }, highestPriorityGroup[0]);
+      }
 
       // Fetch document title for source metadata
       const document = await this.prismaService.doc.findUnique({

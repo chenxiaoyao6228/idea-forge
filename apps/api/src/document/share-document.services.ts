@@ -320,6 +320,8 @@ export class ShareDocumentService {
 
     // 5. Batch grant permissions to groups
     if (dto.targetGroupIds && dto.targetGroupIds.length > 0) {
+      const permissionLevels = ["NONE", "READ", "COMMENT", "EDIT", "MANAGE"];
+
       for (const targetGroupId of dto.targetGroupIds) {
         // Get all members of the group
         const groupMembers = await this.prismaService.memberGroupUser.findMany({
@@ -329,26 +331,48 @@ export class ShareDocumentService {
 
         // Create permissions for each group member
         for (const member of groupMembers) {
-          // Remove any existing permissions for this user to avoid duplicates
-          await this.prismaService.documentPermission.deleteMany({
+          // Check if user already has a GROUP permission from this group on this document
+          const existingPermission = await this.prismaService.documentPermission.findFirst({
             where: {
               docId: docId,
               userId: member.userId,
               inheritedFromType: "GROUP",
+              sourceGroupId: targetGroupId,
             },
           });
 
-          // Create new permission for group member
-          const perm = await this.prismaService.documentPermission.create({
-            data: {
-              ...permissionBase,
-              userId: member.userId,
-              inheritedFromType: "GROUP",
-              priority: 2,
-              inheritedFromId: null, // Group permissions don't inherit from other document permissions
-            },
-          });
-          createdPermissions.push(perm);
+          if (existingPermission) {
+            // Compare permission levels and update if new level is higher
+            const existingLevelIndex = permissionLevels.indexOf(existingPermission.permission);
+            const newLevelIndex = permissionLevels.indexOf(dto.permission);
+
+            if (newLevelIndex > existingLevelIndex) {
+              // Update to higher permission level
+              const updatedPerm = await this.prismaService.documentPermission.update({
+                where: { id: existingPermission.id },
+                data: {
+                  permission: dto.permission,
+                  createdById: userId,
+                  updatedAt: new Date(),
+                },
+              });
+              createdPermissions.push(updatedPerm);
+            }
+            // If existing level is higher or equal, skip (keep existing)
+          } else {
+            // Create new permission for group member with sourceGroupId
+            const perm = await this.prismaService.documentPermission.create({
+              data: {
+                ...permissionBase,
+                userId: member.userId,
+                inheritedFromType: "GROUP",
+                sourceGroupId: targetGroupId,
+                priority: 2,
+                inheritedFromId: null, // Group permissions don't inherit from other document permissions
+              },
+            });
+            createdPermissions.push(perm);
+          }
 
           // Invalidate permission cache for the group member
           // this.permissionContextService.invalidatePermissionCache(member.userId, ReinheritedFromType.DOCUMENT, docId);
