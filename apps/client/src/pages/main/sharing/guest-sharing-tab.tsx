@@ -1,18 +1,17 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { Separator } from "@/components/ui/separator";
-import { UserPlus, X, Plus, Link } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Link, Info } from "lucide-react";
 import { showAddGuestModal } from "./add-guest-dialog";
-import { PublicSharingSection } from "./public-sharing-section";
 import useGuestCollaboratorsStore, {
   useFetchDocumentGuests,
   useUpdateGuestPermission,
   useRemoveGuestFromDocument,
-  useIsGuestCollaborator,
 } from "@/stores/guest-collaborators-store";
 import { PermissionLevel } from "@idea/contracts";
 import { toast } from "sonner";
@@ -68,39 +67,76 @@ export function GuestSharingTab({ documentId }: GuestSharingTabProps) {
         {/* Document Guests */}
         {isLoadingGuests ? (
           <div className="text-center py-6 text-muted-foreground text-sm">{t("Loading guests...")}</div>
-        ) : existingGuests?.filter((guest) => guest.documents?.some((doc) => doc.documentId === documentId)).length > 0 ? (
+        ) : existingGuests && existingGuests.length > 0 ? (
           <div className="space-y-2">
-            {existingGuests
-              ?.filter((guest) => guest.documents?.some((doc) => doc.documentId === documentId))
-              .map((guest) => {
-                // Find the document-specific permission for this guest
-                const documentPermission = guest.documents?.find((doc) => doc.documentId === documentId);
-                const currentPermission = documentPermission?.permission || PermissionLevel.READ;
+            {existingGuests.map((guest) => {
+                // Use the guest's effective permission (API already resolved inheritance)
+                const currentPermission = guest.permission || PermissionLevel.READ;
+                const isInherited = guest.isInherited || false;
+                const hasParentPermission = guest.hasParentPermission || false;
+                const isDirect = guest.permissionSource?.source === "direct";
+
+                // Show "Restore Inherited" when guest has DIRECT permission that overrides parent
+                // Show "Remove" only when guest has DIRECT permission but NO parent permission to fall back to
+                const showRestoreInherited = hasParentPermission && isDirect;
+                const showRemove = isDirect && !hasParentPermission;
+
+                // Build tooltip text based on permission state
+                let tooltipText = "";
+                if (showRestoreInherited && guest.parentPermissionSource) {
+                  // Override case
+                  tooltipText = t(
+                    `Permission overridden from parent document "${guest.parentPermissionSource.sourceDocTitle}" inherited permission. To restore inherited permission, select 'Restore Inherited' from dropdown`,
+                  );
+                } else if (isDirect) {
+                  // Direct only
+                  tooltipText = t("Direct permission granted on this document");
+                } else if (isInherited && guest.permissionSource) {
+                  // Inherited only
+                  tooltipText = t(
+                    `Inherited from parent document: "${guest.permissionSource.sourceDocTitle}". If need to change the permission setting, you can overwrite`,
+                  );
+                }
 
                 return (
-                  <div key={guest.id} className="flex items-center justify-between gap-3 p-2 rounded-md border bg-card">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-sm">{guest.email.charAt(0).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-grow-1 min-w-0">
-                        <div className="text-sm truncate">{guest.name || guest.email}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {t("Status")}: {guest.status}
+                  <TooltipProvider key={guest.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center justify-between gap-3 p-2 rounded-md border bg-card">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-sm">{guest.email.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-grow-1 min-w-0">
+                              <div className="text-sm truncate flex items-center gap-1">
+                                {guest.name || guest.email}
+                                {tooltipText && <Info className="h-3 w-3 text-blue-500" />}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {t("Status")}: {guest.status}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <PermissionLevelSelector
+                              value={currentPermission}
+                              onChange={(value: PermissionLevel) => updateGuestPermission(guest.id, value)}
+                              className="h-8 text-xs"
+                              showRestoreInherited={showRestoreInherited}
+                              onRestoreInherited={() => handleRemoveGuest(guest.id)}
+                              showRemove={showRemove}
+                              onRemove={() => handleRemoveGuest(guest.id)}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <PermissionLevelSelector
-                        value={currentPermission}
-                        onChange={(value: PermissionLevel) => updateGuestPermission(guest.id, value)}
-                        className="h-8 text-xs"
-                      />
-                      <Button variant="ghost" size="sm" onClick={() => handleRemoveGuest(guest.id)} className="h-8 w-8 p-0">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                      </TooltipTrigger>
+                      {tooltipText && (
+                        <TooltipContent className="max-w-[300px]">
+                          <p className="text-xs whitespace-normal">{tooltipText}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
                 );
               })}
           </div>

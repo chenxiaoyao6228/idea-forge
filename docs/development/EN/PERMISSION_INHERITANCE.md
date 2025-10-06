@@ -533,164 +533,333 @@ describe("GROUP Permissions", () => {
 
 ## Guest Collaborator Permissions
 
-Guest collaborators have **fundamentally different permission behavior** compared to workspace members and regular users. Understanding these differences is critical for proper implementation.
+Guest collaborators implement a **two-tier permission system** that provides different inheritance behavior based on whether the guest has a linked user account.
+
+### Two-Tier Guest Architecture
+
+| Guest Type | Permission Type | Inheritable | Use Case |
+|------------|----------------|-------------|----------|
+| **Linked Guest** (has userId) | DIRECT (priority 1) | ✅ Yes | Existing users invited as guests - inherit from parents |
+| **Unlinked Guest** (no userId) | GUEST (priority 7) | ❌ No | Unknown emails - no inheritance until signup |
 
 ### Key Differences from Regular Users
 
-| Feature | Regular Users (DIRECT/GROUP) | Guest Collaborators (GUEST) |
-|---------|------------------------------|----------------------------|
-| **Inheritance** | ✅ Inherits from parent docs | ❌ NO inheritance - document-specific only |
-| **Workspace access** | ✅ Has workspace membership | ❌ No workspace membership |
-| **Subspace access** | ✅ Can be subspace member | ❌ No subspace membership |
-| **Share list API** | ✅ Included in `/api/documents/{id}/shares` | ❌ Separate API `/api/guest-collaborators/documents/{id}/guests` |
-| **Navigation** | ✅ Can browse subspace trees | ❌ Only "Shared with me" |
+| Feature | Regular Users (DIRECT/GROUP) | Linked Guests (DIRECT) | Unlinked Guests (GUEST) |
+|---------|------------------------------|------------------------|-------------------------|
+| **Inheritance** | ✅ Inherits from parent docs | ✅ Inherits from parent docs | ❌ No inheritance until signup |
+| **Workspace access** | ✅ Has workspace membership | ❌ No workspace membership | ❌ No workspace membership |
+| **Subspace access** | ✅ Can be subspace member | ❌ No subspace membership | ❌ No subspace membership |
+| **Share list API** | ✅ Included in `/api/documents/{id}/shares` | ❌ Separate guest API | ❌ Separate guest API |
+| **Navigation** | ✅ Can browse subspace trees | ❌ Only "Shared with me" | ❌ Only "Shared with me" |
+| **Permission Override** | ✅ Can override parent | ✅ Can override parent | ❌ No override (no inheritance) |
 
-### CRITICAL: Guest Permissions Do NOT Inherit
+### Linked Guest Permissions (Inheritable)
 
-**Guest permissions are document-specific and do not cascade to child documents.**
+When you invite an **existing user** as a guest, they receive a DIRECT permission that works exactly like regular user permissions:
 
-```
-Parent Doc (Guest Alice has EDIT via guestCollaboratorId)
-  ├─ Child Doc A (Guest Alice has NO access - must be explicitly shared) ❌
-  └─ Child Doc B (Guest Alice explicitly shared READ) ✅
-
-Result:
-- Alice can access Parent (EDIT)
-- Alice can access Child B (READ) - explicitly shared
-- Alice CANNOT access Child A - guest permissions don't inherit
-```
-
-**Implementation Detail** (share-document.services.ts:118):
 ```typescript
-// Include both DIRECT and GROUP permissions, but exclude GUEST (handled separately if needed)
-where: {
-  docId,
-  inheritedFromType: { in: ['DIRECT', 'GROUP'] }, // GUEST excluded from inheritance
-  userId: { not: null }
+// Guest with existing account
+const guest = {
+  id: "guest-456",
+  email: "existing@example.com",
+  userId: "user-123",  // ✅ Linked to existing user
+};
+
+// Creates DIRECT permission (inheritable)
+DocumentPermission {
+  userId: "user-123",           // ✅ Uses userId for inheritance
+  guestCollaboratorId: "guest-456", // ✅ Tracks guest origin (audit trail)
+  docId: "parent-doc",
+  permission: "EDIT",
+  inheritedFromType: "DIRECT",  // ✅ Inheritable!
+  priority: 1
 }
 ```
 
-### Why Guest Permissions Don't Inherit
+**Result**: Linked guest can access child documents via inheritance, just like regular users who aren't subspace members.
 
-1. **Security**: Guests are external collaborators - inheritance could grant unintended access
-2. **Explicit Control**: Document owners must explicitly share each document with guests
-3. **Workspace Isolation**: Guests don't have workspace-level context for inheritance
-4. **Permission Model**: `inheritedFromType: "GUEST"` has priority 7 (lowest) and is document-scoped
+**Example**:
+```
+Parent Doc (Linked Guest Alice has EDIT)
+  ├─ Child Doc A (Alice inherits EDIT from parent) ✅
+  └─ Child Doc B (Alice inherits EDIT from parent) ✅
+
+Alice's Access:
+- Parent: EDIT (direct)
+- Child A: EDIT (inherited from parent)
+- Child B: EDIT (inherited from parent)
+```
+
+### Unlinked Guest Permissions (Non-Inheritable)
+
+When you invite an **unknown email** as a guest, they receive a GUEST permission that does NOT inherit:
+
+```typescript
+// Guest without account
+const guest = {
+  id: "guest-789",
+  email: "new@example.com",
+  userId: null,  // ❌ No linked account
+};
+
+// Creates GUEST permission (non-inheritable)
+DocumentPermission {
+  userId: null,
+  guestCollaboratorId: "guest-789",
+  docId: "parent-doc",
+  permission: "EDIT",
+  inheritedFromType: "GUEST",   // ❌ NOT inheritable
+  priority: 7
+}
+```
+
+**Result**: Unlinked guest CANNOT access child documents until they sign up and accept the invitation.
+
+**Example**:
+```
+Parent Doc (Unlinked Guest Bob has EDIT)
+  ├─ Child Doc A (Bob has NO access) ❌
+  └─ Child Doc B (Bob has NO access) ❌
+
+Bob's Access:
+- Parent: EDIT (direct)
+- Child A: NONE (GUEST permissions don't inherit)
+- Child B: NONE (GUEST permissions don't inherit)
+```
 
 ### Guest Permission Resolution Algorithm
 
-When resolving permissions for a guest user:
-
 ```typescript
-function resolveGuestPermission(guestId: string, doc: Document): PermissionLevel {
-  // Step 1: Check DIRECT permission (if guest accepted and is now a user)
-  // Step 2: Check GROUP permission (if guest was promoted and added to groups)
-  // Step 3: SKIP inherited permissions ❌ (guests don't inherit)
-  // Step 4: Check document-level subspace overrides
-  // Step 5: SKIP subspace role permissions ❌ (guests have no membership)
-  // Step 6: SKIP workspace permissions ❌ (guests are not members)
-  // Step 7: Check GUEST permission via guestCollaboratorId ✅
-  // Step 8: Return NONE (no access)
-
-  const guestPermission = await prisma.documentPermission.findFirst({
-    where: {
-      guestCollaboratorId: guestId,
-      docId: doc.id,
-      inheritedFromType: "GUEST"
-    }
-  });
-
-  return guestPermission?.permission || PermissionLevel.NONE;
+function resolveGuestPermission(guest: Guest, doc: Document): PermissionLevel {
+  if (guest.userId) {
+    // LINKED GUEST - Uses standard resolution with inheritance
+    // Step 1: Check DIRECT permission on current document
+    // Step 2: Check inherited DIRECT from parent chain ✅
+    // Step 3: Check GROUP permission (if added to groups)
+    // Step 4: Check document-level subspace overrides
+    // Step 5: Return NONE
+  } else {
+    // UNLINKED GUEST - No inheritance
+    // Step 1: Check GUEST permission on current document only
+    // Step 2: Return NONE (no inheritance, no workspace access)
+  }
 }
 ```
 
-**Critical**: Only steps 1, 2, 4, and 7 apply to guests - inheritance (step 3) and workspace/subspace access (steps 5-6) are skipped.
+### Guest Acceptance and Permission Migration
 
-### Guest Collaborators NOT in Share List
+When an unlinked guest signs up and accepts an invitation, their GUEST permissions are automatically migrated to DIRECT permissions:
 
-The `getDocumentCollaborators` API **does not include guest collaborators**. They are managed through separate endpoints.
+```typescript
+// BEFORE Acceptance (Unlinked Guest)
+DocumentPermission {
+  userId: null,
+  guestCollaboratorId: "guest-789",
+  inheritedFromType: "GUEST",   // Non-inheritable
+  priority: 7
+}
+
+// User signs up and accepts invitation
+await acceptWorkspaceInvitation({ guestId: "guest-789", userId: "user-999" });
+
+// AFTER Acceptance (Linked Guest)
+DocumentPermission {
+  userId: "user-999",           // ✅ Now linked!
+  guestCollaboratorId: "guest-789", // ✅ Audit trail preserved
+  inheritedFromType: "DIRECT",  // ✅ Now inheritable!
+  priority: 1
+}
+```
+
+**Implementation** (guest-collaborators.service.ts:158-182):
+```typescript
+await this.prisma.$transaction(async (tx) => {
+  // Update guest status
+  await tx.guestCollaborator.update({
+    where: { id: guestId },
+    data: { status: "ACTIVE", userId },
+  });
+
+  // Migrate GUEST → DIRECT permissions
+  await tx.documentPermission.updateMany({
+    where: {
+      guestCollaboratorId: guestId,
+      inheritedFromType: "GUEST",
+    },
+    data: {
+      userId: userId,
+      inheritedFromType: "DIRECT",
+      priority: 1,
+    },
+  });
+});
+```
+
+### Guest Permission Override System
+
+Linked guests can override inherited permissions just like regular users. See the "Permission Override" section for details on how this works.
+
+#### Override States for Linked Guests
+
+1. **Inherited Only**:
+   - Guest has permission from parent, NO direct permission on child
+   - Permission selector: **Disabled** (read-only)
+   - Tooltip: "Inherited from parent document: 'Parent Title'"
+
+2. **Direct Only**:
+   - Guest has direct permission on child, NO parent permission
+   - Permission selector: **Enabled**
+   - Actions: **Remove button** (can delete direct permission)
+
+3. **Override (Direct + Inherited)**:
+   - Guest has BOTH direct on child AND inherited from parent
+   - Permission selector: **Enabled**
+   - Actions: **Restore Inherited dropdown option** (removes direct, falls back to inherited)
+
+**UI Implementation** (guest-sharing-tab.tsx:76-84):
+```typescript
+const hasParentPermission = guest.hasParentPermission || false;
+const isDirect = guest.permissionSource?.source === "direct";
+
+const showRestoreInherited = hasParentPermission && isDirect;
+const showRemove = isDirect && !hasParentPermission;
+```
+
+### Guest API Endpoints
+
+Guest collaborators are managed through **separate API endpoints** from regular user shares:
 
 **API Structure**:
 ```typescript
 // For workspace members and groups
 GET /api/documents/{docId}/shares
 Response: {
-  users: UserShareData[],    // DIRECT + GROUP + inherited
+  users: UserShareData[],    // DIRECT + GROUP + inherited (NO guests)
   groups: GroupShareData[]   // DIRECT + GROUP + inherited
-  // NO guests here ❌
 }
 
 // For guest collaborators (separate endpoint)
 GET /api/guest-collaborators/documents/{docId}/guests
-Response: GuestCollaboratorResponse[]  // GUEST only, no inheritance
+Response: GuestCollaboratorResponse[]  // Both linked and unlinked guests
 ```
 
-**UI Implication**: Sharing UI must make **TWO separate API calls** to display all collaborators:
+**Guest Response Schema**:
+```typescript
+interface GuestCollaboratorResponse {
+  id: string;
+  email: string;
+  name: string | null;
+  status: "PENDING" | "ACTIVE";
+  permission?: PermissionLevel;         // Effective permission (resolved)
+  isInherited?: boolean;                // True if only inherited (no direct)
+  hasParentPermission?: boolean;        // True if has both (override state)
+  permissionSource?: {
+    source: "direct" | "inherited";
+    sourceDocId: string;
+    sourceDocTitle: string;
+    level: PermissionLevel;
+  };
+  parentPermissionSource?: {            // For overrides
+    source: "inherited";
+    sourceDocId: string;
+    sourceDocTitle: string;
+    level: PermissionLevel;
+  };
+  documents: Array<{
+    documentId: string;
+    documentTitle: string;
+    permission: PermissionLevel;
+    createdAt: Date;
+  }>;
+}
+```
+
+**UI Implication**: Sharing UI must make **TWO separate API calls**:
 1. `/api/documents/{id}/shares` - Get users and groups (includes inherited)
-2. `/api/guest-collaborators/documents/{id}/guests` - Get guests (no inherited)
+2. `/api/guest-collaborators/documents/{id}/guests` - Get guests (includes inherited for linked guests)
 
 ### Sharing Documents with Guests
 
-To give a guest access to parent and child documents:
+#### Invite Existing User as Guest (Linked)
 
-**❌ Wrong Approach** (doesn't work):
 ```typescript
-// Share parent with guest
 POST /api/guest-collaborators/documents/invite
 {
   "documentId": "parent-id",
-  "email": "guest@example.com",
+  "email": "existing-user@example.com",  // Email of existing user
   "permission": "EDIT"
 }
 
-// Child documents are NOT automatically accessible ❌
-// Guest CANNOT access children via inheritance
+Result:
+- Guest created with userId (linked)
+- DIRECT permission created (inheritable)
+- Guest can access child documents via inheritance ✅
 ```
 
-**✅ Correct Approach** (explicit sharing):
+#### Invite Unknown Email as Guest (Unlinked)
+
 ```typescript
-// 1. Share parent
 POST /api/guest-collaborators/documents/invite
 {
   "documentId": "parent-id",
-  "email": "guest@example.com",
+  "email": "new-user@example.com",  // Unknown email
   "permission": "EDIT"
 }
 
-// 2. Batch share all children
+Result:
+- Guest created without userId (unlinked)
+- GUEST permission created (non-inheritable)
+- Guest CANNOT access child documents ❌
+- After signup: GUEST → DIRECT migration, inheritance enabled ✅
+```
+
+#### Batch Invite Mixed Guests
+
+```typescript
 POST /api/guest-collaborators/documents/batch-invite
 {
-  "documentId": "child-id",
+  "documentId": "parent-id",
   "guests": [
-    { "guestId": "guest-123", "permission": "EDIT" }
+    { "guestId": "linked-guest-id", "permission": "EDIT" },    // Linked
+    { "guestId": "unlinked-guest-id", "permission": "READ" }   // Unlinked
   ]
 }
+
+Result:
+- Linked guest gets DIRECT permission (inherits to children)
+- Unlinked guest gets GUEST permission (no inheritance)
 ```
 
-### Guest Navigation of Child Documents
+### Guest Navigation and Shared-With-Me
 
-Guests can see child documents in the navigation tree **only if**:
-1. Guest has **explicit GUEST permission** on the child document
-2. The child is shared directly with the guest (no inheritance)
+**ALL** documents shared with a guest appear in "Shared with me" because:
+- Guests have no workspace membership → can't browse workspace trees
+- Guests have no subspace membership → can't browse subspace trees
 
 **Example**:
 ```
-Marketing Campaign (Guest Bob has EDIT)
-  ├─ Strategy Doc (Guest Bob has READ - explicitly shared) ✅ Visible
-  ├─ Budget (NOT shared with Guest Bob) ❌ Hidden
-  └─ Timeline (Guest Bob has COMMENT - explicitly shared) ✅ Visible
+Workspace "Acme Corp"
+  Public Subspace:
+    - handbook (Linked Guest Eve has READ via parent share)
+      └─ policies (Eve inherits READ from parent) ✅
+  Marketing Subspace:
+    - campaign (Unlinked Guest Bob has EDIT, direct share)
+      └─ budget (Bob has NO access) ❌
 
-Bob's Navigation Tree:
-Marketing Campaign (EDIT)
-  ├─ Strategy Doc (READ)
-  └─ Timeline (COMMENT)
+Eve's Shared-With-Me Shows:
+✅ handbook (READ, direct)
+  └─ policies (READ, inherited) - Accessible via client tree
+
+Bob's Shared-With-Me Shows:
+✅ campaign (EDIT, direct only)
+  └─ budget (Hidden - no permission)
 ```
 
-**Note**: Even though Bob has EDIT on the parent, he cannot see "Budget" because guest permissions don't inherit.
+**Client-Side Tree Building**: The shared-with-me navigation tree is built client-side by progressively fetching children via `/api/documents/list` with `sharedDocumentId` parameter.
 
 ### Guest Promotion to Workspace Member
 
-When a guest is promoted to a workspace member, permissions are migrated with special logic:
+When a guest is promoted to a workspace member, permissions are migrated:
 
 **Permission Migration Algorithm**:
 ```typescript
@@ -698,21 +867,23 @@ async function promoteGuestToMember(guestId: string, role: WorkspaceRole) {
   const guestPermissions = await getGuestPermissions(guestId);
 
   for (const perm of guestPermissions) {
-    const workspaceDefaultPermission = PermissionLevel.READ; // MEMBER/ADMIN default
+    const workspaceDefaultPermission = PermissionLevel.READ;
 
     if (perm.permission > workspaceDefaultPermission) {
       // Guest has HIGHER permission than workspace default
-      // Convert GUEST → DIRECT to preserve access
-      await updatePermission({
-        ...perm,
-        userId: guest.userId,
-        guestCollaboratorId: null,
-        inheritedFromType: "DIRECT",
-        priority: 1
-      });
+      // Keep as DIRECT to preserve access
+      if (perm.inheritedFromType === "GUEST") {
+        // Migrate GUEST → DIRECT (if not already DIRECT)
+        await updatePermission({
+          ...perm,
+          userId: guest.userId,
+          inheritedFromType: "DIRECT",
+          priority: 1
+        });
+      }
     } else {
       // Workspace permission is sufficient
-      // Delete GUEST permission (workspace READ is enough)
+      // Delete permission record (workspace READ is enough)
       await deletePermission(perm.id);
     }
   }
@@ -724,44 +895,19 @@ async function promoteGuestToMember(guestId: string, role: WorkspaceRole) {
 
 **Example**:
 ```
-Before Promotion (Guest Alice):
-- Doc A: GUEST permission MANAGE (guestCollaboratorId=alice-guest-id)
-- Doc B: GUEST permission READ (guestCollaboratorId=alice-guest-id)
+Before Promotion:
+- Doc A: DIRECT permission MANAGE (linked guest)
+- Doc B: GUEST permission READ (was unlinked, now linked after acceptance)
 
-After Promotion (Member Alice):
-- Doc A: DIRECT permission MANAGE (userId=alice-user-id, priority=1) ✅ Preserved
-- Doc B: No permission record ✅ Deleted (workspace READ is sufficient)
-- Workspace: Alice is now MEMBER (default READ on all docs)
+After Promotion (Member):
+- Doc A: DIRECT permission MANAGE (preserved - higher than workspace READ)
+- Doc B: No permission record (deleted - workspace READ sufficient)
+- Workspace: Now MEMBER (default READ on all docs)
 
 Key Benefit:
-- Alice can NOW inherit parent permissions (guests couldn't)
-- Doc A retains MANAGE (higher than workspace READ)
-- Doc B uses workspace READ (no need for redundant record)
-```
-
-### Shared-With-Me for Guests
-
-**ALL** documents shared with a guest appear in "Shared with me" because:
-- Guests have no workspace membership → can't browse workspace trees
-- Guests have no subspace membership → can't browse subspace trees
-- Guest permissions don't inherit → each document is standalone
-
-**Example**:
-```
-Workspace "Acme Corp"
-  Public Subspace:
-    - handbook (Guest Eve has READ)
-  Marketing Subspace:
-    - campaign (Guest Eve has EDIT)
-  Alice's "My Docs":
-    - meeting-notes (Guest Eve has COMMENT)
-
-Eve's Shared-With-Me Shows:
-✅ handbook (READ)
-✅ campaign (EDIT)
-✅ meeting-notes (COMMENT)
-
-All three appear because Eve has no subspace access - she's a guest!
+- Can now browse workspace/subspace trees (no longer limited to shared-with-me)
+- High permissions preserved, low permissions cleaned up
+- Inheritance continues to work (already using DIRECT permissions)
 ```
 
 ### Testing Guest Permissions
@@ -769,43 +915,169 @@ All three appear because Eve has no subspace access - she's a guest!
 **Required Test Coverage**:
 
 ```typescript
-describe("Guest Collaborator Permission Inheritance", () => {
-  it("should NOT inherit guest permission to child documents", async () => {
-    // Given: Parent has guest permission EDIT
-    // When: Child document is created
+describe("Linked Guest Permissions", () => {
+  it("should create DIRECT permission for linked guest", async () => {
+    // Given: Existing user invited as guest
+    // When: Guest shared on document
+    // Then: DIRECT permission created with userId
+    // And: Priority = 1 (inheritable)
+  });
+
+  it("should inherit permissions from parent to child", async () => {
+    // Given: Linked guest shared on parent (EDIT)
+    // When: Child document created under parent
+    // Then: Guest has EDIT on child (inherited)
+    // And: No permission record on child
+  });
+
+  it("should allow override of inherited permission", async () => {
+    // Given: Linked guest inherits EDIT from parent
+    // When: Guest shared on child with READ (override)
+    // Then: Guest has READ on child (override)
+    // And: hasParentPermission = true
+    // And: Shows "Restore Inherited" option
+  });
+
+  it("should restore inherited permission when override removed", async () => {
+    // Given: Linked guest has override on child
+    // When: Direct permission removed from child
+    // Then: Guest inherits parent permission again
+    // And: hasParentPermission = false
+  });
+});
+
+describe("Unlinked Guest Permissions", () => {
+  it("should create GUEST permission for unlinked guest", async () => {
+    // Given: Unknown email invited as guest
+    // When: Guest shared on document
+    // Then: GUEST permission created without userId
+    // And: Priority = 7 (non-inheritable)
+  });
+
+  it("should NOT inherit permissions to child documents", async () => {
+    // Given: Unlinked guest shared on parent (EDIT)
+    // When: Child document created under parent
     // Then: Guest has NONE on child (no inheritance)
   });
+});
 
-  it("should require explicit sharing for guest to access children", async () => {
-    // Given: Parent shared with guest
-    // When: Child explicitly shared with same guest
-    // Then: Guest can access both parent and child
+describe("Guest Acceptance Migration", () => {
+  it("should migrate GUEST to DIRECT on acceptance", async () => {
+    // Given: Unlinked guest with GUEST permissions
+    // When: Guest accepts invitation and creates account
+    // Then: All GUEST permissions → DIRECT permissions
+    // And: userId linked to guest
+    // And: Priority changed to 1
   });
 
-  it("should exclude guests from /shares API endpoint", async () => {
-    // Given: Document has user shares and guest shares
-    // When: GET /api/documents/{id}/shares
-    // Then: Response includes users, NOT guests
+  it("should enable inheritance after acceptance", async () => {
+    // Given: Unlinked guest on parent (no child access)
+    // When: Guest accepts invitation
+    // Then: Guest can access child documents (inheritance enabled)
   });
+});
 
-  it("should convert guest MANAGE to DIRECT when promoted", async () => {
-    // Given: Guest has MANAGE on document
-    // When: Guest promoted to MEMBER (workspace READ default)
-    // Then: Guest permission becomes DIRECT MANAGE (preserved)
-  });
-
-  it("should delete guest READ when promoted to MEMBER", async () => {
-    // Given: Guest has READ on document
-    // When: Guest promoted to MEMBER (workspace READ default)
-    // Then: Guest permission deleted (workspace READ sufficient)
-  });
-
-  it("should allow promoted member to inherit (unlike guests)", async () => {
-    // Before: Guest has EDIT on parent, NO access to child
-    // After promotion: Member inherits EDIT on child
+describe("Batch Invite Mixed Guests", () => {
+  it("should handle mixed linked/unlinked guests", async () => {
+    // Given: Batch invite with linked and unlinked guests
+    // When: Batch invite executed
+    // Then: Linked guests get DIRECT permissions (priority 1)
+    // And: Unlinked guests get GUEST permissions (priority 7)
   });
 });
 ```
+
+### Common Scenarios
+
+#### Scenario 1: Invite Existing User as Guest
+
+```
+Goal: Share project folder with external user who has an account
+
+Steps:
+1. Invite user@example.com as guest (existing user)
+2. Guest receives DIRECT permission on parent folder
+3. Guest can access child documents via inheritance
+
+Result:
+- 1 permission record created (on parent)
+- Children inherit permission at runtime
+- Guest appears in child's guest-sharing-tab with inherited indicator
+```
+
+#### Scenario 2: Invite Unknown Email as Guest
+
+```
+Goal: Share document with external collaborator (unknown email)
+
+Steps:
+1. Invite newuser@example.com as guest (unknown email)
+2. Guest receives GUEST permission on document
+3. Guest CANNOT access child documents
+
+After Guest Signs Up:
+1. Guest accepts invitation
+2. GUEST permissions → DIRECT permissions
+3. Guest can now access child documents
+```
+
+#### Scenario 3: Override Linked Guest Permission on Child
+
+```
+Goal: Guest has EDIT on folder, but specific doc should be read-only
+
+Steps:
+1. Parent shared with linked guest (EDIT)
+2. Child shared with same guest (READ) → Override
+
+Result:
+- Guest has EDIT on parent
+- Guest has READ on child (override)
+- Child shows "Restore Inherited" option
+- Clicking restore removes READ, guest inherits EDIT again
+```
+
+#### Scenario 4: Promote Guest to Member
+
+```
+Goal: Convert guest to full workspace member
+
+Steps:
+1. Guest has DIRECT permissions on multiple docs
+2. Promote guest to MEMBER role
+3. High permissions preserved, low permissions cleaned up
+
+Result:
+- MANAGE/EDIT permissions → Kept as DIRECT
+- READ/COMMENT permissions → Deleted (workspace READ sufficient)
+- Guest can now browse workspace trees
+- Inheritance continues to work
+```
+
+### Implementation Files
+
+**API Service**:
+- `apps/api/src/guest-collaborators/guest-collaborators.service.ts`
+  - `inviteGuestToDocument()` (lines 200-354) - Creates DIRECT or GUEST based on linked status
+  - `batchInviteGuestsToDocument()` (lines 356-491) - Handles mixed guest types
+  - `acceptWorkspaceInvitation()` (lines 124-198) - Migrates GUEST → DIRECT
+  - `updateGuestPermission()` (lines 572-698) - Updates/creates permissions (supports overrides)
+  - `getGuestsOfDocument()` (lines 818-965) - Returns guests with inheritance metadata
+
+**Permission Resolution**:
+- `apps/api/src/permission/document-permission.service.ts`
+  - Linked guests use standard user resolution (includes inheritance)
+  - Unlinked guests use `getGuestPermissionForDocument()` (no inheritance)
+
+**Client UI**:
+- `apps/client/src/pages/main/sharing/guest-sharing-tab.tsx`
+  - Displays guests with inheritance indicators
+  - Shows "Restore Inherited" option for overrides
+  - Handles permission updates with override detection
+
+**Contracts**:
+- `packages/contracts/src/guest-collaborators.ts`
+  - `guestCollaboratorResponseSchema` - Includes override metadata fields
 
 ---
 

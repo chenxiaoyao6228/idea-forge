@@ -253,8 +253,8 @@ describe("Permission Override Detection (hasParentPermission flag)", () => {
       // Assert: hasParentPermission should be false or undefined
       const user1Share = result.find((s: any) => s.id === user1.id);
       expect(user1Share).toBeDefined();
-      expect(user1Share.hasParentPermission).toBeFalsy();
-      expect(user1Share.parentPermissionSource).toBeUndefined();
+      expect(user1Share!.hasParentPermission).toBeFalsy();
+      expect(user1Share!.parentPermissionSource).toBeUndefined();
     });
   });
 
@@ -318,8 +318,8 @@ describe("Permission Override Detection (hasParentPermission flag)", () => {
       // Assert: group1 should show override (check the group share, not user share)
       const group1Share = result.find((s: any) => s.id === group1.id && s.type === "group");
       expect(group1Share).toBeDefined();
-      expect(group1Share.hasParentPermission).toBe(true);
-      expect(group1Share.parentPermissionSource).toMatchObject({
+      expect(group1Share!.hasParentPermission).toBe(true);
+      expect(group1Share!.parentPermissionSource).toMatchObject({
         level: PermissionLevel.READ,
         source: "inherited",
         sourceDocTitle: "Parent",
@@ -452,9 +452,9 @@ describe("Permission Override Detection (hasParentPermission flag)", () => {
       // Assert: group1 should have hasParentPermission=true (check group share)
       const group1Share = result.find((s: any) => s.id === group1.id && s.type === "group");
       expect(group1Share).toBeDefined();
-      expect(group1Share.hasParentPermission).toBe(true);
-      expect(group1Share.permissionSource?.level).toBe(PermissionLevel.EDIT);
-      expect(group1Share.parentPermissionSource?.level).toBe(PermissionLevel.READ);
+      expect(group1Share!.hasParentPermission).toBe(true);
+      expect(group1Share!.permissionSource?.level).toBe(PermissionLevel.EDIT);
+      expect(group1Share!.parentPermissionSource?.level).toBe(PermissionLevel.READ);
     });
   });
 

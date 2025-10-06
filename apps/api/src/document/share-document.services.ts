@@ -491,11 +491,13 @@ export class ShareDocumentService {
 
   private async getDirectUserShares(docId: string, docContext: DocContext): Promise<UserShareData[]> {
     // Get direct user permissions with createdBy info
+    // Exclude guest collaborators (they have guestCollaboratorId set)
     const userPermissions = await this.prismaService.documentPermission.findMany({
       where: {
         docId,
         inheritedFromType: PermissionInheritanceType.DIRECT,
         userId: { not: null },
+        guestCollaboratorId: null, // Exclude linked guests
       },
       include: {
         createdBy: {
@@ -730,8 +732,12 @@ export class ShareDocumentService {
 
     // For each user with ancestor permission, get their info
     // Include BOTH DIRECT and GROUP permissions (users inherit from both types)
+    // Exclude guest collaborators (they have guestCollaboratorId set)
     const userPermissions = ancestorPermissions.filter(
-      (p) => p.userId && (p.inheritedFromType === PermissionInheritanceType.DIRECT || p.inheritedFromType === PermissionInheritanceType.GROUP),
+      (p) =>
+        p.userId &&
+        !p.guestCollaboratorId && // Exclude linked guests
+        (p.inheritedFromType === PermissionInheritanceType.DIRECT || p.inheritedFromType === PermissionInheritanceType.GROUP),
     );
 
     // Deduplicate users (same user might have permissions on multiple ancestors)

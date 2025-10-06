@@ -154,13 +154,31 @@ export class GuestCollaboratorsService {
       throw new ApiException(ErrorCodeEnum.WorkspaceInvitationExpired, 400, "Invitation has expired");
     }
 
-    // Update guest status and link to user
-    await this.prisma.guestCollaborator.update({
-      where: { id: guestId },
-      data: {
-        status: "ACTIVE",
-        userId,
-      },
+    // Update guest status, link to user, and migrate permissions in transaction
+    await this.prisma.$transaction(async (tx) => {
+      // Update guest status and link to user
+      await tx.guestCollaborator.update({
+        where: { id: guestId },
+        data: {
+          status: "ACTIVE",
+          userId,
+        },
+      });
+
+      // Migrate GUEST permissions to DIRECT permissions for inheritance
+      // This allows the newly activated user to access child documents
+      await tx.documentPermission.updateMany({
+        where: {
+          guestCollaboratorId: guestId,
+          inheritedFromType: "GUEST",
+        },
+        data: {
+          userId: userId,
+          inheritedFromType: "DIRECT",
+          priority: 1,
+          // guestCollaboratorId is kept for audit trail
+        },
+      });
     });
 
     // Publish WebSocket event
@@ -228,35 +246,76 @@ export class GuestCollaboratorsService {
     }
 
     // Create or update document permission for guest
-    const existingPermission = await this.prisma.documentPermission.findFirst({
-      where: {
-        guestCollaboratorId: guest.id, // Use guestCollaboratorId for guest permissions
-        docId: documentId,
-        inheritedFromType: "GUEST",
-      },
-    });
+    // If guest is linked to a user account, create DIRECT permission (inheritable)
+    // Otherwise create GUEST permission (non-inheritable until they sign up)
+    const isLinkedGuest = !!guest.userId;
 
-    if (existingPermission) {
-      // Update existing permission
-      await this.prisma.documentPermission.update({
-        where: { id: existingPermission.id },
-        data: {
-          permission,
-          priority: 7, // Guest permissions have lowest priority
-        },
-      });
-    } else {
-      // Create new permission
-      await this.prisma.documentPermission.create({
-        data: {
-          guestCollaboratorId: guest.id, // Use guestCollaboratorId for guest permissions
+    if (isLinkedGuest) {
+      // Guest has linked account - use DIRECT permission for inheritance
+      const existingPermission = await this.prisma.documentPermission.findFirst({
+        where: {
+          userId: guest.userId,
           docId: documentId,
-          permission,
-          inheritedFromType: "GUEST",
-          priority: 7,
-          createdById: userId,
+          inheritedFromType: "DIRECT",
+          guestCollaboratorId: guest.id, // Must match to avoid duplicates
         },
       });
+
+      if (existingPermission) {
+        // Update existing permission
+        await this.prisma.documentPermission.update({
+          where: { id: existingPermission.id },
+          data: {
+            permission,
+            priority: 1,
+          },
+        });
+      } else {
+        // Create new DIRECT permission (inheritable)
+        await this.prisma.documentPermission.create({
+          data: {
+            userId: guest.userId, // Use userId for inheritance
+            guestCollaboratorId: guest.id, // Track guest origin for audit
+            docId: documentId,
+            permission,
+            inheritedFromType: "DIRECT",
+            priority: 1,
+            createdById: userId,
+          },
+        });
+      }
+    } else {
+      // Guest not linked - use GUEST permission (no inheritance)
+      const existingPermission = await this.prisma.documentPermission.findFirst({
+        where: {
+          guestCollaboratorId: guest.id,
+          docId: documentId,
+          inheritedFromType: "GUEST",
+        },
+      });
+
+      if (existingPermission) {
+        // Update existing permission
+        await this.prisma.documentPermission.update({
+          where: { id: existingPermission.id },
+          data: {
+            permission,
+            priority: 7, // Guest permissions have lowest priority
+          },
+        });
+      } else {
+        // Create new GUEST permission (non-inheritable)
+        await this.prisma.documentPermission.create({
+          data: {
+            guestCollaboratorId: guest.id,
+            docId: documentId,
+            permission,
+            inheritedFromType: "GUEST",
+            priority: 7,
+            createdById: userId,
+          },
+        });
+      }
     }
 
     // Publish WebSocket event for document sharing
@@ -323,33 +382,69 @@ export class GuestCollaboratorsService {
           continue;
         }
 
-        // Check if guest already has access to this document
-        const existingPermission = await this.prisma.documentPermission.findFirst({
-          where: {
-            guestCollaboratorId: guestData.guestId, // Use guestCollaboratorId for guest permissions
-            docId: documentId,
-            inheritedFromType: "GUEST",
-          },
-        });
+        // Check if guest is linked to user account
+        const isLinkedGuest = !!existingGuest.userId;
 
-        if (existingPermission) {
-          // Update existing permission
-          await this.prisma.documentPermission.update({
-            where: { id: existingPermission.id },
-            data: { permission: guestData.permission },
-          });
-        } else {
-          // Create new document permission
-          await this.prisma.documentPermission.create({
-            data: {
-              guestCollaboratorId: guestData.guestId, // Use guestCollaboratorId for guest permissions
+        if (isLinkedGuest) {
+          // Guest has linked account - use DIRECT permission for inheritance
+          const existingPermission = await this.prisma.documentPermission.findFirst({
+            where: {
+              userId: existingGuest.userId,
               docId: documentId,
-              permission: guestData.permission,
-              inheritedFromType: "GUEST",
-              priority: 7,
-              createdById: userId,
+              inheritedFromType: "DIRECT",
+              guestCollaboratorId: guestData.guestId,
             },
           });
+
+          if (existingPermission) {
+            // Update existing permission
+            await this.prisma.documentPermission.update({
+              where: { id: existingPermission.id },
+              data: { permission: guestData.permission, priority: 1 },
+            });
+          } else {
+            // Create new DIRECT permission (inheritable)
+            await this.prisma.documentPermission.create({
+              data: {
+                userId: existingGuest.userId,
+                guestCollaboratorId: guestData.guestId,
+                docId: documentId,
+                permission: guestData.permission,
+                inheritedFromType: "DIRECT",
+                priority: 1,
+                createdById: userId,
+              },
+            });
+          }
+        } else {
+          // Guest not linked - use GUEST permission (no inheritance)
+          const existingPermission = await this.prisma.documentPermission.findFirst({
+            where: {
+              guestCollaboratorId: guestData.guestId,
+              docId: documentId,
+              inheritedFromType: "GUEST",
+            },
+          });
+
+          if (existingPermission) {
+            // Update existing permission
+            await this.prisma.documentPermission.update({
+              where: { id: existingPermission.id },
+              data: { permission: guestData.permission },
+            });
+          } else {
+            // Create new GUEST permission (non-inheritable)
+            await this.prisma.documentPermission.create({
+              data: {
+                guestCollaboratorId: guestData.guestId,
+                docId: documentId,
+                permission: guestData.permission,
+                inheritedFromType: "GUEST",
+                priority: 7,
+                createdById: userId,
+              },
+            });
+          }
         }
 
         // Publish WebSocket event for document sharing
@@ -415,11 +510,12 @@ export class GuestCollaboratorsService {
     });
 
     // Get document permissions for all these guests
+    // Include both DIRECT (linked) and GUEST (unlinked) permissions
     const guestIds = guests.map((g) => g.id);
     const allPermissions = await this.prisma.documentPermission.findMany({
       where: {
         guestCollaboratorId: { in: guestIds },
-        inheritedFromType: "GUEST",
+        OR: [{ inheritedFromType: "DIRECT" }, { inheritedFromType: "GUEST" }],
       },
       include: {
         doc: {
@@ -495,60 +591,81 @@ export class GuestCollaboratorsService {
       throw new ApiException(ErrorCodeEnum.ResourceNotFound);
     }
 
-    // Check if user has permission to modify guest permissions
-    const userPermission = await this.prisma.documentPermission.findFirst({
-      where: {
-        docId: documentId,
-        userId: userId,
-        permission: { in: ["EDIT", "MANAGE"] },
-      },
-    });
+    // Check if guest is linked (may have DIRECT or GUEST permission)
+    const isLinkedGuest = !!guest.userId;
 
-    if (!userPermission) {
-      throw new ApiException(ErrorCodeEnum.PermissionDenied);
-    }
+    // Find existing permission (check both DIRECT and GUEST types)
+    const existingPermission = isLinkedGuest
+      ? await this.prisma.documentPermission.findFirst({
+          where: {
+            userId: guest.userId,
+            docId: documentId,
+            inheritedFromType: "DIRECT",
+            guestCollaboratorId: guestId,
+          },
+        })
+      : await this.prisma.documentPermission.findFirst({
+          where: {
+            guestCollaboratorId: guestId,
+            docId: documentId,
+            inheritedFromType: "GUEST",
+          },
+        });
 
-    // Check if permission record exists before updating
-    const existingPermission = await this.prisma.documentPermission.findFirst({
-      where: {
-        guestCollaboratorId: guestId, // Use guestCollaboratorId for guest permissions
-        docId: documentId,
-        inheritedFromType: "GUEST",
-      },
-    });
+    let updatedPermission: any;
 
-    if (!existingPermission) {
-      throw new ApiException(ErrorCodeEnum.ResourceNotFound);
-    }
+    if (existingPermission) {
+      // Update existing permission
+      await this.prisma.documentPermission.update({
+        where: { id: existingPermission.id },
+        data: { permission },
+      });
 
-    // Update guest permission
-    await this.prisma.documentPermission.updateMany({
-      where: {
-        guestCollaboratorId: guestId, // Use guestCollaboratorId for guest permissions
-        docId: documentId,
-        inheritedFromType: "GUEST",
-      },
-      data: {
-        permission,
-      },
-    });
-
-    // Get the updated document permission
-    const updatedPermission = await this.prisma.documentPermission.findFirst({
-      where: {
-        guestCollaboratorId: guestId, // Use guestCollaboratorId for guest permissions
-        docId: documentId,
-        inheritedFromType: "GUEST",
-      },
-      include: {
-        doc: {
-          select: {
-            id: true,
-            title: true,
+      // Get the updated permission
+      updatedPermission = await this.prisma.documentPermission.findUnique({
+        where: { id: existingPermission.id },
+        include: {
+          doc: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
         },
-      },
-    });
+      });
+    } else {
+      // No existing permission - create new one (for overrides or first-time grants)
+      // For linked guests, create DIRECT permission (inheritable)
+      // For unlinked guests, create GUEST permission (non-inheritable)
+      updatedPermission = await this.prisma.documentPermission.create({
+        data: isLinkedGuest
+          ? {
+              userId: guest.userId,
+              guestCollaboratorId: guestId,
+              docId: documentId,
+              permission,
+              inheritedFromType: "DIRECT",
+              priority: 1,
+              createdById: userId,
+            }
+          : {
+              guestCollaboratorId: guestId,
+              docId: documentId,
+              permission,
+              inheritedFromType: "GUEST",
+              priority: 7,
+              createdById: userId,
+            },
+        include: {
+          doc: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      });
+    }
 
     if (!updatedPermission) {
       throw new ApiException(ErrorCodeEnum.ResourceNotFound);
@@ -609,10 +726,11 @@ export class GuestCollaboratorsService {
     // Remove guest and all their permissions
     await this.prisma.$transaction(async (tx) => {
       // Remove all document permissions for this guest
+      // Include both DIRECT (linked) and GUEST (unlinked) permissions
       await tx.documentPermission.deleteMany({
         where: {
-          userId: guestId,
-          inheritedFromType: "GUEST",
+          guestCollaboratorId: guestId,
+          OR: [{ inheritedFromType: "DIRECT" }, { inheritedFromType: "GUEST" }],
         },
       });
 
@@ -649,11 +767,12 @@ export class GuestCollaboratorsService {
     }
 
     // Remove guest permission for this document
+    // Handle both DIRECT (linked) and GUEST (unlinked) permissions
     await this.prisma.documentPermission.deleteMany({
       where: {
-        guestCollaboratorId: guestId, // Use guestCollaboratorId for guest permissions
+        guestCollaboratorId: guestId,
         docId: documentId,
-        inheritedFromType: "GUEST",
+        OR: [{ inheritedFromType: "DIRECT" }, { inheritedFromType: "GUEST" }],
       },
     });
   }
@@ -677,10 +796,11 @@ export class GuestCollaboratorsService {
     }
 
     // Get document permissions for this guest
+    // Include both DIRECT (linked) and GUEST (unlinked) permissions
     const permissions = await this.prisma.documentPermission.findMany({
       where: {
         guestCollaboratorId: guestId,
-        inheritedFromType: "GUEST",
+        OR: [{ inheritedFromType: "DIRECT" }, { inheritedFromType: "GUEST" }],
       },
       include: {
         doc: {
@@ -718,18 +838,19 @@ export class GuestCollaboratorsService {
     // Verify user has access to the document
     const document = await this.prisma.doc.findUnique({
       where: { id: documentId },
-      include: { workspace: true },
+      include: { workspace: true, parent: { select: { id: true, parentId: true } } },
     });
 
     if (!document) {
       throw new ApiException(ErrorCodeEnum.DocumentNotFound);
     }
 
-    // Get document permissions for guests
-    const guestPermissions = await this.prisma.documentPermission.findMany({
+    // Get DIRECT guest permissions on this document (both linked and unlinked)
+    const directGuestPermissions = await this.prisma.documentPermission.findMany({
       where: {
         docId: documentId,
-        inheritedFromType: "GUEST",
+        guestCollaboratorId: { not: null },
+        OR: [{ inheritedFromType: "DIRECT" }, { inheritedFromType: "GUEST" }],
       },
       include: {
         doc: {
@@ -742,8 +863,59 @@ export class GuestCollaboratorsService {
       orderBy: { createdAt: "desc" },
     });
 
-    // Get unique guest IDs from the permissions
-    const guestIds = [...new Set(guestPermissions.map((p) => p.guestCollaboratorId).filter(Boolean))];
+    // Get INHERITED guest permissions from parent chain (only for linked guests with DIRECT permissions)
+    const inheritedGuestPermissions: typeof directGuestPermissions = [];
+
+    if (document.parentId) {
+      // Walk up parent chain to find guest permissions
+      let currentParentId: string | null = document.parentId;
+      const visited = new Set<string>();
+      const inheritedGuestIds = new Set<string>();
+
+      while (currentParentId && !visited.has(currentParentId) && visited.size < 25) {
+        visited.add(currentParentId);
+
+        // Get guest permissions on parent (only DIRECT permissions, as those are inheritable)
+        const parentGuestPerms = await this.prisma.documentPermission.findMany({
+          where: {
+            docId: currentParentId,
+            guestCollaboratorId: { not: null },
+            inheritedFromType: "DIRECT", // Only DIRECT permissions inherit
+          },
+          include: {
+            doc: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        });
+
+        // Add to inherited list if not already seen
+        for (const perm of parentGuestPerms) {
+          if (perm.guestCollaboratorId && !inheritedGuestIds.has(perm.guestCollaboratorId)) {
+            inheritedGuestIds.add(perm.guestCollaboratorId);
+            inheritedGuestPermissions.push(perm);
+          }
+        }
+
+        // Move to next parent
+        const parentDoc = await this.prisma.doc.findUnique({
+          where: { id: currentParentId },
+          select: { parentId: true },
+        });
+        currentParentId = parentDoc?.parentId || null;
+      }
+    }
+
+    // Merge direct and inherited permissions (similar to member shares)
+    // Track which guests have BOTH direct and inherited permissions (override case)
+    const directGuestMap = new Map(directGuestPermissions.map((p) => [p.guestCollaboratorId, p]));
+    const inheritedGuestMap = new Map(inheritedGuestPermissions.map((p) => [p.guestCollaboratorId, p]));
+
+    // Get all unique guest IDs
+    const guestIds = [...new Set([...directGuestMap.keys(), ...inheritedGuestMap.keys()].filter(Boolean))];
 
     if (guestIds.length === 0) {
       return [];
@@ -766,19 +938,54 @@ export class GuestCollaboratorsService {
       },
     });
 
-    // Create a map of guest permissions by guest ID
-    const permissionsByGuestId = new Map<string, typeof guestPermissions>();
-    guestPermissions.forEach((permission) => {
-      if (permission.guestCollaboratorId) {
-        if (!permissionsByGuestId.has(permission.guestCollaboratorId)) {
-          permissionsByGuestId.set(permission.guestCollaboratorId, []);
-        }
-        permissionsByGuestId.get(permission.guestCollaboratorId)!.push(permission);
-      }
-    });
-
     return guests.map((guest) => {
-      const permissions = permissionsByGuestId.get(guest.id) || [];
+      const directPermission = directGuestMap.get(guest.id);
+      const inheritedPermission = inheritedGuestMap.get(guest.id);
+
+      // Determine permission state
+      const hasDirectPermission = !!directPermission;
+      const hasInheritedPermission = !!inheritedPermission;
+      const isOverride = hasDirectPermission && hasInheritedPermission; // Guest has BOTH
+
+      // Effective permission (direct wins if both exist)
+      const effectivePermission = hasDirectPermission ? directPermission.permission : inheritedPermission?.permission;
+
+      // Permission source info
+      const permissionSource = hasDirectPermission
+        ? {
+            source: "direct" as const,
+            sourceDocId: directPermission.docId,
+            sourceDocTitle: directPermission.doc.title,
+            level: directPermission.permission,
+          }
+        : hasInheritedPermission
+          ? {
+              source: "inherited" as const,
+              sourceDocId: inheritedPermission.docId,
+              sourceDocTitle: inheritedPermission.doc.title,
+              level: inheritedPermission.permission,
+            }
+          : undefined;
+
+      // Parent permission source (for override tooltip)
+      const parentPermissionSource =
+        isOverride && inheritedPermission
+          ? {
+              source: "inherited" as const,
+              sourceDocId: inheritedPermission.docId,
+              sourceDocTitle: inheritedPermission.doc.title,
+              level: inheritedPermission.permission,
+            }
+          : undefined;
+
+      // Documents array (for backward compatibility)
+      const permissions = [directPermission, inheritedPermission].filter(Boolean) as typeof directGuestPermissions;
+      const documents = permissions.map((permission) => ({
+        documentId: permission.docId,
+        documentTitle: permission.doc.title,
+        permission: permission.permission,
+        createdAt: permission.createdAt,
+      }));
 
       return {
         id: guest.id,
@@ -790,12 +997,12 @@ export class GuestCollaboratorsService {
         createdAt: guest.createdAt,
         updatedAt: guest.updatedAt,
         invitedBy: guest.invitedBy,
-        documents: permissions.map((permission) => ({
-          documentId: permission.docId,
-          documentTitle: permission.doc.title,
-          permission: permission.permission,
-          createdAt: permission.createdAt,
-        })),
+        permission: effectivePermission, // Effective permission level
+        isInherited: hasInheritedPermission && !hasDirectPermission, // True only if ONLY inherited
+        hasParentPermission: isOverride, // True if has both direct and inherited (override case)
+        permissionSource, // Current permission source
+        parentPermissionSource, // Parent permission source (for overrides)
+        documents, // Backward compatibility
       };
     });
   }
@@ -832,9 +1039,12 @@ export class GuestCollaboratorsService {
 
     // 2. Permission migration in transaction
     await this.prisma.$transaction(async (tx) => {
-      // Fetch guest permissions
+      // Fetch guest permissions (both DIRECT and GUEST types)
       const guestPermissions = await tx.documentPermission.findMany({
-        where: { guestCollaboratorId: guestId, inheritedFromType: "GUEST" },
+        where: {
+          guestCollaboratorId: guestId,
+          OR: [{ inheritedFromType: "DIRECT" }, { inheritedFromType: "GUEST" }],
+        },
         include: { doc: true },
       });
 
@@ -845,7 +1055,7 @@ export class GuestCollaboratorsService {
         const workspaceMemberLevel = PermissionLevel.READ;
 
         if (this.comparePermissionLevels(perm.permission, workspaceMemberLevel) > 0) {
-          // Guest has higher permission - convert to DIRECT
+          // Guest has higher permission - convert/keep as DIRECT
           await tx.documentPermission.update({
             where: { id: perm.id },
             data: {

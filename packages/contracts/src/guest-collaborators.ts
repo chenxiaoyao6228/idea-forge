@@ -49,6 +49,25 @@ export const guestCollaboratorResponseSchema = z.object({
     email: z.string(),
     displayName: z.string().nullable(),
   }),
+  permission: PermissionLevelSchema.optional(), // Effective permission for the document
+  isInherited: z.boolean().optional(), // Flag indicating inherited-only permission (no direct permission)
+  hasParentPermission: z.boolean().optional(), // Flag indicating override (has both direct and inherited)
+  permissionSource: z
+    .object({
+      source: z.enum(["direct", "inherited"]),
+      sourceDocId: z.string().optional(),
+      sourceDocTitle: z.string().optional(),
+      level: PermissionLevelSchema.optional(),
+    })
+    .optional(), // Current permission source metadata
+  parentPermissionSource: z
+    .object({
+      source: z.literal("inherited"),
+      sourceDocId: z.string().optional(),
+      sourceDocTitle: z.string().optional(),
+      level: PermissionLevelSchema.optional(),
+    })
+    .optional(), // Parent permission source (for overrides)
   documents: z.array(
     z.object({
       documentId: z.string(),
