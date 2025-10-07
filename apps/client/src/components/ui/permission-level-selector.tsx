@@ -30,6 +30,8 @@ export function PermissionLevelSelector({
 }: PermissionLevelSelectorProps) {
   const { t } = useTranslation();
 
+  // Note: Permission operation text is also defined in guest-sharing-tab.tsx
+  // Keep these in sync or consider extracting to a shared hook if more components need this
   const permissionLevels = [
     {
       value: "NONE" as PermissionLevel,

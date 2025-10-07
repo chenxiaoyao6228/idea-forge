@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link, X, Plus, Users, UserCheck, RotateCcw, Info } from "lucide-react";
+import { Plus, Users, UserCheck, Info } from "lucide-react";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useWorkspaceStore from "@/stores/workspace-store";
@@ -34,6 +34,8 @@ import useSubSpaceStore from "@/stores/subspace-store";
 import { documentApi } from "@/apis/document";
 import { UpdateDocumentSubspacePermissionsDto } from "@idea/contracts";
 import useRequest from "@ahooksjs/use-request";
+import { useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
+import { CopyAccessLink } from "./copy-access-link";
 
 interface MemberSharingTabProps {
   documentId: string;
@@ -123,6 +125,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const { run: updatePermission } = useUpdateDocumentSharePermission(documentId);
   const { run: removeShare } = useRemoveDocumentShare(documentId);
   const { run: removeGroupShare } = useRemoveDocumentGroupShare(documentId);
+  const isGuestCollaborator = useIsGuestCollaborator();
 
   // Get subspace settings from store
   const subspaceSettings = useSubSpaceStore((state) => state.subspaceSettings);
@@ -212,12 +215,6 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
     }
 
     await updatePermission({ userId, permission });
-  };
-
-  const copyPageAccessLink = () => {
-    // Copy the current page URL from the browser address bar
-    navigator.clipboard.writeText(window.location.href);
-    toast.success(t("Link copied to clipboard"));
   };
 
   // Hook for updating document subspace permissions
@@ -328,6 +325,16 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
 
   if (!workspaceId) {
     return <div className="text-sm text-muted-foreground p-4">{t("No workspace selected")}</div>;
+  }
+
+  if (isGuestCollaborator) {
+    return (
+      <div className="space-y-4">
+        <div className="text-sm text-muted-foreground px-2 pt-2">{t("You are a guest collaborator and cannot manage members permissions")}</div>
+        <Separator />
+        <CopyAccessLink />
+      </div>
+    );
   }
 
   return (
@@ -625,12 +632,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
 
       {/* Link Sharing Section */}
 
-      <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-md transition-colors" onClick={copyPageAccessLink}>
-        <div className="text-sm  flex items-center gap-2 p-1 cursor-pointer">
-          <Link className="h-4 w-4" />
-          {t("Copy page access link")}
-        </div>
-      </div>
+      <CopyAccessLink />
     </div>
   );
 }
