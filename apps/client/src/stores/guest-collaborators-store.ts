@@ -191,18 +191,41 @@ export const useBatchInviteGuests = () => {
 
 // Hook for updating guest permissions
 export const useUpdateGuestPermission = () => {
-  const { run: fetchDocumentGuests } = useFetchDocumentGuests();
   const { run: updateGuestPermission, ...rest } = useRequest(
     async (params: { guestId: string } & UpdateGuestPermissionRequest) => {
       const { guestId, ...data } = params;
       try {
         const response = await guestCollaboratorsApi.updateGuestPermission(guestId, data);
-        // Update guest in store
-        updateGuest(guestId, response);
-        // Refresh document guests list if documentId is provided
-        if (data.documentId) {
-          fetchDocumentGuests(data.documentId);
-        }
+
+        // The API returns the guest with only the updated document in the documents array
+        // We need to merge this with existing documents in the store
+        useGuestCollaboratorsStore.setState((state) => {
+          const updatedGuests = state.guests.map((guest) => {
+            if (guest.id === guestId && response.documents && response.documents.length > 0) {
+              const updatedDoc = response.documents[0];
+              const existingDocIndex = guest.documents.findIndex((doc) => doc.documentId === updatedDoc.documentId);
+
+              let updatedDocuments: any;
+              if (existingDocIndex >= 0) {
+                // Update existing document
+                updatedDocuments = [...guest.documents];
+                updatedDocuments[existingDocIndex] = updatedDoc;
+              } else {
+                // Add new document
+                updatedDocuments = [...guest.documents, updatedDoc];
+              }
+
+              return {
+                ...guest,
+                ...response,
+                documents: updatedDocuments,
+              };
+            }
+            return guest;
+          });
+          return { guests: updatedGuests };
+        });
+
         toast.success("Permission updated successfully");
         return response;
       } catch (error) {

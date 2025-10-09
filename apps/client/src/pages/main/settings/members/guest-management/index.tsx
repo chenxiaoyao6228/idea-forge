@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useOrderedGuests, useFetchGuests, useUpdateGuestPermission, useRemoveGuestFromDocument, useRemoveGuest, usePromoteGuest } from "@/stores/guest-collaborators-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Search, Plus, Users } from "lucide-react";
 import { GuestCard } from "./guest-card";
 import { showInviteGuestDialog } from "./invite-guest-dialog";
 import useWorkspaceStore from "@/stores/workspace-store";
+import type { GuestCollaboratorResponse } from "@idea/contracts";
 
 export const GuestCollaboratorPanel = () => {
   const { t } = useTranslation();
@@ -35,9 +36,16 @@ export const GuestCollaboratorPanel = () => {
     fetchGuests();
   }, []);
 
-  const guests = orderedGuests.filter(
-    (guest) => !search || guest.email.toLowerCase().includes(search.toLowerCase()) || guest.name?.toLowerCase().includes(search.toLowerCase()),
-  );
+  const guests = useMemo(() => {
+    return orderedGuests.filter((guest: GuestCollaboratorResponse) => {
+      const searchTerm = search.trim().toLowerCase();
+      if (!searchTerm) return true;
+      return (
+        guest.email.toLowerCase().includes(searchTerm) ||
+        guest.name?.toLowerCase().includes(searchTerm)
+      );
+    });
+  }, [orderedGuests, search]);
 
   const handleUpdatePermission = async (guestId: string, documentId: string, permission: string) => {
     await updateGuestPermission({
@@ -79,7 +87,7 @@ export const GuestCollaboratorPanel = () => {
 
       {/* Guests grid */}
       <div className="grid gap-4 grid-cols-1">
-        {guests.map((guest) => (
+        {guests.map((guest: GuestCollaboratorResponse) => (
           <GuestCard
             key={guest.id}
             guest={guest}

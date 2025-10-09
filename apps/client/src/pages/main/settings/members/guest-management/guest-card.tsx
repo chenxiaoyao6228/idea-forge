@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, X, User, Mail, Calendar, FileText, MoreVertical, Trash2, UserPlus } from "lucide-react";
+import { ChevronDown, ChevronRight, User, Calendar, MoreVertical, Trash2, UserPlus } from "lucide-react";
 import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { GuestCollaboratorResponse } from "@idea/contracts";
 import { useTimeFormat } from "@/hooks/use-time-format";
@@ -98,15 +98,9 @@ export const GuestCard = ({ guest, onUpdatePermission, onRemoveDocumentAccess, o
                           value={doc.permission}
                           onChange={(permission) => onUpdatePermission(guest.id, doc.documentId, permission)}
                           className="w-32"
+                          showRemove={true}
+                          onRemove={() => onRemoveDocumentAccess(guest.id, doc.documentId, doc.documentTitle)}
                         />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onRemoveDocumentAccess(guest.id, doc.documentId, doc.documentTitle)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
                   ))}
