@@ -114,8 +114,6 @@ model User {
   authoredDocs     Doc[]      @relation("DocAuthor") // Documents created by user
   createdDocs      Doc[]      @relation("DocCreator") // Documents created by user
   lastModifiedDocs Doc[]      @relation("DocLastModifier") // Documents last modified by user
-  sharedDocs       DocShare[] @relation("SharedToUser") // Documents shared with user
-  docShare         DocShare[] // Documents shared by user
 
   // Version history
   docRevisions DocRevision[] // Document revision history
@@ -250,7 +248,6 @@ model Doc {
   children Doc[] @relation("DocToDoc")
 
   // sharing and permissions
-  docShare    DocShare[]
   permissions DocumentPermission[]
 
   // Subspace permission overrides (null means inherit from subspace)
@@ -409,39 +406,6 @@ enum GuestStatus {
   REVOKED
 }
 
-model DocShare {
-  id       String @id @default(cuid())
-  doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
-  docId    String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId String
-  sharedTo User   @relation("SharedToUser", fields: [userId], references: [id], onDelete: Cascade)
-  userId   String
-
-  permission PermissionLevel @default(READ)
-
-  // Key field: Support folder tree sharing
-  includeChildDocuments Boolean @default(false) // Whether to include child documents
-
-  // Share status control  
-  published Boolean   @default(false) // Whether publicly published
-  revokedAt DateTime? // Revocation time
-
-  // Access control  
-  expiresAt DateTime? // Expiration time
-  urlId     String? // Custom URL identifier
-
-  // Statistics  
-  viewCount      Int       @default(0) // Number of views
-  lastAccessedAt DateTime? // Last access time
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([docId, userId])
-  @@index([userId, createdAt])
-  @@index([docId, includeChildDocuments])
-}
 
 model Password {
   hash String

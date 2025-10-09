@@ -17,6 +17,7 @@ import useGuestCollaboratorsStore, {
 import { PermissionLevel } from "@idea/contracts";
 import { toast } from "sonner";
 import useUserStore from "@/stores/user-store";
+import { PublicSharingSection } from "./public-sharing-section";
 
 interface GuestSharingTabProps {
   documentId: string;
@@ -192,10 +193,10 @@ export function GuestSharingTab({ documentId }: GuestSharingTabProps) {
         )}
       </div>
 
-      {/* <Separator /> */}
+      <Separator />
 
       {/* Public Sharing Section */}
-      {/* <PublicSharingSection /> */}
+      <PublicSharingSection />
 
       <Separator />
       <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-md transition-colors" onClick={copyPageAccessLink}>

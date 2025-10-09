@@ -31,7 +31,6 @@ import { SocketModule } from "./_shared/socket/socket.module";
 import { QueueModule } from "./_shared/queues/queue.module";
 import { EventsModule } from "./_shared/events/events.module";
 import { StarModule } from "./star/star.module";
-import { DocShareModule } from "./doc-share/doc-share.module";
 import { GroupModule } from "./group/group.module";
 import { PermissionModule } from "./permission/permission.module";
 import { GuestCollaboratorsModule } from "./guest-collaborators/guest-collaborators.module";
@@ -88,7 +87,6 @@ import { HealthModule } from "./health/health.module";
     QueueModule,
     EventsModule,
     StarModule,
-    DocShareModule,
     GroupModule,
     PermissionModule,
     GuestCollaboratorsModule,
