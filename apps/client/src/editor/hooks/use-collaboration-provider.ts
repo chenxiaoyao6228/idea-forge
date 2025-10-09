@@ -26,9 +26,6 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
   const providerRef = useRef<HocuspocusProvider | null>(null);
 
   useEffect(() => {
-    if (!editable) {
-      return;
-    }
     setCurrentDocument(documentId);
     return () => {
       if (timeoutRef.current) {
@@ -37,10 +34,10 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       // Only reset if we're actually switching to a different document
       resetDocumentState(documentId);
     };
-  }, [documentId, editable, setCurrentDocument, resetDocumentState]);
+  }, [documentId, setCurrentDocument, resetDocumentState]);
 
   const provider = useMemo(() => {
-    if (!documentId || !editable) {
+    if (!documentId) {
       return null;
     }
 
@@ -124,11 +121,11 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
 
     providerRef.current = provider;
     return provider;
-  }, [documentId, editable, collabWsUrl, collabToken, t]);
+  }, [documentId, collabWsUrl, collabToken, t]);
 
   // Handle connection timeout
   useEffect(() => {
-    if (!editable || !provider) {
+    if (!provider) {
       return;
     }
     timeoutRef.current = setTimeout(() => {
@@ -145,11 +142,11 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [provider, documentId, editable, t]);
+  }, [provider, documentId, t]);
 
   // Initialize state and setup provider
   useEffect(() => {
-    if (!editable || !provider) return;
+    if (!provider) return;
 
     // Initialize collaboration state
     setCollaborationState(documentId, {
@@ -183,7 +180,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       provider.configuration.websocketProvider.disconnect();
       provider.disconnect();
     };
-  }, [documentId, provider, editable, user, setCollaborationState, setProvider]);
+  }, [documentId, provider, user, setCollaborationState, setProvider]);
 
   // Add disconnect detection
   useEffect(() => {

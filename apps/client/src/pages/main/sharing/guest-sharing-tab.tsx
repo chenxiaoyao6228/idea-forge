@@ -125,7 +125,7 @@ export function GuestSharingTab({ documentId }: GuestSharingTabProps) {
 
               const operationText = getOperationText(currentPermission, t);
 
-              // If current user is a guest, show plain text instead of permission selector
+              // If current user is a guest, show read-only view for ALL guests
               if (isGuestCollaborator) {
                 return (
                   <div key={guest.id} className="flex items-center gap-3 p-2 rounded-md border bg-card">
@@ -133,16 +133,18 @@ export function GuestSharingTab({ documentId }: GuestSharingTabProps) {
                       <AvatarFallback className="text-sm">{guest.email.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="text-muted-foreground">
+                      <div className="text-sm truncate">{guest.name || guest.email}</div>
+                      <div className="text-xs text-muted-foreground">
                         {isCurrentUser
                           ? t("You can {{operation}} this page", { operation: operationText })
-                          : t("{{name}} can {{operation}} this page", { name: guest.name || guest.email, operation: operationText })}
+                          : t("Can {{operation}} this page", { operation: operationText })}
                       </div>
                     </div>
                   </div>
                 );
               }
 
+              // Admin/member view - show permission controls
               return (
                 <TooltipProvider key={guest.id}>
                   <Tooltip>

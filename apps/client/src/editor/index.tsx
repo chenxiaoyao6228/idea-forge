@@ -168,27 +168,12 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
   window._editor = editor;
 
   // Add safety checks AFTER all hooks
-  if (!provider || !provider.document) {
+  if (!provider || !provider.document || !user || !editor || !id || !collabToken || !collabWsUrl) {
+    console.log("provider, user, editor, id, collabToken, collabWsUrl", provider, user, editor, id, collabToken, collabWsUrl);
     return (
       <div className="flex items-center justify-center h-64">
         <Skeleton className="h-8 w-32" />
-      </div>
-    );
-  }
-
-  if (!id || !collabToken || !collabWsUrl) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <p className="text-muted-foreground">Loading editor...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || !editor) {
-    return (
-      <div className="flex items-center justify-center h-64">
+        <Skeleton className="h-8 w-32" />
         <Skeleton className="h-8 w-32" />
       </div>
     );

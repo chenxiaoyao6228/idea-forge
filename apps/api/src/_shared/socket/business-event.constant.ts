@@ -40,6 +40,11 @@ export enum BusinessEvents {
   DOCUMENT_SHARED = "permission.document.shared",
   SUBSPACE_PERMISSION_UPDATED = "permission.subspace.updated",
   PERMISSION_INHERITANCE_CHANGED = "permission.inheritance.changed",
+  PERMISSION_OVERRIDE_CREATED = "permission.override.created",
+  PERMISSION_OVERRIDE_REMOVED = "permission.override.removed",
+  GROUP_PERMISSION_CHANGED = "permission.group.changed",
+  GUEST_PERMISSION_UPDATED = "permission.guest.updated",
+  GUEST_PERMISSION_INHERITED = "permission.guest.inherited",
 
   // Document collaboration events
   DOCUMENT_CREATE = "document.create",

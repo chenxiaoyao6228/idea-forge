@@ -78,10 +78,16 @@ export enum SocketEvents {
   DOCUMENT_SHARED = "permission.document.shared",
   SUBSPACE_PERMISSION_UPDATED = "permission.subspace.updated",
   PERMISSION_INHERITANCE_CHANGED = "permission.inheritance.changed",
+  PERMISSION_OVERRIDE_CREATED = "permission.override.created",
+  PERMISSION_OVERRIDE_REMOVED = "permission.override.removed",
+  GROUP_PERMISSION_CHANGED = "permission.group.changed",
+  GUEST_PERMISSION_UPDATED = "permission.guest.updated",
+  GUEST_PERMISSION_INHERITED = "permission.guest.inherited",
 
   GUEST_INVITED = "guest.invited",
   GUEST_ACCEPTED = "guest.accepted",
   GUEST_REMOVED = "guest.removed",
+  GUEST_PROMOTED = "guest.promoted",
 }
 
 // Interface for gateway message structure

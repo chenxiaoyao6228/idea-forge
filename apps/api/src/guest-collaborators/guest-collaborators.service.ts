@@ -15,12 +15,15 @@ import { GuestCollaboratorResponse, WorkspaceGuestsResponse, PromoteGuestToMembe
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { WorkspaceService } from "@/workspace/workspace.service";
+import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
+import { EventBatcher } from "@/_shared/queues/helpers/event-batcher";
 
 @Injectable()
 export class GuestCollaboratorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventPublisher: EventPublisherService,
+    private readonly eventDeduplicator: EventDeduplicator,
     @Inject(forwardRef(() => WorkspaceService))
     private readonly workspaceService: WorkspaceService,
   ) {}
@@ -181,6 +184,24 @@ export class GuestCollaboratorsService {
       });
     });
 
+    // Get all migrated permissions to find documents with children
+    const migratedPermissions = await this.prisma.documentPermission.findMany({
+      where: {
+        guestCollaboratorId: guestId,
+        userId: userId,
+        inheritedFromType: "DIRECT",
+      },
+      include: {
+        doc: {
+          select: {
+            id: true,
+            title: true,
+            workspaceId: true,
+          },
+        },
+      },
+    });
+
     // Publish WebSocket event
     await this.eventPublisher.publishWebsocketEvent({
       name: BusinessEvents.GUEST_ACCEPTED,
@@ -193,6 +214,57 @@ export class GuestCollaboratorsService {
       },
       timestamp: new Date().toISOString(),
     });
+
+    // For each migrated permission, check for child documents and publish inheritance events
+    for (const perm of migratedPermissions) {
+      // Query all child documents recursively
+      const childDocuments = await this.prisma.$queryRaw<Array<{ id: string; title: string }>>`
+        WITH RECURSIVE child_docs AS (
+          -- Base case: direct children
+          SELECT id, title, "parentId"
+          FROM "Doc"
+          WHERE "parentId" = ${perm.docId}
+
+          UNION ALL
+
+          -- Recursive case: children of children
+          SELECT d.id, d.title, d."parentId"
+          FROM "Doc" d
+          INNER JOIN child_docs cd ON d."parentId" = cd.id
+        )
+        SELECT id, title FROM child_docs
+        LIMIT 1000
+      `;
+
+      if (childDocuments.length > 0) {
+        // Batch child document IDs (max 50 per batch)
+        const batches = EventBatcher.batchDocuments(childDocuments.map((c) => c.id));
+
+        for (const batch of batches) {
+          await this.eventDeduplicator.deduplicate(
+            BusinessEvents.GUEST_PERMISSION_INHERITED,
+            {
+              userId: userId,
+              docId: perm.docId, // Use parent doc ID as dedup key
+              guestId,
+              batchSequence: batch.batchSequence,
+              batchIndex: batch.batchIndex,
+              totalBatches: batch.totalBatches,
+              newlyAccessibleDocIds: batch.data,
+            },
+            async (finalEvent) => {
+              await this.eventPublisher.publishWebsocketEvent({
+                name: BusinessEvents.GUEST_PERMISSION_INHERITED,
+                workspaceId: guest.workspaceId,
+                actorId: userId,
+                data: finalEvent,
+                timestamp: new Date().toISOString(),
+              });
+            },
+          );
+        }
+      }
+    }
 
     return { message: "Invitation accepted successfully" };
   }
@@ -670,6 +742,49 @@ export class GuestCollaboratorsService {
     if (!updatedPermission) {
       throw new ApiException(ErrorCodeEnum.ResourceNotFound);
     }
+
+    // Publish GUEST_PERMISSION_UPDATED event (with deduplication)
+    // Publish to the linked guest user (if exists) AND the admin who made the change
+    const eventData = {
+      guestId,
+      docId: documentId,
+      document: updatedPermission.doc,
+      permission: updatedPermission.permission,
+      isOverride: existingPermission !== null, // True if updating existing permission
+    };
+
+    // Notify the linked guest user if they exist
+    if (guest.userId) {
+      await this.eventDeduplicator.deduplicate(
+        BusinessEvents.GUEST_PERMISSION_UPDATED,
+        {
+          userId: guest.userId,
+          ...eventData,
+        },
+        async (finalEvent) => {
+          await this.eventPublisher.publishWebsocketEvent({
+            name: BusinessEvents.GUEST_PERMISSION_UPDATED,
+            workspaceId: guest.workspace.id,
+            actorId: userId,
+            data: finalEvent,
+            timestamp: new Date().toISOString(),
+          });
+        },
+      );
+    }
+
+    // ALSO notify the admin who made the change (for guest-sharing-tab update)
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.GUEST_PERMISSION_UPDATED,
+      workspaceId: guest.workspace.id,
+      actorId: userId, // The admin making the change
+      data: {
+        ...eventData,
+        guestEmail: guest.email, // Include email for display
+        guestName: guest.name,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     // Return guest with only the current document permission
     return {

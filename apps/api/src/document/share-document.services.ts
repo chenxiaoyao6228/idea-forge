@@ -8,6 +8,8 @@ import { EventPublisherService } from "@/_shared/events/event-publisher.service"
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import type { DocumentPermission, Prisma } from "@prisma/client";
+import { EventBatcher } from "@/_shared/queues/helpers/event-batcher";
+import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
 
 // Type definitions for internal use
 type DocContext = {
@@ -106,6 +108,7 @@ export class ShareDocumentService {
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly docPermissionResolveService: DocPermissionResolveService,
+    private readonly eventDeduplicator: EventDeduplicator,
   ) {}
 
   async getSharedWithMeDocuments(
@@ -296,6 +299,19 @@ export class ShareDocumentService {
     // 4. Batch grant permissions to users
     if (dto.targetUserIds && dto.targetUserIds.length > 0) {
       for (const targetUserId of dto.targetUserIds) {
+        // Check if user has inherited permission from parent (for override detection)
+        const inheritedPermission = await this.docPermissionResolveService.resolveUserPermissionForDocument(targetUserId, {
+          id: docId,
+          workspaceId: doc.workspaceId,
+          parentId: doc.parentId,
+          subspaceId: doc.subspaceId || undefined,
+        });
+
+        const hasInheritedPermission =
+          inheritedPermission &&
+          inheritedPermission.source !== "direct" &&
+          inheritedPermission.sourceDocId !== docId;
+
         // Remove any existing permissions for this user to avoid duplicates
         await this.prismaService.documentPermission.deleteMany({
           where: {
@@ -317,6 +333,31 @@ export class ShareDocumentService {
         });
         createdPermissions.push(perm);
 
+        // Publish PERMISSION_OVERRIDE_CREATED if user had inherited permission
+        if (hasInheritedPermission && inheritedPermission) {
+          await this.eventDeduplicator.deduplicate(
+            BusinessEvents.PERMISSION_OVERRIDE_CREATED,
+            {
+              userId: targetUserId,
+              docId: docId,
+              document: doc,
+              permission: dto.permission,
+              overriddenPermission: inheritedPermission.level,
+              parentDocId: inheritedPermission.sourceDocId || "",
+              parentDocTitle: inheritedPermission.sourceDocTitle || "",
+            },
+            async (finalEvent) => {
+              await this.eventPublisher.publishWebsocketEvent({
+                name: BusinessEvents.PERMISSION_OVERRIDE_CREATED,
+                workspaceId: doc.workspaceId,
+                actorId: userId,
+                data: finalEvent,
+                timestamp: new Date().toISOString(),
+              });
+            },
+          );
+        }
+
         // Invalidate permission cache for the target user
         // this.permissionContextService.invalidatePermissionCache(targetUserId, ReinheritedFromType.DOCUMENT, docId);
       }
@@ -332,6 +373,8 @@ export class ShareDocumentService {
           where: { groupId: targetGroupId },
           include: { user: true },
         });
+
+        const affectedGroupUserIds: string[] = [];
 
         // Create permissions for each group member
         for (const member of groupMembers) {
@@ -361,6 +404,7 @@ export class ShareDocumentService {
                 },
               });
               createdPermissions.push(updatedPerm);
+              affectedGroupUserIds.push(member.userId);
             }
             // If existing level is higher or equal, skip (keep existing)
           } else {
@@ -376,15 +420,41 @@ export class ShareDocumentService {
               },
             });
             createdPermissions.push(perm);
+            affectedGroupUserIds.push(member.userId);
           }
 
           // Invalidate permission cache for the group member
           // this.permissionContextService.invalidatePermissionCache(member.userId, ReinheritedFromType.DOCUMENT, docId);
         }
+
+        // Publish GROUP_PERMISSION_CHANGED event for affected group members
+        if (affectedGroupUserIds.length > 0) {
+          for (const affectedUserId of affectedGroupUserIds) {
+            await this.eventDeduplicator.deduplicate(
+              BusinessEvents.GROUP_PERMISSION_CHANGED,
+              {
+                userId: affectedUserId,
+                docId: docId,
+                groupId: targetGroupId,
+                document: doc,
+                permission: dto.permission,
+                affectedUserIds: [affectedUserId],
+                includesChildren: dto.includeChildDocuments || false,
+              },
+              async (finalEvent) => {
+                await this.eventPublisher.publishWebsocketEvent({
+                  name: BusinessEvents.GROUP_PERMISSION_CHANGED,
+                  workspaceId: doc.workspaceId,
+                  actorId: userId,
+                  data: finalEvent,
+                  timestamp: new Date().toISOString(),
+                });
+              },
+            );
+          }
+        }
       }
     }
-
-    // Child document inheritance is resolved on-demand, so includeChildDocuments requires no extra writes.
 
     // 6. Send WebSocket notifications to newly shared users
     const allSharedUserIds = new Set<string>();
@@ -415,6 +485,47 @@ export class ShareDocumentService {
         },
         timestamp: new Date().toISOString(),
       });
+    }
+
+    // 7. If includeChildDocuments, notify about child document access via batched events
+    if (dto.includeChildDocuments && allSharedUserIds.size > 0) {
+      // Query all child documents recursively
+      const childDocuments = await this.prismaService.$queryRaw<Array<{ id: string; title: string }>>`
+        WITH RECURSIVE child_docs AS (
+          -- Base case: direct children
+          SELECT id, title, "parentId"
+          FROM "Doc"
+          WHERE "parentId" = ${docId}
+
+          UNION ALL
+
+          -- Recursive case: children of children
+          SELECT d.id, d.title, d."parentId"
+          FROM "Doc" d
+          INNER JOIN child_docs cd ON d."parentId" = cd.id
+        )
+        SELECT id, title FROM child_docs
+        LIMIT 1000
+      `;
+
+      if (childDocuments.length > 0) {
+        // Build affected documents array
+        const affectedDocuments = childDocuments.map((child) => ({
+          docId: child.id,
+          oldPermission: null,
+          newPermission: dto.permission,
+        }));
+
+        // Publish batched permission inheritance events
+        await this.publishBatchedPermissionInheritanceEvents({
+          affectedDocuments,
+          affectedUserIds: Array.from(allSharedUserIds),
+          workspaceId: doc.workspaceId,
+          changeType: "added",
+          parentDocId: docId,
+          parentDocTitle: doc.title,
+        });
+      }
     }
 
     return this.getDocumentCollaborators(docId, userId);
@@ -900,6 +1011,19 @@ export class ShareDocumentService {
 
     if (!doc) throw new NotFoundException("Document not found");
 
+    // Check if user has inherited permission from parent (for override detection)
+    const inheritedPermission = await this.docPermissionResolveService.resolveUserPermissionForDocument(dto.targetUserId, {
+      id: id,
+      workspaceId: doc.workspaceId,
+      parentId: doc.parentId,
+      subspaceId: doc.subspaceId || undefined,
+    });
+
+    const hasInheritedPermission =
+      inheritedPermission &&
+      inheritedPermission.source !== "direct" &&
+      inheritedPermission.sourceDocId !== id;
+
     // Remove ALL permissions for this user from DocumentPermission table (handles duplicates)
     await this.prismaService.documentPermission.deleteMany({
       where: {
@@ -909,18 +1033,83 @@ export class ShareDocumentService {
       },
     });
 
-    // Send websocket notification to the user whose access was revoked
-    await this.eventPublisher.publishWebsocketEvent({
-      name: BusinessEvents.ACCESS_REVOKED,
-      workspaceId: doc.workspaceId,
-      actorId: userId,
-      data: {
-        docId: id,
-        revokedUserId: dto.targetUserId,
-        revokedByUserId: userId,
-      },
-      timestamp: new Date().toISOString(),
-    });
+    // Publish PERMISSION_OVERRIDE_REMOVED if user has parent permission (restore inherited)
+    if (hasInheritedPermission && inheritedPermission) {
+      await this.eventDeduplicator.deduplicate(
+        BusinessEvents.PERMISSION_OVERRIDE_REMOVED,
+        {
+          userId: dto.targetUserId,
+          docId: id,
+          document: doc,
+          restoredPermission: inheritedPermission.level,
+          parentDocId: inheritedPermission.sourceDocId || "",
+          parentDocTitle: inheritedPermission.sourceDocTitle || "",
+        },
+        async (finalEvent) => {
+          await this.eventPublisher.publishWebsocketEvent({
+            name: BusinessEvents.PERMISSION_OVERRIDE_REMOVED,
+            workspaceId: doc.workspaceId,
+            actorId: userId,
+            data: finalEvent,
+            timestamp: new Date().toISOString(),
+          });
+        },
+      );
+    } else {
+      // No parent permission, user loses complete access
+      // Send websocket notification to the user whose access was revoked
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.ACCESS_REVOKED,
+        workspaceId: doc.workspaceId,
+        actorId: userId,
+        data: {
+          docId: id,
+          revokedUserId: dto.targetUserId,
+          revokedByUserId: userId,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Notify about child document access removal via batched events
+    // Query all child documents that the user will lose access to
+    const childDocuments = await this.prismaService.$queryRaw<Array<{ id: string; title: string }>>`
+      WITH RECURSIVE child_docs AS (
+        -- Base case: direct children
+        SELECT id, title, "parentId"
+        FROM "Doc"
+        WHERE "parentId" = ${id}
+
+        UNION ALL
+
+        -- Recursive case: children of children
+        SELECT d.id, d.title, d."parentId"
+        FROM "Doc" d
+        INNER JOIN child_docs cd ON d."parentId" = cd.id
+      )
+      SELECT id, title FROM child_docs
+      LIMIT 1000
+    `;
+
+    if (childDocuments.length > 0) {
+      // Check if user still has access through other means (parent permissions, group permissions, etc.)
+      // For simplicity, we'll assume they lose access to children if they lose parent access
+      const affectedDocuments = childDocuments.map((child) => ({
+        docId: child.id,
+        oldPermission: null, // We'd need to query this, but for now assume they had some access
+        newPermission: null,
+      }));
+
+      // Publish batched permission inheritance events
+      await this.publishBatchedPermissionInheritanceEvents({
+        affectedDocuments,
+        affectedUserIds: [dto.targetUserId],
+        workspaceId: doc.workspaceId,
+        changeType: "removed",
+        parentDocId: id,
+        parentDocTitle: doc.title,
+      });
+    }
 
     return this.getDocumentCollaborators(id, userId);
   }
@@ -970,12 +1159,24 @@ export class ShareDocumentService {
     if (dto.groupId) {
       // Update GROUP permission by re-sharing with updated permission level
       // This handles both creating new permissions and updating existing ones
+      // The shareDocument() function will publish GROUP_PERMISSION_CHANGED events
       await this.shareDocument(userId, id, {
         workspaceId: doc.workspaceId,
         targetGroupIds: [dto.groupId],
         permission: dto.permission,
       });
     } else if (dto.userId) {
+      // Check if user has inherited permission (for override detection)
+      const inheritedPermission = await this.docPermissionResolveService.resolveUserPermissionForDocument(dto.userId, {
+        id: id,
+        workspaceId: doc.workspaceId,
+        parentId: doc.parentId,
+        subspaceId: doc.subspaceId || undefined,
+      });
+
+      const hadInheritedPermission =
+        inheritedPermission && inheritedPermission.source !== "direct" && inheritedPermission.sourceDocId !== id;
+
       // Update DIRECT user permission
       await this.prismaService.documentPermission.deleteMany({
         where: {
@@ -996,8 +1197,115 @@ export class ShareDocumentService {
           createdById: userId,
         },
       });
+
+      // Publish PERMISSION_OVERRIDE_CREATED if updating creates an override
+      if (hadInheritedPermission && inheritedPermission) {
+        await this.eventDeduplicator.deduplicate(
+          BusinessEvents.PERMISSION_OVERRIDE_CREATED,
+          {
+            userId: dto.userId,
+            docId: id,
+            document: doc,
+            permission: dto.permission,
+            overriddenPermission: inheritedPermission.level,
+            parentDocId: inheritedPermission.sourceDocId || "",
+            parentDocTitle: inheritedPermission.sourceDocTitle || "",
+          },
+          async (finalEvent) => {
+            await this.eventPublisher.publishWebsocketEvent({
+              name: BusinessEvents.PERMISSION_OVERRIDE_CREATED,
+              workspaceId: doc.workspaceId,
+              actorId: userId,
+              data: finalEvent,
+              timestamp: new Date().toISOString(),
+            });
+          },
+        );
+      } else {
+        // No inherited permission - just a regular permission update
+        // Publish a generic permission updated event to notify the affected user
+        await this.eventPublisher.publishWebsocketEvent({
+          name: BusinessEvents.DOCUMENT_SHARED,
+          workspaceId: doc.workspaceId,
+          actorId: userId,
+          data: {
+            docId: id,
+            sharedUserId: dto.userId,
+            document: doc,
+            permission: dto.permission,
+            shareType: "DIRECT",
+            sharedByUserId: userId,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     return this.getDocumentCollaborators(id, userId);
+  }
+
+  /**
+   * Helper method to publish batched permission inheritance events
+   * Uses EventBatcher to split large document sets into batches of 50
+   * Uses EventDeduplicator to merge rapid duplicate events
+   *
+   * @param affectedDocuments - Array of documents with permission changes
+   * @param affectedUserIds - User IDs to notify
+   * @param workspaceId - Workspace ID
+   * @param changeType - Type of change: "added", "removed", "updated"
+   * @param parentDocId - Parent document ID that triggered the change
+   * @param parentDocTitle - Parent document title
+   */
+  private async publishBatchedPermissionInheritanceEvents(params: {
+    affectedDocuments: Array<{
+      docId: string;
+      oldPermission: string | null;
+      newPermission: string | null;
+    }>;
+    affectedUserIds: string[];
+    workspaceId: string;
+    changeType: "added" | "removed" | "updated";
+    parentDocId: string;
+    parentDocTitle: string;
+  }): Promise<void> {
+    const { affectedDocuments, affectedUserIds, workspaceId, changeType, parentDocId, parentDocTitle } = params;
+
+    // Batch documents into groups of 50
+    const batches = EventBatcher.batchDocuments(affectedDocuments);
+
+    // Publish each batch
+    for (const batch of batches) {
+      // For each affected user, publish with deduplication
+      for (const userId of affectedUserIds) {
+        const eventData = {
+          userId,
+          docId: parentDocId,
+          batchSequence: batch.batchSequence,
+          batchIndex: batch.batchIndex,
+          totalBatches: batch.totalBatches,
+          affectedDocuments: batch.data,
+          affectedUserIds: [userId],
+          changeType,
+          parentDocId,
+          parentDocTitle,
+        };
+
+        // Use deduplicator to merge rapid duplicate events
+        await this.eventDeduplicator.deduplicate(
+          BusinessEvents.PERMISSION_INHERITANCE_CHANGED,
+          eventData,
+          async (finalEvent) => {
+            // Publish the final merged event
+            await this.eventPublisher.publishWebsocketEvent({
+              name: BusinessEvents.PERMISSION_INHERITANCE_CHANGED,
+              workspaceId,
+              actorId: userId,
+              data: finalEvent,
+              timestamp: new Date().toISOString(),
+            });
+          },
+        );
+      }
+    }
   }
 }

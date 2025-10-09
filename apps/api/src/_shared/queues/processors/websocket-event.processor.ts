@@ -116,6 +116,24 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.GUEST_PROMOTED:
           await this.handleGuestPromotedEvent(event, server);
           break;
+        case BusinessEvents.PERMISSION_INHERITANCE_CHANGED:
+          await this.handlePermissionInheritanceChangedEvent(event, server);
+          break;
+        case BusinessEvents.PERMISSION_OVERRIDE_CREATED:
+          await this.handlePermissionOverrideCreatedEvent(event, server);
+          break;
+        case BusinessEvents.PERMISSION_OVERRIDE_REMOVED:
+          await this.handlePermissionOverrideRemovedEvent(event, server);
+          break;
+        case BusinessEvents.GROUP_PERMISSION_CHANGED:
+          await this.handleGroupPermissionChangedEvent(event, server);
+          break;
+        case BusinessEvents.GUEST_PERMISSION_UPDATED:
+          await this.handleGuestPermissionUpdatedEvent(event, server);
+          break;
+        case BusinessEvents.GUEST_PERMISSION_INHERITED:
+          await this.handleGuestPermissionInheritedEvent(event, server);
+          break;
       }
     } catch (error) {
       console.error(`Error processing websocket event: ${event.name}`, error);
@@ -698,5 +716,130 @@ export class WebsocketEventProcessor extends WorkerHost {
       promotedByUserId,
       newRole,
     });
+  }
+
+  /**
+   * Handle permission inheritance changed event (batched)
+   * Notifies users about permission changes on documents they have access to
+   */
+  private async handlePermissionInheritanceChangedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { batchSequence, batchIndex, totalBatches, affectedDocuments, affectedUserIds, changeType, parentDocId, parentDocTitle } = data;
+
+    // Notify each affected user about permission changes (with batch metadata)
+    for (const userId of affectedUserIds) {
+      server.to(`user:${userId}`).emit(BusinessEvents.PERMISSION_INHERITANCE_CHANGED, {
+        batchSequence, // For client ordering
+        batchIndex, // Current batch number
+        totalBatches, // Total batches to expect
+        affectedDocuments, // Max 50 documents
+        changeType,
+        parentDocId,
+        parentDocTitle,
+      });
+    }
+  }
+
+  /**
+   * Handle permission override created event
+   * Notifies user when they receive a direct permission that overrides inherited permission
+   */
+  private async handlePermissionOverrideCreatedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { userId, docId, document, permission, overriddenPermission, parentDocId, parentDocTitle } = data;
+
+    // Notify the user about their permission override
+    server.to(`user:${userId}`).emit(BusinessEvents.PERMISSION_OVERRIDE_CREATED, {
+      docId,
+      document,
+      permission,
+      overriddenPermission,
+      parentDocId,
+      parentDocTitle,
+    });
+  }
+
+  /**
+   * Handle permission override removed event
+   * Notifies user when their direct permission is removed and inherited permission is restored
+   */
+  private async handlePermissionOverrideRemovedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { userId, docId, document, restoredPermission, parentDocId, parentDocTitle } = data;
+
+    // Notify the user that their permission was restored to inherited
+    server.to(`user:${userId}`).emit(BusinessEvents.PERMISSION_OVERRIDE_REMOVED, {
+      docId,
+      document,
+      restoredPermission,
+      parentDocId,
+      parentDocTitle,
+    });
+  }
+
+  /**
+   * Handle group permission changed event
+   * Notifies group members about permission changes
+   */
+  private async handleGroupPermissionChangedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { userId, groupId, docId, document, permission, includesChildren } = data;
+
+    // Notify the user about group permission change
+    server.to(`user:${userId}`).emit(BusinessEvents.GROUP_PERMISSION_CHANGED, {
+      groupId,
+      docId,
+      document,
+      permission,
+      includesChildren,
+    });
+  }
+
+  /**
+   * Handle guest permission updated event
+   * Notifies linked guest user AND the actor (admin) who made the change
+   */
+  private async handleGuestPermissionUpdatedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, actorId } = event;
+    const { guestId, userId, docId, document, permission, isOverride, guestEmail, guestName } = data;
+
+    const eventPayload = {
+      guestId,
+      docId,
+      document,
+      permission,
+      isOverride,
+      guestEmail,
+      guestName,
+    };
+
+    // Emit to the linked guest user (if exists)
+    if (userId) {
+      server.to(`user:${userId}`).emit(BusinessEvents.GUEST_PERMISSION_UPDATED, eventPayload);
+    }
+
+    // ALSO emit to the admin who made the change (for guest-sharing-tab update)
+    if (actorId && actorId !== userId) {
+      server.to(`user:${actorId}`).emit(BusinessEvents.GUEST_PERMISSION_UPDATED, eventPayload);
+    }
+  }
+
+  /**
+   * Handle guest permission inherited event (batched)
+   * Notifies newly activated guest about child documents they can now access
+   */
+  private async handleGuestPermissionInheritedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { guestId, userId, batchSequence, batchIndex, totalBatches, newlyAccessibleDocIds } = data;
+
+    if (userId) {
+      server.to(`user:${userId}`).emit(BusinessEvents.GUEST_PERMISSION_INHERITED, {
+        guestId,
+        batchSequence, // For client ordering
+        batchIndex, // Current batch
+        totalBatches, // Total batches
+        newlyAccessibleDocIds, // Max 50 document IDs per batch
+      });
+    }
   }
 }
