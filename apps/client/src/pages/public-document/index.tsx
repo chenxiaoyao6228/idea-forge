@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { publicShareApi } from "@/apis/public-share";
 import { Button } from "@/components/ui/button";
 import { Home, AlertCircle } from "lucide-react";
@@ -43,6 +44,7 @@ export default function PublicDocument() {
   const { token, docId } = useParams<{ token: string; docId?: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [data, setData] = useState<PublicDocumentResponseWithTree | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,18 @@ export default function PublicDocument() {
   // Table of Contents state
   const [tocItems, setTocItems] = useState<TableOfContentDataItem[]>([]);
   const [editor, setEditor] = useState<Editor | null>(null);
+
+  // Show notification if redirected from discovery
+  useEffect(() => {
+    if (searchParams.get("discovered") === "true") {
+      toast.info(t("You were redirected to the public version of this document"), {
+        duration: 5000,
+      });
+      // Remove the query parameter to clean up URL
+      searchParams.delete("discovered");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, t]);
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -76,11 +90,6 @@ export default function PublicDocument() {
 
     fetchDocument();
   }, [token, docId]);
-
-  // Loading state
-  if (loading) {
-    return <Loading fullScreen size="lg" />;
-  }
 
   // Error states
   if (error) {
@@ -126,7 +135,7 @@ export default function PublicDocument() {
       )}
 
       {/* Main Content Area */}
-      <SidebarInset id="PUBLIC_DOC_SCROLL_CONTAINER">
+      <SidebarInset id="PUBLIC_DOC_SCROLL_CONTAINER" className="relative">
         {/* Header */}
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-14 items-center justify-between px-6">
@@ -187,6 +196,7 @@ export default function PublicDocument() {
 
         {/* Scroll to Top Button (reused from authenticated view) */}
         <BackToTop />
+        {loading && <Loading fullScreen size="lg" id="public-document-loading" className="absolute top-0 left-0 w-full h-full" />}
       </SidebarInset>
     </SidebarProvider>
   );

@@ -95,7 +95,7 @@ export class DocumentController {
   // TODO:
   // @Post(":id/share-public")
 
-  //   // ============== cover =======================
+  // ============== cover =======================
   @Patch(":id/cover")
   async uploadCover(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: UpdateCoverDto) {
     return this.documentService.updateCover(id, userId, dto);

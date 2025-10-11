@@ -24,7 +24,8 @@ interface Manifest {
 // https://stackoverflow.com/questions/55335096/excluding-all-api-routes-in-nest-js-to-serve-react-app
 @Injectable()
 export class FallbackMiddleware implements NestMiddleware {
-  private static readonly SKIP_AUTH_PATHS = ["/marketing", "/login", "/register", "/verify", "/reset-password", "/forgot-password", "/auth-callback", "/public"];
+  // Routes that don't require authentication (public routes)
+  private static readonly SKIP_AUTH_PATHS = ["/marketing", "/login", "/register", "/verify", "/reset-password", "/forgot-password", "/auth-callback", "/share"];
   private static readonly STATIC_ASSETS_REGEX = /\.(jpg|jpeg|png|gif|ico|css|js|json|svg|mp3|mp4|wav|ogg|ttf|woff|woff2|eot|html|txt)$/;
   private static readonly API_PATH = "/api";
   private static readonly STACK_FRAME_PATH = "/__open-stack-frame-in-editor";
@@ -53,6 +54,8 @@ export class FallbackMiddleware implements NestMiddleware {
   }
 
   private shouldSkipProcessing(req: Request): boolean {
+    // Only skip API routes and static assets
+    // All client-side routes (including /share, /login, etc.) should serve the SPA
     return (
       req.url.includes(FallbackMiddleware.API_PATH) ||
       req.url.includes(FallbackMiddleware.STACK_FRAME_PATH) ||
@@ -78,9 +81,9 @@ export class FallbackMiddleware implements NestMiddleware {
     const vitePort = this.configService.get("PORT", 5173);
 
     // Only get user info if not on skipAuthPaths
-    const needAuth = !FallbackMiddleware.SKIP_AUTH_PATHS.some((path) => req.url.includes(path));
+    const needAuth = !FallbackMiddleware.SKIP_AUTH_PATHS.some((path) => req.url.startsWith(path));
 
-    console.log("====renderApp==== needAuth", needAuth);
+    console.log("====renderApp==== req.url:", req.url, "needAuth:", needAuth);
 
     const { accessToken, refreshToken } = req.cookies;
 

@@ -1,6 +1,6 @@
 export function presentPublicShare(share: any) {
   const baseUrl = process.env.CLIENT_APP_URL || "http://localhost:5000";
-  const url = share.urlId ? `${baseUrl}/public/${share.urlId}` : `${baseUrl}/public/${share.token}`;
+  const url = share.urlId ? `${baseUrl}/share/${share.urlId}` : `${baseUrl}/share/${share.token}`;
 
   return {
     id: share.id,

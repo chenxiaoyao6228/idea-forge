@@ -7,6 +7,10 @@
 
 Enable users to share documents publicly via unguessable URLs without requiring authentication. Anonymous viewers access documents in read-only mode via TipTap editor. The feature supports hierarchical document navigation (parent-child relationships), expiration settings, view analytics, and real-time updates for authenticated collaborators. Implementation uses a hybrid component architecture: reuse TipTap editor for rendering consistency, but maintain separate public layout/navigation for security isolation.
 
+**MVP Features (from decisions)**:
+1. **Smart Share Link Discovery**: Auto-redirect unauthenticated users from workspace/document URLs to public share URLs when available
+2. **Differentiated Headers**: Display different header elements for authenticated vs unauthenticated users with workspace navigation options
+
 **Key Technical Decisions (from clarifications)**:
 - Render using TipTap editor in read-only mode (security + consistency)
 - Show banner for authenticated users with "Open in workspace" option
@@ -17,6 +21,7 @@ Enable users to share documents publicly via unguessable URLs without requiring 
 - **Shadcn/UI integration** (use existing Sidebar components, useScrollTop hook for consistency)
 - **Enhanced reading experience** (TOC with IntersectionObserver, scroll-to-top button)
 - **Hierarchical API responses** (backend returns nested tree structure directly)
+- **Hybrid routing approach** (server-side interception + client-side fallback for SPA routes)
 
 ## Technical Context
 
@@ -37,6 +42,7 @@ Enable users to share documents publicly via unguessable URLs without requiring 
 
 **Constraints**:
 - Rate limiting: 100 requests/minute per IP on public endpoints
+- Discovery endpoint rate limiting: 10 requests/minute per IP (stricter to prevent enumeration)
 - Bot filtering for view counts (using `isbot` library)
 - No IP logging or cookies in Phase 1 (privacy-first)
 - Public documents must use noindex meta tags (Phase 1)
@@ -129,13 +135,17 @@ apps/
 │   ├── public-share/                    # New module
 │   │   ├── public-share.module.ts       # NestJS module definition
 │   │   ├── public-share.controller.ts   # Routes: /api/public-shares/*, /public/*
-│   │   ├── public-share.service.ts      # Business logic
+│   │   ├── public-share.service.ts      # Business logic + findByDocId() method
 │   │   ├── public-share.dto.ts          # DTOs (from @idea/contracts)
 │   │   ├── public-share.presenter.ts    # Response transformation
 │   │   ├── public-share.types.ts        # Internal types
 │   │   └── __tests__/
 │   │       ├── public-share.service.unit.test.ts
 │   │       └── public-share.controller.int.test.ts
+│   ├── middleware/                      # New for Smart Discovery
+│   │   └── public-share-discovery.middleware.ts  # Server-side URL detection
+│   ├── document/                        # Extended for discovery
+│   │   └── document.controller.ts       # Add discovery endpoint
 │   ├── prisma/
 │   │   └── schema.prisma                # Add PublicShare model
 │   └── _shared/
@@ -146,26 +156,35 @@ apps/
 │   ├── pages/
 │   │   ├── main/sharing/
 │   │   │   └── public-sharing-section.tsx  # Update with API integration
+│   │   ├── document/                       # Updated for discovery
+│   │   │   └── index.tsx                   # Add usePublicShareDiscovery hook
 │   │   └── public-document/
-│   │       ├── index.tsx                    # New public document page
+│   │       ├── index.tsx                    # Public page + notification handling
 │   │       ├── public-layout.tsx            # New layout component
+│   │       ├── public-header.tsx            # Differentiated header component
+│   │       ├── user-dropdown.tsx            # Auth/unauth dropdown logic
 │   │       ├── public-sidebar.tsx           # New navigation sidebar
-│   │       └── authenticated-banner.tsx     # Banner for logged-in users
+│   │       ├── authenticated-banner.tsx     # Banner for logged-in users
+│   │       └── discovery-loading.tsx        # Loading state for discovery
 │   ├── stores/
 │   │   └── public-share-store.ts            # New Zustand store
 │   ├── hooks/
+│   │   ├── use-public-share-discovery.ts    # New discovery hook
 │   │   └── websocket/
 │   │       └── public-share-events.ts       # WebSocket event handlers
 │   ├── apis/
-│   │   └── public-share.ts                  # API client
+│   │   └── public-share.ts                  # API client + checkDiscovery()
 │   └── router/
 │       └── index.tsx                        # Add /public/:token routes
 │
 └── packages/contracts/src/
-    └── public-share.ts                      # New Zod schemas & types
+    ├── public-share.ts                      # Zod schemas + discovery response
+    └── utils/
+        └── document-validators.ts           # CUID validation helpers
 
 tests/e2e/
-└── public-share.e2e.test.ts                 # E2E tests
+├── public-share.e2e.test.ts                 # E2E tests
+└── public-share-discovery.e2e.test.ts       # Discovery-specific E2E tests
 ```
 
 **Structure Decision**: Web application (Option 2) with monorepo structure. Backend and frontend are in separate `apps/` directories. Shared contracts in `packages/` directory. This aligns with Idea Forge's existing monorepo architecture using Turbo and pnpm workspaces.
@@ -179,4 +198,19 @@ tests/e2e/
 - **Separate PublicShare model**: Clean separation from existing DocShare/GuestCollaborator systems (modularity)
 - **No published field**: Simplified Phase 1 scope, subscriber notifications deferred to Phase 4 (YAGNI)
 - **Upward traversal**: Better UX (industry standard), minimal performance cost (1-3 extra queries, cacheable)
+- **Hybrid routing detection**: Solves SPA client-side routing challenge while maintaining server-side security checks
+
+## Implementation Phases
+
+### Overview
+
+The implementation is organized into phases corresponding to user stories. Detailed tasks are tracked in [tasks.md](./tasks.md).
+
+**Phase 1: Smart Share Link Discovery (User Story 7)** - 3 days
+- Server-side middleware for URL detection and redirection
+- Client-side fallback for SPA routes
+- Notification system for redirected users
+- Comprehensive testing
+
+See [tasks.md Phase 11](./tasks.md#phase-11-user-story-7---smart-share-link-discovery-priority-p1--mvp) for detailed implementation tasks (T086-T099).
 

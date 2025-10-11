@@ -8,39 +8,55 @@ import { Public } from "@/auth/decorators/public.decorator";
 export class PublicShareController {
   constructor(private readonly publicShareService: PublicShareService) {}
 
+  // ==================== Public Access Routes (No Auth) ====================
+  // IMPORTANT: These must come BEFORE authenticated routes to avoid route conflicts
+  // because /api/share/:token matches the same pattern as /api/share/:id
+
+  @Public()
+  @Get("api/share/:token/doc/:documentId")
+  async getPublicNestedDocument(@Param("token") token: string, @Param("documentId") documentId: string, @Req() request: any) {
+    return this.publicShareService.getPublicNestedDocument(token, documentId, request);
+  }
+
+  @Public()
+  @Get("api/share/:tokenOrSlug")
+  async getPublicDocument(@Param("tokenOrSlug") tokenOrSlug: string, @Req() request: any) {
+    return this.publicShareService.getPublicDocument(tokenOrSlug, request);
+  }
+
   // ==================== Authenticated Routes ====================
 
-  @Post("api/public-shares")
+  @Post("api/share")
   async getOrCreateShare(@GetUser("id") userId: string, @Body() dto: GetOrCreateShareDto) {
     return this.publicShareService.getOrCreateShare(userId, dto);
   }
 
-  @Patch("api/public-shares/:id")
+  @Patch("api/share/:id")
   async updateShare(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: UpdateShareDto) {
     return this.publicShareService.updateShare(userId, id, dto);
   }
 
-  @Delete("api/public-shares/:id")
+  @Delete("api/share/:id")
   async revokeShare(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.publicShareService.revokeShare(userId, { id });
   }
 
-  @Get("api/public-shares")
+  @Get("api/share")
   async listShares(@GetUser("id") userId: string, @Query() dto: ListSharesDto) {
     return this.publicShareService.listShares(userId, dto);
   }
 
-  @Get("api/public-shares/:id")
+  @Get("api/share/:id")
   async getShareById(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.publicShareService.getShareById(userId, id);
   }
 
-  @Get("api/public-shares/doc/:docId")
+  @Get("api/share/doc/:docId")
   async getShareByDocId(@GetUser("id") userId: string, @Param("docId") docId: string) {
     return this.publicShareService.getShareByDocId(userId, docId);
   }
 
-  @Patch("api/public-shares/doc/:docId")
+  @Patch("api/share/doc/:docId")
   async updateShareByDocId(@GetUser("id") userId: string, @Param("docId") docId: string, @Body() dto: UpdateShareDto) {
     // Get share by docId first
     const share = await this.publicShareService.getShareByDocId(userId, docId);
@@ -50,7 +66,7 @@ export class PublicShareController {
     return this.publicShareService.updateShare(userId, share.id, dto);
   }
 
-  @Delete("api/public-shares/doc/:docId")
+  @Delete("api/share/doc/:docId")
   async revokeShareByDocId(@GetUser("id") userId: string, @Param("docId") docId: string) {
     // Get share by docId first
     const share = await this.publicShareService.getShareByDocId(userId, docId);
@@ -58,19 +74,5 @@ export class PublicShareController {
       throw new NotFoundException("Share not found");
     }
     return this.publicShareService.revokeShare(userId, { id: share.id });
-  }
-
-  // ==================== Public Access Routes (No Auth) ====================
-
-  @Public()
-  @Get("api/public/:tokenOrSlug")
-  async getPublicDocument(@Param("tokenOrSlug") tokenOrSlug: string, @Req() request: any) {
-    return this.publicShareService.getPublicDocument(tokenOrSlug, request);
-  }
-
-  @Public()
-  @Get("api/public/:token/doc/:documentId")
-  async getPublicNestedDocument(@Param("token") token: string, @Param("documentId") documentId: string, @Req() request: any) {
-    return this.publicShareService.getPublicNestedDocument(token, documentId, request);
   }
 }

@@ -102,11 +102,11 @@ const UnAuthRouteConfig: IRouteObject = {
       element: LazyBoundary(AuthCallback),
     },
     {
-      path: "/public/:token",
+      path: "/share/:token",
       element: LazyBoundary(PublicDocument),
     },
     {
-      path: "/public/:token/doc/:docId",
+      path: "/share/:token/doc/:docId",
       element: LazyBoundary(PublicDocument),
     },
   ],

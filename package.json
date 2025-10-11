@@ -21,6 +21,8 @@
     "dev:api": "pnpm -F @idea/api dev",
     "dev:client": "pnpm -F @idea/client dev",
     "typecheck": "turbo run typecheck",
+    "typecheck:api": "pnpm -F @idea/api typecheck",
+    "typecheck:client": "pnpm -F @idea/client typecheck",
     "build": "turbo run build",
     "build:client": "pnpm -F @idea/client build",
     "build:api": "pnpm -F @idea/api build",

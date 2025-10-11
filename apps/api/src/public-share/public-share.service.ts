@@ -419,6 +419,43 @@ export class PublicShareService {
   }
 
   /**
+   * Find active public share by document ID (for discovery/middleware)
+   * No authentication required - used for smart link detection
+   * @returns Share if active, null if not found/revoked/expired
+   */
+  async findByDocId(docId: string) {
+    const share = await this.prisma.publicShare.findUnique({
+      where: { docId },
+      select: {
+        id: true,
+        token: true,
+        revokedAt: true,
+        expiresAt: true,
+        published: true,
+      },
+    });
+
+    if (!share) {
+      return null;
+    }
+
+    // Check if share is active
+    if (share.revokedAt) {
+      return null;
+    }
+
+    if (share.expiresAt && share.expiresAt < new Date()) {
+      return null;
+    }
+
+    if (!share.published) {
+      return null;
+    }
+
+    return share;
+  }
+
+  /**
    * Public access: Get document by token or slug
    */
   async getPublicDocument(tokenOrSlug: string, request: any) {

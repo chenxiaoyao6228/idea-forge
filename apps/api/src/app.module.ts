@@ -8,6 +8,7 @@ import { AuthModule } from "./auth/auth.module";
 import { LoggerModule } from "@/_shared/utils/logger.module";
 import { UserModule } from "./user/user.module";
 import { RequestLoggerMiddleware } from "@/_shared/middlewares/request-logger.middleware";
+import { PublicShareDiscoveryMiddleware } from "@/_shared/middlewares/public-share-discovery.middleware";
 import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER } from "@nestjs/core";
 import { MailModule } from "@/_shared/email/mail.module";
 import { ApiInterceptor } from "./_shared/interceptors/api.interceptor";
@@ -38,6 +39,7 @@ import { GuestCollaboratorsModule } from "./guest-collaborators/guest-collaborat
 import { UserIpInterceptor } from "./_shared/interceptors/user-ip.interceptor";
 import { ClsModule } from "@/_shared/utils/cls.module";
 import { HealthModule } from "./health/health.module";
+import { PublicShareService } from "./public-share/public-share.service";
 
 @Module({
   controllers: [AppController],
@@ -116,10 +118,17 @@ import { HealthModule } from "./health/health.module";
       useClass: HttpExceptionFilter,
     },
     AppService,
+    PublicShareService,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    // Apply PublicShareDiscoveryMiddleware first for smart link detection
+    consumer.apply(PublicShareDiscoveryMiddleware).forRoutes({
+      path: "**",
+      method: RequestMethod.GET,
+    });
+
     consumer.apply(FallbackMiddleware).forRoutes({
       path: "**",
       method: RequestMethod.GET,

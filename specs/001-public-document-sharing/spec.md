@@ -128,6 +128,24 @@ An authenticated workspace member clicks a public link to a document they alread
 
 ---
 
+### User Story 7 - Smart Share Link Discovery (Priority: P1)
+
+An unauthenticated user attempts to access a document via its workspace URL or direct ID. If the document has an active public share, the system automatically redirects them to the public share URL with a helpful notification.
+
+**Why this priority**: Essential for discoverability and user experience. Many users will share workspace URLs by mistake or habit. This feature ensures content remains accessible even when the wrong URL is shared.
+
+**Independent Test**: Can be tested by accessing various document URL patterns without authentication and verifying proper redirection to public share URLs when available. Delivers value by reducing access friction.
+
+**Acceptance Scenarios**:
+
+1. **Given** an unauthenticated user visits `/workspace/:workspaceId/doc/:docId` for a publicly shared document, **When** the request is processed, **Then** they are redirected to `/public/:token?discovered=true` with HTTP 302
+2. **Given** an unauthenticated user visits `/:documentId` directly where a public share exists, **When** the page loads, **Then** they are redirected to the public share URL with a notification "You were redirected to the public version of this document"
+3. **Given** an unauthenticated user visits a document URL with no public share, **When** the page loads, **Then** they see a standard "Login required" page with option to sign in
+4. **Given** an authenticated user visits any document URL pattern, **When** they have access, **Then** they see the workspace view without redirection
+5. **Given** the system redirects to a public share, **When** the redirect occurs, **Then** the `discovered=true` query parameter triggers an informational toast message
+
+---
+
 ### Edge Cases
 
 - **What happens when a document is deleted while a public share exists?** The public share record remains with `revokedAt` null, but access checks return 404 "Document not found". If the document is restored, the public link automatically works again.
@@ -235,6 +253,26 @@ An authenticated workspace member clicks a public link to a document they alread
 - **FR-058**: System MUST provide scroll-to-top button that appears after scrolling threshold using existing useScrollTop hook
 - **FR-059**: Backend MUST return hierarchical tree structure with recursive children in API responses (not flat lists)
 - **FR-060**: System MUST maintain clear separation between public and authenticated permission systems while sharing tree-building algorithms
+
+#### Smart Share Link Discovery
+
+- **FR-061**: System MUST detect unauthenticated access to workspace URLs (`/workspace/:workspaceId/doc/:docId`) and check for public share existence
+- **FR-062**: System MUST detect unauthenticated access to direct document URLs (`/:documentId`) matching CUID pattern and check for public share
+- **FR-063**: When public share exists for requested document, system MUST redirect to `/public/:token?discovered=true` with HTTP 302 status
+- **FR-064**: System MUST show informational toast notification when `discovered=true` query parameter is present
+- **FR-065**: System MUST implement hybrid detection with server-side interception for known patterns and client-side fallback for SPA routes
+- **FR-066**: System MUST NOT redirect authenticated users, regardless of document URL pattern used
+
+#### Differentiated User Experience
+
+- **FR-067**: Public share header MUST display different elements based on user authentication status
+- **FR-068**: Authenticated users with workspace permissions MUST see "Open in Workspace" button in header
+- **FR-069**: Authenticated users MUST see dropdown menu showing their email address and navigation options
+- **FR-070**: Authenticated user dropdown MUST include options to: (a) Go to current workspace, (b) Switch to document's workspace if different, (c) Request access if no permission
+- **FR-071**: Unauthenticated users MUST see "Login" button that opens dropdown with login and signup options
+- **FR-072**: Both authenticated and unauthenticated users MUST have access to share actions (copy link, copy embed code)
+- **FR-073**: System MUST maintain user's preference to stay in public view even when authenticated with permissions
+- **FR-074**: System MUST handle workspace context switching when navigating from public view to workspace view
 
 ### Key Entities
 
@@ -376,6 +414,7 @@ The following design questions have been identified from analyzing competitor im
 
 - Full PRD: `.cursor/docs/features/public-share-prd.md` (2649 lines with complete technical architecture)
 - Architecture Gaps Analysis: `.cursor/docs/features/public-share-architecture-gaps-session.md` (22 critical questions from competitor analysis)
+- Architecture Verification: `docs/one-share-per-doc.md` (Technical implementation verification - "one share per document" design)
 - Constitution: `.specify/memory/constitution.md` (Project architectural principles)
 
 ### Competitor Analysis Insights
@@ -404,6 +443,9 @@ Observed patterns from industry-standard document sharing platforms:
 - WebSocket real-time updates
 - Rate limiting on public endpoints
 - Public share badge in document UI
+- Smart Share Link Discovery (auto-redirect from workspace URLs)
+- Differentiated headers for authenticated/unauthenticated users
+- User dropdown with workspace navigation options
 
 **Deferred to Phase 2+:**
 

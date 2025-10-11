@@ -60,7 +60,7 @@ export default function PublicDocumentBreadcrumb({ navigationTree, token, active
   }, [navigationTree, activeDocId]);
 
   const handleNavigate = (id: string) => {
-    navigate(`/public/${token}/doc/${id}`);
+    navigate(`/share/${token}/doc/${id}`);
   };
 
   if (!breadcrumbItems.length) return null;

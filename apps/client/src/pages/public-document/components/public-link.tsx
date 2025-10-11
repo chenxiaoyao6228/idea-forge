@@ -51,7 +51,7 @@ export function PublicLink({ node, token, activeDocId, depth = 0 }: PublicLinkPr
     return (
       <SidebarMenuItem>
         <SidebarMenuButton asChild isActive={isActive} style={{ paddingLeft: `${depth * 0.75 + 0.5}rem` }}>
-          <Link to={`/public/${token}/doc/${node.id}`} className="flex items-center gap-2">
+          <Link to={`/share/${token}/doc/${node.id}`} className="flex items-center gap-2">
             <span className="w-6" /> {/* Placeholder for chevron alignment */}
             {node.icon && <Emoji unified={node.icon} size={24} />}
             <span className="truncate">{node.title}</span>
@@ -78,7 +78,7 @@ export function PublicLink({ node, token, activeDocId, depth = 0 }: PublicLinkPr
           >
             <ChevronRight className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-90")} />
           </CollapsibleTrigger>
-          <Link to={`/public/${token}/doc/${node.id}`} className="flex items-center gap-2 flex-1 min-w-0">
+          <Link to={`/share/${token}/doc/${node.id}`} className="flex items-center gap-2 flex-1 min-w-0">
             {node.icon && <Emoji unified={node.icon} size={24} />}
             <span className="truncate">{node.title}</span>
           </Link>
