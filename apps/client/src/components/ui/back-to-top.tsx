@@ -28,7 +28,7 @@ export default function BackToTop() {
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" onClick={scrollToTop} className="fixed bottom-24 right-2 rounded-full px-2">
+              <Button variant="outline" onClick={scrollToTop} className="fixed bottom-16 right-2 rounded-full px-2">
                 <Icon name="RocketLine" className="h-8 w-8" />
               </Button>
             </TooltipTrigger>

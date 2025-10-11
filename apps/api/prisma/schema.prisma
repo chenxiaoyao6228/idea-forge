@@ -70,13 +70,13 @@ model DocumentPermission {
 }
 
 enum PermissionInheritanceType {
-  DIRECT // directly assigned permission (priority: 1)    
-  GROUP // group permission (priority: 2)      
-  SUBSPACE_ADMIN // subspace admin (priority: 3)    
-  SUBSPACE_MEMBER // subspace member (priority: 4)    
-  WORKSPACE_ADMIN // workspace admin (priority: 5)    
-  WORKSPACE_MEMBER // workspace member (priority: 6)    
-  GUEST // guest permission (priority: 7)  
+  DIRECT // directly assigned permission (priority: 1)
+  GROUP // group permission (priority: 2)
+  SUBSPACE_ADMIN // subspace admin (priority: 3)
+  SUBSPACE_MEMBER // subspace member (priority: 4)
+  WORKSPACE_ADMIN // workspace admin (priority: 5)
+  WORKSPACE_MEMBER // workspace member (priority: 6)
+  GUEST // guest permission (priority: 7)
 }
 
 enum PermissionLevel {
@@ -111,9 +111,13 @@ model User {
   currentWorkspace   Workspace? @relation("UserCurrentWorkspace", fields: [currentWorkspaceId], references: [id])
 
   // Document relationships
-  authoredDocs     Doc[]      @relation("DocAuthor") // Documents created by user
-  createdDocs      Doc[]      @relation("DocCreator") // Documents created by user
-  lastModifiedDocs Doc[]      @relation("DocLastModifier") // Documents last modified by user
+  authoredDocs     Doc[] @relation("DocAuthor") // Documents created by user
+  createdDocs      Doc[] @relation("DocCreator") // Documents created by user
+  lastModifiedDocs Doc[] @relation("DocLastModifier") // Documents last modified by user
+
+  // Public shares
+  publicSharesCreated PublicShare[] @relation("PublicShareAuthor")
+  publicSharesRevoked PublicShare[] @relation("PublicShareRevoker")
 
   // Version history
   docRevisions DocRevision[] // Document revision history
@@ -170,6 +174,9 @@ model Workspace {
   memberSubspaceCreate Boolean @default(false)
   settings             Json?
 
+  // Public sharing control
+  allowPublicSharing Boolean @default(true)
+
   // relations
   subspaces    Subspace[]
   members      WorkspaceMember[]
@@ -177,6 +184,7 @@ model Workspace {
   memberGroups MemberGroup[]
   docs         Doc[]
   publicInvite WorkspacePublicInvite?
+  publicShares PublicShare[]
 
   // Current workspace users
   currentUsers User[] @relation("UserCurrentWorkspace")
@@ -249,13 +257,12 @@ model Doc {
 
   // sharing and permissions
   permissions DocumentPermission[]
+  publicShare PublicShare?
 
   // Subspace permission overrides (null means inherit from subspace)
   subspaceAdminPermission     PermissionLevel?
   subspaceMemberPermission    PermissionLevel?
   nonSubspaceMemberPermission PermissionLevel?
-
-  // publicShare        PublicShare?
 
   // versions
   revisions DocRevision[]
@@ -406,6 +413,59 @@ enum GuestStatus {
   REVOKED
 }
 
+model PublicShare {
+  // Primary Key
+  id String @id @default(cuid())
+
+  // Foreign Keys
+  docId       String @unique // One public share per document
+  workspaceId String // Explicit workspace scoping
+  authorId    String // User who created the share
+
+  // Access Token
+  token String @unique @db.VarChar(255) // CUID token for anonymous access
+
+  // Optional URL Features (Phase 2+)
+  urlId  String? @unique @db.VarChar(255) // Custom URL slug
+  domain String? @db.VarChar(255) // Custom domain
+
+  // Publication State
+  published Boolean @default(true) // Reserved for future, always true in Phase 1
+
+  // Permission Level
+  permission PermissionLevel @default(READ) // READ or COMMENT (Phase 1: READ only)
+
+  // Expiration
+  expiresAt DateTime? // Nullable for "never expire"
+
+  // Revocation (Soft Delete)
+  revokedAt   DateTime? // Nullable for active shares
+  revokedById String? // User who revoked
+
+  // Analytics
+  views          Int       @default(0) // Total view count (bot-filtered)
+  lastAccessedAt DateTime? // Last successful access
+
+  // SEO
+  allowIndexing Boolean @default(false) // Phase 1: hardcoded false
+
+  // Audit Trail
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  doc       Doc       @relation(fields: [docId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User      @relation("PublicShareAuthor", fields: [authorId], references: [id])
+  revoker   User?     @relation("PublicShareRevoker", fields: [revokedById], references: [id])
+
+  // Indexes
+  @@index([token, revokedAt]) // Fast validation check
+  @@index([docId, revokedAt]) // Fast share lookup by document
+  @@index([workspaceId]) // Workspace filtering
+  @@index([expiresAt]) // Expiration checks
+  @@map("PublicShare")
+}
 
 model Password {
   hash String

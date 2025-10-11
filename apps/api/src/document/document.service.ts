@@ -249,20 +249,6 @@ export class DocumentService {
             createdAt: "desc",
           },
         },
-        docShare: {
-          where: {
-            revokedAt: null,
-          },
-          include: {
-            sharedTo: {
-              select: {
-                id: true,
-                email: true,
-                displayName: true,
-              },
-            },
-          },
-        },
       },
     });
 

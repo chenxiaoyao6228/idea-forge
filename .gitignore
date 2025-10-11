@@ -87,3 +87,6 @@ scripts/i18n/trans.env
 
 # design
 _design
+
+## claude
+.claude/settings.local.json

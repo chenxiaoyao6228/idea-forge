@@ -1,17 +1,20 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { TableOfContentDataItem } from "@tiptap/extension-table-of-contents";
 import { TextSelection } from "@tiptap/pm/state";
 import type React from "react";
-import { useEditorStore } from "../../../stores/editor-store";
+import type { Editor } from "@tiptap/react";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { useEditorMount } from "../../../editor/hooks/use-edtior-mount";
 
-export const TableOfContent = memo(() => {
+interface TableOfContentProps {
+  editor: Editor | null;
+  items: TableOfContentDataItem[];
+  onInitialNavigation?: (id: string) => void;
+}
+
+export const TableOfContent = memo(({ editor, items, onInitialNavigation }: TableOfContentProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [activeId, setActiveId] = useState<string>("");
-  const items = useEditorStore((state) => state.tocItems);
-  const editor = useEditorStore((state) => state.editor);
 
   // Common function to handle navigation and scrolling
   const handleNavigation = (id: string, shouldUpdateHash = true) => {
@@ -44,13 +47,14 @@ export const TableOfContent = memo(() => {
     setActiveId(id);
   };
 
-  // Handle initial navigation on editor mount
-  useEditorMount((editor) => {
+  // Handle initial navigation
+  useEffect(() => {
     const hash = window.location.hash.slice(1);
-    if (hash) {
-      handleNavigation(hash, false); // Don't update hash on initial load
+    handleNavigation(hash, false); // Don't update hash on initial load
+    if (hash && onInitialNavigation) {
+      onInitialNavigation(hash);
     }
-  });
+  }, [onInitialNavigation]);
 
   // Must put this after useEditorMount, otherwise two scroll events will be conflicted
   useEffect(() => {
@@ -92,7 +96,7 @@ export const TableOfContent = memo(() => {
   }
 
   return (
-    <div className="fixed top-[40%] right-2 cursor-pointer" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+    <div className="fixed top-1/2 -translate-y-1/2 right-2 cursor-pointer" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
       {/* Trigger */}
       {!isHovered && (
         <div className="bg-background p-2 shadow-lg rounded-lg cursor-pointer">
@@ -119,7 +123,7 @@ export const TableOfContent = memo(() => {
       {/* Content */}
       <div
         className={cn(
-          "absolute right-full top-0 mr-2 w-60 max-h-[50vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto custom-scrollbar",
+          "fixed top-1/2 -translate-y-1/2 right-0  mr-2 w-60 max-h-[60vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto custom-scrollbar",
           "transition-all duration-200 ease-in-out",
           isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none",
         )}

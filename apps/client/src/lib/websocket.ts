@@ -88,6 +88,11 @@ export enum SocketEvents {
   GUEST_ACCEPTED = "guest.accepted",
   GUEST_REMOVED = "guest.removed",
   GUEST_PROMOTED = "guest.promoted",
+
+  // Public share events
+  PUBLIC_SHARE_CREATED = "public.share.created",
+  PUBLIC_SHARE_UPDATED = "public.share.updated",
+  PUBLIC_SHARE_REVOKED = "public.share.revoked",
 }
 
 // Interface for gateway message structure

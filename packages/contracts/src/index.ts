@@ -17,5 +17,5 @@ export * from "./user";
 export * from "./permission";
 export * from "./document";
 export * from "./subspace";
-export * from "./doc-share";
 export * from "./guest-collaborators";
+export * from "./public-share";

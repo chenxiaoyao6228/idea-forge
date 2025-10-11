@@ -2,6 +2,7 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
+//FIXME: remove this after the workspace feature is implemented
 @Injectable()
 export class SystemDocumentService {
   constructor(
@@ -35,13 +36,15 @@ export class SystemDocumentService {
       throw new Error("Welcome document not found");
     }
 
-    // Share document with new user
-    await this.prismaService.docShare.create({
+    // Share document with new user via DocumentPermission
+    await this.prismaService.documentPermission.create({
       data: {
         docId: welcomeDoc.id,
         userId: userId,
         permission: "EDIT",
-        authorId: systemUser.id,
+        inheritedFromType: "DIRECT",
+        priority: 100,
+        createdById: systemUser.id,
       },
     });
 

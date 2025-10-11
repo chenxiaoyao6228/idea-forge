@@ -54,10 +54,8 @@ export class DocumentTrashService {
       });
     }
 
-    // Delete document's shares
-    await this.prismaService.docShare.deleteMany({
-      where: { docId: id },
-    });
+    // Delete document's permissions and public shares (handled by Prisma cascade)
+    // No need to explicitly delete - Prisma will handle it via onDelete: Cascade
 
     // Finally delete the document
     return await this.prismaService.doc.delete({
@@ -86,10 +84,8 @@ export class DocumentTrashService {
         });
       }
 
-      // Delete child's shares
-      await this.prismaService.docShare.deleteMany({
-        where: { docId: child.id },
-      });
+      // Delete child's permissions and public shares (handled by Prisma cascade)
+      // No need to explicitly delete - Prisma will handle it via onDelete: Cascade
 
       // Delete the child document
       await this.prismaService.doc.delete({
@@ -220,9 +216,8 @@ export class DocumentTrashService {
               });
             }
 
-            await tx.docShare.deleteMany({
-              where: { docId: doc.id },
-            });
+            // Delete permissions and public shares (handled by Prisma cascade)
+            // No explicit delete needed - Prisma will handle it via onDelete: Cascade
 
             await tx.doc.delete({
               where: { id: doc.id },

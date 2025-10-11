@@ -64,6 +64,10 @@
         "coverage/**"
       ]
     },
+    "typecheck": {
+      "dependsOn": [],
+      "outputs": []
+    },
     "test:unit": {
       "dependsOn": [],
       "outputs": []

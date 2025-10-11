@@ -134,6 +134,15 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.GUEST_PERMISSION_INHERITED:
           await this.handleGuestPermissionInheritedEvent(event, server);
           break;
+        case BusinessEvents.PUBLIC_SHARE_CREATED:
+          await this.handlePublicShareCreatedEvent(event, server);
+          break;
+        case BusinessEvents.PUBLIC_SHARE_UPDATED:
+          await this.handlePublicShareUpdatedEvent(event, server);
+          break;
+        case BusinessEvents.PUBLIC_SHARE_REVOKED:
+          await this.handlePublicShareRevokedEvent(event, server);
+          break;
       }
     } catch (error) {
       console.error(`Error processing websocket event: ${event.name}`, error);
@@ -839,6 +848,86 @@ export class WebsocketEventProcessor extends WorkerHost {
         batchIndex, // Current batch
         totalBatches, // Total batches
         newlyAccessibleDocIds, // Max 50 document IDs per batch
+      });
+    }
+  }
+
+  /**
+   * Handle public share created event
+   * Notifies document collaborators that a public share was created
+   */
+  private async handlePublicShareCreatedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId, actorId } = event;
+    const { publicShare, docId, createdByUserId } = data;
+
+    // Find all users who have permissions for this document
+    const permissions = await this.prismaService.documentPermission.findMany({
+      where: { docId },
+      select: { userId: true },
+    });
+
+    // Deduplicate user IDs
+    const userIds = Array.from(new Set(permissions.map((p) => p.userId).filter(Boolean)));
+
+    // Notify all users with document access
+    for (const userId of userIds) {
+      server.to(`user:${userId}`).emit(BusinessEvents.PUBLIC_SHARE_CREATED, {
+        publicShare,
+        docId,
+        createdByUserId,
+      });
+    }
+  }
+
+  /**
+   * Handle public share updated event
+   * Notifies document collaborators that public share settings changed
+   */
+  private async handlePublicShareUpdatedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId, actorId } = event;
+    const { publicShare, docId, updatedByUserId } = data;
+
+    // Find all users who have permissions for this document
+    const permissions = await this.prismaService.documentPermission.findMany({
+      where: { docId },
+      select: { userId: true },
+    });
+
+    // Deduplicate user IDs
+    const userIds = Array.from(new Set(permissions.map((p) => p.userId).filter(Boolean)));
+
+    // Notify all users with document access
+    for (const userId of userIds) {
+      server.to(`user:${userId}`).emit(BusinessEvents.PUBLIC_SHARE_UPDATED, {
+        publicShare,
+        docId,
+        updatedByUserId,
+      });
+    }
+  }
+
+  /**
+   * Handle public share revoked event
+   * Notifies document collaborators that public access was revoked
+   */
+  private async handlePublicShareRevokedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId, actorId } = event;
+    const { docId, revokedByUserId } = data;
+
+    // Find all users who have permissions for this document
+    const permissions = await this.prismaService.documentPermission.findMany({
+      where: { docId },
+      select: { userId: true },
+    });
+
+    // Deduplicate user IDs
+    const userIds = Array.from(new Set(permissions.map((p) => p.userId).filter(Boolean)));
+
+    // Notify all users with document access
+    for (const userId of userIds) {
+      server.to(`user:${userId}`).emit(BusinessEvents.PUBLIC_SHARE_REVOKED, {
+        docId,
+        revokedByUserId,
       });
     }
   }

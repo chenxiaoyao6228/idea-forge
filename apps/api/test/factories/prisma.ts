@@ -3,10 +3,10 @@ import {
   generateMockUser,
   generateMockWorkspace,
   generateMockDocument,
-  generateMockDocShare,
   generateMockWorkspaceMember,
   generateMockDocumentPermission,
   generateMockSubspaceMember,
+  generateMockPublicShare,
 } from "./zod";
 import { getTestPrisma } from "@test/setup/test-container-setup";
 
@@ -101,27 +101,7 @@ export async function buildUser(overrides: any = {}) {
   });
 }
 
-export async function buildDocShare(overrides: any = {}) {
-  const prisma = getTestPrisma();
-  if (!overrides.docId) {
-    const doc = await buildDocument();
-    overrides.docId = doc.id;
-  }
-  if (!overrides.authorId) {
-    const user = await buildUser();
-    overrides.authorId = user.id;
-  }
-  if (!overrides.userId) {
-    const user = await buildUser();
-    overrides.userId = user.id;
-  }
-  return await prisma.docShare.create({
-    data: {
-      ...generateMockDocShare(),
-      ...overrides,
-    },
-  });
-}
+// buildDocShare removed - DocShare model has been replaced with PublicShare
 
 export async function buildWorkspaceMember(overrides: any = {}) {
   const prisma = getTestPrisma();
@@ -246,5 +226,33 @@ export async function buildMemberGroupUser(overrides: any = {}) {
   }
   return await prisma.memberGroupUser.create({
     data: overrides,
+  });
+}
+
+export async function buildPublicShare(overrides: any = {}) {
+  const prisma = getTestPrisma();
+
+  if (!overrides.docId) {
+    const doc = await buildDocument();
+    overrides.docId = doc.id;
+  }
+  if (!overrides.workspaceId) {
+    // Get workspace from document if not provided
+    const doc = await prisma.doc.findUnique({
+      where: { id: overrides.docId },
+      select: { workspaceId: true },
+    });
+    overrides.workspaceId = doc?.workspaceId;
+  }
+  if (!overrides.authorId) {
+    const user = await buildUser();
+    overrides.authorId = user.id;
+  }
+
+  return await prisma.publicShare.create({
+    data: {
+      ...generateMockPublicShare(),
+      ...overrides,
+    },
   });
 }

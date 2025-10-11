@@ -196,7 +196,7 @@ export function GuestSharingTab({ documentId }: GuestSharingTabProps) {
       <Separator />
 
       {/* Public Sharing Section */}
-      <PublicSharingSection />
+      <PublicSharingSection documentId={documentId} />
 
       <Separator />
       <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-md transition-colors" onClick={copyPageAccessLink}>

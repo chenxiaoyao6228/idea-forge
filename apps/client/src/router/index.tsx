@@ -23,6 +23,7 @@ const CreateWorkspace = React.lazy(() => import(/* webpackChunkName: "CreateWork
 const TokenUsage = React.lazy(() => import(/* webpackChunkName: "TokenUsage" */ "@/pages/admin/token-usage"));
 const TestSentry = React.lazy(() => import(/* webpackChunkName: "TestSentry" */ "@/pages/test-sentry"));
 const PublicInvitation = React.lazy(() => import(/* webpackChunkName: "PublicInvitation" */ "@/pages/public-invitation"));
+const PublicDocument = React.lazy(() => import(/* webpackChunkName: "PublicDocument" */ "@/pages/public-document"));
 
 // Routes that require authentication
 const AuthRouteConfig: IRouteObject = {
@@ -67,32 +68,46 @@ const UnAuthRouteConfig: IRouteObject = {
   path: "/",
   element: <App />,
   errorElement: LazyBoundary(ErrorBoundary as any),
-  wrapper: [WithHomeNav],
+
   children: [
     { path: "/marketing", wrapper: [WithHomeNav], element: LazyBoundary(Marketing) },
     {
       path: "/login",
+      wrapper: [WithHomeNav],
       element: LazyBoundary(Login),
     },
     {
       path: "/register",
+      wrapper: [WithHomeNav],
       element: LazyBoundary(Register),
     },
     {
       path: "/verify",
+      wrapper: [WithHomeNav],
       element: LazyBoundary(Verify),
     },
     {
       path: "/forgot-password",
+      wrapper: [WithHomeNav],
       element: LazyBoundary(ForgotPassword),
     },
     {
       path: "/reset-password",
+      wrapper: [WithHomeNav],
       element: LazyBoundary(ResetPassword),
     },
     {
       path: "/auth-callback",
+      wrapper: [WithHomeNav],
       element: LazyBoundary(AuthCallback),
+    },
+    {
+      path: "/public/:token",
+      element: LazyBoundary(PublicDocument),
+    },
+    {
+      path: "/public/:token/doc/:docId",
+      element: LazyBoundary(PublicDocument),
     },
   ],
 };

@@ -6,10 +6,10 @@ import {
   WorkspaceSchema,
   MemberGroupSchema,
   WorkspaceMemberSchema,
-  DocShareSchema,
   DocumentPermissionSchema,
   SubspaceMemberSchema,
 } from "@idea/contracts";
+// DocShareSchema removed - DocShare model has been replaced with PublicShare
 
 export const generateMockDocument = (overrides = {}) => {
   const base = createFixture(DocSchema);
@@ -52,10 +52,7 @@ export const generateMockGroup = (overrides = {}) => ({
   ...overrides,
 });
 
-export const generateMockDocShare = (overrides = {}) => ({
-  ...createFixture(DocShareSchema),
-  ...overrides,
-});
+// generateMockDocShare removed - DocShare model has been replaced with PublicShare
 
 export const generateMockWorkspaceMember = (overrides = {}) => ({
   ...createFixture(WorkspaceMemberSchema),
@@ -82,3 +79,20 @@ export const generateMockSubspaceMember = (overrides = {}) => ({
   ...createFixture(SubspaceMemberSchema),
   ...overrides,
 });
+
+export const generateMockPublicShare = (overrides = {}) => {
+  // PublicShare doesn't have a schema in contracts, so we'll create it manually
+  return {
+    token: `cuid_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+    urlId: null,
+    permission: "READ",
+    published: true,
+    expiresAt: null,
+    revokedAt: null,
+    revokedById: null,
+    views: 0,
+    lastAccessedAt: null,
+    allowIndexing: false,
+    ...overrides,
+  };
+};

@@ -13,12 +13,17 @@ import TiptapEditor from "@/editor";
 import { TableOfContent } from "./components/table-of-content";
 import { Action, useAbilityCan } from "@/hooks/use-ability";
 import { useCurrentDocumentFromStore, useCurrentDocumentId } from "@/stores/document-store";
+import { useEditorStore } from "@/stores/editor-store";
 
 export default function Doc() {
   const { t } = useTranslation();
   const activeDocumentId = useCurrentDocumentId();
   const collabToken = useUserStore((s) => s.userInfo?.collabToken);
   const currentDocument = useCurrentDocumentFromStore();
+
+  // Get editor and toc items from store
+  const editor = useEditorStore((state) => state.editor);
+  const tocItems = useEditorStore((state) => state.tocItems);
 
   const isHomeDoc = false;
 
@@ -80,7 +85,7 @@ export default function Doc() {
             collabToken={collabToken}
             collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")}
           />
-          <TableOfContent />
+          <TableOfContent editor={editor} items={tocItems} />
         </div>
       </div>
       <BackToTop />

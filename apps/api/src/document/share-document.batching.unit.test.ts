@@ -118,7 +118,7 @@ describe("Permission Event Batching Integration", () => {
     it("should create correct PERMISSION_INHERITANCE_CHANGED payload with batch metadata", () => {
       const affectedDocuments = Array.from({ length: 75 }, (_, i) => ({
         docId: `doc-${i}`,
-        oldPermission: null as const,
+        oldPermission: null,
         newPermission: "edit" as const,
       }));
 

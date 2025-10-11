@@ -33,6 +33,7 @@ import { EventsModule } from "./_shared/events/events.module";
 import { StarModule } from "./star/star.module";
 import { GroupModule } from "./group/group.module";
 import { PermissionModule } from "./permission/permission.module";
+import { PublicShareModule } from "./public-share/public-share.module";
 import { GuestCollaboratorsModule } from "./guest-collaborators/guest-collaborators.module";
 import { UserIpInterceptor } from "./_shared/interceptors/user-ip.interceptor";
 import { ClsModule } from "@/_shared/utils/cls.module";
@@ -89,6 +90,7 @@ import { HealthModule } from "./health/health.module";
     StarModule,
     GroupModule,
     PermissionModule,
+    PublicShareModule,
     GuestCollaboratorsModule,
     HealthModule,
   ],

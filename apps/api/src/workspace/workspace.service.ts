@@ -240,6 +240,7 @@ export class WorkspaceService {
       avatar: string | null;
       memberSubspaceCreate: boolean;
       settings: any;
+      allowPublicSharing: boolean;
       isPendingGuest?: boolean;
       guestId?: string;
     }>
@@ -368,6 +369,7 @@ export class WorkspaceService {
       avatar: string | null;
       memberSubspaceCreate: boolean;
       settings: any;
+      allowPublicSharing: boolean;
     }>;
   }
 
