@@ -1,5 +1,7 @@
 import { io, Socket } from "socket.io-client";
+import { throttle } from "lodash-es";
 import { resolvablePromise } from "./async";
+import { pageVisibility } from "./page-visibility";
 
 type SocketWithAuthentication = Socket & {
   authenticated?: boolean;
@@ -111,12 +113,87 @@ class WebsocketService {
   private reconnectDelay = 1000;
   private connectionPromise = resolvablePromise();
   private joinedRooms = new Set<string>();
+  private visibilityCleanup: (() => void) | null = null;
+
+  // Recovery observer pattern (inspired by Flowus)
+  private recoveryObservers = new Set<() => void>();
+
+  // Heartbeat management
+  private heartbeatTimer: NodeJS.Timeout | null = null;
 
   // Update connection status and emit status change event
   private setStatus(status: WebsocketStatus, reason?: DisconnectReason) {
     this.status = status;
     if (reason) this.disconnectReason = reason;
     this.socket?.emit("status_change", { status, reason });
+  }
+
+  // Wait for page to be visible before attempting connection
+  private async waitForPageVisible(): Promise<void> {
+    if (pageVisibility.isVisible()) {
+      return Promise.resolve();
+    }
+
+    console.log("[websocket]: Page is hidden, waiting for visibility...");
+
+    return new Promise<void>((resolve) => {
+      const cleanup = pageVisibility.onVisible(() => {
+        console.log("[websocket]: Page became visible, proceeding with connection");
+        cleanup();
+        resolve();
+      });
+    });
+  }
+
+  // Recovery observer pattern (inspired by Flowus)
+  subscribeToRecovery(callback: () => void): () => void {
+    this.recoveryObservers.add(callback);
+    console.log(`[websocket]: Recovery observer added (total: ${this.recoveryObservers.size})`);
+
+    return () => {
+      this.recoveryObservers.delete(callback);
+      console.log(`[websocket]: Recovery observer removed (total: ${this.recoveryObservers.size})`);
+    };
+  }
+
+  // Dispatch recovery to all observers (throttled to 1500ms like Flowus)
+  private dispatchRecover = throttle(
+    () => {
+      console.log(`[websocket]: Dispatching recovery to ${this.recoveryObservers.size} observers`);
+
+      // Notify all observers
+      this.recoveryObservers.forEach((callback) => {
+        try {
+          callback();
+        } catch (error) {
+          console.error("[websocket]: Error in recovery observer:", error);
+        }
+      });
+    },
+    1500,
+    {
+      leading: false,
+      trailing: true,
+    },
+  );
+
+  // Pause heartbeat to save resources when page hidden
+  private pauseHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      console.log("[websocket]: Pausing heartbeat");
+      this.heartbeatPaused = true;
+      // Note: We don't clear the timer, just set the flag
+      // The heartbeat logic will check this flag
+    }
+  }
+
+  // Resume heartbeat when page visible
+  private resumeHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      console.log("[websocket]: Resuming heartbeat");
+      this.heartbeatPaused = false;
+      // Heartbeat will resume on next interval
+    }
   }
 
   // Handle socket disconnection with appropriate reason
@@ -185,6 +262,9 @@ class WebsocketService {
         this.setStatus(WebsocketStatus.CONNECTED);
         console.log("[websocket]: Socket.IO connected");
 
+        // Setup visibility handlers for automatic reconnection
+        this.setupVisibilityHandlers();
+
         // Emit reconnection event for backward compatibility
         window.dispatchEvent(new CustomEvent("websocket:reconnected"));
 
@@ -212,6 +292,9 @@ class WebsocketService {
 
   // Handle reconnection with exponential backoff
   private async reconnect() {
+    // Wait for page to be visible before attempting reconnection
+    await this.waitForPageVisible();
+
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       const error = new WebsocketError("MAX_RECONNECT_ATTEMPTS", "Maximum reconnection attempts reached");
       this.socket?.emit("error", error);
@@ -225,6 +308,9 @@ class WebsocketService {
     try {
       await this.connect();
       this.socket?.emit("reconnect");
+
+      // Dispatch recovery after successful reconnection
+      this.dispatchRecover();
     } catch (error) {
       const delay = this.reconnectDelay * 2 ** (this.reconnectAttempts - 1);
       setTimeout(() => this.reconnect(), delay);
@@ -238,6 +324,53 @@ class WebsocketService {
       this.socket = null;
     }
     this.setStatus(WebsocketStatus.DISCONNECTED, DisconnectReason.CLIENT_DISCONNECT);
+
+    // Clean up visibility listeners
+    if (this.visibilityCleanup) {
+      this.visibilityCleanup();
+      this.visibilityCleanup = null;
+    }
+  }
+
+  // Setup visibility change handlers
+  private setupVisibilityHandlers() {
+    // Clean up any existing listeners
+    if (this.visibilityCleanup) {
+      this.visibilityCleanup();
+    }
+
+    // Set up new listeners
+    const cleanupWakeup = pageVisibility.onVisible(() => {
+      console.log("[websocket]: Page became visible");
+
+      // Resume heartbeat to save resources
+      this.resumeHeartbeat();
+
+      // Dispatch recovery to all observers (like Flowus)
+      this.dispatchRecover();
+
+      // If disconnected and not manually disconnected, try to reconnect
+      if (this.status === WebsocketStatus.DISCONNECTED && this.disconnectReason !== DisconnectReason.CLIENT_DISCONNECT) {
+        console.log("[websocket]: Attempting reconnection after page became visible");
+        this.reconnect();
+      }
+    });
+
+    const cleanupHidden = pageVisibility.onHidden(() => {
+      console.log("[websocket]: Page became hidden");
+
+      // Pause heartbeat to save resources (but keep connection alive!)
+      this.pauseHeartbeat();
+
+      // Note: We do NOT disconnect! Connection stays alive to receive events.
+      // This prevents missing important updates like new members, permission changes, etc.
+    });
+
+    // Store cleanup function
+    this.visibilityCleanup = () => {
+      cleanupWakeup();
+      cleanupHidden();
+    };
   }
 
   // Setup basic Socket.IO events

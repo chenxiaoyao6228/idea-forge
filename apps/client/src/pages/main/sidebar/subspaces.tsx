@@ -1,6 +1,6 @@
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, ChevronRight, Layers } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -12,6 +12,7 @@ import useSubSpaceStore, { useJoinedSubspaces, useFetchSubspaces } from "@/store
 import { AllSubspaceSheet } from "../settings/subspace/all-subspace-sheet";
 import { showCreateSubspaceModal } from "../settings/subspace/create-subspace-dialog";
 import { useWorkspaceType } from "@/hooks/use-workspace-type";
+import { useSyncOnReconnect } from "@/hooks/use-sync-on-reconnect";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
@@ -20,7 +21,7 @@ export default function SubspacesArea() {
   const { isPersonalWorkspace } = useWorkspaceType();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const joinedSubspaces = useJoinedSubspaces();
-  const { run: fetchList } = useFetchSubspaces();
+  const { run: fetchSubspaces } = useFetchSubspaces();
   const isCreating = useSubSpaceStore((state) => state.isCreating);
 
   // drag target for drop to top
@@ -32,11 +33,18 @@ export default function SubspacesArea() {
     },
   });
 
-  useEffect(() => {
+  // Auto-refetch subspaces on WebSocket recovery (page visible, reconnect)
+  const refetchSubspaces = useCallback(() => {
     if (currentWorkspace) {
-      fetchList(currentWorkspace.id);
+      fetchSubspaces(currentWorkspace.id);
     }
-  }, [fetchList, currentWorkspace]);
+  }, [fetchSubspaces, currentWorkspace]);
+
+  useSyncOnReconnect(refetchSubspaces, !!currentWorkspace);
+
+  useEffect(() => {
+    refetchSubspaces();
+  }, []);
 
   // Hide subspace area for personal workspaces
   if (isPersonalWorkspace) return null;

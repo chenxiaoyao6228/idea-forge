@@ -6,6 +6,7 @@ import SidebarContainer from "./sidebar";
 import { WebSocketProvider } from "@/components/websocket-provider";
 import { useLayoutEffect } from "react";
 import { useFetchCurrentDocument } from "@/hooks/use-current-document";
+import { useSyncOnReconnect } from "@/hooks/use-sync-on-reconnect";
 
 export default function Main() {
   const { run: fetchWorkspaces } = useFetchWorkspaces();
@@ -14,6 +15,12 @@ export default function Main() {
   const workspaces = useAllWorkspaces();
   const currentWorkspace = useCurrentWorkspace();
   const isGuestCollaborator = useIsGuestCollaborator();
+
+  // Auto-refetch workspaces on WebSocket recovery (page visible, reconnect)
+  useSyncOnReconnect(() => {
+    fetchWorkspaces();
+    fetchGuests();
+  }, !!currentWorkspace);
 
   useLayoutEffect(() => {
     fetchWorkspaces();
@@ -24,7 +31,7 @@ export default function Main() {
     if (currentWorkspace && !isGuestCollaborator) {
       fetchGuests();
     }
-  }, [currentWorkspace, isGuestCollaborator]);
+  }, []);
 
   if (!workspaces.length) {
     return <Loading fullScreen size="lg" />;
