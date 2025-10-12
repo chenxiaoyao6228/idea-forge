@@ -14,6 +14,7 @@ import { dataURLtoFile } from "@/lib/file";
 import { Action, type UpdateWorkspaceRequest, type WorkspaceSettings } from "@idea/contracts";
 import { useAbilityCan } from "@/hooks/use-ability";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 
 interface FileWithPreview extends File {
   preview: string;
@@ -49,7 +50,7 @@ const DATE_FORMAT_OPTIONS = [
 export const Workspace = () => {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const { run: updateWorkspace } = useUpdateWorkspace();
+  const { run: updateWorkspace, loading: isUpdatingWorkspace } = useUpdateWorkspace();
   const { run: leaveWorkspace } = useLeaveWorkspace();
   const workspaceId = currentWorkspace?.id;
   const workspaceSubject = useMemo(() => (workspaceId ? { id: workspaceId } : undefined), [workspaceId]);
@@ -171,6 +172,32 @@ export const Workspace = () => {
       handleSettingsUpdate({ dateFormat: newDateFormat as WorkspaceSettings["dateFormat"] });
     },
     [handleSettingsUpdate, canEditWorkspace],
+  );
+
+  // Handle public sharing toggle
+  const handlePublicSharingToggle = useCallback(
+    async (checked: boolean) => {
+      if (!currentWorkspace || !canEditWorkspace) return;
+
+      try {
+        const updateData: UpdateWorkspaceRequest = {
+          name: currentWorkspace.name,
+          description: currentWorkspace.description || null,
+          avatar: currentWorkspace.avatar || null,
+          memberSubspaceCreate: currentWorkspace.memberSubspaceCreate ?? false,
+          allowPublicSharing: !checked, // checked=true means disable, so allowPublicSharing=false
+          settings: currentWorkspace.settings as WorkspaceSettings,
+        };
+
+        await updateWorkspace({ workspaceId: currentWorkspace.id, workspace: updateData });
+        toast.success(t("Settings updated successfully"));
+      } catch (error) {
+        console.error("Failed to update public sharing setting:", error);
+        toast.error(t("Failed to update settings"));
+      } finally {
+      }
+    },
+    [currentWorkspace, updateWorkspace, t, canEditWorkspace],
   );
 
   // Handle avatar upload
@@ -375,6 +402,19 @@ export const Workspace = () => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Public Sharing Setting */}
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <Label>{t("Disable public sharing")}</Label>
+              <div className="text-xs text-muted-foreground">{t("After enabling, members will not be able to create public share links for documents")}</div>
+            </div>
+            <Switch
+              checked={currentWorkspace.allowPublicSharing === false}
+              onCheckedChange={handlePublicSharingToggle}
+              disabled={isUpdatingWorkspace || !canEditWorkspace}
+            />
           </div>
         </div>
       </div>

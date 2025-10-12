@@ -21,11 +21,11 @@ export interface WorkspaceEntity {
   name: string;
   avatar?: string | null;
   description?: string | null;
-  allowPublicDocs?: boolean;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   settings?: WorkspaceSettings | null;
   memberSubspaceCreate?: boolean;
+  allowPublicSharing?: boolean;
   type?: "PERSONAL" | "TEAM";
   accessLevel?: WorkspaceAccessLevel;
   isPendingGuest?: boolean;
@@ -203,17 +203,10 @@ export const useReorderWorkspaces = () => {
         // Refresh the list to get the updated order
         const response = await workspaceApi.getWorkspaces();
         if (response && Array.isArray(response)) {
+          // Use spread operator to automatically include all fields from API response
           const workspaceEntities: WorkspaceEntity[] = response.map((workspace) => ({
-            id: workspace.id,
-            name: workspace.name,
-            description: workspace.description,
-            avatar: workspace.avatar,
-            createdAt: workspace.createdAt,
-            updatedAt: workspace.updatedAt,
-            memberSubspaceCreate: workspace.memberSubspaceCreate,
+            ...workspace,
             settings: workspace.settings as WorkspaceSettings | null,
-            type: workspace.type,
-            accessLevel: workspace.accessLevel,
           }));
 
           const workspacesMap = workspaceEntities.reduce(
@@ -246,16 +239,10 @@ export const useUpdateWorkspace = () => {
         } as UpdateWorkspaceRequest);
 
         // Convert the returned workspace to WorkspaceEntity format
+        // Use spread operator to automatically include all fields from API response
         const workspaceEntity: WorkspaceEntity = {
-          id: updatedWorkspace.id,
-          name: updatedWorkspace.name,
-          description: updatedWorkspace.description,
-          avatar: updatedWorkspace.avatar,
-          createdAt: updatedWorkspace.createdAt,
-          updatedAt: updatedWorkspace.updatedAt,
-          memberSubspaceCreate: updatedWorkspace.memberSubspaceCreate,
+          ...updatedWorkspace,
           settings: updatedWorkspace.settings as WorkspaceSettings | null,
-          type: updatedWorkspace.type,
         };
 
         // Update the workspace in store
@@ -305,16 +292,10 @@ export const useUpdateWorkspaceSettings = () => {
         const updatedWorkspace = await workspaceApi.updateWorkspace(workspaceId, updateData);
 
         // Convert the returned workspace to WorkspaceEntity format
+        // Use spread operator to automatically include all fields from API response
         const workspaceEntity: WorkspaceEntity = {
-          id: updatedWorkspace.id,
-          name: updatedWorkspace.name,
-          description: updatedWorkspace.description,
-          avatar: updatedWorkspace.avatar,
-          createdAt: updatedWorkspace.createdAt,
-          updatedAt: updatedWorkspace.updatedAt,
-          memberSubspaceCreate: updatedWorkspace.memberSubspaceCreate,
+          ...updatedWorkspace,
           settings: updatedWorkspace.settings as WorkspaceSettings | null,
-          type: updatedWorkspace.type,
         };
 
         // Update the workspace in store
@@ -366,16 +347,10 @@ export const useBatchSetWorkspaceWide = () => {
         if (currentWorkspace) {
           const response = await workspaceApi.getWorkspaces();
           if (response && Array.isArray(response)) {
+            // Use spread operator to automatically include all fields from API response
             const workspaceEntities: WorkspaceEntity[] = response.map((workspace) => ({
-              id: workspace.id,
-              name: workspace.name,
-              description: workspace.description,
-              avatar: workspace.avatar,
-              createdAt: workspace.createdAt,
-              updatedAt: workspace.updatedAt,
-              memberSubspaceCreate: workspace.memberSubspaceCreate,
+              ...workspace,
               settings: workspace.settings as WorkspaceSettings | null,
-              type: workspace.type,
             }));
 
             const workspacesMap = workspaceEntities.reduce(

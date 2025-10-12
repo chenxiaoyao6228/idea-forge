@@ -307,10 +307,7 @@ export class ShareDocumentService {
           subspaceId: doc.subspaceId || undefined,
         });
 
-        const hasInheritedPermission =
-          inheritedPermission &&
-          inheritedPermission.source !== "direct" &&
-          inheritedPermission.sourceDocId !== docId;
+        const hasInheritedPermission = inheritedPermission && inheritedPermission.source !== "direct" && inheritedPermission.sourceDocId !== docId;
 
         // Remove any existing permissions for this user to avoid duplicates
         await this.prismaService.documentPermission.deleteMany({
@@ -529,11 +526,6 @@ export class ShareDocumentService {
     }
 
     return this.getDocumentCollaborators(docId, userId);
-  }
-
-  // Method for ShareDocumentController that expects docId in the DTO
-  async shareDocumentWithDocId(userId: string, dto: ShareDocumentDto & { docId: string }) {
-    return this.shareDocument(userId, dto.docId, dto);
   }
 
   async getDocumentCollaborators(id: string, userId: string) {
@@ -1019,10 +1011,7 @@ export class ShareDocumentService {
       subspaceId: doc.subspaceId || undefined,
     });
 
-    const hasInheritedPermission =
-      inheritedPermission &&
-      inheritedPermission.source !== "direct" &&
-      inheritedPermission.sourceDocId !== id;
+    const hasInheritedPermission = inheritedPermission && inheritedPermission.source !== "direct" && inheritedPermission.sourceDocId !== id;
 
     // Remove ALL permissions for this user from DocumentPermission table (handles duplicates)
     await this.prismaService.documentPermission.deleteMany({
@@ -1174,8 +1163,7 @@ export class ShareDocumentService {
         subspaceId: doc.subspaceId || undefined,
       });
 
-      const hadInheritedPermission =
-        inheritedPermission && inheritedPermission.source !== "direct" && inheritedPermission.sourceDocId !== id;
+      const hadInheritedPermission = inheritedPermission && inheritedPermission.source !== "direct" && inheritedPermission.sourceDocId !== id;
 
       // Update DIRECT user permission
       await this.prismaService.documentPermission.deleteMany({
@@ -1291,20 +1279,16 @@ export class ShareDocumentService {
         };
 
         // Use deduplicator to merge rapid duplicate events
-        await this.eventDeduplicator.deduplicate(
-          BusinessEvents.PERMISSION_INHERITANCE_CHANGED,
-          eventData,
-          async (finalEvent) => {
-            // Publish the final merged event
-            await this.eventPublisher.publishWebsocketEvent({
-              name: BusinessEvents.PERMISSION_INHERITANCE_CHANGED,
-              workspaceId,
-              actorId: userId,
-              data: finalEvent,
-              timestamp: new Date().toISOString(),
-            });
-          },
-        );
+        await this.eventDeduplicator.deduplicate(BusinessEvents.PERMISSION_INHERITANCE_CHANGED, eventData, async (finalEvent) => {
+          // Publish the final merged event
+          await this.eventPublisher.publishWebsocketEvent({
+            name: BusinessEvents.PERMISSION_INHERITANCE_CHANGED,
+            workspaceId,
+            actorId: userId,
+            data: finalEvent,
+            timestamp: new Date().toISOString(),
+          });
+        });
       }
     }
   }

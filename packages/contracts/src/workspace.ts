@@ -37,6 +37,7 @@ export const UpdateWorkspaceRequestSchema = WorkspaceSchema.pick({
   avatar: true,
   memberSubspaceCreate: true,
 }).extend({
+  allowPublicSharing: z.boolean().optional(),
   settings: WorkspaceSettingsSchema.optional(),
 });
 export type UpdateWorkspaceRequest = z.infer<typeof UpdateWorkspaceRequestSchema>;
