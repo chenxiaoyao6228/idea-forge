@@ -24,7 +24,7 @@ export const Subspace = ({ activeSubspaceId }: SubspaceProps = {}) => {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
-              <p className="text-muted-foreground">{t("请先选择一个工作空间")}</p>
+              <p className="text-muted-foreground">{t("Please select a workspace first")}</p>
             </div>
           </CardContent>
         </Card>
