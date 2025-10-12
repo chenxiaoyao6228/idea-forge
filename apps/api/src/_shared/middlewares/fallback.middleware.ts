@@ -92,7 +92,9 @@ export class FallbackMiddleware implements NestMiddleware {
       return this.redirectToLoginOrMarketing(req, res, false);
     }
 
-    const userInfo = needAuth ? await this.getUserInfo(req, res) : null;
+    // Get user info if any auth cookies exist (even for public pages)
+    // This enables client-side auth detection on public pages like /share
+    const userInfo = accessToken || refreshToken ? await this.getUserInfo(req, res, needAuth) : null;
     if (userInfo === REDIRECTED) return;
 
     const createDevHTML = () => {
@@ -158,7 +160,9 @@ export class FallbackMiddleware implements NestMiddleware {
     };
 
     const createUserInfoScript = async () => {
-      if (!needAuth) return "";
+      // Inject userInfo even on public pages (like /share) if user is authenticated
+      // This allows client to detect auth state for smart UI (e.g., "Login to Edit" vs "Go to Edit")
+      if (!userInfo?.id) return "";
 
       if (userInfo?.id) {
         const collabToken = await this.collaborationService.generateCollabToken(userInfo.id);
@@ -256,14 +260,17 @@ export class FallbackMiddleware implements NestMiddleware {
     return html;
   }
 
-  private async getUserInfo(req: Request, res: Response): Promise<UserResponseData | typeof REDIRECTED | null> {
+  private async getUserInfo(req: Request, res: Response, shouldRedirectOnFailure = true): Promise<UserResponseData | typeof REDIRECTED | null> {
     const { accessToken, refreshToken } = req.cookies;
     const workspaceModel = "Workspace" as ModelName;
     const subspaceModel = "Subspace" as ModelName;
 
     if (!accessToken || !refreshToken) {
-      this.redirectToLoginOrMarketing(req, res, false);
-      return REDIRECTED;
+      if (shouldRedirectOnFailure) {
+        this.redirectToLoginOrMarketing(req, res, false);
+        return REDIRECTED;
+      }
+      return null;
     }
 
     try {
@@ -275,8 +282,11 @@ export class FallbackMiddleware implements NestMiddleware {
       const user = await this.userService.getUserById(payload.sub);
 
       if (!user) {
-        this.redirectToLoginOrMarketing(req, res, true);
-        return REDIRECTED;
+        if (shouldRedirectOnFailure) {
+          this.redirectToLoginOrMarketing(req, res, true);
+          return REDIRECTED;
+        }
+        return null;
       }
 
       const abilities = await this.abilityService.serializeAbilitiesForUser(
@@ -330,18 +340,27 @@ export class FallbackMiddleware implements NestMiddleware {
           }
 
           // some how the user is not exist, redirect to login page
-          this.redirectToLoginOrMarketing(req, res, true);
-          return REDIRECTED;
+          if (shouldRedirectOnFailure) {
+            this.redirectToLoginOrMarketing(req, res, true);
+            return REDIRECTED;
+          }
+          return null;
         } catch (refreshError) {
           console.log("Failed to refresh token:", refreshError);
-          this.redirectToLoginOrMarketing(req, res, true);
-          return REDIRECTED;
+          if (shouldRedirectOnFailure) {
+            this.redirectToLoginOrMarketing(req, res, true);
+            return REDIRECTED;
+          }
+          return null;
         }
       }
 
       if ((error as any).message?.includes("invalid signature")) {
-        this.redirectToLoginOrMarketing(req, res, true);
-        return REDIRECTED;
+        if (shouldRedirectOnFailure) {
+          this.redirectToLoginOrMarketing(req, res, true);
+          return REDIRECTED;
+        }
+        return null;
       }
     }
     return null;

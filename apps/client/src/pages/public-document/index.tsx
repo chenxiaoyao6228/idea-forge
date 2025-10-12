@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { publicShareApi } from "@/apis/public-share";
+import useUserStore from "@/stores/user-store";
 import { Button } from "@/components/ui/button";
 import { Home, AlertCircle } from "lucide-react";
 import Loading from "@/components/ui/loading";
@@ -53,6 +54,18 @@ export default function PublicDocument() {
   // Table of Contents state
   const [tocItems, setTocItems] = useState<TableOfContentDataItem[]>([]);
   const [editor, setEditor] = useState<Editor | null>(null);
+
+  // Hydrate user store from server-injected data (if user is authenticated)
+  // This allows us to detect auth state on public pages
+  useEffect(() => {
+    const userInfo = (window as any)._userInfo;
+    if (userInfo && !useUserStore.getState().userInfo) {
+      useUserStore.setState({ userInfo });
+      // Clean up
+      (window as any)._userInfo = null;
+      document.querySelector("#userHook")?.remove();
+    }
+  }, []);
 
   // Show notification if redirected from discovery
   useEffect(() => {
@@ -131,7 +144,7 @@ export default function PublicDocument() {
     <SidebarProvider defaultOpen={true}>
       {/* Left Sidebar - Navigation Tree */}
       {navigationTree && (
-        <PublicSidebar navigationTree={navigationTree} token={token!} activeDocId={docId || navigationTree.id} workspaceName={doc.workspace.name} />
+        <PublicSidebar navigationTree={navigationTree} token={token!} activeDocId={docId || navigationTree.id} workspaceName={doc.workspace.name} docId={doc.id} />
       )}
 
       {/* Main Content Area */}

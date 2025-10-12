@@ -265,14 +265,36 @@ An unauthenticated user attempts to access a document via its workspace URL or d
 
 #### Differentiated User Experience
 
-- **FR-067**: Public share header MUST display different elements based on user authentication status
-- **FR-068**: Authenticated users with workspace permissions MUST see "Open in Workspace" button in header
-- **FR-069**: Authenticated users MUST see dropdown menu showing their email address and navigation options
-- **FR-070**: Authenticated user dropdown MUST include options to: (a) Go to current workspace, (b) Switch to document's workspace if different, (c) Request access if no permission
-- **FR-071**: Unauthenticated users MUST see "Login" button that opens dropdown with login and signup options
-- **FR-072**: Both authenticated and unauthenticated users MUST have access to share actions (copy link, copy embed code)
-- **FR-073**: System MUST maintain user's preference to stay in public view even when authenticated with permissions
-- **FR-074**: System MUST handle workspace context switching when navigating from public view to workspace view
+**Implementation Status**: ✅ **SIMPLIFIED VERSION IMPLEMENTED** (2025-10-12)
+- See detailed discussion: `specs/001-public-document-sharing/discussions/simplified-auth-aware-button.md`
+
+**Current Implementation** (Ultra-Simplified):
+- **FR-067-SIMPLE**: ✅ Public share sidebar button displays different text based on user authentication status
+- **FR-068-SIMPLE**: ✅ Authenticated users see "Go to Edit" button that navigates to `/:docId` (workspace handles permissions)
+- **FR-071-SIMPLE**: ✅ Unauthenticated users see "Login to Edit" button that redirects to `/login?redirect=/:docId`
+- **FR-074-SIMPLE**: ✅ System leverages existing middleware, WithAuth HOC, and Main component for permission/workspace handling
+
+**Original Requirements** (Deferred - Complex Implementation):
+- **FR-067**: ~~Public share header MUST display different elements based on user authentication status~~
+- **FR-068**: ~~Authenticated users with workspace permissions MUST see "Open in Workspace" button in header~~
+- **FR-069**: ~~Authenticated users MUST see dropdown menu showing their email address and navigation options~~
+- **FR-070**: ~~Authenticated user dropdown MUST include options to: (a) Go to current workspace, (b) Switch to document's workspace if different, (c) Request access if no permission~~
+- **FR-071**: ~~Unauthenticated users MUST see "Login" button that opens dropdown with login and signup options~~
+- **FR-072**: ~~Both authenticated and unauthenticated users MUST have access to share actions (copy link, copy embed code)~~
+- **FR-073**: ~~System MUST maintain user's preference to stay in public view even when authenticated with permissions~~
+
+**Decision Rationale**:
+- Simplified to 2 scenarios (unauthenticated vs authenticated) instead of complex header components
+- Leverages existing infrastructure: middleware, WithAuth HOC, Main component guards
+- Delivers core value with minimal code (3 files, ~65 lines changed)
+- Complex UX features deferred to future iteration based on user feedback
+
+**Future Enhancements** (if needed):
+- Differentiated header components with dropdowns
+- Workspace-aware navigation buttons
+- Request access flow with notifications
+- Share actions in header (copy link, embed code)
+- See full design: `specs/001-public-document-sharing/discussions/differentiated-headers-for-auth-unauth-users.md`
 
 ### Key Entities
 
@@ -414,8 +436,21 @@ The following design questions have been identified from analyzing competitor im
 
 - Full PRD: `.cursor/docs/features/public-share-prd.md` (2649 lines with complete technical architecture)
 - Architecture Gaps Analysis: `.cursor/docs/features/public-share-architecture-gaps-session.md` (22 critical questions from competitor analysis)
-- Architecture Verification: `docs/one-share-per-doc.md` (Technical implementation verification - "one share per document" design)
+- Architecture Verification: `specs/001-public-document-sharing/docs/architecture-verification.md` (Technical implementation verification - "one share per document" design)
 - Constitution: `.specify/memory/constitution.md` (Project architectural principles)
+
+### Implementation Discussions
+
+**Differentiated User Experience**:
+- **Simplified Implementation** (✅ DONE): `specs/001-public-document-sharing/discussions/simplified-auth-aware-button.md`
+  - Ultra-minimal approach: 2 scenarios, 3 files, 65 lines
+  - Status: ✅ Implemented 2025-10-12
+  - Decision: Start simple, iterate based on user feedback
+
+- **Complex Implementation** (⏸️ DEFERRED): `specs/001-public-document-sharing/discussions/differentiated-headers-for-auth-unauth-users.md`
+  - Full-featured approach: Header components, dropdowns, workspace switching
+  - Status: Designed but not implemented
+  - Revisit: If user feedback indicates need for more sophisticated UX
 
 ### Competitor Analysis Insights
 
@@ -434,18 +469,19 @@ Observed patterns from industry-standard document sharing platforms:
 
 **Must Have:**
 
-- Public link generation with CUID tokens
-- Read-only permission level
-- All 5 expiration options (never, 1h, 1d, 1w, 1m)
-- Hierarchical sharing (parent → all children)
-- Basic analytics (view count, last accessed)
-- Link revocation
-- WebSocket real-time updates
-- Rate limiting on public endpoints
-- Public share badge in document UI
-- Smart Share Link Discovery (auto-redirect from workspace URLs)
-- Differentiated headers for authenticated/unauthenticated users
-- User dropdown with workspace navigation options
+- ✅ Public link generation with CUID tokens
+- ✅ Read-only permission level
+- ✅ All 5 expiration options (never, 1h, 1d, 1w, 1m)
+- ✅ Hierarchical sharing (parent → all children)
+- ✅ Basic analytics (view count, last accessed)
+- ✅ Link revocation
+- ✅ WebSocket real-time updates
+- ✅ Rate limiting on public endpoints
+- ⏳ Public share badge in document UI (TODO)
+- ✅ Smart Share Link Discovery (auto-redirect from workspace URLs)
+- ✅ **Simplified** auth-aware button (implemented ultra-minimal version)
+- ⏸️ ~~Differentiated headers for authenticated/unauthenticated users~~ (deferred - complex UX)
+- ⏸️ ~~User dropdown with workspace navigation options~~ (deferred - complex UX)
 
 **Deferred to Phase 2+:**
 

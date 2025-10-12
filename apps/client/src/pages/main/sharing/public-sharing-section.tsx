@@ -51,10 +51,10 @@ export function PublicSharingSection({ documentId }: PublicSharingSectionProps) 
     const diffDays = diffHours / 24;
 
     // Approximate to closest duration
-    if (diffHours <= 1.5) return "1h";
-    if (diffDays <= 1.5) return "1d";
-    if (diffDays <= 8) return "1w";
-    if (diffDays <= 32) return "1m";
+    if (diffHours <= 1.5) return "ONE_HOUR";
+    if (diffDays <= 1.5) return "ONE_DAY";
+    if (diffDays <= 8) return "ONE_WEEK";
+    if (diffDays <= 32) return "ONE_MONTH";
     return "NEVER";
   };
 
@@ -144,10 +144,10 @@ export function PublicSharingSection({ documentId }: PublicSharingSectionProps) 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="NEVER">{t("Never")}</SelectItem>
-                <SelectItem value="1h">{t("1 hour")}</SelectItem>
-                <SelectItem value="1d">{t("1 day")}</SelectItem>
-                <SelectItem value="1w">{t("1 week")}</SelectItem>
-                <SelectItem value="1m">{t("1 month")}</SelectItem>
+                <SelectItem value="ONE_HOUR">{t("1 hour")}</SelectItem>
+                <SelectItem value="ONE_DAY">{t("1 day")}</SelectItem>
+                <SelectItem value="ONE_WEEK">{t("1 week")}</SelectItem>
+                <SelectItem value="ONE_MONTH">{t("1 month")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
