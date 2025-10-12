@@ -5,14 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImageCropper } from "@/components/image-cropper";
 import { Option } from "@/components/ui/multi-selector";
 import { SubspaceTypeSchema } from "@idea/contracts";
-import useSubSpaceStore, { useCreateSubspace, useBatchAddSubspaceMembers } from "@/stores/subspace-store";
+import { useCreateSubspace, useBatchAddSubspaceMembers } from "@/stores/subspace-store";
 import { uploadFile } from "@/lib/upload";
 import { dataURLtoFile } from "@/lib/file";
 import { MoreAboutSubspaceTip } from "./more-about-subspace-tip";
@@ -20,6 +19,7 @@ import { SubspaceType } from "@idea/contracts";
 import { MemberAndGroupSelect } from "@/components/member-group-select";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { getInitialChar } from "@/lib/auth";
+import { SubspaceTypeSelector } from "./subspace-type-selector";
 
 interface CreateSubspaceDialogProps {
   workspaceId: string;
@@ -282,17 +282,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
           {/* Subspace Type Section */}
           <div className="space-y-2">
             <Label>{t("Subspace Type")}</Label>
-            <Select value={type} onValueChange={(value: SubspaceType) => setType(value)} disabled={loading}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="WORKSPACE_WIDE">{t("Workspace-wide Space")}</SelectItem>
-                <SelectItem value="PUBLIC">{t("Public Space")}</SelectItem>
-                <SelectItem value="INVITE_ONLY">{t("Invitation Space")}</SelectItem>
-                <SelectItem value="PRIVATE">{t("Private Space")}</SelectItem>
-              </SelectContent>
-            </Select>
+            <SubspaceTypeSelector value={type} onChange={(value: SubspaceType) => setType(value)} disabled={loading} className="w-full" />
           </div>
 
           {/* Add Members Section */}

@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { SubspaceJoinButton } from "@/pages/main/settings/subspace/subspace-join-button";
 import { SubspaceType } from "@idea/contracts";
+import { useSubspaceLabels } from "@/hooks/use-subspace-labels";
+import { SubspaceIcon } from "@/components/subspace-icon";
 interface AllSubspaceSheetProps {
   children: React.ReactNode;
 }
@@ -17,6 +19,7 @@ interface AllSubspaceSheetProps {
 export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
+  const { getSubspaceTypeShortLabel } = useSubspaceLabels();
 
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const allSubspaces = useAllSubspaces();
@@ -28,30 +31,6 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
     const joinedIds = new Set(joinedSubspaces?.map((s) => s.id) || []);
     return allSubspaces.filter((s) => !joinedIds.has(s.id));
   }, [allSubspaces, joinedSubspaces]);
-
-  const getSubspaceTypeLabel = (type: string) => {
-    switch (type) {
-      case "PUBLIC":
-        return t("Public");
-      case "WORKSPACE_WIDE":
-        return t("Workspace-wide");
-      case "INVITE_ONLY":
-        return t("Invite only");
-      case "PRIVATE":
-        return t("Private");
-      default:
-        return type;
-    }
-  };
-
-  const getSubspaceInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -66,9 +45,9 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
 
         <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar">
           {/* My Subspaces Section */}
-          <div className="">
+          <div className="mt-2">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-foreground">{t("My subspaces")}</h3>
+              <h3 className="text-sm font-medium text-foreground">{t("Joined subspaces")}</h3>
               <div className="ml-1 flex items-center gap-1 invisible group-hover/label:visible">
                 <Button
                   variant="ghost"
@@ -89,16 +68,22 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
             <div className="space-y-1">
               {joinedSubspaces && joinedSubspaces.length > 0 ? (
                 joinedSubspaces.map((subspace) => (
-                  <div key={subspace.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div key={subspace.id} className="flex items-center justify-between py-2 px-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={subspace.avatar || undefined} />
-                        <AvatarFallback className="text-xs">{getSubspaceInitials(subspace.name)}</AvatarFallback>
-                      </Avatar>
+                      {subspace.avatar ? (
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={subspace.avatar} />
+                          <AvatarFallback className="text-xs">
+                            <SubspaceIcon type={subspace.type as SubspaceType} withBackground size="md" className="h-8 w-8" />
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <SubspaceIcon type={subspace.type as SubspaceType} withBackground size="md" className="h-8 w-8" />
+                      )}
                       <div>
                         <div className="font-medium text-sm">{subspace.name}</div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{getSubspaceTypeLabel(subspace.type)}</span>
+                          <span>{getSubspaceTypeShortLabel(subspace.type as SubspaceType)}</span>
                           <span>•</span>
                           <span>
                             {subspace.memberCount || 0} {t("members")}
@@ -126,14 +111,20 @@ export function AllSubspaceSheet({ children }: AllSubspaceSheetProps) {
                 otherSubspaces.map((subspace) => (
                   <div key={subspace.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={subspace.avatar || undefined} />
-                        <AvatarFallback className="text-xs">{getSubspaceInitials(subspace.name)}</AvatarFallback>
-                      </Avatar>
+                      {subspace.avatar ? (
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={subspace.avatar} />
+                          <AvatarFallback className="text-xs">
+                            <SubspaceIcon type={subspace.type as SubspaceType} withBackground size="md" className="h-8 w-8" />
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <SubspaceIcon type={subspace.type as SubspaceType} withBackground size="md" className="h-8 w-8" />
+                      )}
                       <div>
                         <div className="font-medium text-sm">{subspace.name}</div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{getSubspaceTypeLabel(subspace.type)}</span>
+                          <span>{getSubspaceTypeShortLabel(subspace.type as SubspaceType)}</span>
                           <span>•</span>
                           <span>
                             {subspace.memberCount || 0} {t("members")}

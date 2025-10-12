@@ -1,11 +1,11 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { PlusIcon, EditIcon, Layers } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import useSubSpaceStore, { SubspaceEntity, useFetchNavigationTree, useGetPathToDocument } from "@/stores/subspace-store";
-import useDocumentStore, { useCreateDocument } from "@/stores/document-store";
+import { SubspaceEntity, useFetchNavigationTree, useGetPathToDocument } from "@/stores/subspace-store";
+import { useCreateDocument } from "@/stores/document-store";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DraggableDocumentContainer } from "./draggable-document-container";
@@ -13,6 +13,7 @@ import { EditableTitle } from "./editable-title";
 import { subspaceApi } from "@/apis/subspace";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { SubspaceMenu } from "../../settings/subspace/subspace-menu";
+import { SubspaceIcon } from "@/components/subspace-icon";
 
 interface SubspaceLinkProps {
   subspace: SubspaceEntity;
@@ -140,7 +141,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
       <div className="subspace-link">
         <SidebarLink
           to={""}
-          icon={<Layers className="h-4 w-4" />}
+          icon={<SubspaceIcon type={subspace.type} size="sm" withBackground />}
           label={
             <EditableTitle
               title={subspace.name}

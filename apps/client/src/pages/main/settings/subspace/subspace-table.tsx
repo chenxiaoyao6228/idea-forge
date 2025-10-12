@@ -10,9 +10,11 @@ import { SubspaceType } from "@idea/contracts";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { SubspaceMenu } from "./subspace-menu";
-import useSubSpaceStore, { useAllSubspaces } from "@/stores/subspace-store";
+import { useAllSubspaces } from "@/stores/subspace-store";
 import { showCreateSubspaceModal } from "./create-subspace-dialog";
 import { useTimeFormat } from "@/hooks/use-time-format";
+import { useSubspaceLabels } from "@/hooks/use-subspace-labels";
+import { SubspaceIcon } from "@/components/subspace-icon";
 
 interface SubspaceTableProps {
   workspaceId: string;
@@ -30,6 +32,7 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
   const [permissionFilter, setPermissionFilter] = useState<FilterPermission>("all");
   const { t } = useTranslation();
   const { formatSmartRelative } = useTimeFormat();
+  const { getSubspaceTypeLabel } = useSubspaceLabels();
 
   const subspaces = useAllSubspaces();
 
@@ -69,57 +72,6 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
       })
       .filter((subspace) => subspace.type !== SubspaceType.PERSONAL);
   }, [subspaces, searchQuery, statusFilter, managerFilter, permissionFilter]);
-
-  const getSubspaceTypeIcon = (type: SubspaceType) => {
-    switch (type) {
-      case SubspaceType.PUBLIC:
-        return "公";
-      case SubspaceType.INVITE_ONLY:
-        return "邀";
-      case SubspaceType.PRIVATE:
-        return "私";
-      case SubspaceType.PERSONAL:
-        return "个";
-      case SubspaceType.WORKSPACE_WIDE:
-        return "全";
-      default:
-        return "?";
-    }
-  };
-
-  const getSubspaceTypeColor = (type: SubspaceType) => {
-    switch (type) {
-      case SubspaceType.PUBLIC:
-        return "bg-green-500";
-      case SubspaceType.INVITE_ONLY:
-        return "bg-yellow-500";
-      case SubspaceType.PRIVATE:
-        return "bg-red-500";
-      case SubspaceType.PERSONAL:
-        return "bg-blue-500";
-      case SubspaceType.WORKSPACE_WIDE:
-        return "bg-pink-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getSubspaceTypeLabel = (type: SubspaceType) => {
-    switch (type) {
-      case SubspaceType.PUBLIC:
-        return t("Public Space");
-      case SubspaceType.INVITE_ONLY:
-        return t("Invitation Space");
-      case SubspaceType.PRIVATE:
-        return t("Private Space");
-      case SubspaceType.PERSONAL:
-        return t("Personal Space");
-      case SubspaceType.WORKSPACE_WIDE:
-        return t("Workspace-wide Space");
-      default:
-        return type;
-    }
-  };
 
   return (
     <Card>
@@ -174,10 +126,30 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("All Permission Types")}</SelectItem>
-              <SelectItem value={SubspaceType.WORKSPACE_WIDE}>{t("Workspace-wide Space")}</SelectItem>
-              <SelectItem value={SubspaceType.PUBLIC}>{t("Public Space")}</SelectItem>
-              <SelectItem value={SubspaceType.INVITE_ONLY}>{t("Invitation Space")}</SelectItem>
-              <SelectItem value={SubspaceType.PRIVATE}>{t("Private Space")}</SelectItem>
+              <SelectItem value={SubspaceType.WORKSPACE_WIDE}>
+                <div className="flex items-center gap-2">
+                  <SubspaceIcon type={SubspaceType.WORKSPACE_WIDE} size="sm" withBackground />
+                  <span>{t("Workspace-wide Space")}</span>
+                </div>
+              </SelectItem>
+              <SelectItem value={SubspaceType.PUBLIC}>
+                <div className="flex items-center gap-2">
+                  <SubspaceIcon type={SubspaceType.PUBLIC} size="sm" withBackground />
+                  <span>{t("Public Space")}</span>
+                </div>
+              </SelectItem>
+              <SelectItem value={SubspaceType.INVITE_ONLY}>
+                <div className="flex items-center gap-2">
+                  <SubspaceIcon type={SubspaceType.INVITE_ONLY} size="sm" withBackground />
+                  <span>{t("Invitation Space")}</span>
+                </div>
+              </SelectItem>
+              <SelectItem value={SubspaceType.PRIVATE}>
+                <div className="flex items-center gap-2">
+                  <SubspaceIcon type={SubspaceType.PRIVATE} size="sm" withBackground />
+                  <span>{t("Private Space")}</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -214,14 +186,7 @@ export function SubspaceTable({ workspaceId, selectedSubspaceId }: SubspaceTable
                     {/* name */}
                     <TableCell>
                       <div className="flex items-center space-x-3">
-                        <div
-                          className={cn(
-                            "w-8 h-8 rounded text-white text-sm flex items-center justify-center",
-                            getSubspaceTypeColor(subspace.type as SubspaceType),
-                          )}
-                        >
-                          {getSubspaceTypeIcon(subspace.type as SubspaceType)}
-                        </div>
+                        <SubspaceIcon type={subspace.type as SubspaceType} size="lg" withBackground />
                         <div>
                           <div className="font-medium">{subspace.name}</div>
                           <div className="text-sm text-muted-foreground">
