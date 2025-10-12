@@ -3,7 +3,6 @@ import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { SubspaceService } from "@/subspace/subspace.service";
-import { presentWorkspace } from "./workspace.presenter";
 import fractionalIndex from "fractional-index";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
@@ -197,7 +196,7 @@ export class WorkspaceService {
     // switch to the new workspace
     await this.switchWorkspace(userId, workspace.id);
 
-    return presentWorkspace(workspace);
+    return workspace;
   }
 
   /**
@@ -344,18 +343,17 @@ export class WorkspaceService {
         ...workspace,
         accessLevel: accessLevel as "member" | "guest",
       } as const;
-      const presented = presentWorkspace(workspaceWithAccessLevel, accessLevel);
 
       // Add guest-specific fields
       if (accessLevel === "guest" && isPendingGuest !== undefined) {
         return {
-          ...presented,
+          ...workspaceWithAccessLevel,
           isPendingGuest,
           guestId,
         };
       }
 
-      return presented;
+      return workspaceWithAccessLevel;
     });
 
     return result as Array<{
@@ -407,7 +405,7 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.PermissionDenied);
     }
 
-    return presentWorkspace(workspace);
+    return workspace;
   }
 
   /**
@@ -455,7 +453,7 @@ export class WorkspaceService {
       data: dto,
     });
 
-    return presentWorkspace(workspace);
+    return workspace;
   }
 
   /**

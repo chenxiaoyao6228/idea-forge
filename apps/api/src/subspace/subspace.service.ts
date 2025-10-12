@@ -6,7 +6,6 @@ import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import fractionalIndex from "fractional-index";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
-import { presentSubspace, presentSubspaceMember, presentSubspaces } from "./subspace.presenter";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { SubspaceType, PermissionLevel } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
@@ -255,12 +254,12 @@ export class SubspaceService {
       workspaceId: dto.workspaceId,
       actorId: creatorId.toString(),
       data: {
-        subspace: presentSubspace(subspace),
+        subspace,
       },
       timestamp: new Date().toISOString(),
     });
 
-    return presentSubspace(subspace);
+    return subspace;
   }
 
   async moveSubspace(id: string, newIndex: string, userId: string) {
@@ -409,7 +408,7 @@ export class SubspaceService {
     });
 
     return {
-      subspace: presentSubspace(archivedSubspace),
+      subspace: archivedSubspace,
     };
   }
 
@@ -438,7 +437,7 @@ export class SubspaceService {
     });
 
     return {
-      subspace: presentSubspace(restoredSubspace),
+      subspace: restoredSubspace,
     };
   }
 
@@ -614,7 +613,7 @@ export class SubspaceService {
 
     return {
       subspace: {
-        ...presentSubspace(subspaceData),
+        ...subspaceData,
         members: subspace.members.map((member) => ({
           ...member,
           createdAt: member.createdAt,
@@ -654,12 +653,12 @@ export class SubspaceService {
       workspaceId: subspace.workspaceId,
       actorId: userId.toString(),
       data: {
-        subspace: presentSubspace(subspace),
+        subspace,
       },
       timestamp: new Date().toISOString(),
     });
 
-    return presentSubspace(subspace);
+    return subspace;
   }
 
   async deleteSubspace(id: string, userId: string) {
@@ -1011,7 +1010,7 @@ export class SubspaceService {
           addedUsers.push({
             userId: item.id,
             role: item.role,
-            member: presentSubspaceMember(member),
+            member,
           });
 
           results.addedCount++;
@@ -1729,7 +1728,7 @@ export class SubspaceService {
     return {
       success: true,
       updatedCount: updatedSubspaces.length,
-      subspaces: presentSubspaces(updatedSubspaces),
+      subspaces: updatedSubspaces,
     };
   }
 
