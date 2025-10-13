@@ -26,17 +26,194 @@ enum DisconnectReason {
   SERVER_DISCONNECT = "server_disconnect",
   CLIENT_DISCONNECT = "client_disconnect",
   NETWORK_ERROR = "network_error",
+  MAX_RETRIES = "max_retries",
+  HEARTBEAT_TIMEOUT = "heartbeat_timeout",
 }
 
-// Custom error class for WebSocket related errors
+/**
+ * WebSocket error codes for categorizing different failure types
+ *
+ * These codes provide type-safe error identification and enable
+ * better error handling, logging, and user feedback.
+ */
+enum WebSocketErrorCode {
+  // Connection errors
+  CONNECTION_TIMEOUT = "CONNECTION_TIMEOUT",
+  CONNECTION_ERROR = "CONNECTION_ERROR",
+  CONNECTION_FAILED = "CONNECTION_FAILED",
+  NETWORK_ERROR = "NETWORK_ERROR",
+
+  // Reconnection errors
+  MAX_RECONNECT_ATTEMPTS = "MAX_RECONNECT_ATTEMPTS",
+  RECONNECT_FAILED = "RECONNECT_FAILED",
+
+  // Authentication errors
+  AUTH_FAILED = "AUTH_FAILED",
+  AUTH_TIMEOUT = "AUTH_TIMEOUT",
+
+  // Room errors
+  ROOM_JOIN_FAILED = "ROOM_JOIN_FAILED",
+  ROOM_LEAVE_FAILED = "ROOM_LEAVE_FAILED",
+  ROOM_NOT_FOUND = "ROOM_NOT_FOUND",
+
+  // Socket errors
+  SOCKET_ERROR = "SOCKET_ERROR",
+  SOCKET_DISCONNECTED = "SOCKET_DISCONNECTED",
+
+  // Server errors
+  SERVER_ERROR = "SERVER_ERROR",
+  SERVER_DISCONNECT = "SERVER_DISCONNECT",
+
+  // Client errors
+  CLIENT_DISCONNECT = "CLIENT_DISCONNECT",
+  INVALID_STATE = "INVALID_STATE",
+}
+
+/**
+ * Error category for grouping related error types
+ */
+enum ErrorCategory {
+  CONNECTION = "connection",
+  AUTHENTICATION = "auth",
+  ROOM = "room",
+  NETWORK = "network",
+  SERVER = "server",
+  CLIENT = "client",
+}
+
+/**
+ * Enhanced WebSocket error with categorization and metadata
+ *
+ * Provides structured error information including timestamps,
+ * retry recommendations, and user-friendly messages.
+ *
+ * @example
+ * ```ts
+ * const error = new WebsocketError(
+ *   WebSocketErrorCode.AUTH_FAILED,
+ *   "Invalid credentials",
+ *   { retryable: false, userMessage: "Please sign in again" }
+ * );
+ *
+ * if (error.retryable) {
+ *   // Attempt retry
+ * } else {
+ *   // Show user message
+ *   toast.error(error.userMessage);
+ * }
+ * ```
+ */
 class WebsocketError extends Error {
+  public readonly timestamp: number;
+  public readonly category: ErrorCategory;
+  public readonly retryable: boolean;
+  public readonly userMessage: string;
+  public readonly shouldNotifyUser: boolean;
+  public readonly data?: any;
+
   constructor(
-    public code: string,
+    public readonly code: WebSocketErrorCode,
     message: string,
-    public data?: any,
+    options?: {
+      data?: any;
+      category?: ErrorCategory;
+      retryable?: boolean;
+      userMessage?: string;
+      shouldNotifyUser?: boolean;
+    },
   ) {
     super(message);
     this.name = "WebsocketError";
+    this.timestamp = Date.now();
+    this.data = options?.data;
+
+    // Auto-determine category from code if not provided
+    this.category = options?.category ?? this.getCategoryFromCode(code);
+
+    // Auto-determine retryable from code if not provided
+    this.retryable = options?.retryable ?? this.isCodeRetryable(code);
+
+    // User-friendly message
+    this.userMessage = options?.userMessage ?? this.getDefaultUserMessage(code);
+
+    // Auto-determine whether to notify user from code if not provided
+    this.shouldNotifyUser = options?.shouldNotifyUser ?? this.shouldCodeNotifyUser(code);
+  }
+
+  private getCategoryFromCode(code: WebSocketErrorCode): ErrorCategory {
+    if (code.includes("AUTH")) return ErrorCategory.AUTHENTICATION;
+    if (code.includes("ROOM")) return ErrorCategory.ROOM;
+    if (code.includes("NETWORK")) return ErrorCategory.NETWORK;
+    if (code.includes("SERVER")) return ErrorCategory.SERVER;
+    if (code.includes("CLIENT")) return ErrorCategory.CLIENT;
+    return ErrorCategory.CONNECTION;
+  }
+
+  private isCodeRetryable(code: WebSocketErrorCode): boolean {
+    const nonRetryable = [
+      WebSocketErrorCode.AUTH_FAILED,
+      WebSocketErrorCode.MAX_RECONNECT_ATTEMPTS,
+      WebSocketErrorCode.CLIENT_DISCONNECT,
+      WebSocketErrorCode.INVALID_STATE,
+    ];
+    return !nonRetryable.includes(code);
+  }
+
+  private shouldCodeNotifyUser(code: WebSocketErrorCode): boolean {
+    // Only notify user for critical errors that require user attention
+    const userFacingErrors = [
+      WebSocketErrorCode.AUTH_FAILED, // User needs to sign in again
+      WebSocketErrorCode.MAX_RECONNECT_ATTEMPTS, // User should know connection failed
+      WebSocketErrorCode.AUTH_TIMEOUT, // User might need to refresh
+    ];
+    return userFacingErrors.includes(code);
+  }
+
+  private getDefaultUserMessage(code: WebSocketErrorCode): string {
+    const messages: Record<WebSocketErrorCode, string> = {
+      [WebSocketErrorCode.CONNECTION_TIMEOUT]: "Connection timed out. Please check your internet connection.",
+      [WebSocketErrorCode.CONNECTION_ERROR]: "Unable to connect to the server.",
+      [WebSocketErrorCode.CONNECTION_FAILED]: "Connection failed. Please try again.",
+      [WebSocketErrorCode.NETWORK_ERROR]: "Network error occurred. Please check your internet connection.",
+      [WebSocketErrorCode.MAX_RECONNECT_ATTEMPTS]: "Unable to reconnect after multiple attempts.",
+      [WebSocketErrorCode.RECONNECT_FAILED]: "Reconnection failed. Please refresh the page.",
+      [WebSocketErrorCode.AUTH_FAILED]: "Authentication failed. Please sign in again.",
+      [WebSocketErrorCode.AUTH_TIMEOUT]: "Authentication timed out. Please try again.",
+      [WebSocketErrorCode.ROOM_JOIN_FAILED]: "Failed to join room.",
+      [WebSocketErrorCode.ROOM_LEAVE_FAILED]: "Failed to leave room.",
+      [WebSocketErrorCode.ROOM_NOT_FOUND]: "Room not found.",
+      [WebSocketErrorCode.SOCKET_ERROR]: "WebSocket error occurred.",
+      [WebSocketErrorCode.SOCKET_DISCONNECTED]: "Connection was lost.",
+      [WebSocketErrorCode.SERVER_ERROR]: "Server error occurred.",
+      [WebSocketErrorCode.SERVER_DISCONNECT]: "Server disconnected the connection.",
+      [WebSocketErrorCode.CLIENT_DISCONNECT]: "Disconnected.",
+      [WebSocketErrorCode.INVALID_STATE]: "Invalid connection state.",
+    };
+    return messages[code] || "An error occurred.";
+  }
+
+  /**
+   * Convert error to JSON for logging and debugging
+   */
+  toJSON() {
+    return {
+      name: this.name,
+      code: this.code,
+      message: this.message,
+      userMessage: this.userMessage,
+      category: this.category,
+      retryable: this.retryable,
+      shouldNotifyUser: this.shouldNotifyUser,
+      timestamp: this.timestamp,
+      data: this.data,
+    };
+  }
+
+  /**
+   * Get a formatted string representation of the error
+   */
+  toString(): string {
+    return `[${this.code}] ${this.message}`;
   }
 }
 
@@ -117,12 +294,15 @@ class WebsocketService {
   private joinedRooms = new Set<string>();
   private visibilityCleanup: (() => void) | null = null;
 
-  // Recovery observer pattern (inspired by Flowus)
+  // Recovery observer pattern
   private recoveryObservers = new Set<() => void>();
 
-  // Heartbeat management
-  private heartbeatTimer: NodeJS.Timeout | null = null;
-  private heartbeatPaused = false;
+  // Error tracking
+  private lastError: WebsocketError | null = null;
+
+  // Subscription throttling - batch join/leave operations to prevent overwhelming server
+  private pendingJoins = new Set<string>();
+  private pendingLeaves = new Set<string>();
 
   // Update connection status and emit status change event
   private setStatus(status: WebsocketStatus, reason?: DisconnectReason) {
@@ -149,7 +329,7 @@ class WebsocketService {
     }
   }
 
-  // Recovery observer pattern (inspired by Flowus)
+  // Recovery observer pattern
   subscribeToRecovery(callback: () => void): () => void {
     this.recoveryObservers.add(callback);
     console.log(`[websocket]: Recovery observer added (total: ${this.recoveryObservers.size})`);
@@ -160,7 +340,7 @@ class WebsocketService {
     };
   }
 
-  // Dispatch recovery to all observers (throttled to 1500ms like Flowus)
+  // Dispatch recovery to all observers (throttled to 1500ms)
   private dispatchRecover = throttle(
     () => {
       console.log(`[websocket]: Dispatching recovery to ${this.recoveryObservers.size} observers`);
@@ -181,24 +361,50 @@ class WebsocketService {
     },
   );
 
-  // Pause heartbeat to save resources when page hidden
-  private pauseHeartbeat(): void {
-    if (this.heartbeatTimer) {
-      console.log("[websocket]: Pausing heartbeat");
-      this.heartbeatPaused = true;
-      // Note: We don't clear the timer, just set the flag
-      // The heartbeat logic will check this flag
-    }
-  }
+  /**
+   * Commit pending room operations (throttled to 500ms)
+   * Batches multiple join/leave requests to prevent overwhelming the server
+   */
+  private commitRoomOperations = throttle(
+    () => {
+      if (!this.socket?.connected) {
+        console.warn("[websocket]: Cannot commit room operations, socket not connected");
+        return;
+      }
 
-  // Resume heartbeat when page visible
-  private resumeHeartbeat(): void {
-    if (this.heartbeatTimer) {
-      console.log("[websocket]: Resuming heartbeat");
-      this.heartbeatPaused = false;
-      // Heartbeat will resume on next interval
-    }
-  }
+      // Process pending joins
+      if (this.pendingJoins.size > 0) {
+        const roomsToJoin = Array.from(this.pendingJoins);
+        console.log(`[websocket]: Batching ${roomsToJoin.length} join operations`);
+
+        roomsToJoin.forEach((roomId) => {
+          console.log(`[websocket]: Joining room: ${roomId}`);
+          this.socket?.emit("join", { roomId });
+        });
+
+        this.pendingJoins.clear();
+      }
+
+      // Process pending leaves
+      if (this.pendingLeaves.size > 0) {
+        const roomsToLeave = Array.from(this.pendingLeaves);
+        console.log(`[websocket]: Batching ${roomsToLeave.length} leave operations`);
+
+        roomsToLeave.forEach((roomId) => {
+          console.log(`[websocket]: Leaving room: ${roomId}`);
+          this.socket?.emit("leave", { roomId });
+          this.joinedRooms.delete(roomId);
+        });
+
+        this.pendingLeaves.clear();
+      }
+    },
+    500,
+    {
+      leading: false,
+      trailing: true,
+    },
+  );
 
   // Handle socket disconnection with appropriate reason
   private handleSocketDisconnect(reason: string) {
@@ -257,7 +463,7 @@ class WebsocketService {
       // Wait for connection with timeout
       const timeoutPromise = resolvablePromise();
       const timeout = setTimeout(() => {
-        timeoutPromise.reject(new WebsocketError("CONNECTION_TIMEOUT", "Connection timeout"));
+        timeoutPromise.reject(this.createError(WebSocketErrorCode.CONNECTION_TIMEOUT, "Connection timeout after 10s"));
       }, 10000);
 
       this.socket.on("connect", () => {
@@ -279,7 +485,7 @@ class WebsocketService {
       this.socket.on("connect_error", (error) => {
         clearTimeout(timeout);
         console.error("[websocket]: Socket.IO connection error:", error);
-        const wsError = new WebsocketError("CONNECTION_ERROR", error.message, error);
+        const wsError = this.createError(WebSocketErrorCode.CONNECTION_ERROR, error.message, { data: error });
         this.setStatus(WebsocketStatus.ERROR, DisconnectReason.NETWORK_ERROR);
         this.socket?.emit("error", wsError);
         timeoutPromise.reject(wsError);
@@ -287,7 +493,7 @@ class WebsocketService {
 
       return timeoutPromise;
     } catch (error: any) {
-      const wsError = error instanceof WebsocketError ? error : new WebsocketError("CONNECTION_FAILED", error.message, error);
+      const wsError = error instanceof WebsocketError ? error : this.createError(WebSocketErrorCode.CONNECTION_FAILED, error.message, { data: error });
       this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
       this.socket?.emit("error", wsError);
       throw wsError;
@@ -301,9 +507,9 @@ class WebsocketService {
     await this.waitForNetworkOnline();
 
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      const error = new WebsocketError("MAX_RECONNECT_ATTEMPTS", "Maximum reconnection attempts reached");
+      const error = this.createError(WebSocketErrorCode.MAX_RECONNECT_ATTEMPTS, `Maximum reconnection attempts (${this.maxReconnectAttempts}) reached`);
       this.socket?.emit("error", error);
-      this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
+      this.setStatus(WebsocketStatus.ERROR, DisconnectReason.MAX_RETRIES); // Updated to use new disconnect reason
       return;
     }
 
@@ -358,9 +564,6 @@ class WebsocketService {
     const cleanupWakeup = pageVisibility.onVisible(() => {
       console.log("[websocket]: Page became visible");
 
-      // Resume heartbeat to save resources
-      this.resumeHeartbeat();
-
       // Dispatch recovery to all observers (like Flowus)
       this.dispatchRecover();
 
@@ -373,9 +576,6 @@ class WebsocketService {
 
     const cleanupHidden = pageVisibility.onHidden(() => {
       console.log("[websocket]: Page became hidden");
-
-      // Pause heartbeat to save resources (but keep connection alive!)
-      this.pauseHeartbeat();
 
       // Note: We do NOT disconnect! Connection stays alive to receive events.
       // This prevents missing important updates like new members, permission changes, etc.
@@ -419,7 +619,7 @@ class WebsocketService {
     this.socket.on("error", (error) => {
       console.error("[websocket]: Socket.IO error:", error);
       this.setStatus(WebsocketStatus.ERROR, DisconnectReason.ERROR);
-      this.socket?.emit("error", new WebsocketError("SOCKET_ERROR", error.message, error));
+      this.socket?.emit("error", this.createError(WebSocketErrorCode.SOCKET_ERROR, error.message, { data: error }));
     });
 
     // Authentication events
@@ -481,8 +681,14 @@ class WebsocketService {
       return;
     }
 
-    console.log(`[websocket]: Joining room: ${roomId}`);
-    this.socket.emit("join", { roomId });
+    // Remove from pending leaves if present
+    if (this.pendingLeaves.has(roomId)) {
+      this.pendingLeaves.delete(roomId);
+    }
+
+    // Add to pending joins and trigger batching
+    this.pendingJoins.add(roomId);
+    this.commitRoomOperations();
     // Note: Room is added to joinedRooms in JOIN_SUCCESS handler
   }
 
@@ -513,9 +719,15 @@ class WebsocketService {
       return;
     }
 
-    console.log(`[websocket]: Leaving room: ${roomId}`);
-    this.socket.emit("leave", { roomId });
-    this.joinedRooms.delete(roomId);
+    // Remove from pending joins if present
+    if (this.pendingJoins.has(roomId)) {
+      this.pendingJoins.delete(roomId);
+    }
+
+    // Add to pending leaves and trigger batching
+    this.pendingLeaves.add(roomId);
+    this.commitRoomOperations();
+    // Note: Room is removed from joinedRooms in commitRoomOperations
   }
 
   // Helper method to check if we're in a room
@@ -526,6 +738,41 @@ class WebsocketService {
   // Helper method to get all joined rooms
   getJoinedRooms(): string[] {
     return Array.from(this.joinedRooms);
+  }
+
+  // Error helper methods
+
+  /**
+   * Get the last error that occurred
+   * @returns The last WebsocketError or null if no error occurred
+   */
+  getLastError(): WebsocketError | null {
+    return this.lastError;
+  }
+
+  /**
+   * Helper to create and track errors
+   * Creates a new WebsocketError, tracks it internally, and logs it
+   *
+   * @param code - The error code
+   * @param message - The error message
+   * @param options - Optional error options (data, category, retryable, userMessage)
+   * @returns The created WebsocketError
+   */
+  private createError(
+    code: WebSocketErrorCode,
+    message: string,
+    options?: {
+      data?: any;
+      category?: ErrorCategory;
+      retryable?: boolean;
+      userMessage?: string;
+    },
+  ): WebsocketError {
+    const error = new WebsocketError(code, message, options);
+    this.lastError = error;
+    console.error(`[websocket]: ${error.toString()}`, error.toJSON());
+    return error;
   }
 
   // Public API methods
