@@ -5,6 +5,12 @@
 pre-commit:
   parallel: false
   commands:
+    typecheck:
+      glob: "*.{js,ts,jsx,tsx,json}"
+      run: |
+        echo "Running typecheck..."  
+        pnpm typecheck
+        git add {staged_files}
     i18n:
       glob: "{apps/client/src/**/*.{tsx,ts,jsx,js},apps/api/src/**/*.{tsx,ts,jsx,js},**/locales/en.json}"
       run: |

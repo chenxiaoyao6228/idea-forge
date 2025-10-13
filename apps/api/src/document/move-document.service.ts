@@ -162,7 +162,7 @@ export class MoveDocumentService {
       },
     });
 
-    return { data: { documents: [presentDocument(updatedDoc, { isPublic: true })] } };
+    return { data: { documents: [presentDocument(updatedDoc)] } };
   }
 
   // Insert node under a parent node at specified position

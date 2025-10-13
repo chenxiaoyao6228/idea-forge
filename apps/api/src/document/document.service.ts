@@ -51,10 +51,11 @@ export class DocumentService {
 
     if (doc.parentId) {
       // Check if author would inherit MANAGE from parent
-      const parentPermission = await this.docPermissionResolveService.resolveUserPermissionForDocument(
-        authorId,
-        { id: doc.parentId, workspaceId: doc.workspaceId, subspaceId: doc.subspaceId }
-      );
+      const parentPermission = await this.docPermissionResolveService.resolveUserPermissionForDocument(authorId, {
+        id: doc.parentId,
+        workspaceId: doc.workspaceId,
+        subspaceId: doc.subspaceId,
+      });
 
       // If author already has MANAGE on parent (either direct or inherited), don't create redundant permission
       if (parentPermission.level === "MANAGE") {
@@ -91,7 +92,7 @@ export class DocumentService {
       timestamp: new Date().toISOString(),
     });
 
-    return presentDocument(doc, { isPublic: true });
+    return presentDocument(doc);
   }
 
   async list(userId: string, dto: DocumentPagerDto) {
@@ -116,7 +117,7 @@ export class DocumentService {
       orderBy: { [sortField]: sortOrder || "desc" },
     });
 
-    const data = items.map((doc) => presentDocument(doc, { isPublic: false }));
+    const data = items.map((doc) => presentDocument(doc));
 
     return {
       pagination,
@@ -160,7 +161,7 @@ export class DocumentService {
         workspaceId: completeUpdatedDoc.workspaceId,
         actorId: userId,
         data: {
-          document: presentDocument(completeUpdatedDoc, { isPublic: true }),
+          document: presentDocument(completeUpdatedDoc),
           subspaceId: completeUpdatedDoc.subspaceId || null,
         },
         timestamp: new Date().toISOString(),
@@ -285,7 +286,7 @@ export class DocumentService {
     const isPublic = document.visibility === "PUBLIC";
 
     // Present document data (similar to presentDocument)
-    const doc = presentDocument(documentWithFilteredChildren, { isPublic });
+    const doc = presentDocument(documentWithFilteredChildren);
 
     // Get and serialize document abilities for the user scoped to this document
     const serializedAbility = await this.abilityService.serializeAbilityForUser(
@@ -569,7 +570,7 @@ export class DocumentService {
         workspaceId: updatedDoc.workspaceId,
         actorId: userId,
         data: {
-          document: presentDocument(updatedDoc, { isPublic: true }),
+          document: presentDocument(updatedDoc),
           subspaceId: updatedDoc.subspaceId || null,
         },
         timestamp: new Date().toISOString(),
@@ -612,7 +613,7 @@ export class DocumentService {
         workspaceId: updatedDoc.workspaceId,
         actorId: userId,
         data: {
-          document: presentDocument(updatedDoc, { isPublic: true }),
+          document: presentDocument(updatedDoc),
           subspaceId: updatedDoc.subspaceId || null,
         },
         timestamp: new Date().toISOString(),

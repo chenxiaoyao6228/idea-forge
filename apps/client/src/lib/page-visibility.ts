@@ -57,6 +57,16 @@ export interface PageVisibilityService {
    * Register callback for when page loses focus
    */
   onBlur(callback: VisibilityCallback): () => void;
+
+  /**
+   * Wait until page becomes visible (returns a promise)
+   */
+  waitUntilVisible(): Promise<void>;
+
+  /**
+   * Wait until user wakes up from idle (returns a promise)
+   */
+  waitUntilWakeup(): Promise<void>;
 }
 
 class PageVisibility implements PageVisibilityService {
@@ -121,6 +131,39 @@ class PageVisibility implements PageVisibilityService {
       ifvisible.off("blur", callback);
     };
   }
+
+  /**
+   * Wait until page becomes visible (returns a promise)
+   * Useful for async/await flows
+   */
+  waitUntilVisible(): Promise<void> {
+    if (this.isVisible()) {
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve) => {
+      const cleanup = this.onVisible(() => {
+        cleanup();
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * Wait until user wakes up from idle (returns a promise)
+   */
+  waitUntilWakeup(): Promise<void> {
+    if (!this.isIdle()) {
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve) => {
+      const cleanup = this.onWakeup(() => {
+        cleanup();
+        resolve();
+      });
+    });
+  }
 }
 
 // Export singleton instance
@@ -147,4 +190,6 @@ export const pageVisibility = {
   onWakeup: (callback: WakeupCallback) => getPageVisibilityService().onWakeup(callback),
   onFocus: (callback: VisibilityCallback) => getPageVisibilityService().onFocus(callback),
   onBlur: (callback: VisibilityCallback) => getPageVisibilityService().onBlur(callback),
+  waitUntilVisible: () => getPageVisibilityService().waitUntilVisible(),
+  waitUntilWakeup: () => getPageVisibilityService().waitUntilWakeup(),
 };

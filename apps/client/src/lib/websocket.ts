@@ -2,6 +2,7 @@ import { io, Socket } from "socket.io-client";
 import { throttle } from "lodash-es";
 import { resolvablePromise } from "./async";
 import { pageVisibility } from "./page-visibility";
+import { networkStatus } from "./network-status";
 
 type SocketWithAuthentication = Socket & {
   authenticated?: boolean;
@@ -109,8 +110,9 @@ class WebsocketService {
   private status: WebsocketStatus = WebsocketStatus.DISCONNECTED;
   private disconnectReason: DisconnectReason = DisconnectReason.NORMAL;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 10; // Increased from 5 to 10
   private reconnectDelay = 1000;
+  private maxReconnectDelay = 60000; // Cap backoff at 60 seconds
   private connectionPromise = resolvablePromise();
   private joinedRooms = new Set<string>();
   private visibilityCleanup: (() => void) | null = null;
@@ -120,6 +122,7 @@ class WebsocketService {
 
   // Heartbeat management
   private heartbeatTimer: NodeJS.Timeout | null = null;
+  private heartbeatPaused = false;
 
   // Update connection status and emit status change event
   private setStatus(status: WebsocketStatus, reason?: DisconnectReason) {
@@ -130,19 +133,20 @@ class WebsocketService {
 
   // Wait for page to be visible before attempting connection
   private async waitForPageVisible(): Promise<void> {
-    if (pageVisibility.isVisible()) {
-      return Promise.resolve();
+    if (!pageVisibility.isVisible()) {
+      console.log("[websocket]: Page is hidden, waiting for visibility...");
+      await pageVisibility.waitUntilVisible();
+      console.log("[websocket]: Page became visible, proceeding with connection");
     }
+  }
 
-    console.log("[websocket]: Page is hidden, waiting for visibility...");
-
-    return new Promise<void>((resolve) => {
-      const cleanup = pageVisibility.onVisible(() => {
-        console.log("[websocket]: Page became visible, proceeding with connection");
-        cleanup();
-        resolve();
-      });
-    });
+  // Wait for network to be online before attempting connection
+  private async waitForNetworkOnline(): Promise<void> {
+    if (!networkStatus.isOnline) {
+      console.log("[websocket]: Network is offline, waiting for connection...");
+      await networkStatus.waitUntilOnline();
+      console.log("[websocket]: Network is online, proceeding with connection");
+    }
   }
 
   // Recovery observer pattern (inspired by Flowus)
@@ -290,10 +294,11 @@ class WebsocketService {
     }
   }
 
-  // Handle reconnection with exponential backoff
+  // Handle reconnection with exponential backoff and jitter
   private async reconnect() {
-    // Wait for page to be visible before attempting reconnection
+    // Wait for both page visibility and network connectivity before attempting reconnection
     await this.waitForPageVisible();
+    await this.waitForNetworkOnline();
 
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       const error = new WebsocketError("MAX_RECONNECT_ATTEMPTS", "Maximum reconnection attempts reached");
@@ -309,10 +314,20 @@ class WebsocketService {
       await this.connect();
       this.socket?.emit("reconnect");
 
+      // Rejoin all previously joined rooms after successful reconnection
+      this.rejoinRooms();
+
       // Dispatch recovery after successful reconnection
       this.dispatchRecover();
     } catch (error) {
-      const delay = this.reconnectDelay * 2 ** (this.reconnectAttempts - 1);
+      // Exponential backoff with cap and jitter
+      const exponentialDelay = this.reconnectDelay * 2 ** (this.reconnectAttempts - 1);
+      const cappedDelay = Math.min(exponentialDelay, this.maxReconnectDelay);
+      // Add jitter (±25%) to prevent thundering herd
+      const jitter = cappedDelay * 0.25 * (Math.random() - 0.5);
+      const delay = Math.max(1000, cappedDelay + jitter);
+
+      console.log(`[websocket]: Reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
       setTimeout(() => this.reconnect(), delay);
     }
   }
@@ -366,10 +381,31 @@ class WebsocketService {
       // This prevents missing important updates like new members, permission changes, etc.
     });
 
+    // Listen to network status changes
+    const cleanupNetworkOnline = networkStatus.onOnline(() => {
+      console.log("[websocket]: Network came back online");
+
+      // Dispatch recovery to all observers (like Flowus)
+      this.dispatchRecover();
+
+      // If disconnected due to network error, try to reconnect
+      if (this.status === WebsocketStatus.DISCONNECTED && this.disconnectReason === DisconnectReason.NETWORK_ERROR && pageVisibility.isVisible()) {
+        console.log("[websocket]: Attempting reconnection after network came back online");
+        this.reconnect();
+      }
+    });
+
+    const cleanupNetworkOffline = networkStatus.onOffline(() => {
+      console.log("[websocket]: Network went offline");
+      // Just log for now - connection will fail naturally and trigger reconnect logic
+    });
+
     // Store cleanup function
     this.visibilityCleanup = () => {
       cleanupWakeup();
       cleanupHidden();
+      cleanupNetworkOnline();
+      cleanupNetworkOffline();
     };
   }
 
@@ -416,6 +452,21 @@ class WebsocketService {
     this.socket.on(SocketEvents.GATEWAY_DISCONNECT, (message: GatewayMessage) => {
       console.log(`[websocket]: Received event ${SocketEvents.GATEWAY_DISCONNECT}:`, message);
     });
+
+    // Room join/leave events
+    this.socket.on(SocketEvents.JOIN_SUCCESS, (message: GatewayMessage) => {
+      const roomId = message.roomId || message.data?.roomId;
+      if (roomId) {
+        this.joinedRooms.add(roomId);
+        console.log(`[websocket]: Successfully joined room: ${roomId} (total rooms: ${this.joinedRooms.size})`);
+      }
+    });
+
+    this.socket.on(SocketEvents.JOIN_ERROR, (message: GatewayMessage) => {
+      const roomId = message.roomId || message.data?.roomId;
+      const error = message.error || message.data?.error || "Unknown error";
+      console.error(`[websocket]: Failed to join room ${roomId}:`, error);
+    });
   }
 
   // Room management methods
@@ -432,6 +483,23 @@ class WebsocketService {
 
     console.log(`[websocket]: Joining room: ${roomId}`);
     this.socket.emit("join", { roomId });
+    // Note: Room is added to joinedRooms in JOIN_SUCCESS handler
+  }
+
+  // Rejoin all previously joined rooms after reconnection
+  private rejoinRooms() {
+    if (!this.socket?.connected || this.joinedRooms.size === 0) {
+      return;
+    }
+
+    console.log(`[websocket]: Rejoining ${this.joinedRooms.size} rooms after reconnection`);
+    const roomsToRejoin = Array.from(this.joinedRooms);
+
+    // Clear the set and rejoin all rooms
+    this.joinedRooms.clear();
+    roomsToRejoin.forEach((roomId) => {
+      this.joinRoom(roomId);
+    });
   }
 
   leaveRoom(roomId: string) {

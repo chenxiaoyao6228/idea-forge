@@ -19,3 +19,4 @@ export * from "./document";
 export * from "./subspace";
 export * from "./guest-collaborators";
 export * from "./public-share";
+export * from "./share";
