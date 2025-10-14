@@ -14,7 +14,7 @@ import SharedWithMe from "./shared-with-me";
 import SubspacesArea from "./subspaces";
 import MyDocsArea from "./ my-docs";
 import React from "react";
-import { Search as SearchIcon, Download, Users, Trash2, Box, Inbox, Settings, Plus } from "lucide-react";
+import { Search as SearchIcon, Download, Users, Trash2, Box, Settings, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -23,6 +23,7 @@ import { useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { NotificationButton } from "@/components/notification";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
@@ -42,7 +43,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
 
             {/* Quick start */}
             <SidebarGroup className="group-data-[collapsible=icon]:hidden py-1 px-2">
-              <div className="flex items-center justify-between  w-full gap-2">
+              <div className="flex items-center justify-between w-full gap-1">
                 {!isGuestCollaborator && (
                   <>
                     {/* Search */}
@@ -52,9 +53,9 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                           <TooltipTrigger asChild>
                             <SidebarMenuButton
                               onClick={() => showSearchModal()}
-                              className="flex items-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
+                              className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors h-10 w-10"
                             >
-                              <SearchIcon className="h-6 w-6" />
+                              <SearchIcon className="h-5 w-5" />
                             </SidebarMenuButton>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -64,15 +65,15 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                       </TooltipProvider>
                     </div>
                     {/* Import Files */}
-                    <div className="flex items-center justify-center ">
+                    <div className="flex items-center justify-center">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <SidebarMenuButton
                               onClick={() => showImportFilesModal()}
-                              className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
+                              className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors h-10 w-10"
                             >
-                              <Download className="h-6 w-6" />
+                              <Download className="h-5 w-5" />
                             </SidebarMenuButton>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -83,15 +84,15 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                     </div>
 
                     {/* Workspace Settings */}
-                    <div className="flex items-center justify-center ">
+                    <div className="flex items-center justify-center">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <SidebarMenuButton
                               onClick={() => showSettingModal({ tab: "profile" })}
-                              className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
+                              className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors h-10 w-10"
                             >
-                              <Settings className="h-6 w-6" />
+                              <Settings className="h-5 w-5" />
                             </SidebarMenuButton>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -101,27 +102,24 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                       </TooltipProvider>
                     </div>
 
-                    {/* Mailbox */}
-                    <div className="flex items-center justify-center ">
+                    {/* Notifications */}
+                    <div className="flex items-center justify-center">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <SidebarMenuButton
-                              onClick={() => {}}
-                              className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors"
-                            >
-                              <Inbox className="h-6 w-6" />
-                            </SidebarMenuButton>
+                            <div>
+                              <NotificationButton size="lg" as={SidebarMenuButton} />
+                            </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{t("Mailbox")}</p>
+                            <p>{t("Notifications")}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </div>
 
                     {/* More Options */}
-                    <div className="flex items-center justify-center ">
+                    <div className="flex items-center justify-center">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>

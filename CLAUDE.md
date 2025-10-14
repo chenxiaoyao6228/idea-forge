@@ -202,6 +202,24 @@ Multi-level permissions with inheritance:
 3. Update generated types with `pnpm prisma:generate`
 4. Update API DTOs and validation schemas
 
+### Managing Dependencies
+
+**IMPORTANT: Always check existing dependencies before installing new ones**
+
+**Installation workflow:**
+
+```bash
+# Step 1: Read the package.json
+# Use Read tool on apps/client/package.json or apps/api/package.json
+
+# Step 2: Check for existing similar libraries
+# Search through the dependencies list
+
+# Step 3: Install only if needed in the correct location
+pnpm -F @idea/client add <new-package>  # For client
+pnpm -F @idea/api add <new-package>     # For API
+```
+
 ### Debugging Real-time Features
 
 - **Yjs State:** Use browser dev tools Yjs extension

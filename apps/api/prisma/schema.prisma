@@ -152,6 +152,12 @@ model User {
 
   // Star relationships
   stars Star[] // User's starred items
+
+  // Notification relationships
+  receivedNotifications  Notification[]        @relation("NotificationRecipient")
+  triggeredNotifications Notification[]        @relation("NotificationActor")
+  resolvedNotifications  Notification[]        @relation("NotificationResolver")
+  notificationSettings   NotificationSetting[]
 }
 
 enum UserStatus {
@@ -188,6 +194,9 @@ model Workspace {
 
   // Current workspace users
   currentUsers User[] @relation("UserCurrentWorkspace")
+
+  // Notifications
+  notifications Notification[]
 }
 
 model WorkspacePublicInvite {
@@ -269,6 +278,9 @@ model Doc {
 
   // star relationships
   stars Star[] // Stars for this document
+
+  // Notifications
+  notifications Notification[]
 
   // Indexes for performance
   @@index([parentId])
@@ -586,4 +598,98 @@ enum DocType {
 enum WorkspaceType {
   PERSONAL
   TEAM
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  // Event classification
+  event NotificationEventType
+
+  // Recipients and actors
+  userId  String // Who receives this notification
+  actorId String? // Who triggered this event (optional)
+
+  // Context (what this notification is about)
+  documentId  String?
+  workspaceId String
+
+  // Metadata
+  metadata Json? // Flexible storage for event-specific data
+
+  // Read state (Hybrid semantics)
+  viewedAt DateTime? // Set when user clicks notification (action-required)
+  // OR when notification enters viewport for 2s (informational)
+
+  // Action-required fields (for permission requests)
+  actionRequired   Boolean      @default(false)
+  actionType       ActionType?
+  actionStatus     ActionStatus @default(PENDING)
+  actionPayload    Json? // Action-specific data
+  actionResolvedAt DateTime?
+  actionResolvedBy String? // User ID who resolved
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor     User?     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  document  Doc?      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  resolver  User?     @relation("NotificationResolver", fields: [actionResolvedBy], references: [id], onDelete: SetNull)
+
+  // Indexes for query performance
+  @@index([userId, viewedAt]) // List unread notifications
+  @@index([userId, event]) // Filter by event type (for pagination)
+  @@index([userId, createdAt]) // Chronological listing
+  @@index([userId, actionRequired, actionStatus]) // Filter action-required notifications
+  @@index([workspaceId, userId]) // Workspace-scoped queries
+}
+
+enum NotificationEventType {
+  // Permission workflow events (→ Sharing tab)
+  PERMISSION_REQUEST // User requests access to document (action-required)
+  PERMISSION_GRANT // Permission request approved (informational)
+  PERMISSION_REJECT // Permission request rejected (informational)
+
+  // Invitation events (→ Sharing tab)
+  WORKSPACE_INVITATION // User invited to workspace (action-required)
+  SUBSPACE_INVITATION // User invited to private subspace (action-required)
+}
+
+enum ActionType {
+  PERMISSION_REQUEST // Request access to document
+  WORKSPACE_INVITATION // Invite to join workspace (accept/decline)
+  SUBSPACE_INVITATION // Invite to join private subspace
+}
+
+enum ActionStatus {
+  PENDING // Awaiting user action
+  APPROVED // User approved
+  REJECTED // User rejected
+  CANCELED // Requester canceled
+  EXPIRED // Timeout (e.g., 7 days)
+}
+
+// NotificationSetting (Stubbed for Phase 2)
+model NotificationSetting {
+  id        String                @id @default(cuid())
+  userId    String
+  eventType NotificationEventType
+
+  // Phase 2: Multi-channel preferences
+  webEnabled Boolean @default(true) // Always true in Phase 1
+  // emailEnabled Boolean @default(true)  // Phase 2
+  // chatEnabled  Boolean @default(false) // Phase 2
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventType])
 }

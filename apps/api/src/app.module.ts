@@ -40,6 +40,7 @@ import { UserIpInterceptor } from "./_shared/interceptors/user-ip.interceptor";
 import { ClsModule } from "@/_shared/utils/cls.module";
 import { HealthModule } from "./health/health.module";
 import { PublicShareService } from "./public-share/public-share.service";
+import { NotificationModule } from "./notification/notification.module";
 
 @Module({
   controllers: [AppController],
@@ -94,6 +95,7 @@ import { PublicShareService } from "./public-share/public-share.service";
     PermissionModule,
     PublicShareModule,
     GuestCollaboratorsModule,
+    NotificationModule,
     HealthModule,
   ],
   providers: [
