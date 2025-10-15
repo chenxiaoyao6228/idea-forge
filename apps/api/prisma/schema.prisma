@@ -604,7 +604,7 @@ model Notification {
   id String @id @default(cuid())
 
   // Event classification
-  event NotificationEventType
+  event String // NotificationEventType (validated at application layer)
 
   // Recipients and actors
   userId  String // Who receives this notification
@@ -622,9 +622,9 @@ model Notification {
   // OR when notification enters viewport for 2s (informational)
 
   // Action-required fields (for permission requests)
-  actionRequired   Boolean      @default(false)
-  actionType       ActionType?
-  actionStatus     ActionStatus @default(PENDING)
+  actionRequired   Boolean @default(false)
+  actionType       String? // ActionType (validated at application layer)
+  actionStatus     String  @default("PENDING") // ActionStatus (validated at application layer)
   actionPayload    Json? // Action-specific data
   actionResolvedAt DateTime?
   actionResolvedBy String? // User ID who resolved
@@ -648,36 +648,11 @@ model Notification {
   @@index([workspaceId, userId]) // Workspace-scoped queries
 }
 
-enum NotificationEventType {
-  // Permission workflow events (→ Sharing tab)
-  PERMISSION_REQUEST // User requests access to document (action-required)
-  PERMISSION_GRANT // Permission request approved (informational)
-  PERMISSION_REJECT // Permission request rejected (informational)
-
-  // Invitation events (→ Sharing tab)
-  WORKSPACE_INVITATION // User invited to workspace (action-required)
-  SUBSPACE_INVITATION // User invited to private subspace (action-required)
-}
-
-enum ActionType {
-  PERMISSION_REQUEST // Request access to document
-  WORKSPACE_INVITATION // Invite to join workspace (accept/decline)
-  SUBSPACE_INVITATION // Invite to join private subspace
-}
-
-enum ActionStatus {
-  PENDING // Awaiting user action
-  APPROVED // User approved
-  REJECTED // User rejected
-  CANCELED // Requester canceled
-  EXPIRED // Timeout (e.g., 7 days)
-}
-
 // NotificationSetting (Stubbed for Phase 2)
 model NotificationSetting {
-  id        String                @id @default(cuid())
+  id        String @id @default(cuid())
   userId    String
-  eventType NotificationEventType
+  eventType String // NotificationEventType (validated at application layer)
 
   // Phase 2: Multi-channel preferences
   webEnabled Boolean @default(true) // Always true in Phase 1

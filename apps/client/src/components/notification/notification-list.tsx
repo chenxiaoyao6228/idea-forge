@@ -1,5 +1,6 @@
-import { useRef, useEffect } from "react";
+import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
+import { Bell } from "lucide-react";
 import type { NotificationEntity } from "@/stores/notification-store";
 import { NotificationItem } from "./notification-item";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -41,21 +42,7 @@ export function NotificationList({
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center px-4">
         <div className="text-muted-foreground mb-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="mx-auto mb-4"
-          >
-            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-          </svg>
+          <Bell size={48} className="mx-auto mb-4" />
           <p className="text-sm font-medium">No notifications</p>
           <p className="text-xs text-muted-foreground mt-1">You're all caught up!</p>
         </div>

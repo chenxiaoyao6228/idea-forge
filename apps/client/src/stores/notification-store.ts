@@ -2,9 +2,10 @@ import { create } from "zustand";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import useRequest from "@ahooksjs/use-request";
-import type { Notification, NotificationCategory, UnreadCountResponse, PaginationMetadata } from "@idea/contracts";
+import type { Notification, NotificationCategory, UnreadCountByWorkspaceResponse, CategoryCounts, PaginationMetadata } from "@idea/contracts";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { notificationApi } from "@/apis/notification";
+import { useCurrentWorkspace } from "./workspace-store";
 
 // Notification entity extended from contract
 export type NotificationEntity = Notification;
@@ -12,31 +13,77 @@ export type NotificationEntity = Notification;
 // Minimal store - only state
 const useNotificationStore = create<{
   notifications: NotificationEntity[];
-  unreadCount: UnreadCountResponse | null;
+  unreadCountByWorkspace: UnreadCountByWorkspaceResponse | null;
   loading: boolean;
   pagination: PaginationMetadata | null;
+  currentWorkspaceId: string | null;
 }>(() => ({
   notifications: [],
-  unreadCount: null,
+  unreadCountByWorkspace: null,
   loading: false,
   pagination: null,
+  currentWorkspaceId: null,
 }));
 
-// Basic data access
-export const useNotifications = () => {
-  return useNotificationStore((state) => state.notifications);
+export const useUnreadCountByWorkspace = () => {
+  return useNotificationStore((state) => state.unreadCountByWorkspace);
 };
 
-export const useUnreadCount = () => {
-  return useNotificationStore((state) => state.unreadCount);
+/**
+ * Compute overall unread count from workspace-specific data only
+ * Filters out current workspace and only counts MENTIONS and INBOX categories
+ */
+export const useOtherWorkspacesTotalUnreadCount = () => {
+  const currentWorkspaceId = useCurrentWorkspace()?.id;
+  const unreadCountByWorkspace = useUnreadCountByWorkspace();
+  return useMemo(() => {
+    if (!unreadCountByWorkspace) return null;
+
+    // Compute category counts by summing all workspaces except current workspace
+    const byCategory: CategoryCounts = {
+      MENTIONS: 0,
+      SHARING: 0,
+      INBOX: 0,
+      SUBSCRIBE: 0,
+    };
+
+    // Sum workspace counts, filtering out current workspace
+    Object.entries(unreadCountByWorkspace.byWorkspace)
+      .filter(([workspaceId]) => workspaceId !== currentWorkspaceId)
+      .forEach(([, counts]) => {
+        byCategory.MENTIONS += counts.MENTIONS;
+        byCategory.INBOX += counts.INBOX;
+        byCategory.SHARING += counts.SHARING;
+        byCategory.SUBSCRIBE += counts.SUBSCRIBE;
+      });
+
+    // Compute total from only MENTIONS and INBOX
+    const total = byCategory.MENTIONS + byCategory.INBOX + byCategory.SHARING + byCategory.SUBSCRIBE;
+
+    return {
+      total,
+      byCategory,
+    };
+  }, [unreadCountByWorkspace, currentWorkspaceId]);
 };
 
-export const useNotificationsLoading = () => {
-  return useNotificationStore((state) => state.loading);
-};
-
-export const useNotificationsPagination = () => {
-  return useNotificationStore((state) => state.pagination);
+export const useCurrentWorkspaceNotificationCount = () => {
+  const currentWorkspaceId = useCurrentWorkspace()?.id;
+  if (!currentWorkspaceId) return 0;
+  const unreadCountByWorkspace = useUnreadCountByWorkspace();
+  return useMemo(() => {
+    if (!unreadCountByWorkspace) return 0;
+    return (
+      unreadCountByWorkspace.byWorkspace[currentWorkspaceId]?.MENTIONS +
+      unreadCountByWorkspace.byWorkspace[currentWorkspaceId]?.INBOX +
+      unreadCountByWorkspace.byWorkspace[currentWorkspaceId]?.SHARING +
+      unreadCountByWorkspace.byWorkspace[currentWorkspaceId]?.SUBSCRIBE +
+      unreadCountByWorkspace.crossWorkspace.MENTIONS +
+      unreadCountByWorkspace.crossWorkspace.INBOX +
+      unreadCountByWorkspace.crossWorkspace.SHARING +
+      unreadCountByWorkspace.crossWorkspace.SUBSCRIBE
+    );
+  }, [unreadCountByWorkspace, currentWorkspaceId]);
 };
 
 // Computed values
@@ -93,14 +140,8 @@ export const updateNotification = (id: string, updates: Partial<NotificationEnti
   }));
 };
 
-export const removeNotification = (id: string) => {
-  useNotificationStore.setState((state) => ({
-    notifications: state.notifications.filter((n) => n.id !== id),
-  }));
-};
-
-export const setUnreadCount = (unreadCount: UnreadCountResponse) => {
-  useNotificationStore.setState({ unreadCount });
+export const setUnreadCountByWorkspace = (unreadCountByWorkspace: UnreadCountByWorkspaceResponse) => {
+  useNotificationStore.setState({ unreadCountByWorkspace });
 };
 
 export const setLoading = (loading: boolean) => {
@@ -140,8 +181,10 @@ export const markNotificationAsRead = (id: string) => {
 export const resetNotificationStore = () => {
   useNotificationStore.setState({
     notifications: [],
-    unreadCount: null,
+    unreadCountByWorkspace: null,
     loading: false,
+    pagination: null,
+    currentWorkspaceId: null,
   });
 };
 
@@ -151,8 +194,9 @@ export const resetNotificationStore = () => {
 
 /**
  * Fetch notifications with optional filtering (page-based pagination)
+ * When workspaceId is provided, returns both workspace-specific and cross-workspace notifications
  */
-export const useFetchNotifications = (category?: NotificationCategory, read?: boolean, page = 1, append = false) => {
+export const useFetchNotifications = (category?: NotificationCategory, read?: boolean, page = 1, append = false, workspaceId?: string) => {
   return useRequest(
     async () => {
       try {
@@ -160,6 +204,7 @@ export const useFetchNotifications = (category?: NotificationCategory, read?: bo
         const response = await notificationApi.list({
           category,
           read,
+          workspaceId,
           page,
           limit: 5, // Standard page size
         });
@@ -187,23 +232,25 @@ export const useFetchNotifications = (category?: NotificationCategory, read?: bo
     },
     {
       manual: true,
-      refreshDeps: [category, read, page],
+      refreshDeps: [category, read, page, workspaceId],
     },
   );
 };
 
 /**
- * Fetch unread count
+ * Fetch unread count grouped by workspace
+ * This is the ONLY count fetch hook - it provides all notification count data
+ * The overall unread count is computed from this workspace-grouped data
  */
-export const useFetchUnreadCount = () => {
+export const useFetchUnreadCountByWorkspace = () => {
   return useRequest(
     async () => {
       try {
-        const response = await notificationApi.getUnreadCount();
-        setUnreadCount(response);
+        const response = await notificationApi.getUnreadCountByWorkspace();
+        setUnreadCountByWorkspace(response);
         return response;
       } catch (error: any) {
-        console.error("Failed to fetch unread count:", error);
+        console.error("Failed to fetch unread count by workspace:", error);
         // Silent failure for count
         throw error;
       }
@@ -227,9 +274,9 @@ export const useMarkAsRead = () => {
         // Update local store
         markNotificationAsRead(notificationId);
 
-        // Refetch unread count
-        const countResponse = await notificationApi.getUnreadCount();
-        setUnreadCount(countResponse);
+        // Refetch workspace-grouped unread count
+        const countResponse = await notificationApi.getUnreadCountByWorkspace();
+        setUnreadCountByWorkspace(countResponse);
 
         return response;
       } catch (error: any) {
@@ -259,9 +306,9 @@ export const useBatchMarkViewed = () => {
         // Update local store
         markNotificationsAsViewed(notificationIds);
 
-        // Refetch unread count
-        const countResponse = await notificationApi.getUnreadCount();
-        setUnreadCount(countResponse);
+        // Refetch workspace-grouped unread count
+        const countResponse = await notificationApi.getUnreadCountByWorkspace();
+        setUnreadCountByWorkspace(countResponse);
 
         return response;
       } catch (error: any) {
@@ -293,9 +340,9 @@ export const useResolveAction = () => {
           viewedAt: new Date(),
         });
 
-        // Refetch unread count
-        const countResponse = await notificationApi.getUnreadCount();
-        setUnreadCount(countResponse);
+        // Refetch workspace-grouped unread count
+        const countResponse = await notificationApi.getUnreadCountByWorkspace();
+        setUnreadCountByWorkspace(countResponse);
 
         toast.success(`Action ${action} processed successfully`);
 
@@ -312,42 +359,6 @@ export const useResolveAction = () => {
       manual: true,
     },
   );
-};
-
-/**
- * Hook for viewport tracking - auto-marks informational notifications as viewed
- * Uses Intersection Observer to detect when notifications enter viewport
- */
-export const useNotificationViewportTracking = () => {
-  const batchMarkViewed = useBatchMarkViewed();
-
-  return useRefCallback((notificationIds: string[]) => {
-    if (notificationIds.length === 0) return;
-
-    // Debounce and batch viewport tracking
-    // Wait 2 seconds after notification enters viewport before marking as viewed
-    const timeoutId = setTimeout(() => {
-      batchMarkViewed.run(notificationIds);
-    }, 2000);
-
-    return () => clearTimeout(timeoutId);
-  });
-};
-
-/**
- * Get notification badge count (for UI display)
- */
-export const useNotificationBadgeCount = () => {
-  const unreadCount = useUnreadCount();
-  return unreadCount?.total || 0;
-};
-
-/**
- * Get category-specific unread counts
- */
-export const useCategoryUnreadCount = (category: NotificationCategory) => {
-  const unreadCount = useUnreadCount();
-  return unreadCount?.byCategory[category] || 0;
 };
 
 export default useNotificationStore;

@@ -43,8 +43,8 @@ export class WorkspaceController {
   @Post(":id/members")
   @UseGuards(PolicyGuard)
   @CheckPolicy(Action.ManageMembers, "Workspace")
-  async addWorkspaceMember(@Param("id") workspaceId: string, @Body() dto: { userId: string; role: WorkspaceRole }, @GetUser("id") adminId: string) {
-    return this.workspaceService.addWorkspaceMember(workspaceId, dto.userId, dto.role, adminId);
+  async inviteWorkspaceMember(@Param("id") workspaceId: string, @Body() dto: { userId: string; role: WorkspaceRole }, @GetUser("id") adminId: string) {
+    return this.workspaceService.inviteWorkspaceMember(workspaceId, dto.userId, dto.role, adminId);
   }
 
   @Post(":id/members/batch")
@@ -65,7 +65,7 @@ export class WorkspaceController {
   @UseGuards(PolicyGuard)
   @CheckPolicy(Action.ManageMembers, "Workspace")
   async removeWorkspaceMember(@Param("id") workspaceId: string, @Param("userId") userId: string, @GetUser("id") adminId: string) {
-    return this.workspaceService.removeWorkspaceMember(workspaceId, userId);
+    return this.workspaceService.removeWorkspaceMember(workspaceId, userId, adminId);
   }
 
   @Get(":id/invite/public")

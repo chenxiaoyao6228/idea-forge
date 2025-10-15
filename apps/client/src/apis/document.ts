@@ -18,6 +18,8 @@ import type {
   ListDocumentDto,
   SharedWithMeResponse,
   UpdateDocumentSubspacePermissionsDto,
+  RequestDocumentPermissionDto,
+  RequestDocumentPermissionResponse,
 } from "@idea/contracts";
 
 export const documentApi = {
@@ -26,6 +28,8 @@ export const documentApi = {
   },
   // ================ share doc ========================
   shareDocument: (id: string, data: ShareDocumentDto) => request.post<ShareDocumentDto, DocSharesResponse>(`/api/documents/${id}/share`, data),
+  requestPermission: (id: string, data: RequestDocumentPermissionDto) =>
+    request.post<RequestDocumentPermissionDto, RequestDocumentPermissionResponse>(`/api/documents/${id}/request-permission`, data),
   getSharedWithMe: async (query) => {
     return request.get<null, SharedWithMeResponse>(`/api/documents/shared-with-me`, { params: query });
   },

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, HttpStatus } from "@nestjs/common";
+import { Injectable, BadRequestException, HttpStatus, forwardRef, Inject } from "@nestjs/common";
 import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
@@ -6,6 +6,7 @@ import { SubspaceService } from "@/subspace/subspace.service";
 import fractionalIndex from "fractional-index";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import type { NotificationService } from "@/notification/notification.service";
 import {
   WorkspaceRole,
   WorkspaceMember,
@@ -14,6 +15,9 @@ import {
   WorkspaceType,
   BatchAddWorkspaceMemberRequest,
   BatchAddWorkspaceMemberResponse,
+  SPECIAL_WORKSPACE_ID,
+  NotificationEventType,
+  ActionType,
 } from "@idea/contracts";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
@@ -50,6 +54,8 @@ export class WorkspaceService {
     private readonly eventPublisher: EventPublisherService,
     private readonly abilityService: AbilityService,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => require("@/notification/notification.service").NotificationService))
+    private readonly notificationService: NotificationService,
   ) {}
 
   private readonly PUBLIC_INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -500,8 +506,62 @@ export class WorkspaceService {
   }
 
   /**
-   * Add a new member to workspace with specified role
+   * Invite a user to workspace by creating a notification
+   * User must accept the invitation to join the workspace
+   */
+  async inviteWorkspaceMember(workspaceId: string, userId: string, role: WorkspaceRole, adminId: string) {
+    // Verify workspace exists
+    const workspace = await this.prismaService.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
+    }
+
+    // Verify user is not already a member
+    const existingMember = await this.prismaService.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+    });
+
+    if (existingMember) {
+      throw new ApiException(ErrorCodeEnum.UserAlreadyInWorkspace);
+    }
+
+    // Verify target user exists
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    // Create workspace invitation notification
+    const notification = await this.notificationService.createNotification({
+      userId,
+      event: NotificationEventType.WORKSPACE_INVITATION,
+      workspaceId: SPECIAL_WORKSPACE_ID, // Cross-workspace notification
+      actorId: adminId,
+      metadata: {
+        workspaceName: workspace.name,
+        workspaceAvatar: workspace.avatar,
+      },
+      actionRequired: true,
+      actionType: ActionType.WORKSPACE_INVITATION,
+      actionPayload: {
+        workspaceId,
+        role,
+      },
+    });
+
+    return { success: true, notification };
+  }
+
+  /**
+   * Add a new member to workspace with specified role (internal method)
    * Automatically propagates permissions to all child resources
+   * Called when user accepts workspace invitation or uses public invite link
    */
   async addWorkspaceMember(workspaceId: string, userId: string, role: WorkspaceRole, adminId: string) {
     // Verify workspace exists
@@ -600,6 +660,21 @@ export class WorkspaceService {
     // --- Create personal subspace for the new member ---
     await this.subspaceService.createPersonalSubspace(userId, workspaceId);
 
+    // Publish WebSocket event to notify all workspace members about the new member
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.WORKSPACE_MEMBER_ADDED,
+      workspaceId,
+      actorId: adminId,
+      data: {
+        workspaceId,
+        userId,
+        role,
+        member,
+        memberAdded: member,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
     return member;
   }
 
@@ -626,8 +701,8 @@ export class WorkspaceService {
       skipped: [],
     };
 
-    // Track successfully added members for batch WebSocket notification
-    const addedMembers: Array<{ userId: string; member: any }> = [];
+    // Track successfully sent invitations for batch WebSocket notification
+    const addedInvitations: Array<{ userId: string; notification: any }> = [];
 
     // Process each item in the batch
     for (const item of dto.items) {
@@ -659,19 +734,13 @@ export class WorkspaceService {
           continue;
         }
 
-        // Add the member using existing logic
-        const member = await this.addWorkspaceMember(workspaceId, item.userId, item.role, adminId);
+        // Invite the member by creating notification
+        const result = await this.inviteWorkspaceMember(workspaceId, item.userId, item.role, adminId);
 
         results.addedCount++;
-        addedMembers.push({
+        addedInvitations.push({
           userId: item.userId,
-          member: {
-            id: member.id,
-            userId: member.userId,
-            role: member.role,
-            createdAt: member.createdAt.toISOString(),
-            user: member.user,
-          },
+          notification: result.notification,
         });
       } catch (error) {
         results.errors.push({
@@ -682,17 +751,17 @@ export class WorkspaceService {
     }
 
     // Send single batch WebSocket notification instead of individual ones
-    if (addedMembers.length > 0) {
-      console.log(`[DEBUG] Publishing WORKSPACE_MEMBERS_BATCH_ADDED event for workspace ${workspaceId}, added ${results.addedCount} members`);
+    if (addedInvitations.length > 0) {
+      console.log(`[DEBUG] Publishing WORKSPACE_INVITATIONS_BATCH_SENT event for workspace ${workspaceId}, sent ${results.addedCount} invitations`);
 
       // Use queue system for WebSocket events
       await this.eventPublisher.publishWebsocketEvent({
-        name: BusinessEvents.WORKSPACE_MEMBERS_BATCH_ADDED,
+        name: BusinessEvents.WORKSPACE_INVITATIONS_BATCH_SENT,
         workspaceId,
         actorId: adminId,
         data: {
-          addedMembers,
-          totalAdded: results.addedCount,
+          invitations: addedInvitations,
+          totalSent: results.addedCount,
         },
         timestamp: new Date().toISOString(),
       });
@@ -709,8 +778,9 @@ export class WorkspaceService {
    * @param workspaceId - The workspace ID
    * @param userId - The user ID to remove
    * @param checkLastOwner - Whether to check if this is the last owner (for leave operations)
+   * @param adminId - Optional admin ID who removed the user (for notifications)
    */
-  private async removeUserFromWorkspace(workspaceId: string, userId: string, checkLastOwner = false) {
+  private async removeUserFromWorkspace(workspaceId: string, userId: string, checkLastOwner = false, adminId?: string) {
     // Verify workspace exists
     const workspace = await this.prismaService.workspace.findUnique({
       where: { id: workspaceId },
@@ -766,6 +836,30 @@ export class WorkspaceService {
       },
       timestamp: new Date().toISOString(),
     });
+
+    // 2.5. Send notification to removed user (only when admin removes them, not when they leave)
+    if (adminId && adminId !== userId) {
+      // Get admin info for notification metadata
+      const admin = await this.prismaService.user.findUnique({
+        where: { id: adminId },
+        select: { displayName: true, email: true },
+      });
+
+      if (admin) {
+        await this.notificationService.createNotification({
+          userId, // Send to the removed user
+          event: NotificationEventType.WORKSPACE_REMOVED, // INBOX category, informational
+          workspaceId: workspaceId, // Workspace-scoped notification
+          actorId: adminId, // The admin who removed them
+          metadata: {
+            workspaceName: workspace.name,
+            adminName: admin.displayName || admin.email,
+            message: `You have been removed from ${workspace.name} by ${admin.displayName || admin.email}`,
+          },
+          actionRequired: false,
+        });
+      }
+    }
 
     // 3. Remove the user's personal subspaces in this workspace
     await this.subspaceService.removePersonalSubspacesForUser(userId, workspaceId);
@@ -829,8 +923,8 @@ export class WorkspaceService {
    * Remove a member from workspace
    * Cleans up all associated permissions across the workspace hierarchy
    */
-  async removeWorkspaceMember(workspaceId: string, userId: string) {
-    await this.removeUserFromWorkspace(workspaceId, userId, false);
+  async removeWorkspaceMember(workspaceId: string, userId: string, adminId: string) {
+    await this.removeUserFromWorkspace(workspaceId, userId, false, adminId);
     return { success: true };
   }
 

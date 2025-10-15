@@ -49,6 +49,10 @@ export class WebsocketEventProcessor extends WorkerHost {
           await this.handleSubspaceMembersBatchAddedEvent(event, server);
           break;
 
+        case BusinessEvents.WORKSPACE_MEMBER_ADDED:
+          await this.handleWorkspaceMemberAddedEvent(event, server);
+          break;
+
         case BusinessEvents.WORKSPACE_MEMBERS_BATCH_ADDED:
           await this.handleWorkspaceMembersBatchAddedEvent(event, server);
           break;
@@ -142,6 +146,13 @@ export class WebsocketEventProcessor extends WorkerHost {
           break;
         case BusinessEvents.PUBLIC_SHARE_REVOKED:
           await this.handlePublicShareRevokedEvent(event, server);
+          break;
+
+        // Notification events
+        case BusinessEvents.NOTIFICATION_CREATE:
+        case BusinessEvents.NOTIFICATION_UPDATE:
+        case BusinessEvents.NOTIFICATION_ACTION_RESOLVED:
+          await this.handleNotificationEvent(event, server);
           break;
       }
     } catch (error) {
@@ -468,6 +479,36 @@ export class WebsocketEventProcessor extends WorkerHost {
       subspaceId,
       totalAdded,
       membersBatchAdded: true,
+    });
+  }
+
+  // Handle workspace member added event (single user)
+  private async handleWorkspaceMemberAddedEvent(event: WebsocketEvent<any>, server: any) {
+    const { data, workspaceId } = event;
+    const { userId, role, member } = data;
+
+    // Notify the added user about their workspace addition
+    server.to(`user:${userId}`).emit(BusinessEvents.WORKSPACE_MEMBER_ADDED, {
+      workspaceId,
+      userId,
+      role,
+      member,
+      memberAdded: true,
+    });
+
+    // Tell the added user to join the workspace room
+    server.to(`user:${userId}`).emit(BusinessEvents.JOIN, {
+      event: BusinessEvents.WORKSPACE_MEMBER_ADDED,
+      workspaceId,
+    });
+
+    // Also notify existing workspace members about the new member
+    server.to(`workspace:${workspaceId}`).emit(BusinessEvents.WORKSPACE_MEMBER_ADDED, {
+      workspaceId,
+      userId,
+      role,
+      member,
+      memberAdded: true,
     });
   }
 
@@ -930,5 +971,22 @@ export class WebsocketEventProcessor extends WorkerHost {
         revokedByUserId,
       });
     }
+  }
+
+  /**
+   * Handle notification events
+   * Routes notification events to the recipient user's room
+   */
+  private async handleNotificationEvent(event: WebsocketEvent<any>, server: any) {
+    const { name, data } = event;
+    const { payload } = data;
+
+    if (!payload || !payload.userId) {
+      console.warn("[websocket-event-processor]: Notification event missing payload or userId", event);
+      return;
+    }
+
+    // Emit notification event to the recipient user's room
+    server.to(`user:${payload.userId}`).emit(name, data);
   }
 }

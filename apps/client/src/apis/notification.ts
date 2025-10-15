@@ -10,6 +10,7 @@ import type {
   ResolveActionResponse,
   UnreadCountRequest,
   UnreadCountResponse,
+  UnreadCountByWorkspaceResponse,
 } from "@idea/contracts";
 
 export const notificationApi = {
@@ -36,10 +37,8 @@ export const notificationApi = {
     request.post<ResolveActionRequest, ResolveActionResponse>(`/api/notifications/${notificationId}/resolve`, data),
 
   /**
-   * Get unread notification count
+   * Get unread notification count grouped by workspace
+   * Used for cross-workspace notification badges
    */
-  getUnreadCount: async (params?: UnreadCountRequest) =>
-    request.get<UnreadCountRequest, UnreadCountResponse>("/api/notifications/unread-count", {
-      params: params || {},
-    }),
+  getUnreadCountByWorkspace: async () => request.get<void, UnreadCountByWorkspaceResponse>("/api/notifications/unread-count-by-workspace"),
 };

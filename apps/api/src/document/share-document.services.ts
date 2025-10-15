@@ -1,6 +1,15 @@
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { CommonSharedDocumentResponse, RemoveShareDto, RemoveGroupShareDto, ShareDocumentDto, UpdateSharePermissionDto } from "@idea/contracts";
+import { Injectable, NotFoundException, Inject, forwardRef } from "@nestjs/common";
+import {
+  CommonSharedDocumentResponse,
+  RemoveShareDto,
+  RemoveGroupShareDto,
+  ShareDocumentDto,
+  UpdateSharePermissionDto,
+  RequestDocumentPermissionDto,
+  RequestDocumentPermissionResponse,
+  NotificationEventType,
+} from "@idea/contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionInheritanceType } from "@idea/contracts";
@@ -109,6 +118,8 @@ export class ShareDocumentService {
     private readonly eventPublisher: EventPublisherService,
     private readonly docPermissionResolveService: DocPermissionResolveService,
     private readonly eventDeduplicator: EventDeduplicator,
+    @Inject(forwardRef(() => require("@/notification/notification.service").NotificationService))
+    private readonly notificationService: any,
   ) {}
 
   async getSharedWithMeDocuments(
@@ -1291,5 +1302,120 @@ export class ShareDocumentService {
         });
       }
     }
+  }
+
+  /**
+   * Request permission for a document
+   * Creates notifications for all users with MANAGE permission on the document
+   */
+  async requestDocumentPermission(userId: string, docId: string, dto: RequestDocumentPermissionDto): Promise<RequestDocumentPermissionResponse> {
+    // 1. Verify document exists
+    const doc = await this.prismaService.doc.findUnique({
+      where: { id: docId },
+      select: {
+        id: true,
+        title: true,
+        workspaceId: true,
+        parentId: true,
+        subspaceId: true,
+      },
+    });
+
+    if (!doc) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // 2. Get requester's info
+    const requester = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        displayName: true,
+        email: true,
+      },
+    });
+
+    if (!requester) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    // 3. Find all users with MANAGE permission on this document
+    // Get direct admins (users with MANAGE permission directly on this document)
+    const directAdmins = await this.prismaService.documentPermission.findMany({
+      where: {
+        docId,
+        permission: "MANAGE",
+        inheritedFromType: PermissionInheritanceType.DIRECT,
+        userId: { not: null },
+      },
+      select: {
+        userId: true,
+      },
+      distinct: ["userId"],
+    });
+
+    const adminUserIds = new Set<string>(directAdmins.map((p) => p.userId).filter((id): id is string => id !== null));
+
+    // Also check document author (they always have MANAGE permission)
+    const author = await this.prismaService.doc.findUnique({
+      where: { id: docId },
+      select: { authorId: true },
+    });
+
+    if (author?.authorId) {
+      adminUserIds.add(author.authorId);
+    }
+
+    // Remove requester from admin list (don't send notification to themselves)
+    adminUserIds.delete(userId);
+
+    if (adminUserIds.size === 0) {
+      return {
+        success: true,
+        message: "No admins found to notify",
+        notificationsSent: 0,
+      };
+    }
+
+    // 4. Create notifications for each admin
+    let notificationsSent = 0;
+
+    for (const adminId of adminUserIds) {
+      try {
+        await this.notificationService.createNotification({
+          userId: adminId,
+          event: NotificationEventType.PERMISSION_REQUEST,
+          workspaceId: doc.workspaceId,
+          actorId: userId,
+          documentId: docId,
+          metadata: {
+            requestedPermission: dto.requestedPermission,
+            message: dto.reason,
+            documentTitle: doc.title,
+            documentId: docId,
+            actorName: requester.displayName || requester.email, // Add requester's name
+          },
+          actionRequired: true,
+          actionType: "PERMISSION_REQUEST",
+          actionPayload: {
+            documentId: docId,
+            permission: dto.requestedPermission,
+            requesterId: userId,
+            requesterName: requester.displayName || requester.email,
+            reason: dto.reason,
+          },
+        });
+
+        notificationsSent++;
+      } catch (error) {
+        console.error(`Failed to create notification for admin ${adminId}:`, error);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Permission request sent to ${notificationsSent} administrator(s)`,
+      notificationsSent,
+    };
   }
 }

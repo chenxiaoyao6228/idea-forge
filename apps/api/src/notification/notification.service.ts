@@ -1,20 +1,25 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
-import type {
-  ListNotificationsRequest,
-  ListNotificationsResponse,
-  MarkAsReadResponse,
-  BatchMarkViewedResponse,
-  ResolveActionResponse,
-  UnreadCountResponse,
-  NotificationCategory,
+import type { DocumentService } from "@/document/document.service";
+import type { WorkspaceService } from "@/workspace/workspace.service";
+import {
   NotificationEventType,
+  type ListNotificationsRequest,
+  type ListNotificationsResponse,
+  type MarkAsReadResponse,
+  type BatchMarkViewedResponse,
+  type ResolveActionResponse,
+  type UnreadCountResponse,
+  type UnreadCountByWorkspaceResponse,
+  type NotificationCategory,
+  type WorkspaceRole,
 } from "@idea/contracts";
-import { getCategoryEventTypes } from "@idea/contracts";
+import { getCategoryEventTypes, SPECIAL_WORKSPACE_ID } from "@idea/contracts";
+import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
 export class NotificationService {
@@ -22,13 +27,17 @@ export class NotificationService {
     private readonly prisma: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly eventDeduplicator: EventDeduplicator,
+    @Inject(forwardRef(() => require("@/document/document.service").DocumentService))
+    private readonly documentService: DocumentService,
+    @Inject(forwardRef(() => require("@/workspace/workspace.service").WorkspaceService))
+    private readonly workspaceService: WorkspaceService,
   ) {}
 
   /**
    * List notifications for a user with optional filtering
    */
   async listNotifications(userId: string, dto: ListNotificationsRequest): Promise<ListNotificationsResponse> {
-    const { category, read, page = 1, limit = 20 } = dto;
+    const { category, read, workspaceId, page = 1, limit = 20 } = dto;
 
     // Build filter conditions
     const where: any = { userId };
@@ -55,6 +64,14 @@ export class NotificationService {
     // Filter by read/unread status
     if (read !== undefined) {
       where.viewedAt = read ? { not: null } : null;
+    }
+
+    // Filter by workspace (includes cross-workspace notifications)
+    if (workspaceId) {
+      where.OR = [
+        { workspaceId: workspaceId }, // Current workspace notifications
+        { workspaceId: SPECIAL_WORKSPACE_ID }, // Cross-workspace notifications
+      ];
     }
 
     // Use unified pagination method with custom ordering
@@ -95,6 +112,18 @@ export class NotificationService {
       data: {
         viewedAt: notification.viewedAt || new Date(),
       },
+    });
+
+    // Publish WebSocket event for notification update
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.NOTIFICATION_UPDATE,
+      workspaceId: notification.workspaceId,
+      actorId: userId,
+      data: {
+        type: "notification.update",
+        payload: updated,
+      },
+      timestamp: new Date().toISOString(),
     });
 
     return {
@@ -164,8 +193,56 @@ export class NotificationService {
       },
     });
 
-    // TODO: Trigger actual permission/invitation handling based on notification type
-    // This will be implemented in Phase 3 when integrating with existing permission/workspace modules
+    // Execute actual business logic if approved
+    if (newStatus === "APPROVED") {
+      await this.executeApprovedAction(notification);
+    } else if (newStatus === "REJECTED" && notification.actionType === "PERMISSION_REQUEST") {
+      // Send rejection notification to the requester
+      const { documentId, permission, requesterId } = notification.actionPayload as any;
+
+      if (documentId && requesterId) {
+        const [document, admin] = await Promise.all([
+          this.prisma.doc.findUnique({
+            where: { id: documentId },
+            select: { title: true },
+          }),
+          this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { displayName: true, email: true },
+          }),
+        ]);
+
+        if (document && admin) {
+          await this.createNotification({
+            userId: requesterId, // Send to the requester
+            event: NotificationEventType.PERMISSION_REJECT,
+            workspaceId: notification.workspaceId,
+            actorId: userId, // The admin who rejected
+            documentId: documentId,
+            metadata: {
+              requestedPermission: permission,
+              documentTitle: document.title,
+              documentId: documentId,
+              actorName: admin.displayName || admin.email,
+              reason: reason,
+            },
+            actionRequired: false,
+          });
+        }
+      }
+    }
+
+    // Publish WebSocket event for action resolution
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.NOTIFICATION_ACTION_RESOLVED,
+      workspaceId: notification.workspaceId,
+      actorId: userId,
+      data: {
+        type: "notification.action_resolved",
+        payload: updated,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     return {
       success: true,
@@ -175,42 +252,102 @@ export class NotificationService {
   }
 
   /**
-   * Get unread notification count (overall and by category)
+   * Execute the actual business operation for approved actions
    */
-  async getUnreadCount(userId: string, category?: NotificationCategory): Promise<UnreadCountResponse> {
+  private async executeApprovedAction(notification: any): Promise<void> {
+    const { actionType, actionPayload, userId, actorId, workspaceId } = notification;
+
+    if (!actionType || !actionPayload) {
+      return;
+    }
+
+    try {
+      switch (actionType) {
+        case "PERMISSION_REQUEST":
+          await this.handlePermissionRequest(actionPayload, userId, actorId, workspaceId);
+          break;
+        case "WORKSPACE_INVITATION":
+          await this.handleWorkspaceInvitation(actionPayload, userId, actorId || userId);
+          break;
+        default:
+          throw new Error(`Unknown action type: ${actionType}`);
+      }
+    } catch (error) {
+      // Log error but don't fail the notification update
+      console.error(`Failed to execute approved action for notification ${notification.id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get unread notification count grouped by workspace
+   * Used for cross-workspace notification badges
+   */
+  async getUnreadCountByWorkspace(userId: string): Promise<UnreadCountByWorkspaceResponse> {
     // Base filter for unread notifications
     const baseWhere = {
       userId,
       viewedAt: null,
     };
 
-    // Get total unread count
-    const total = await this.prisma.notification.count({
+    // Get all unread notifications grouped by workspace
+    const notifications = await this.prisma.notification.findMany({
       where: baseWhere,
+      select: {
+        workspaceId: true,
+        event: true,
+      },
     });
 
-    // Get counts by category
-    const byCategory = {
+    // Initialize result structure
+    const byWorkspace: Record<string, { MENTIONS: number; SHARING: number; INBOX: number; SUBSCRIBE: number }> = {};
+    const crossWorkspace = {
       MENTIONS: 0,
       SHARING: 0,
       INBOX: 0,
       SUBSCRIBE: 0,
     };
 
-    // Only count SHARING category in Phase 1
-    const sharingEventTypes = getCategoryEventTypes("SHARING");
-    if (sharingEventTypes.length > 0) {
-      byCategory.SHARING = await this.prisma.notification.count({
-        where: {
-          ...baseWhere,
-          event: { in: sharingEventTypes },
-        },
-      });
+    // Helper function to determine category from event type
+    const getCategory = (event: string): NotificationCategory | null => {
+      const sharingEvents = getCategoryEventTypes("SHARING");
+      const mentionsEvents = getCategoryEventTypes("MENTIONS");
+      const inboxEvents = getCategoryEventTypes("INBOX");
+      const subscribeEvents = getCategoryEventTypes("SUBSCRIBE");
+
+      if (sharingEvents.includes(event as NotificationEventType)) return "SHARING";
+      if (mentionsEvents.includes(event as NotificationEventType)) return "MENTIONS";
+      if (inboxEvents.includes(event as NotificationEventType)) return "INBOX";
+      if (subscribeEvents.includes(event as NotificationEventType)) return "SUBSCRIBE";
+
+      return null;
+    };
+
+    // Group notifications by workspace and category
+    for (const notification of notifications) {
+      const category = getCategory(notification.event);
+      if (!category) continue; // Skip unknown categories
+
+      if (notification.workspaceId === SPECIAL_WORKSPACE_ID) {
+        // Cross-workspace notification
+        crossWorkspace[category]++;
+      } else {
+        // Workspace-scoped notification
+        if (!byWorkspace[notification.workspaceId]) {
+          byWorkspace[notification.workspaceId] = {
+            MENTIONS: 0,
+            SHARING: 0,
+            INBOX: 0,
+            SUBSCRIBE: 0,
+          };
+        }
+        byWorkspace[notification.workspaceId][category]++;
+      }
     }
 
     return {
-      total,
-      byCategory,
+      byWorkspace,
+      crossWorkspace,
     };
   }
 
@@ -243,9 +380,111 @@ export class NotificationService {
       },
     });
 
-    // TODO: Publish WebSocket event via event processor
-    // This will be implemented when connecting to the event queue system
+    // Publish WebSocket event to notify user in real-time
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.NOTIFICATION_CREATE,
+      workspaceId: data.workspaceId,
+      actorId: data.actorId,
+      data: {
+        type: "notification.create",
+        payload: notification,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     return notification;
+  }
+  // ================================ call other services =======================================================================
+
+  /**
+   * Handle approved permission request - grant document permission
+   */
+  private async handlePermissionRequest(payload: any, userId: string, actorId: string | undefined, workspaceId: string): Promise<void> {
+    const { documentId, permission } = payload;
+
+    if (!documentId || !permission || !actorId) {
+      throw new Error("Missing required fields: documentId, permission, or actorId");
+    }
+
+    // Grant permission using DocumentService.shareDocument
+    await this.documentService.shareDocument(userId, documentId, {
+      workspaceId,
+      permission,
+      targetUserIds: [actorId], // Grant to the requester
+      includeChildDocuments: true,
+    });
+
+    // Send notification back to the requester that their request was approved
+    const [document, admin] = await Promise.all([
+      this.prisma.doc.findUnique({
+        where: { id: documentId },
+        select: { title: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { displayName: true, email: true },
+      }),
+    ]);
+
+    if (document && admin) {
+      await this.createNotification({
+        userId: actorId, // Send to the requester
+        event: NotificationEventType.PERMISSION_GRANT,
+        workspaceId: workspaceId,
+        actorId: userId, // The admin who approved
+        documentId: documentId,
+        metadata: {
+          grantedPermission: permission,
+          documentTitle: document.title,
+          documentId: documentId,
+          actorName: admin.displayName || admin.email,
+        },
+        actionRequired: false,
+      });
+    }
+  }
+
+  /**
+   * Handle approved workspace invitation - add user to workspace
+   */
+  private async handleWorkspaceInvitation(payload: any, userId: string, adminId: string): Promise<void> {
+    const { workspaceId, role = "MEMBER" as WorkspaceRole } = payload;
+
+    if (!workspaceId) {
+      throw new Error("Missing required field: workspaceId");
+    }
+
+    // Add user to workspace using WorkspaceService.addWorkspaceMember
+    await this.workspaceService.addWorkspaceMember(workspaceId, userId, role, adminId);
+
+    // Send notification back to the inviter (actorId) that the invitation was accepted
+    if (adminId && adminId !== userId) {
+      // Get the user and workspace info for the notification metadata
+      const [user, workspace] = await Promise.all([
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { displayName: true, email: true },
+        }),
+        this.prisma.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { name: true },
+        }),
+      ]);
+
+      if (user && workspace) {
+        await this.createNotification({
+          userId: adminId, // Send to the inviter
+          event: NotificationEventType.PERMISSION_GRANT, // Reuse existing event type (invitation accepted)
+          workspaceId: workspaceId, // Workspace-scoped notification
+          actorId: userId, // The user who accepted
+          metadata: {
+            userName: user.displayName || user.email,
+            workspaceName: workspace.name,
+            message: `${user.displayName || user.email} has accepted your invitation and joined ${workspace.name}`,
+          },
+          actionRequired: false,
+        });
+      }
+    }
   }
 }

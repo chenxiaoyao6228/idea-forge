@@ -1,11 +1,63 @@
 import { z } from "zod";
-// Re-export Prisma-generated base types to avoid duplication
-import type { NotificationEventType, ActionType, ActionStatus } from "./prisma-type-generated";
-import { NotificationEventTypeSchema, ActionTypeSchema, ActionStatusSchema, NotificationSchema as PrismaNotificationSchema } from "./prisma-type-generated";
+import { NotificationSchema as PrismaNotificationSchema } from "./prisma-type-generated";
 
-// Re-export base types for convenience
-export type { NotificationEventType, ActionType, ActionStatus };
-export { NotificationEventTypeSchema, ActionTypeSchema, ActionStatusSchema };
+// ============================================
+// Notification Enums (Application Layer)
+// ============================================
+
+/**
+ * Notification event types - defines all possible notification events
+ * Stored as strings in database for flexibility
+ */
+export enum NotificationEventType {
+  // Permission workflow events (→ Sharing tab)
+  PERMISSION_REQUEST = "PERMISSION_REQUEST", // User requests access to document (action-required)
+  PERMISSION_GRANT = "PERMISSION_GRANT", // Permission request approved (informational)
+  PERMISSION_REJECT = "PERMISSION_REJECT", // Permission request rejected (informational)
+
+  // Invitation events (→ Inbox tab)
+  WORKSPACE_INVITATION = "WORKSPACE_INVITATION", // User invited to workspace (action-required)
+  SUBSPACE_INVITATION = "SUBSPACE_INVITATION", // User invited to private subspace (action-required)
+  WORKSPACE_REMOVED = "WORKSPACE_REMOVED", // User removed from workspace (informational)
+}
+
+/**
+ * Action types for notifications requiring user action
+ */
+export enum ActionType {
+  PERMISSION_REQUEST = "PERMISSION_REQUEST", // Request access to document
+  WORKSPACE_INVITATION = "WORKSPACE_INVITATION", // Invite to join workspace (accept/decline)
+  SUBSPACE_INVITATION = "SUBSPACE_INVITATION", // Invite to join private subspace
+}
+
+/**
+ * Action status for tracking notification resolution
+ */
+export enum ActionStatus {
+  PENDING = "PENDING", // Awaiting user action
+  APPROVED = "APPROVED", // User approved
+  REJECTED = "REJECTED", // User rejected
+  CANCELED = "CANCELED", // Requester canceled
+  EXPIRED = "EXPIRED", // Timeout (e.g., 7 days)
+}
+
+// Zod schemas for validation
+export const NotificationEventTypeSchema = z.nativeEnum(NotificationEventType);
+export const ActionTypeSchema = z.nativeEnum(ActionType);
+export const ActionStatusSchema = z.nativeEnum(ActionStatus);
+
+// ============================================
+// Constants
+// ============================================
+
+/**
+ * Special workspace ID for cross-workspace notifications
+ * Used for notifications that are not tied to a specific workspace:
+ * - Workspace invitations (user not yet member)
+ * - Global subscription notifications
+ * - Cross-workspace AI prompts
+ */
+export const SPECIAL_WORKSPACE_ID = "00000000-0000-0000-0000-000000000000";
 
 // ============================================
 // Additional Notification Types
@@ -92,6 +144,7 @@ export type Notification = z.infer<typeof NotificationSchema>;
 export const ListNotificationsRequestSchema = z.object({
   category: NotificationCategorySchema.optional(),
   read: z.boolean().optional(), // Filter by read/unread status
+  workspaceId: z.string().optional(), // Filter by workspace (includes cross-workspace when provided)
   page: z.number().int().min(1).default(1),
   limit: z.number().int().min(1).max(100).default(20),
 });
@@ -184,6 +237,26 @@ export const UnreadCountResponseSchema = z.object({
 
 export type UnreadCountResponse = z.infer<typeof UnreadCountResponseSchema>;
 
+// Category counts schema (reused across workspace-grouped responses)
+export const CategoryCountsSchema = z.object({
+  MENTIONS: z.number().int(),
+  SHARING: z.number().int(),
+  INBOX: z.number().int(),
+  SUBSCRIBE: z.number().int(),
+});
+
+export type CategoryCounts = z.infer<typeof CategoryCountsSchema>;
+
+// Unread count by workspace response (for cross-workspace badge)
+export const UnreadCountByWorkspaceResponseSchema = z.object({
+  // Workspace ID -> category counts
+  byWorkspace: z.record(z.string(), CategoryCountsSchema),
+  // Cross-workspace notifications (SPECIAL_WORKSPACE_ID)
+  crossWorkspace: CategoryCountsSchema,
+});
+
+export type UnreadCountByWorkspaceResponse = z.infer<typeof UnreadCountByWorkspaceResponseSchema>;
+
 // ============================================
 // WebSocket Event Schemas
 // ============================================
@@ -229,9 +302,10 @@ export type NotificationWebSocketEvent = z.infer<typeof NotificationWebSocketEve
 export function getCategoryEventTypes(category: NotificationCategory): NotificationEventType[] {
   switch (category) {
     case "SHARING":
-      return ["PERMISSION_REQUEST", "PERMISSION_GRANT", "PERMISSION_REJECT", "WORKSPACE_INVITATION", "SUBSPACE_INVITATION"];
-    case "MENTIONS":
+      return [NotificationEventType.PERMISSION_REQUEST, NotificationEventType.PERMISSION_GRANT, NotificationEventType.PERMISSION_REJECT];
     case "INBOX":
+      return [NotificationEventType.WORKSPACE_INVITATION, NotificationEventType.SUBSPACE_INVITATION, NotificationEventType.WORKSPACE_REMOVED];
+    case "MENTIONS":
     case "SUBSCRIBE":
       // Phase 2+ will add event types for these categories
       return [];
@@ -242,12 +316,12 @@ export function getCategoryEventTypes(category: NotificationCategory): Notificat
  * Determine if a notification is action-required based on event type
  */
 export function isActionRequiredEvent(eventType: NotificationEventType): boolean {
-  return ["PERMISSION_REQUEST", "WORKSPACE_INVITATION", "SUBSPACE_INVITATION"].includes(eventType);
+  return [NotificationEventType.PERMISSION_REQUEST, NotificationEventType.WORKSPACE_INVITATION, NotificationEventType.SUBSPACE_INVITATION].includes(eventType);
 }
 
 /**
  * Determine if a notification is informational (auto-read eligible)
  */
 export function isInformationalEvent(eventType: NotificationEventType): boolean {
-  return ["PERMISSION_GRANT", "PERMISSION_REJECT"].includes(eventType);
+  return [NotificationEventType.PERMISSION_GRANT, NotificationEventType.PERMISSION_REJECT].includes(eventType);
 }

@@ -4,15 +4,37 @@ import {
   PrismaClient,
   SubspaceRole,
   WorkspaceRole,
+  WorkspaceType,
 } from "@prisma/client";
 import { hash } from "argon2";
-import fractionalIndex from "fractional-index";
+
 
 const prisma = new PrismaClient();
+
+// Special workspace ID for cross-workspace notifications
+const SPECIAL_WORKSPACE_ID = "00000000-0000-0000-0000-000000000000";
 
 async function seed() {
   console.log("🌱 Seeding...");
   console.time(`🌱 Database has been seeded`);
+
+  // Create/update special workspace for cross-workspace notifications
+  await prisma.workspace.upsert({
+    where: { id: SPECIAL_WORKSPACE_ID },
+    update: {},
+    create: {
+      id: SPECIAL_WORKSPACE_ID,
+      name: "Cross-Workspace System",
+      description: "System workspace for cross-workspace notifications",
+      type: WorkspaceType.TEAM,
+      settings: {
+        timezone: "UTC",
+        dateFormat: "YYYY/MM/DD",
+      },
+    },
+  });
+
+  console.log("✅ Created special workspace for cross-workspace notifications");
 
   const passwordHash = await hash("Aa111111");
 

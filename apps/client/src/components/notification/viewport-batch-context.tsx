@@ -14,7 +14,7 @@ const ViewportBatchContext = createContext<ViewportBatchContextValue | null>(nul
 interface ViewportBatchProviderProps {
   children: ReactNode;
   /**
-   * Debounce interval in milliseconds (default: 1000ms)
+   * Debounce interval in milliseconds (default: 2000ms)
    * Multiple notifications will be batched within this time window
    */
   batchInterval?: number;
@@ -25,7 +25,7 @@ interface ViewportBatchProviderProps {
  * Instead of sending individual requests for each notification,
  * collects multiple IDs and sends them in a single batch request
  */
-export function ViewportBatchProvider({ children, batchInterval = 1000 }: ViewportBatchProviderProps) {
+export function ViewportBatchProvider({ children, batchInterval = 2000 }: ViewportBatchProviderProps) {
   const batchMarkViewed = useBatchMarkViewed();
   const pendingIdsRef = useRef<Set<string>>(new Set());
   const timerRef = useRef<NodeJS.Timeout | null>(null);

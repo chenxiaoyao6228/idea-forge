@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from "@nestjs/common";
-import { CreateDocumentDto, UpdateDocumentDto, MoveDocumentsDto, ShareDocumentDto, SearchDocumentDto } from "./document.dto";
+import { CreateDocumentDto, UpdateDocumentDto, MoveDocumentsDto, ShareDocumentDto, SearchDocumentDto, RequestDocumentPermissionDto } from "./document.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { DocumentService } from "./document.service";
 import { MoveDocumentService } from "./move-document.service";
@@ -89,6 +89,11 @@ export class DocumentController {
   @Post(":id/share")
   async shareDocument(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: ShareDocumentDto) {
     return this.shareDocumentService.shareDocument(userId, id, dto);
+  }
+
+  @Post(":id/request-permission")
+  async requestPermission(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: RequestDocumentPermissionDto) {
+    return this.shareDocumentService.requestDocumentPermission(userId, id, dto);
   }
 
   // ============== public doc share ==========================================

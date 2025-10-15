@@ -30,8 +30,11 @@ interface ViewportTrackerProps {
  *
  * Uses Intersection Observer API to detect visibility and a timer to ensure
  * continuous visibility for the required duration.
+ *
+ * Uses a short duration (100ms) to quickly detect when user sees the notification,
+ * then batching layer handles the 2s delay before sending to API.
  */
-export function ViewportTracker({ notificationId, isViewed, onMarkViewed, viewDuration = 1000, children }: ViewportTrackerProps) {
+export function ViewportTracker({ notificationId, isViewed, onMarkViewed, viewDuration = 100, children }: ViewportTrackerProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasMarkedRef = useRef(false);
 

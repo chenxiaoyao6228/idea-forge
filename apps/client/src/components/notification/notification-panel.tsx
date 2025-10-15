@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -6,14 +6,14 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
 import { NotificationList } from "./notification-list";
-import {
+import useNotificationStore, {
   useFilteredNotifications,
-  useNotificationsPagination,
   useFetchNotifications,
   useMarkAsRead,
   useResolveAction,
-  useCategoryUnreadCount,
+  useUnreadCountByWorkspace,
 } from "@/stores/notification-store";
+import { useCurrentWorkspace } from "@/stores/workspace-store";
 import type { NotificationCategory } from "@idea/contracts";
 import { cn } from "@/lib/utils";
 
@@ -27,20 +27,56 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
   const [currentPage, setCurrentPage] = useState(1);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  // Get workspace context
+  const currentWorkspace = useCurrentWorkspace();
+  const unreadCountByWorkspace = useUnreadCountByWorkspace();
+
   // Fetch notifications for current tab (append = true for page > 1)
-  const fetchNotifications = useFetchNotifications(activeTab, undefined, currentPage, currentPage > 1);
+  // Pass workspaceId to get current workspace + cross-workspace notifications
+  const fetchNotifications = useFetchNotifications(activeTab, undefined, currentPage, currentPage > 1, currentWorkspace?.id);
   const markAsRead = useMarkAsRead();
   const resolveAction = useResolveAction();
 
   // Get filtered notifications and pagination
   const notifications = useFilteredNotifications(activeTab);
-  const pagination = useNotificationsPagination();
+  const pagination = useNotificationStore((state) => state.pagination);
 
-  // Get unread counts for each category
-  const mentionsUnread = useCategoryUnreadCount("MENTIONS");
-  const sharingUnread = useCategoryUnreadCount("SHARING");
-  const inboxUnread = useCategoryUnreadCount("INBOX");
-  const subscribeUnread = useCategoryUnreadCount("SUBSCRIBE");
+  // Get unread counts for each category using workspace-grouped counts
+  const currentWorkspaceUnread = useMemo(() => {
+    if (!unreadCountByWorkspace || !currentWorkspace) {
+      return {
+        MENTIONS: 0,
+        SHARING: 0,
+        INBOX: 0,
+        SUBSCRIBE: 0,
+      };
+    }
+    return (
+      unreadCountByWorkspace.byWorkspace[currentWorkspace.id] || {
+        MENTIONS: 0,
+        SHARING: 0,
+        INBOX: 0,
+        SUBSCRIBE: 0,
+      }
+    );
+  }, [unreadCountByWorkspace, currentWorkspace]);
+
+  // SUBSCRIBE tab shows cross-workspace notifications
+  const subscribeUnread = useMemo(() => {
+    if (!unreadCountByWorkspace) return 0;
+    return unreadCountByWorkspace.crossWorkspace.SUBSCRIBE || 0;
+  }, [unreadCountByWorkspace]);
+
+  const mentionsUnread = currentWorkspaceUnread.MENTIONS;
+  const sharingUnread = currentWorkspaceUnread.SHARING;
+
+  // INBOX includes both workspace-specific and cross-workspace notifications (workspace invitations)
+  const inboxUnread = useMemo(() => {
+    if (!unreadCountByWorkspace) return 0;
+    const workspaceInbox = currentWorkspaceUnread.INBOX;
+    const crossWorkspaceInbox = unreadCountByWorkspace.crossWorkspace.INBOX || 0;
+    return workspaceInbox + crossWorkspaceInbox;
+  }, [unreadCountByWorkspace, currentWorkspaceUnread]);
 
   // Initial load and tab changes
   useEffect(() => {
@@ -81,13 +117,13 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
   return (
     <div className={cn("flex flex-col bg-background rounded-lg shadow-lg", className)} style={{ width: 500, maxHeight: "calc(100vh - 100px)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+      <div className="flex items-center justify-between px-4 py-1 border-b">
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
-          <h2 className="text-lg font-semibold">Notifications</h2>
+          <h3 className="text-md font-semibold">Notifications</h3>
         </div>
         <Button variant="ghost" size="sm" onClick={onClose}>
-          <Check className="h-4 w-4 mr-2" />
+          <Check className="h-4 w-4 mr-1" />
           Mark all as read
         </Button>
       </div>

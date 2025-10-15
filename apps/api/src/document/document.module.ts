@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
 import { DocumentService } from "./document.service";
 import { DocumentController } from "./document.controller";
@@ -15,9 +15,18 @@ import { DocumentAbility } from "./document.ability";
 import { PermissionModule } from "@/permission/permission.module";
 import { DocumentTrashService } from "./trash-document.service";
 import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
+import { NotificationModule } from "@/notification/notification.module";
 
 @Module({
-  imports: [FileStoreModule, ScheduleModule.forRoot(), SubspaceModule, EventsModule, GroupModule, PermissionModule],
+  imports: [
+    FileStoreModule,
+    ScheduleModule.forRoot(),
+    SubspaceModule,
+    EventsModule,
+    GroupModule,
+    PermissionModule,
+    forwardRef(() => NotificationModule),
+  ],
   controllers: [DocumentController, ShareDocumentController],
   providers: [
     DocumentService,

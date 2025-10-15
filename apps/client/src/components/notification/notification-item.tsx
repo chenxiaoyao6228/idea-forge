@@ -182,17 +182,9 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
     </Card>
   );
 
-  // For informational notifications (not action-required), wrap with ViewportTracker
-  // to automatically mark as read after 2 seconds of visibility
-  // The markAsViewed callback will batch multiple notifications together
-  if (!isActionRequired) {
-    return (
-      <ViewportTracker notificationId={notification.id} isViewed={!isUnread} onMarkViewed={markAsViewed}>
-        {cardContent}
-      </ViewportTracker>
-    );
-  }
-
-  // For action-required notifications, return card without viewport tracking
-  return cardContent;
+  return (
+    <ViewportTracker notificationId={notification.id} isViewed={!isUnread} onMarkViewed={markAsViewed}>
+      {cardContent}
+    </ViewportTracker>
+  );
 }

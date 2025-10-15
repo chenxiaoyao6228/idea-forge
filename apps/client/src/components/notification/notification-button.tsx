@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { NotificationPanel } from "./notification-panel";
-import { useNotificationBadgeCount, useFetchUnreadCount } from "@/stores/notification-store";
+import { useCurrentWorkspaceNotificationCount, useFetchUnreadCountByWorkspace } from "@/stores/notification-store";
 import { cn } from "@/lib/utils";
 
 interface NotificationButtonProps {
@@ -17,18 +17,18 @@ interface NotificationButtonProps {
 
 export function NotificationButton({ className, size = "lg", as }: NotificationButtonProps) {
   const [open, setOpen] = useState(false);
-  const badgeCount = useNotificationBadgeCount();
-  const fetchUnreadCount = useFetchUnreadCount();
+  const badgeCount = useCurrentWorkspaceNotificationCount();
+  const fetchUnreadCountByWorkspace = useFetchUnreadCountByWorkspace();
 
-  // Fetch unread count on mount and when panel opens
+  // Fetch workspace-grouped unread counts on mount (this provides ALL count data)
   useEffect(() => {
-    fetchUnreadCount.run();
+    fetchUnreadCountByWorkspace.run();
   }, []);
 
-  // Refetch when panel opens
+  // Refetch workspace counts when panel opens
   useEffect(() => {
     if (open) {
-      fetchUnreadCount.run();
+      fetchUnreadCountByWorkspace.run();
     }
   }, [open]);
 

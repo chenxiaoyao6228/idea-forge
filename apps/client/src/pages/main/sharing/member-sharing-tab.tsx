@@ -295,9 +295,20 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   };
 
   const handlePermissionRequest = async (requestedPermission: string, reason: string) => {
-    // TODO: Implement API call to submit permission request
-    console.log("Permission request:", { documentId, requestedPermission, reason });
-    toast.success(t("Permission request submitted. An administrator will review your request."));
+    try {
+      const response = await documentApi.requestPermission(documentId, {
+        requestedPermission: requestedPermission as "READ" | "COMMENT" | "EDIT" | "MANAGE",
+        reason,
+      });
+
+      if (response.success) {
+        toast.success(response.message || t("Permission request submitted. An administrator will review your request."));
+      }
+    } catch (error: any) {
+      console.error("Failed to submit permission request:", error);
+      toast.error(error.message || t("Failed to submit permission request"));
+      throw error; // Re-throw to be handled by modal
+    }
   };
 
   // Find current user's permission from share list

@@ -1,14 +1,14 @@
 import { useEffect } from "react";
 import type { Socket } from "socket.io-client";
 import type { NotificationWebSocketEvent } from "@idea/contracts";
-import { addNotification, updateNotification, setUnreadCount } from "@/stores/notification-store";
-import { notificationApi } from "@/apis/notification";
+import { addNotification, updateNotification, useFetchUnreadCountByWorkspace } from "@/stores/notification-store";
 
 /**
  * WebSocket event handler for notification events
  * Listens to notification.create, notification.update, and notification.action_resolved events
  */
 export function useNotificationWebsocketEvents(socket: Socket | null) {
+  const { run: fetchAndUpdateUnreadCountByWorkspace } = useFetchUnreadCountByWorkspace();
   useEffect(() => {
     if (!socket) return;
 
@@ -18,8 +18,8 @@ export function useNotificationWebsocketEvents(socket: Socket | null) {
         console.log("[notification-events]: Received notification.create", event.payload);
         addNotification(event.payload);
 
-        // Refetch unread count
-        notificationApi.getUnreadCount().then(setUnreadCount).catch(console.error);
+        // Refetch workspace-grouped unread counts via store method
+        fetchAndUpdateUnreadCountByWorkspace();
       }
     };
 
@@ -29,8 +29,8 @@ export function useNotificationWebsocketEvents(socket: Socket | null) {
         console.log("[notification-events]: Received notification.update", event.payload);
         updateNotification(event.payload.id, event.payload);
 
-        // Refetch unread count
-        notificationApi.getUnreadCount().then(setUnreadCount).catch(console.error);
+        // Refetch workspace-grouped unread counts via store method
+        fetchAndUpdateUnreadCountByWorkspace();
       }
     };
 
@@ -40,8 +40,8 @@ export function useNotificationWebsocketEvents(socket: Socket | null) {
         console.log("[notification-events]: Received notification.action_resolved", event.payload);
         updateNotification(event.payload.id, event.payload);
 
-        // Refetch unread count
-        notificationApi.getUnreadCount().then(setUnreadCount).catch(console.error);
+        // Refetch workspace-grouped unread counts via store method
+        fetchAndUpdateUnreadCountByWorkspace();
       }
     };
 

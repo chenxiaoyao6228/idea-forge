@@ -44,22 +44,9 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null) {
       }
     };
 
-    const onWorkspaceMembersBatchAdded = (message: any) => {
-      console.log(`[websocket]: Received event ${SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED}:`, message);
-      const { workspaceId, totalAdded, membersBatchAdded } = message;
-      if (!workspaceId) return;
-
-      // Single refresh for batch operation instead of multiple individual refreshes
-      if (membersBatchAdded) {
-        const workspaceStore = useWorkspaceStore.getState();
-        fetchWorkspaces();
-
-        // Also refresh workspace members if this is the current workspace
-        if (workspaceStore.currentWorkspace?.id === workspaceId) {
-          fetchMembers(workspaceId);
-        }
-      }
-    };
+    // Note: Batch workspace member invitations no longer emit WORKSPACE_MEMBERS_BATCH_ADDED
+    // Instead, when users accept invitations, individual WORKSPACE_MEMBER_ADDED events are fired
+    // This handler has been removed as invitations don't add members immediately
 
     const onWorkspaceMemberRoleUpdated = (message: any) => {
       console.log(`[websocket]: Received event ${SocketEvents.WORKSPACE_MEMBER_ROLE_UPDATED}:`, message);
@@ -176,14 +163,12 @@ export function useWorkspaceWebsocketEvents(socket: Socket | null) {
 
     // Register listeners
     socket.on(SocketEvents.WORKSPACE_MEMBER_ADDED, onWorkspaceMemberAdded);
-    socket.on(SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED, onWorkspaceMembersBatchAdded);
     socket.on(SocketEvents.WORKSPACE_MEMBER_ROLE_UPDATED, onWorkspaceMemberRoleUpdated);
     socket.on(SocketEvents.WORKSPACE_MEMBER_LEFT, onWorkspaceMemberLeft);
 
     // Create cleanup function
     return () => {
       socket.off(SocketEvents.WORKSPACE_MEMBER_ADDED, onWorkspaceMemberAdded);
-      socket.off(SocketEvents.WORKSPACE_MEMBERS_BATCH_ADDED, onWorkspaceMembersBatchAdded);
       socket.off(SocketEvents.WORKSPACE_MEMBER_ROLE_UPDATED, onWorkspaceMemberRoleUpdated);
       socket.off(SocketEvents.WORKSPACE_MEMBER_LEFT, onWorkspaceMemberLeft);
     };

@@ -154,6 +154,22 @@ export const shareDocumentSchema = z.object({
 
 export type ShareDocumentDto = z.infer<typeof shareDocumentSchema>;
 
+// request permission for document
+export const requestDocumentPermissionSchema = z.object({
+  requestedPermission: z.enum(["READ", "COMMENT", "EDIT", "MANAGE"]),
+  reason: z.string().min(1).max(500),
+});
+
+export type RequestDocumentPermissionDto = z.infer<typeof requestDocumentPermissionSchema>;
+
+export const requestDocumentPermissionResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  notificationsSent: z.number(),
+});
+
+export type RequestDocumentPermissionResponse = z.infer<typeof requestDocumentPermissionResponseSchema>;
+
 // Permission source metadata schema (reused from permission.ts)
 const permissionResolutionResultSchema = z.object({
   level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),

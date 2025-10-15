@@ -2,7 +2,14 @@ import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from "@ne
 import { NotificationService } from "./notification.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
-import type { ListNotificationsRequest, MarkAsReadRequest, BatchMarkViewedRequest, ResolveActionRequest, UnreadCountRequest } from "@idea/contracts";
+import type {
+  ListNotificationsRequest,
+  MarkAsReadRequest,
+  BatchMarkViewedRequest,
+  MarkAllAsReadRequest,
+  ResolveActionRequest,
+  UnreadCountRequest,
+} from "@idea/contracts";
 
 @UseGuards(PolicyGuard)
 @Controller("/api/notifications")
@@ -18,12 +25,14 @@ export class NotificationController {
     @GetUser("id") userId: string,
     @Query("category") category?: string,
     @Query("read") read?: string,
+    @Query("workspaceId") workspaceId?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
   ) {
     const dto: ListNotificationsRequest = {
       category: category as any,
       read: read === "true" ? true : read === "false" ? false : undefined,
+      workspaceId: workspaceId,
       page: page ? Number.parseInt(page, 10) : 1,
       limit: limit ? Number.parseInt(limit, 10) : 20,
     };
@@ -50,6 +59,15 @@ export class NotificationController {
   }
 
   /**
+   * POST /api/notifications/mark-all-read
+   * Mark all notifications as read with optional category and workspace filtering
+   */
+  @Post("mark-all-read")
+  async markAllAsRead(@GetUser("id") userId: string, @Body() dto: MarkAllAsReadRequest) {
+    return this.notificationService.markAllAsRead(userId, dto.category, dto.workspaceId);
+  }
+
+  /**
    * POST /api/notifications/:id/resolve
    * Resolve an action-required notification
    */
@@ -59,13 +77,13 @@ export class NotificationController {
   }
 
   /**
-   * GET /api/notifications/unread-count
-   * Get unread notification count
+   * GET /api/notifications/unread-count-by-workspace
+   * Get unread notification count grouped by workspace
+   * Used for cross-workspace notification badges
    */
-  @Get("unread-count")
-  async getUnreadCount(@GetUser("id") userId: string, @Query("category") category?: string) {
-    const dto: UnreadCountRequest = { category: category as any };
-    return this.notificationService.getUnreadCount(userId, dto.category);
+  @Get("unread-count-by-workspace")
+  async getUnreadCountByWorkspace(@GetUser("id") userId: string) {
+    return this.notificationService.getUnreadCountByWorkspace(userId);
   }
 
   /**

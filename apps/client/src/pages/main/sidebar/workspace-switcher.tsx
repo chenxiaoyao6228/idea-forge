@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import useUserStore from "@/stores/user-store";
 import { useAllWorkspaces, useCurrentWorkspace, useSwitchWorkspace, useReorderWorkspaces, useFetchWorkspaces } from "@/stores/workspace-store";
 import { useAcceptGuestInvitation } from "@/stores/guest-collaborators-store";
+import { useOtherWorkspacesTotalUnreadCount, useUnreadCountByWorkspace } from "@/stores/notification-store";
 import { SortableList } from "@/components/sortable-list";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";
 import { displayUserName } from "@/lib/auth";
@@ -27,7 +28,26 @@ export default function WorkspaceSwitcher() {
   const { run: reorderWorkspaces, loading: isReordering } = useReorderWorkspaces();
   const { run: fetchWorkspaces } = useFetchWorkspaces();
   const { run: acceptInvitation, loading: isAccepting } = useAcceptGuestInvitation();
+  const unreadCountByWorkspace = useUnreadCountByWorkspace();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const otherWorkspacesTotalUnreadCount = useOtherWorkspacesTotalUnreadCount();
+
+  // Check if other workspaces have high-priority unread notifications
+  const hasOtherWorkspaceUnread = useMemo(() => {
+    if (!unreadCountByWorkspace || !currentWorkspace) return false;
+
+    // Check other workspaces for MENTIONS + INBOX notifications
+    const otherWorkspaces = workspaces.filter((w) => w.id !== currentWorkspace.id);
+    const hasOtherWorkspaceUnread = otherWorkspaces.some((workspace) => {
+      const unread = unreadCountByWorkspace.byWorkspace[workspace.id];
+      return unread && unread.MENTIONS + unread.INBOX > 0;
+    });
+
+    // Include cross-workspace INBOX notifications (workspace invitations)
+    const hasCrossWorkspaceInbox = (unreadCountByWorkspace.crossWorkspace.INBOX || 0) > 0;
+
+    return hasOtherWorkspaceUnread || hasCrossWorkspaceInbox;
+  }, [workspaces, currentWorkspace, unreadCountByWorkspace]);
 
   const handleWorkspaceClick = async (workspace: any) => {
     if (isSwitching || isAccepting) return;
@@ -98,7 +118,11 @@ export default function WorkspaceSwitcher() {
             </div>
             <div className="flex items-center space-x-1 flex-shrink-0">
               <ChevronDown className="h-4 w-4 opacity-70 mr-1" />
-              {/* <div className="bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">2</div> */}
+              {otherWorkspacesTotalUnreadCount && otherWorkspacesTotalUnreadCount?.total > 0 && (
+                <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4 bg-red-500 text-white">
+                  <span className="text-xs">{otherWorkspacesTotalUnreadCount?.total}</span>
+                </Badge>
+              )}
             </div>
           </Button>
         </DropdownMenuTrigger>
@@ -146,45 +170,63 @@ export default function WorkspaceSwitcher() {
               onReorder={handleReorder}
               className="space-y-1"
               containerHeight={240}
-              renderItem={(workspace) => (
-                <div
-                  key={workspace.id}
-                  className={cn(
-                    "flex flex-1 items-center gap-2 px-1 py-1 transition-colors group cursor-pointer",
-                    workspace.accessLevel === "guest" && "opacity-75",
-                  )}
-                  onClick={() => handleWorkspaceClick(workspace)}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    {/* <div className="flex items-center justify-center h-8 w-8 rounded bg-gray-200 text-gray-700 text-xs font-medium">
-                      {getWorkspaceInitial(workspace.name)}
-                    </div> */}
-                    <div className="flex flex-col flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm truncate">{workspace.name}</span>
-                        {workspace.accessLevel === "guest" && workspace.isPendingGuest && (
-                          <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4 bg-orange-100 text-orange-800">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {t("Pending")}
-                          </Badge>
-                        )}
-                        {workspace.accessLevel === "guest" && !workspace.isPendingGuest && (
-                          <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4">
-                            <Eye className="h-3 w-3 mr-1" />
-                            {t("Guest")}
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground">{t(workspace.type === "PERSONAL" ? "Personal Workspace" : "Team Workspace")}</span>
-                    </div>
-                    {currentWorkspace?.id === workspace.id && (
-                      <div className="flex items-center justify-center h-4 w-4 rounded-full bg-gray-200">
-                        <Check className="h-3 w-3 text-gray-600" />
-                      </div>
+              renderItem={(workspace) => {
+                // Calculate high-priority unread count for this workspace (MENTIONS + INBOX)
+                const workspaceUnread = unreadCountByWorkspace?.byWorkspace[workspace.id];
+                const hasUnread = workspaceUnread && workspaceUnread.MENTIONS + workspaceUnread.INBOX > 0;
+                const unReadCount =
+                  (workspaceUnread?.MENTIONS || 0) + (workspaceUnread?.INBOX || 0) + (workspaceUnread?.SHARING || 0) + (workspaceUnread?.SUBSCRIBE || 0);
+                // Don't show badge for current workspace
+                const showBadge = hasUnread && workspace.id !== currentWorkspace?.id;
+
+                return (
+                  <div
+                    key={workspace.id}
+                    className={cn(
+                      "flex flex-1 items-center gap-2 px-1 py-1 transition-colors group cursor-pointer",
+                      workspace.accessLevel === "guest" && "opacity-75",
                     )}
+                    onClick={() => handleWorkspaceClick(workspace)}
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      {/* <div className="flex items-center justify-center h-8 w-8 rounded bg-gray-200 text-gray-700 text-xs font-medium">
+                        {getWorkspaceInitial(workspace.name)}
+                      </div> */}
+                      <div className="flex flex-col flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm truncate">{workspace.name}</span>
+                          {workspace.accessLevel === "guest" && workspace.isPendingGuest && (
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4 bg-orange-100 text-orange-800">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {t("Pending")}
+                            </Badge>
+                          )}
+                          {workspace.accessLevel === "guest" && !workspace.isPendingGuest && (
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4">
+                              <Eye className="h-3 w-3 mr-1" />
+                              {t("Guest")}
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{t(workspace.type === "PERSONAL" ? "Personal Workspace" : "Team Workspace")}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {/* {showBadge && <div className="bg-red-500 rounded-full h-2 w-2" />} */}
+                        {showBadge && (
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4 bg-red-500 text-white">
+                            <span className="text-xs">{unReadCount}</span>
+                          </Badge>
+                        )}
+                        {currentWorkspace?.id === workspace.id && (
+                          <div className="flex items-center justify-center h-4 w-4 rounded-full bg-gray-200">
+                            <Check className="h-3 w-3 text-gray-600" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              }}
             />
           </ScrollArea>
         </DropdownMenuContent>

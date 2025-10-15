@@ -60,6 +60,7 @@ export enum BusinessEvents {
   // Workspace events
   WORKSPACE_MEMBER_ADDED = "workspace.member.added",
   WORKSPACE_MEMBERS_BATCH_ADDED = "workspace.members.batch.added",
+  WORKSPACE_INVITATIONS_BATCH_SENT = "workspace.invitations.batch.sent",
   WORKSPACE_MEMBER_ROLE_UPDATED = "workspace.member.role.updated",
   WORKSPACE_MEMBER_LEFT = "workspace.member.left",
   // WORKSPACE_UPDATE = "workspace.update",
@@ -80,4 +81,9 @@ export enum BusinessEvents {
   PUBLIC_SHARE_CREATED = "public.share.created",
   PUBLIC_SHARE_UPDATED = "public.share.updated",
   PUBLIC_SHARE_REVOKED = "public.share.revoked",
+
+  // Notification events
+  NOTIFICATION_CREATE = "notification.create",
+  NOTIFICATION_UPDATE = "notification.update",
+  NOTIFICATION_ACTION_RESOLVED = "notification.action_resolved",
 }

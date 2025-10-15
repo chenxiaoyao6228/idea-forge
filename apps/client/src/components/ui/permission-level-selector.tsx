@@ -15,6 +15,7 @@ interface PermissionLevelSelectorProps {
   onRestoreInherited?: () => void;
   showRemove?: boolean;
   onRemove?: () => void;
+  availableLevels?: PermissionLevel[];
 }
 
 export function PermissionLevelSelector({
@@ -27,12 +28,13 @@ export function PermissionLevelSelector({
   onRestoreInherited,
   showRemove = false,
   onRemove,
+  availableLevels,
 }: PermissionLevelSelectorProps) {
   const { t } = useTranslation();
 
   // Note: Permission operation text is also defined in guest-sharing-tab.tsx
   // Keep these in sync or consider extracting to a shared hook if more components need this
-  const permissionLevels = [
+  const allPermissionLevels = [
     {
       value: "NONE" as PermissionLevel,
       label: t("No Access"),
@@ -64,6 +66,9 @@ export function PermissionLevelSelector({
       color: "default" as const,
     },
   ];
+
+  // Use availableLevels if provided, otherwise use all permission levels
+  const permissionLevels = availableLevels ? allPermissionLevels.filter((level) => availableLevels.includes(level.value)) : allPermissionLevels;
 
   const selectedPermission = permissionLevels.find((level) => level.value === value);
 
