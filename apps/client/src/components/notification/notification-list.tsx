@@ -11,7 +11,8 @@ import { ViewportBatchProvider } from "./viewport-batch-context";
 interface NotificationListProps {
   notifications: NotificationEntity[];
   loading?: boolean;
-  hasMore?: boolean;
+  loadingMore?: boolean;
+  noMore?: boolean;
   onLoadMore?: () => void;
   onMarkAsRead?: (id: string) => void;
   onResolveAction?: (id: string, action: "approve" | "reject" | "accept" | "decline", reason?: string) => void;
@@ -21,7 +22,8 @@ interface NotificationListProps {
 export function NotificationList({
   notifications,
   loading = false,
-  hasMore = false,
+  loadingMore = false,
+  noMore = false,
   onLoadMore,
   onMarkAsRead,
   onResolveAction,
@@ -33,10 +35,10 @@ export function NotificationList({
 
   // Load more when scrolled to bottom
   useEffect(() => {
-    if (inView && hasMore && !loading && onLoadMore) {
+    if (inView && !noMore && !loadingMore && onLoadMore) {
       onLoadMore();
     }
-  }, [inView, hasMore, loading, onLoadMore]);
+  }, [inView, noMore, loadingMore, onLoadMore]);
 
   if (notifications.length === 0 && !loading) {
     return (
@@ -59,9 +61,9 @@ export function NotificationList({
           ))}
 
           {/* Load more trigger */}
-          {hasMore && (
+          {!noMore && (
             <div ref={inViewRef} className="flex justify-center py-4">
-              {loading && <Spinner className="h-6 w-6" />}
+              {loadingMore && <Spinner className="h-6 w-6" />}
             </div>
           )}
         </div>

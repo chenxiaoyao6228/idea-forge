@@ -3,17 +3,16 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
-import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
-import type { DocumentService } from "@/document/document.service";
-import type { WorkspaceService } from "@/workspace/workspace.service";
+import { DocumentService } from "@/document/document.service";
+import { WorkspaceService } from "@/workspace/workspace.service";
 import {
   NotificationEventType,
   type ListNotificationsRequest,
   type ListNotificationsResponse,
   type MarkAsReadResponse,
   type BatchMarkViewedResponse,
+  type MarkAllAsReadResponse,
   type ResolveActionResponse,
-  type UnreadCountResponse,
   type UnreadCountByWorkspaceResponse,
   type NotificationCategory,
   type WorkspaceRole,
@@ -26,10 +25,9 @@ export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventPublisher: EventPublisherService,
-    private readonly eventDeduplicator: EventDeduplicator,
-    @Inject(forwardRef(() => require("@/document/document.service").DocumentService))
+    @Inject(forwardRef(() => DocumentService))
     private readonly documentService: DocumentService,
-    @Inject(forwardRef(() => require("@/workspace/workspace.service").WorkspaceService))
+    @Inject(forwardRef(() => WorkspaceService))
     private readonly workspaceService: WorkspaceService,
   ) {}
 
@@ -143,6 +141,52 @@ export class NotificationService {
         userId,
         viewedAt: null, // Only update unviewed
       },
+      data: {
+        viewedAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      markedCount: result.count,
+    };
+  }
+
+  /**
+   * Mark all notifications as read with optional filtering by category and workspace
+   */
+  async markAllAsRead(userId: string, category?: NotificationCategory, workspaceId?: string): Promise<MarkAllAsReadResponse> {
+    // Build filter conditions
+    const where: any = {
+      userId,
+      viewedAt: null, // Only mark unread notifications
+    };
+
+    // Filter by category (map to event types)
+    if (category) {
+      const eventTypes = getCategoryEventTypes(category);
+      if (eventTypes.length > 0) {
+        where.event = { in: eventTypes };
+      } else {
+        // No event types for this category in Phase 1, return 0
+        return {
+          success: true,
+          markedCount: 0,
+        };
+      }
+    }
+
+    // Filter by workspace (includes cross-workspace notifications)
+    if (workspaceId) {
+      where.OR = [
+        { workspaceId: workspaceId }, // Current workspace notifications
+        { workspaceId: SPECIAL_WORKSPACE_ID }, // Cross-workspace notifications
+      ];
+    }
+
+    // Update all matching unread notifications
+    const result = await this.prisma.notification.updateMany({
+      where,
       data: {
         viewedAt: new Date(),
       },

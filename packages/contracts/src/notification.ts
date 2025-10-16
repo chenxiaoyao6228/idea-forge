@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { NotificationSchema as PrismaNotificationSchema } from "./prisma-type-generated";
+import { NotificationSchema } from "./prisma-type-generated";
 
 // ============================================
 // Notification Enums (Application Layer)
@@ -129,13 +129,6 @@ export type SubspaceInvitationMetadata = z.infer<typeof SubspaceInvitationMetada
 // API Notification Schema (with transformations)
 // ============================================
 
-// API version of Notification schema that handles JSON to Date transformations
-export const NotificationSchema = PrismaNotificationSchema.extend({
-  // Prisma schema already has correct types, just re-export
-});
-
-export type Notification = z.infer<typeof NotificationSchema>;
-
 // ============================================
 // API Request/Response Schemas
 // ============================================
@@ -169,13 +162,6 @@ export const ListNotificationsResponseSchema = z.object({
 
 export type ListNotificationsResponse = z.infer<typeof ListNotificationsResponseSchema>;
 
-// Mark as read request
-export const MarkAsReadRequestSchema = z.object({
-  notificationId: z.string(),
-});
-
-export type MarkAsReadRequest = z.infer<typeof MarkAsReadRequestSchema>;
-
 // Mark as read response
 export const MarkAsReadResponseSchema = z.object({
   success: z.boolean(),
@@ -198,6 +184,22 @@ export const BatchMarkViewedResponseSchema = z.object({
 });
 
 export type BatchMarkViewedResponse = z.infer<typeof BatchMarkViewedResponseSchema>;
+
+// Mark all as read request
+export const MarkAllAsReadRequestSchema = z.object({
+  category: NotificationCategorySchema.optional(), // Optional category filter
+  workspaceId: z.string().optional(), // Optional workspace filter
+});
+
+export type MarkAllAsReadRequest = z.infer<typeof MarkAllAsReadRequestSchema>;
+
+// Mark all as read response
+export const MarkAllAsReadResponseSchema = z.object({
+  success: z.boolean(),
+  markedCount: z.number().int(),
+});
+
+export type MarkAllAsReadResponse = z.infer<typeof MarkAllAsReadResponseSchema>;
 
 // Resolve action request
 export const ResolveActionRequestSchema = z.object({
@@ -223,19 +225,6 @@ export const UnreadCountRequestSchema = z.object({
 });
 
 export type UnreadCountRequest = z.infer<typeof UnreadCountRequestSchema>;
-
-// Unread count response
-export const UnreadCountResponseSchema = z.object({
-  total: z.number().int(),
-  byCategory: z.object({
-    MENTIONS: z.number().int(),
-    SHARING: z.number().int(),
-    INBOX: z.number().int(),
-    SUBSCRIBE: z.number().int(),
-  }),
-});
-
-export type UnreadCountResponse = z.infer<typeof UnreadCountResponseSchema>;
 
 // Category counts schema (reused across workspace-grouped responses)
 export const CategoryCountsSchema = z.object({

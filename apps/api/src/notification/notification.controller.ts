@@ -2,14 +2,7 @@ import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from "@ne
 import { NotificationService } from "./notification.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
-import type {
-  ListNotificationsRequest,
-  MarkAsReadRequest,
-  BatchMarkViewedRequest,
-  MarkAllAsReadRequest,
-  ResolveActionRequest,
-  UnreadCountRequest,
-} from "@idea/contracts";
+import type { ListNotificationsRequest, BatchMarkViewedRequest, MarkAllAsReadRequest, ResolveActionRequest } from "@idea/contracts";
 
 @UseGuards(PolicyGuard)
 @Controller("/api/notifications")

@@ -19,6 +19,7 @@ import { DocPermissionResolveService } from "@/permission/document-permission.se
 import type { DocumentPermission, Prisma } from "@prisma/client";
 import { EventBatcher } from "@/_shared/queues/helpers/event-batcher";
 import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
+import { NotificationService } from "@/notification/notification.service";
 
 // Type definitions for internal use
 type DocContext = {
@@ -118,8 +119,8 @@ export class ShareDocumentService {
     private readonly eventPublisher: EventPublisherService,
     private readonly docPermissionResolveService: DocPermissionResolveService,
     private readonly eventDeduplicator: EventDeduplicator,
-    @Inject(forwardRef(() => require("@/notification/notification.service").NotificationService))
-    private readonly notificationService: any,
+    @Inject(forwardRef(() => NotificationService))
+    private readonly notificationService: NotificationService,
   ) {}
 
   async getSharedWithMeDocuments(

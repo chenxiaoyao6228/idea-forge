@@ -2,14 +2,13 @@ import request from "@/lib/request";
 import type {
   ListNotificationsRequest,
   ListNotificationsResponse,
-  MarkAsReadRequest,
   MarkAsReadResponse,
   BatchMarkViewedRequest,
   BatchMarkViewedResponse,
+  MarkAllAsReadRequest,
+  MarkAllAsReadResponse,
   ResolveActionRequest,
   ResolveActionResponse,
-  UnreadCountRequest,
-  UnreadCountResponse,
   UnreadCountByWorkspaceResponse,
 } from "@idea/contracts";
 
@@ -29,6 +28,11 @@ export const notificationApi = {
    */
   batchMarkViewed: async (data: BatchMarkViewedRequest) =>
     request.post<BatchMarkViewedRequest, BatchMarkViewedResponse>("/api/notifications/batch-viewed", data),
+
+  /**
+   * Mark all notifications as read with optional category and workspace filtering
+   */
+  markAllAsRead: async (data: MarkAllAsReadRequest) => request.post<MarkAllAsReadRequest, MarkAllAsReadResponse>("/api/notifications/mark-all-read", data),
 
   /**
    * Resolve an action-required notification

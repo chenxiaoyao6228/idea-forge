@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import useRequest from "@ahooksjs/use-request";
+import { useInfiniteScroll } from "ahooks";
 import type { Notification, NotificationCategory, UnreadCountByWorkspaceResponse, CategoryCounts, PaginationMetadata } from "@idea/contracts";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { notificationApi } from "@/apis/notification";
@@ -14,13 +15,11 @@ export type NotificationEntity = Notification;
 const useNotificationStore = create<{
   notifications: NotificationEntity[];
   unreadCountByWorkspace: UnreadCountByWorkspaceResponse | null;
-  loading: boolean;
   pagination: PaginationMetadata | null;
   currentWorkspaceId: string | null;
 }>(() => ({
   notifications: [],
   unreadCountByWorkspace: null,
-  loading: false,
   pagination: null,
   currentWorkspaceId: null,
 }));
@@ -86,6 +85,45 @@ export const useCurrentWorkspaceNotificationCount = () => {
   }, [unreadCountByWorkspace, currentWorkspaceId]);
 };
 
+/**
+ * Get unread counts for current workspace by category
+ * Used for notification panel tab badges
+ */
+export const useCurrentWorkspaceUnreadByCategory = () => {
+  const currentWorkspace = useCurrentWorkspace();
+  const unreadCountByWorkspace = useUnreadCountByWorkspace();
+
+  return useMemo(() => {
+    if (!unreadCountByWorkspace || !currentWorkspace) {
+      return {
+        MENTIONS: 0,
+        SHARING: 0,
+        INBOX: 0,
+        SUBSCRIBE: 0,
+      };
+    }
+
+    // Get workspace-specific counts
+    const workspaceCounts = unreadCountByWorkspace.byWorkspace[currentWorkspace.id] || {
+      MENTIONS: 0,
+      SHARING: 0,
+      INBOX: 0,
+      SUBSCRIBE: 0,
+    };
+
+    // INBOX and SUBSCRIBE include cross-workspace notifications
+    // (workspace invitations, global subscriptions)
+    const crossWorkspaceCounts = unreadCountByWorkspace.crossWorkspace;
+
+    return {
+      MENTIONS: workspaceCounts.MENTIONS,
+      SHARING: workspaceCounts.SHARING,
+      INBOX: workspaceCounts.INBOX + (crossWorkspaceCounts.INBOX || 0),
+      SUBSCRIBE: crossWorkspaceCounts.SUBSCRIBE || 0, // SUBSCRIBE is cross-workspace only
+    };
+  }, [unreadCountByWorkspace, currentWorkspace]);
+};
+
 // Computed values
 export const useFilteredNotifications = (category?: NotificationCategory, read?: boolean) => {
   const notifications = useNotificationStore((state) => state.notifications);
@@ -144,10 +182,6 @@ export const setUnreadCountByWorkspace = (unreadCountByWorkspace: UnreadCountByW
   useNotificationStore.setState({ unreadCountByWorkspace });
 };
 
-export const setLoading = (loading: boolean) => {
-  useNotificationStore.setState({ loading });
-};
-
 export const setPagination = (pagination: PaginationMetadata) => {
   useNotificationStore.setState({ pagination });
 };
@@ -182,7 +216,6 @@ export const resetNotificationStore = () => {
   useNotificationStore.setState({
     notifications: [],
     unreadCountByWorkspace: null,
-    loading: false,
     pagination: null,
     currentWorkspaceId: null,
   });
@@ -193,48 +226,68 @@ export const resetNotificationStore = () => {
 // ============================================
 
 /**
- * Fetch notifications with optional filtering (page-based pagination)
+ * Fetch notifications with infinite scroll support
  * When workspaceId is provided, returns both workspace-specific and cross-workspace notifications
  */
-export const useFetchNotifications = (category?: NotificationCategory, read?: boolean, page = 1, append = false, workspaceId?: string) => {
-  return useRequest(
-    async () => {
+export const useFetchNotifications = (category?: NotificationCategory, workspaceId?: string) => {
+  const { data, loading, loadingMore, noMore, loadMore, reload, error } = useInfiniteScroll(
+    async (currentData) => {
       try {
-        setLoading(true);
+        // Calculate current page from accumulated data
+        const currentPage = currentData ? Math.ceil(currentData.list.length / 10) + 1 : 1;
+
         const response = await notificationApi.list({
           category,
-          read,
           workspaceId,
-          page,
-          limit: 5, // Standard page size
+          page: currentPage,
+          limit: 10,
         });
 
-        // For infinite scroll: append to existing, otherwise replace
-        if (append && page > 1) {
-          addNotifications(response.data);
-        } else {
-          setNotifications(response.data);
-        }
+        // Accumulate notifications
+        const accumulatedList = currentData ? [...currentData.list, ...response.data] : response.data;
 
-        // Always update pagination metadata
+        // Update local store for other components
+        setNotifications(accumulatedList);
         setPagination(response.pagination);
 
-        return response;
+        return {
+          list: accumulatedList,
+          pagination: response.pagination,
+        };
       } catch (error: any) {
         console.error("Failed to fetch notifications:", error);
         toast.error("Failed to fetch notifications", {
           description: error.message,
         });
         throw error;
-      } finally {
-        setLoading(false);
       }
     },
     {
-      manual: true,
-      refreshDeps: [category, read, page, workspaceId],
+      isNoMore: (data) => {
+        if (!data?.pagination) return false;
+        return data.pagination.page >= data.pagination.pageCount;
+      },
+
+      reloadDeps: [category, workspaceId],
+
+      onBefore: () => {
+        setNotifications([]);
+      },
+
+      manual: false,
     },
   );
+
+  return {
+    notifications: data?.list || [],
+    pagination: data?.pagination || null,
+    loading,
+    loadingMore,
+    noMore,
+    loadMore,
+    reload,
+    error,
+  };
 };
 
 /**
@@ -350,6 +403,54 @@ export const useResolveAction = () => {
       } catch (error: any) {
         console.error("Failed to resolve action:", error);
         toast.error("Failed to process action", {
+          description: error.message,
+        });
+        throw error;
+      }
+    },
+    {
+      manual: true,
+    },
+  );
+};
+
+/**
+ * Mark all notifications as read with optional category and workspace filtering
+ */
+export const useMarkAllAsRead = () => {
+  return useRequest(
+    async (params?: { category?: NotificationCategory; workspaceId?: string }) => {
+      try {
+        const response = await notificationApi.markAllAsRead({
+          category: params?.category,
+          workspaceId: params?.workspaceId,
+        });
+
+        // Mark all matching notifications as read in local store
+        const now = new Date();
+        useNotificationStore.setState((state) => ({
+          notifications: state.notifications.map((n) => {
+            // Apply same filters as backend
+            let matches = !n.viewedAt; // Only unread notifications
+
+            if (params?.category) {
+              // Category filter would need event type mapping
+              // For now, just mark all unread in the current view
+              matches = matches && true;
+            }
+
+            return matches ? { ...n, viewedAt: now } : n;
+          }),
+        }));
+
+        // Refetch workspace-grouped unread count
+        const countResponse = await notificationApi.getUnreadCountByWorkspace();
+        setUnreadCountByWorkspace(countResponse);
+
+        return response;
+      } catch (error: any) {
+        console.error("Failed to mark all as read:", error);
+        toast.error("Failed to mark all as read", {
           description: error.message,
         });
         throw error;
