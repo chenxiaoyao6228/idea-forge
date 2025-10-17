@@ -16,6 +16,7 @@ interface NotificationListProps {
   onLoadMore?: () => void;
   onMarkAsRead?: (id: string) => void;
   onResolveAction?: (id: string, action: "approve" | "reject" | "accept" | "decline", reason?: string) => void;
+  infiniteRef?: (node: HTMLDivElement | null) => void;
   className?: string;
 }
 
@@ -27,18 +28,22 @@ export function NotificationList({
   onLoadMore,
   onMarkAsRead,
   onResolveAction,
+  infiniteRef,
   className,
 }: NotificationListProps) {
   const { ref: inViewRef, inView } = useInView({
     threshold: 0,
   });
 
-  // Load more when scrolled to bottom
+  // Use provided infiniteRef or fall back to manual intersection observer
+  const loadMoreRef = infiniteRef || inViewRef;
+
+  // Load more when scrolled to bottom (only if not using infiniteRef)
   useEffect(() => {
-    if (inView && !noMore && !loadingMore && onLoadMore) {
+    if (!infiniteRef && inView && !noMore && !loadingMore && onLoadMore) {
       onLoadMore();
     }
-  }, [inView, noMore, loadingMore, onLoadMore]);
+  }, [inView, noMore, loadingMore, onLoadMore, infiniteRef]);
 
   if (notifications.length === 0 && !loading) {
     return (
@@ -62,7 +67,7 @@ export function NotificationList({
 
           {/* Load more trigger */}
           {!noMore && (
-            <div ref={inViewRef} className="flex justify-center py-4">
+            <div ref={loadMoreRef} className="flex justify-center py-4">
               {loadingMore && <Spinner className="h-6 w-6" />}
             </div>
           )}

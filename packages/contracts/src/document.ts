@@ -171,13 +171,20 @@ export const requestDocumentPermissionResponseSchema = z.object({
 export type RequestDocumentPermissionResponse = z.infer<typeof requestDocumentPermissionResponseSchema>;
 
 // Permission source metadata schema (reused from permission.ts)
-const permissionResolutionResultSchema = z.object({
-  level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),
-  source: z.enum(["direct", "group", "inherited", "subspace", "workspace", "guest", "none"]),
+const permissionSourceMetadataSchema = z.object({
+  level: z.string(),
+  source: z.string(),
   sourceDocId: z.string().optional(),
   sourceDocTitle: z.string().optional(),
-  priority: z.number(),
-  inheritanceChain: z.array(z.string()).optional(),
+  priority: z.number().optional(),
+});
+
+const parentPermissionSourceMetadataSchema = z.object({
+  level: z.string().optional(),
+  source: z.string(),
+  sourceDocId: z.string().optional(),
+  sourceDocTitle: z.string().optional(),
+  priority: z.number().optional(),
 });
 
 // public share doc
@@ -186,11 +193,11 @@ export const docShareUserSchema = z.object({
   email: z.string(),
   displayName: z.string().nullable(),
   permission: z.object({
-    level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),
+    level: z.string(),
   }),
-  permissionSource: permissionResolutionResultSchema.optional(), // Permission source metadata
+  permissionSource: permissionSourceMetadataSchema.optional(), // Permission source metadata
   hasParentPermission: z.boolean().optional(), // Indicates user has permission from parent
-  parentPermissionSource: permissionResolutionResultSchema.optional(), // Parent permission details
+  parentPermissionSource: parentPermissionSourceMetadataSchema.optional(), // Parent permission details
   grantedBy: z.object({
     displayName: z.string().nullable(),
     email: z.string(),
@@ -207,15 +214,19 @@ export const docShareGroupSchema = z.object({
   description: z.string().nullable(),
   memberCount: z.number(),
   permission: z.object({
-    level: z.enum(["NONE", "READ", "COMMENT", "EDIT", "MANAGE"]),
+    level: z.string(),
   }),
-  permissionSource: permissionResolutionResultSchema.optional(), // Permission source metadata
+  permissionSource: permissionSourceMetadataSchema.optional(), // Permission source metadata
   hasParentPermission: z.boolean().optional(), // Indicates group has permission from parent
-  parentPermissionSource: permissionResolutionResultSchema.optional(), // Parent permission details
+  parentPermissionSource: parentPermissionSourceMetadataSchema.optional(), // Parent permission details
   grantedBy: z.object({
     displayName: z.string().nullable(),
     email: z.string(),
   }).optional(), // Who granted this permission
+  sourceGroups: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+  })).optional(), // Groups that granted this permission (for users in multiple groups)
   type: z.literal("group"),
 });
 

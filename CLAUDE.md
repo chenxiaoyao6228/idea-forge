@@ -63,8 +63,13 @@ pnpm test:e2e:ui            # Playwright with UI
 pnpm test:e2e:debug         # Debug mode
 
 # Individual package tests
-pnpm -F @idea/api test:unit
+pnpm -F @idea/api test:unit              # Run unit tests (*.unit.test.ts)
+pnpm -F @idea/api test:int               # Run integration tests (*.int.test.ts)
+pnpm -F @idea/api test:int:watch         # Run integration tests in watch mode
 pnpm -F @idea/client test
+
+# Run specific test file from root
+pnpm -F @idea/api test:int src/notification/notification-cancellation.int.test.ts
 ```
 
 ### Code Quality

@@ -6,10 +6,11 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
 import { NotificationList } from "./notification-list";
-import { useFetchNotifications, useMarkAsRead, useMarkAllAsRead, useResolveAction, useCurrentWorkspaceUnreadByCategory } from "@/stores/notification-store";
+import { useMarkAsRead, useMarkAllAsRead, useResolveAction, useCurrentWorkspaceUnreadByCategory, useFetchNotifications } from "@/stores/notification-store";
 import { useCurrentWorkspace } from "@/stores/workspace-store";
 import type { NotificationCategory } from "@idea/contracts";
 import { cn } from "@/lib/utils";
+import useInfiniteScroll from "react-infinite-scroll-hook";
 
 interface NotificationPanelProps {
   className?: string;
@@ -23,7 +24,15 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
   const currentWorkspace = useCurrentWorkspace();
 
   // Fetch notifications with infinite scroll (auto-reloads on tab/workspace change)
-  const { notifications, loading, loadingMore, noMore, loadMore } = useFetchNotifications(activeTab, currentWorkspace?.id);
+  const { notifications, pagination, loading, loadingMore, noMore, loadMore, reload, error } = useFetchNotifications(activeTab, currentWorkspace?.id);
+
+  const [infiniteRef] = useInfiniteScroll({
+    loading: loadingMore,
+    hasNextPage: !noMore,
+    onLoadMore: loadMore,
+    disabled: Boolean(error),
+    rootMargin: "0px 0px 400px 0px",
+  });
 
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
@@ -114,6 +123,7 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
             onLoadMore={loadMore}
             onMarkAsRead={handleMarkAsRead}
             onResolveAction={handleResolveAction}
+            infiniteRef={infiniteRef}
             className="h-full"
           />
         </TabsContent>
@@ -127,6 +137,7 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
             onLoadMore={loadMore}
             onMarkAsRead={handleMarkAsRead}
             onResolveAction={handleResolveAction}
+            infiniteRef={infiniteRef}
             className="h-full"
           />
         </TabsContent>
@@ -140,6 +151,7 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
             onLoadMore={loadMore}
             onMarkAsRead={handleMarkAsRead}
             onResolveAction={handleResolveAction}
+            infiniteRef={infiniteRef}
             className="h-full"
           />
         </TabsContent>
@@ -153,6 +165,7 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
             onLoadMore={loadMore}
             onMarkAsRead={handleMarkAsRead}
             onResolveAction={handleResolveAction}
+            infiniteRef={infiniteRef}
             className="h-full"
           />
         </TabsContent>

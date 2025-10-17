@@ -18,6 +18,7 @@ interface NotificationItemProps {
 export function NotificationItem({ notification, onMarkAsRead, onResolveAction }: NotificationItemProps) {
   const isUnread = !notification.viewedAt;
   const isActionRequired = notification.actionRequired && notification.actionStatus === "PENDING";
+  const isCanceled = notification.actionStatus === "CANCELED";
   const { markAsViewed } = useViewportBatch();
 
   // Get icon based on event type
@@ -123,7 +124,20 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
                 Rejected
               </Badge>
             )}
+            {isCanceled && (
+              <Badge variant="outline" className="text-xs text-muted-foreground">
+                <XCircle className="h-3 w-3 mr-1" />
+                Already handled
+              </Badge>
+            )}
           </div>
+
+          {/* Show info message for canceled requests */}
+          {isCanceled && (
+            <p className="text-xs text-muted-foreground mt-2 italic">
+              This request was already processed by another administrator.
+            </p>
+          )}
 
           {/* Action buttons for action-required notifications */}
           {isActionRequired && (

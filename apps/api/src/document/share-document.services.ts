@@ -9,6 +9,9 @@ import {
   RequestDocumentPermissionDto,
   RequestDocumentPermissionResponse,
   NotificationEventType,
+  DocShareUser,
+  DocShareGroup,
+  DocShareItem,
 } from "@idea/contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
@@ -21,74 +24,13 @@ import { EventBatcher } from "@/_shared/queues/helpers/event-batcher";
 import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
 import { NotificationService } from "@/notification/notification.service";
 
-// Type definitions for internal use
+// Type definitions for internal use only
 type DocContext = {
   id: string;
   workspaceId: string;
   parentId: string | null;
   subspaceId: string | null;
 };
-
-type UserShareData = {
-  id: string;
-  email: string;
-  displayName: string | null;
-  permission: { level: string };
-  permissionSource?: {
-    level: string;
-    source: string;
-    sourceDocId?: string;
-    sourceDocTitle?: string;
-    priority?: number;
-  };
-  grantedBy?: {
-    displayName: string | null;
-    email: string;
-  };
-  type: "user";
-  hasParentPermission?: boolean;
-  parentPermissionSource?: {
-    level?: string;
-    source: string;
-    sourceDocId?: string;
-    sourceDocTitle?: string;
-    priority?: number;
-  };
-};
-
-type GroupShareData = {
-  id: string;
-  name: string;
-  description: string | null;
-  memberCount: number;
-  permission: { level: string };
-  permissionSource?: {
-    level: string;
-    source: string;
-    sourceDocId?: string;
-    sourceDocTitle?: string;
-    priority?: number;
-  };
-  grantedBy?: {
-    displayName: string | null;
-    email: string;
-  };
-  sourceGroups?: Array<{
-    id: string;
-    name: string;
-  }>; // Groups that granted this permission (for users in multiple groups)
-  type: "group";
-  hasParentPermission?: boolean;
-  parentPermissionSource?: {
-    level?: string;
-    source: string;
-    sourceDocId?: string;
-    sourceDocTitle?: string;
-    priority?: number;
-  };
-};
-
-type ShareData = UserShareData | GroupShareData;
 
 type DocumentWithRelations = Prisma.DocGetPayload<{
   include: {
@@ -540,7 +482,7 @@ export class ShareDocumentService {
     return this.getDocumentCollaborators(docId, userId);
   }
 
-  async getDocumentCollaborators(id: string, userId: string) {
+  async getDocumentCollaborators(id: string, userId: string): Promise<DocShareItem[]> {
     // Get document context for permission resolution
     const document = await this.prismaService.doc.findUnique({
       where: { id },
@@ -604,7 +546,7 @@ export class ShareDocumentService {
     return [...mergedUserShares, ...mergedGroupShares];
   }
 
-  private async getDirectUserShares(docId: string, docContext: DocContext): Promise<UserShareData[]> {
+  private async getDirectUserShares(docId: string, docContext: DocContext): Promise<DocShareUser[]> {
     // Get direct user permissions with createdBy info
     // Exclude guest collaborators (they have guestCollaboratorId set)
     const userPermissions = await this.prismaService.documentPermission.findMany({
@@ -697,7 +639,7 @@ export class ShareDocumentService {
     });
   }
 
-  private async getGroupShares(docId: string, docContext: DocContext): Promise<GroupShareData[]> {
+  private async getGroupShares(docId: string, docContext: DocContext): Promise<DocShareGroup[]> {
     // Get group permissions with sourceGroupId
     const groupPermissionsWithGroups = await this.prismaService.documentPermission.findMany({
       where: {
@@ -824,7 +766,7 @@ export class ShareDocumentService {
 
   // Get inherited user permissions from parent chain
   // This returns ALL users who have permissions on parent documents, regardless of child permissions
-  private async getInheritedUserShares(docId: string, docContext: DocContext): Promise<UserShareData[]> {
+  private async getInheritedUserShares(docId: string, docContext: DocContext): Promise<DocShareUser[]> {
     if (!docContext.parentId) return []; // No parent, no inherited permissions
 
     // Fetch parent document context to resolve permissions from parent's perspective
@@ -859,7 +801,7 @@ export class ShareDocumentService {
     // Note: resolveUserPermissionForDocument will automatically return the HIGHEST permission
     // from the parent chain, so we only need to process each unique user once
     const uniqueUserIds = new Set<string>();
-    const inheritedShares: UserShareData[] = [];
+    const inheritedShares: DocShareUser[] = [];
 
     for (const perm of userPermissions) {
       if (!perm.userId) continue; // TypeScript type narrowing
@@ -904,7 +846,7 @@ export class ShareDocumentService {
   }
 
   // Get inherited group permissions from parent chain
-  private async getInheritedGroupShares(docId: string, docContext: DocContext): Promise<GroupShareData[]> {
+  private async getInheritedGroupShares(docId: string, docContext: DocContext): Promise<DocShareGroup[]> {
     if (!docContext.parentId) return []; // No parent, no inherited permissions
 
     // Fetch parent document context to resolve permissions from parent's perspective
@@ -928,7 +870,7 @@ export class ShareDocumentService {
     // Get group permissions with sourceGroupId
     const groupPermissions = ancestorPermissions.filter((p) => p.sourceGroupId && p.inheritedFromType === PermissionInheritanceType.GROUP);
 
-    const inheritedGroupShares: GroupShareData[] = [];
+    const inheritedGroupShares: DocShareGroup[] = [];
     const processedGroups = new Set<string>();
 
     // Use sourceGroupId to directly identify which groups granted permissions
@@ -978,7 +920,7 @@ export class ShareDocumentService {
   }
 
   // Merge direct and inherited shares (direct wins, but track if parent permission exists)
-  private mergeDirectAndInherited<T extends ShareData>(direct: T[], inherited: T[]): T[] {
+  private mergeDirectAndInherited<T extends DocShareItem>(direct: T[], inherited: T[]): T[] {
     const directMap = new Map(direct.map((s) => [s.id, s]));
     const merged = [...direct];
 
@@ -1379,6 +1321,8 @@ export class ShareDocumentService {
     }
 
     // 4. Create notifications for each admin
+    // Use a unique request ID to group related notifications
+    const requestId = `${docId}-${userId}-${Date.now()}`;
     let notificationsSent = 0;
 
     for (const adminId of adminUserIds) {
@@ -1399,6 +1343,7 @@ export class ShareDocumentService {
           actionRequired: true,
           actionType: "PERMISSION_REQUEST",
           actionPayload: {
+            requestId, // Add unique request ID to track related notifications
             documentId: docId,
             permission: dto.requestedPermission,
             requesterId: userId,

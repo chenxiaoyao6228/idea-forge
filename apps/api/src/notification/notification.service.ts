@@ -237,6 +237,63 @@ export class NotificationService {
       },
     });
 
+    // Cancel all other pending notifications for the same request
+    // This prevents other admins from approving/rejecting after one admin has already acted
+    if (notification.actionPayload && typeof notification.actionPayload === "object") {
+      const payload = notification.actionPayload as any;
+      const requestId = payload.requestId;
+
+      if (requestId) {
+        // Find all other PENDING notifications with the same requestId
+        const relatedNotifications = await this.prisma.notification.findMany({
+          where: {
+            id: { not: notificationId }, // Exclude current notification
+            actionPayload: {
+              path: ["requestId"],
+              equals: requestId,
+            },
+            actionStatus: "PENDING",
+            actionRequired: true,
+          },
+        });
+
+        // Update all related notifications to CANCELED
+        if (relatedNotifications.length > 0) {
+          await this.prisma.notification.updateMany({
+            where: {
+              id: { in: relatedNotifications.map((n) => n.id) },
+            },
+            data: {
+              actionStatus: "CANCELED",
+              actionResolvedAt: new Date(),
+              actionResolvedBy: userId, // Who resolved the original request
+              viewedAt: new Date(), // Mark as viewed
+            },
+          });
+
+          // Publish WebSocket events to notify other admins that the request was already handled
+          for (const relatedNotif of relatedNotifications) {
+            await this.eventPublisher.publishWebsocketEvent({
+              name: BusinessEvents.NOTIFICATION_UPDATE,
+              workspaceId: relatedNotif.workspaceId,
+              actorId: userId,
+              data: {
+                type: "notification.update",
+                payload: {
+                  ...relatedNotif,
+                  actionStatus: "CANCELED",
+                  actionResolvedAt: new Date(),
+                  actionResolvedBy: userId,
+                  viewedAt: new Date(),
+                },
+              },
+              timestamp: new Date().toISOString(),
+            });
+          }
+        }
+      }
+    }
+
     // Execute actual business logic if approved
     if (newStatus === "APPROVED") {
       await this.executeApprovedAction(notification);
@@ -308,7 +365,7 @@ export class NotificationService {
     try {
       switch (actionType) {
         case "PERMISSION_REQUEST":
-          await this.handlePermissionRequest(actionPayload, userId, actorId, workspaceId);
+          await this.handleDocumentPermissionRequest(actionPayload, userId, actorId, workspaceId);
           break;
         case "WORKSPACE_INVITATION":
           await this.handleWorkspaceInvitation(actionPayload, userId, actorId || userId);
@@ -443,7 +500,7 @@ export class NotificationService {
   /**
    * Handle approved permission request - grant document permission
    */
-  private async handlePermissionRequest(payload: any, userId: string, actorId: string | undefined, workspaceId: string): Promise<void> {
+  private async handleDocumentPermissionRequest(payload: any, userId: string, actorId: string | undefined, workspaceId: string): Promise<void> {
     const { documentId, permission } = payload;
 
     if (!documentId || !permission || !actorId) {

@@ -1,8 +1,7 @@
 import { create } from "zustand";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { toast } from "sonner";
 import useRequest from "@ahooksjs/use-request";
-import { useInfiniteScroll } from "ahooks";
 import type { Notification, NotificationCategory, UnreadCountByWorkspaceResponse, CategoryCounts, PaginationMetadata } from "@idea/contracts";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { notificationApi } from "@/apis/notification";
@@ -68,19 +67,39 @@ export const useOtherWorkspacesTotalUnreadCount = () => {
 
 export const useCurrentWorkspaceNotificationCount = () => {
   const currentWorkspaceId = useCurrentWorkspace()?.id;
-  if (!currentWorkspaceId) return 0;
   const unreadCountByWorkspace = useUnreadCountByWorkspace();
+
   return useMemo(() => {
-    if (!unreadCountByWorkspace) return 0;
+    // Early return inside useMemo instead of before it (to follow Rules of Hooks)
+    if (!currentWorkspaceId || !unreadCountByWorkspace) return 0;
+
+    const workspaceCounts = unreadCountByWorkspace.byWorkspace?.[currentWorkspaceId];
+    const crossWorkspaceCounts = unreadCountByWorkspace.crossWorkspace;
+
+    // Provide default values if counts don't exist
+    const safeWorkspaceCounts = workspaceCounts || {
+      MENTIONS: 0,
+      INBOX: 0,
+      SHARING: 0,
+      SUBSCRIBE: 0,
+    };
+
+    const safeCrossWorkspaceCounts = crossWorkspaceCounts || {
+      MENTIONS: 0,
+      INBOX: 0,
+      SHARING: 0,
+      SUBSCRIBE: 0,
+    };
+
     return (
-      unreadCountByWorkspace.byWorkspace[currentWorkspaceId]?.MENTIONS +
-      unreadCountByWorkspace.byWorkspace[currentWorkspaceId]?.INBOX +
-      unreadCountByWorkspace.byWorkspace[currentWorkspaceId]?.SHARING +
-      unreadCountByWorkspace.byWorkspace[currentWorkspaceId]?.SUBSCRIBE +
-      unreadCountByWorkspace.crossWorkspace.MENTIONS +
-      unreadCountByWorkspace.crossWorkspace.INBOX +
-      unreadCountByWorkspace.crossWorkspace.SHARING +
-      unreadCountByWorkspace.crossWorkspace.SUBSCRIBE
+      (safeWorkspaceCounts.MENTIONS || 0) +
+      (safeWorkspaceCounts.INBOX || 0) +
+      (safeWorkspaceCounts.SHARING || 0) +
+      (safeWorkspaceCounts.SUBSCRIBE || 0) +
+      (safeCrossWorkspaceCounts.MENTIONS || 0) +
+      (safeCrossWorkspaceCounts.INBOX || 0) +
+      (safeCrossWorkspaceCounts.SHARING || 0) +
+      (safeCrossWorkspaceCounts.SUBSCRIBE || 0)
     );
   }, [unreadCountByWorkspace, currentWorkspaceId]);
 };
@@ -113,12 +132,17 @@ export const useCurrentWorkspaceUnreadByCategory = () => {
 
     // INBOX and SUBSCRIBE include cross-workspace notifications
     // (workspace invitations, global subscriptions)
-    const crossWorkspaceCounts = unreadCountByWorkspace.crossWorkspace;
+    const crossWorkspaceCounts = unreadCountByWorkspace.crossWorkspace || {
+      MENTIONS: 0,
+      SHARING: 0,
+      INBOX: 0,
+      SUBSCRIBE: 0,
+    };
 
     return {
-      MENTIONS: workspaceCounts.MENTIONS,
-      SHARING: workspaceCounts.SHARING,
-      INBOX: workspaceCounts.INBOX + (crossWorkspaceCounts.INBOX || 0),
+      MENTIONS: workspaceCounts.MENTIONS || 0,
+      SHARING: workspaceCounts.SHARING || 0,
+      INBOX: (workspaceCounts.INBOX || 0) + (crossWorkspaceCounts.INBOX || 0),
       SUBSCRIBE: crossWorkspaceCounts.SUBSCRIBE || 0, // SUBSCRIBE is cross-workspace only
     };
   }, [unreadCountByWorkspace, currentWorkspace]);
@@ -230,60 +254,93 @@ export const resetNotificationStore = () => {
  * When workspaceId is provided, returns both workspace-specific and cross-workspace notifications
  */
 export const useFetchNotifications = (category?: NotificationCategory, workspaceId?: string) => {
-  const { data, loading, loadingMore, noMore, loadMore, reload, error } = useInfiniteScroll(
-    async (currentData) => {
-      try {
-        // Calculate current page from accumulated data
-        const currentPage = currentData ? Math.ceil(currentData.list.length / 10) + 1 : 1;
+  const storeNotifications = useNotificationStore((state) => state.notifications);
+  const storePagination = useNotificationStore((state) => state.pagination);
 
-        const response = await notificationApi.list({
-          category,
-          workspaceId,
-          page: currentPage,
-          limit: 10,
-        });
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<any>(null);
 
-        // Accumulate notifications
-        const accumulatedList = currentData ? [...currentData.list, ...response.data] : response.data;
+  // Calculate if there are more pages
+  const hasNextPage = useMemo(() => {
+    if (!storePagination) return true;
+    return storePagination.page < storePagination.pageCount;
+  }, [storePagination]);
 
-        // Update local store for other components
-        setNotifications(accumulatedList);
-        setPagination(response.pagination);
+  // Load more function
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasNextPage) return;
 
-        return {
-          list: accumulatedList,
-          pagination: response.pagination,
-        };
-      } catch (error: any) {
-        console.error("Failed to fetch notifications:", error);
-        toast.error("Failed to fetch notifications", {
-          description: error.message,
-        });
-        throw error;
-      }
-    },
-    {
-      isNoMore: (data) => {
-        if (!data?.pagination) return false;
-        return data.pagination.page >= data.pagination.pageCount;
-      },
+    setLoadingMore(true);
+    setError(null);
 
-      reloadDeps: [category, workspaceId],
+    try {
+      const currentPage = storePagination ? storePagination.page + 1 : 1;
 
-      onBefore: () => {
-        setNotifications([]);
-      },
+      const response = await notificationApi.list({
+        category,
+        workspaceId,
+        page: currentPage,
+        limit: 10,
+      });
 
-      manual: false,
-    },
-  );
+      // Accumulate notifications in store
+      addNotifications(response.data);
+      setPagination(response.pagination);
+    } catch (error: any) {
+      console.error("Failed to fetch notifications:", error);
+      setError(error);
+      toast.error("Failed to fetch notifications", {
+        description: error.message,
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [storePagination, hasNextPage, loadingMore, category, workspaceId]);
+
+  // Initial load
+  const loadInitial = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await notificationApi.list({
+        category,
+        workspaceId,
+        page: 1,
+        limit: 10,
+      });
+
+      // Replace notifications in store
+      setNotifications(response.data);
+      setPagination(response.pagination);
+    } catch (error: any) {
+      console.error("Failed to fetch notifications:", error);
+      setError(error);
+      toast.error("Failed to fetch notifications", {
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [category, workspaceId]);
+
+  // Reload function
+  const reload = useCallback(() => {
+    loadInitial();
+  }, [loadInitial]);
+
+  // Load initial data when dependencies change
+  useMemo(() => {
+    loadInitial();
+  }, [category, workspaceId]);
 
   return {
-    notifications: data?.list || [],
-    pagination: data?.pagination || null,
+    notifications: storeNotifications,
+    pagination: storePagination,
     loading,
     loadingMore,
-    noMore,
+    noMore: !hasNextPage,
     loadMore,
     reload,
     error,
@@ -354,7 +411,9 @@ export const useBatchMarkViewed = () => {
   return useRequest(
     async (notificationIds: string[]) => {
       try {
-        const response = await notificationApi.batchMarkViewed({ notificationIds });
+        const response = await notificationApi.batchMarkViewed({
+          notificationIds,
+        });
 
         // Update local store
         markNotificationsAsViewed(notificationIds);
@@ -381,10 +440,18 @@ export const useBatchMarkViewed = () => {
  */
 export const useResolveAction = () => {
   return useRequest(
-    async (params: { notificationId: string; action: "approve" | "reject" | "accept" | "decline"; reason?: string }) => {
+    async (params: {
+      notificationId: string;
+      action: "approve" | "reject" | "accept" | "decline";
+      reason?: string;
+    }) => {
       try {
         const { notificationId, action, reason } = params;
-        const response = await notificationApi.resolveAction(notificationId, { notificationId, action, reason });
+        const response = await notificationApi.resolveAction(notificationId, {
+          notificationId,
+          action,
+          reason,
+        });
 
         // Update local store with new status
         updateNotification(notificationId, {
@@ -419,7 +486,10 @@ export const useResolveAction = () => {
  */
 export const useMarkAllAsRead = () => {
   return useRequest(
-    async (params?: { category?: NotificationCategory; workspaceId?: string }) => {
+    async (params?: {
+      category?: NotificationCategory;
+      workspaceId?: string;
+    }) => {
       try {
         const response = await notificationApi.markAllAsRead({
           category: params?.category,

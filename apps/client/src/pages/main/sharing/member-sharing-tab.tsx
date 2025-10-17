@@ -562,7 +562,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                         </div>
                         <div onClick={(e) => e.stopPropagation()}>
                           <PermissionLevelSelector
-                            value={group.permission.level}
+                            value={group.permission.level as PermissionLevel}
                             onChange={(value) => handleUpdateGroupPermission(group.id, value)}
                             className="h-8 text-xs flex-shrink-0"
                             showRestoreInherited={showRestoreInherited}
@@ -614,7 +614,7 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                         </div>
                         <div onClick={(e) => e.stopPropagation()}>
                           <PermissionLevelSelector
-                            value={user.permission.level}
+                            value={user.permission.level as PermissionLevel}
                             onChange={(value) => handleUpdatePermission(user.id, value)}
                             className="h-8 text-xs flex-shrink-0"
                             showRestoreInherited={showRestoreInherited}
