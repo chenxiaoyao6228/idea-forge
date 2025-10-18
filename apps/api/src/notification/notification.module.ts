@@ -1,5 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { NotificationService } from "./notification.service";
+import { NotificationSettingService } from "./notification-setting.service";
 import { NotificationController } from "./notification.controller";
 import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { EventsModule } from "@/_shared/events/events.module";
@@ -11,8 +12,8 @@ import { SubspaceModule } from "@/subspace/subspace.module";
 
 @Module({
   imports: [PrismaModule, EventsModule, forwardRef(() => DocumentModule), forwardRef(() => WorkspaceModule), forwardRef(() => SubspaceModule)],
-  providers: [NotificationService, NotificationEventProcessor, EventDeduplicator],
+  providers: [NotificationService, NotificationSettingService, NotificationEventProcessor, EventDeduplicator],
   controllers: [NotificationController],
-  exports: [NotificationService],
+  exports: [NotificationService, NotificationSettingService],
 })
 export class NotificationModule {}

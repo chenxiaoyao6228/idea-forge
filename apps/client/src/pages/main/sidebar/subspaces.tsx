@@ -16,7 +16,7 @@ import { useSyncOnReconnect } from "@/hooks/use-sync-on-reconnect";
 
 export default function SubspacesArea() {
   const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const { isPersonalWorkspace } = useWorkspaceType();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);

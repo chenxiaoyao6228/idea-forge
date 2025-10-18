@@ -1,7 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
-import { FileText, Share2, UserPlus, CheckCircle2, XCircle } from "lucide-react";
+import { FileText, UserPlus, CheckCircle2, XCircle } from "lucide-react";
 import type { NotificationEntity } from "@/stores/notification-store";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,6 +50,13 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
           description: `${actorName} requested ${metadata?.requestedPermission || "access"} permission to "${documentTitle}"`,
         };
       case "PERMISSION_GRANT":
+        // Use custom message if available (e.g., workspace invitation acceptance)
+        if (metadata?.message) {
+          return {
+            title: "Invitation accepted",
+            description: metadata.message,
+          };
+        }
         return {
           title: "Permission granted",
           description: `${actorName} granted you ${metadata?.grantedPermission || "access"} permission to "${documentTitle}"`,
@@ -133,11 +139,7 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
           </div>
 
           {/* Show info message for canceled requests */}
-          {isCanceled && (
-            <p className="text-xs text-muted-foreground mt-2 italic">
-              This request was already processed by another administrator.
-            </p>
-          )}
+          {isCanceled && <p className="text-xs text-muted-foreground mt-2 italic">This request was already processed by another administrator.</p>}
 
           {/* Action buttons for action-required notifications */}
           {isActionRequired && (

@@ -314,3 +314,47 @@ export function isActionRequiredEvent(eventType: NotificationEventType): boolean
 export function isInformationalEvent(eventType: NotificationEventType): boolean {
   return [NotificationEventType.PERMISSION_GRANT, NotificationEventType.PERMISSION_REJECT].includes(eventType);
 }
+
+// ============================================
+// Notification Settings Types & Schemas
+// ============================================
+
+/**
+ * Category settings - represents the enabled/disabled state for a notification category
+ */
+export const CategorySettingsSchema = z.object({
+  category: NotificationCategorySchema,
+  enabled: z.boolean(),
+  eventTypes: z.array(NotificationEventTypeSchema), // Event types included in this category
+});
+
+export type CategorySettings = z.infer<typeof CategorySettingsSchema>;
+
+/**
+ * Get notification settings response - returns all category settings for the user
+ */
+export const GetNotificationSettingsResponseSchema = z.object({
+  settings: z.array(CategorySettingsSchema),
+});
+
+export type GetNotificationSettingsResponse = z.infer<typeof GetNotificationSettingsResponseSchema>;
+
+/**
+ * Update category settings request - enable/disable a specific category
+ */
+export const UpdateCategorySettingsRequestSchema = z.object({
+  category: NotificationCategorySchema,
+  enabled: z.boolean(),
+});
+
+export type UpdateCategorySettingsRequest = z.infer<typeof UpdateCategorySettingsRequestSchema>;
+
+/**
+ * Update category settings response - confirmation and updated settings
+ */
+export const UpdateCategorySettingsResponseSchema = z.object({
+  success: z.boolean(),
+  settings: CategorySettingsSchema,
+});
+
+export type UpdateCategorySettingsResponse = z.infer<typeof UpdateCategorySettingsResponseSchema>;

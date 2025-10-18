@@ -532,4 +532,64 @@ export const useMarkAllAsRead = () => {
   );
 };
 
+// ============================================
+// Notification Settings Hooks
+// ============================================
+
+/**
+ * Fetch user's notification settings
+ */
+export const useFetchNotificationSettings = () => {
+  return useRequest(
+    async () => {
+      try {
+        const response = await notificationApi.getSettings();
+        return response;
+      } catch (error: any) {
+        console.error("Failed to fetch notification settings:", error);
+        toast.error("Failed to load notification settings", {
+          description: error.message,
+        });
+        throw error;
+      }
+    },
+    {
+      refreshDeps: [], // Fetch once on mount
+      cacheKey: "notification-settings",
+    },
+  );
+};
+
+/**
+ * Update category notification setting
+ * Note: This hook should be used with a refetch function from useFetchNotificationSettings
+ */
+export const useUpdateCategorySetting = (refetch?: () => void) => {
+  return useRequest(
+    async ({ category, enabled }: { category: NotificationCategory; enabled: boolean }) => {
+      try {
+        const response = await notificationApi.updateCategorySettings(category, { category, enabled });
+
+        // Refetch settings to ensure UI updates
+        if (refetch) {
+          refetch();
+        }
+
+        toast.success(`${category} notifications ${enabled ? "enabled" : "disabled"}`);
+
+        return response;
+      } catch (error: any) {
+        console.error("Failed to update notification settings:", error);
+        toast.error("Failed to update notification settings", {
+          description: error.message,
+        });
+        throw error;
+      }
+    },
+    {
+      manual: true,
+    },
+  );
+};
+
 export default useNotificationStore;

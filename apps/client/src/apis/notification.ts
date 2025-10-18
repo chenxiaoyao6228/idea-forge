@@ -10,6 +10,10 @@ import type {
   ResolveActionRequest,
   ResolveActionResponse,
   UnreadCountByWorkspaceResponse,
+  GetNotificationSettingsResponse,
+  UpdateCategorySettingsRequest,
+  UpdateCategorySettingsResponse,
+  NotificationCategory,
 } from "@idea/contracts";
 
 export const notificationApi = {
@@ -45,4 +49,15 @@ export const notificationApi = {
    * Used for cross-workspace notification badges
    */
   getUnreadCountByWorkspace: async () => request.get<void, UnreadCountByWorkspaceResponse>("/api/notifications/unread-count-by-workspace"),
+
+  /**
+   * Get user's notification preference settings
+   */
+  getSettings: async () => request.get<void, GetNotificationSettingsResponse>("/api/notifications/settings"),
+
+  /**
+   * Update notification settings for a specific category
+   */
+  updateCategorySettings: async (category: NotificationCategory, data: UpdateCategorySettingsRequest) =>
+    request.put<UpdateCategorySettingsRequest, UpdateCategorySettingsResponse>(`/api/notifications/settings/${category}`, data),
 };

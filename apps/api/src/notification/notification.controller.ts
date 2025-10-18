@@ -1,13 +1,24 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from "@nestjs/common";
 import { NotificationService } from "./notification.service";
+import { NotificationSettingService } from "./notification-setting.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
-import type { ListNotificationsRequest, BatchMarkViewedRequest, MarkAllAsReadRequest, ResolveActionRequest } from "@idea/contracts";
+import type {
+  ListNotificationsRequest,
+  BatchMarkViewedRequest,
+  MarkAllAsReadRequest,
+  ResolveActionRequest,
+  UpdateCategorySettingsRequest,
+  NotificationCategory,
+} from "@idea/contracts";
 
 @UseGuards(PolicyGuard)
 @Controller("/api/notifications")
 export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) {}
+  constructor(
+    private readonly notificationService: NotificationService,
+    private readonly notificationSettingService: NotificationSettingService,
+  ) {}
 
   /**
    * GET /api/notifications
@@ -77,6 +88,24 @@ export class NotificationController {
   @Get("unread-count-by-workspace")
   async getUnreadCountByWorkspace(@GetUser("id") userId: string) {
     return this.notificationService.getUnreadCountByWorkspace(userId);
+  }
+
+  /**
+   * GET /api/notifications/settings
+   * Get user's notification preference settings
+   */
+  @Get("settings")
+  async getNotificationSettings(@GetUser("id") userId: string) {
+    return this.notificationSettingService.getUserSettings(userId);
+  }
+
+  /**
+   * PUT /api/notifications/settings/:category
+   * Update notification settings for a specific category
+   */
+  @Put("settings/:category")
+  async updateCategorySettings(@GetUser("id") userId: string, @Param("category") category: NotificationCategory, @Body() dto: UpdateCategorySettingsRequest) {
+    return this.notificationSettingService.updateCategorySettings(userId, category, dto.enabled);
   }
 
   /**

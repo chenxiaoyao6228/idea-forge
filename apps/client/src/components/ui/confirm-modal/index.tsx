@@ -21,7 +21,7 @@ export interface ConfirmModalProps {
   // basic info
   title?: string;
   description?: string;
-  content?: React.ReactNode;
+  content?: React.ReactNode | string;
 
   // button related
   confirmText?: string;

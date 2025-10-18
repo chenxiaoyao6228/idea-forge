@@ -10,6 +10,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { useAbilityCan, Action } from "@/hooks/use-ability";
 import useWorkspaceStore from "@/stores/workspace-store";
+import { General } from "./general";
 
 export interface SettingModalProps {
   // basic info
@@ -64,6 +65,11 @@ const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, cont
         name: t("Subspaces"),
         Icon: Layers,
       },
+      {
+        key: "general",
+        name: t("General"),
+        Icon: Layers,
+      },
     ];
 
     // Filter out subspaces tab for users without ManageSubspaces permission
@@ -112,6 +118,9 @@ const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, cont
             )}
             <TabsContent tabIndex={-1} value="workspace" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
               <Workspace />
+            </TabsContent>
+            <TabsContent tabIndex={-1} value="general" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
+              <General />
             </TabsContent>
           </Tabs>
         )}

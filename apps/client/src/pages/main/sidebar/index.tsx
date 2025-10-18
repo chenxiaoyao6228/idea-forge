@@ -14,7 +14,7 @@ import SharedWithMe from "./shared-with-me";
 import SubspacesArea from "./subspaces";
 import MyDocsArea from "./ my-docs";
 import React from "react";
-import { Search as SearchIcon, Download, Users, Trash2, Box, Settings, Plus } from "lucide-react";
+import { Search as SearchIcon, Users, Trash2, Box, Settings, Plus, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -73,7 +73,7 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                               onClick={() => showImportFilesModal()}
                               className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors h-10 w-10"
                             >
-                              <Download className="h-5 w-5" />
+                              <Upload className="h-5 w-5" />
                             </SidebarMenuButton>
                           </TooltipTrigger>
                           <TooltipContent>

@@ -5,6 +5,7 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { DocumentService } from "@/document/document.service";
 import { WorkspaceService } from "@/workspace/workspace.service";
+import { NotificationSettingService } from "./notification-setting.service";
 import {
   NotificationEventType,
   type ListNotificationsRequest,
@@ -25,6 +26,7 @@ export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventPublisher: EventPublisherService,
+    private readonly notificationSettingService: NotificationSettingService,
     @Inject(forwardRef(() => DocumentService))
     private readonly documentService: DocumentService,
     @Inject(forwardRef(() => WorkspaceService))
@@ -466,6 +468,13 @@ export class NotificationService {
     actionType?: "PERMISSION_REQUEST" | "WORKSPACE_INVITATION" | "SUBSPACE_INVITATION";
     actionPayload?: Record<string, any>;
   }) {
+    // Check user notification settings before creating notification
+    const isEnabled = await this.notificationSettingService.isNotificationEnabled(data.userId, data.event);
+    if (!isEnabled) {
+      // User has disabled this notification type - skip creation
+      return null;
+    }
+
     const notification = await this.prisma.notification.create({
       data: {
         userId: data.userId,
