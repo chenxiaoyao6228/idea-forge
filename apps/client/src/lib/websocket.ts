@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { throttle } from "lodash-es";
-import { resolvablePromise } from "./async";
+import { resolvablePromise } from "@idea/utils/async";
 import { pageVisibility } from "./page-visibility";
 import { networkStatus } from "./network-status";
 

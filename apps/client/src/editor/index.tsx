@@ -3,7 +3,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { useCollaborationProvider } from "./hooks/use-collaboration-provider";
-import { getRandomElement } from "@/lib/utils";
+import { getRandomElement } from "@idea/utils/string";
 import useUserStore from "@/stores/user-store";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
@@ -46,7 +46,7 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
       name: userInfo?.displayName || (userInfo?.email as string),
       email: userInfo?.email,
       avatar: userInfo?.imageUrl,
-      color: getRandomElement(COLLABORATE_EDIT_USER_COLORS),
+      color: getRandomElement(COLLABORATE_EDIT_USER_COLORS) || COLLABORATE_EDIT_USER_COLORS[0],
     }),
     [userInfo],
   );

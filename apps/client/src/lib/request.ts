@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig } from "axios";
 import useUserStore from "@/stores/user-store";
 import { RESPONSE_SUCCESS_CODE } from "@api/_shared/constants/api-response-constant";
-import { generateUuid } from "./uuid";
+import { generateUuid } from "@idea/utils/string";
 
 type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
 
