@@ -33,12 +33,11 @@ export const TaskItem = TTaskItem.extend<TaskItemOptions>({
   addKeyboardShortcuts() {
     return {
       Enter: () => {
-        // When pressing Enter in a task item, only split at the current paragraph
-        // Don't move subsequent blocks (like images) to the new task item
+        // When pressing Enter in a task item, handle splitting properly
         const { state, view } = this.editor;
-        const { $from } = state.selection;
+        const { $from, empty } = state.selection;
 
-        // Check if we're in a task item
+        // Check if we're in a paragraph within a task item
         if ($from.parent.type.name !== "paragraph") {
           return false;
         }
@@ -56,14 +55,13 @@ export const TaskItem = TTaskItem.extend<TaskItemOptions>({
           return false;
         }
 
-        // If cursor is at the end of the paragraph and there are more blocks after it,
-        // insert a new task item after the current one instead of splitting
         const taskItemNode = $from.node(taskItemDepth);
         const paragraphIndex = $from.index(taskItemDepth);
         const hasMoreBlocks = paragraphIndex < taskItemNode.childCount - 1;
 
+        // Case 1: At the end of paragraph with more blocks after it
+        // Create new task item AFTER current one (keeps images/blocks in current item)
         if (hasMoreBlocks && $from.parentOffset === $from.parent.content.size) {
-          // Insert new task item after current one
           const taskItemPos = $from.before(taskItemDepth);
           const taskItemSize = taskItemNode.nodeSize;
           const newTaskItem = this.editor.schema.nodes.taskItem.create({ checked: false }, this.editor.schema.nodes.paragraph.create());
@@ -73,6 +71,16 @@ export const TaskItem = TTaskItem.extend<TaskItemOptions>({
           tr.setSelection(TextSelection.near(tr.doc.resolve(newPos)));
           view.dispatch(tr);
           return true;
+        }
+
+        // Case 2: Empty paragraph at the end - exit task list
+        if (empty && $from.parent.content.size === 0 && !hasMoreBlocks) {
+          return this.editor.commands.liftListItem(this.name);
+        }
+
+        // Case 3: Normal split - use default splitListItem behavior
+        if (empty || !hasMoreBlocks) {
+          return this.editor.commands.splitListItem(this.name);
         }
 
         // Let default behavior handle other cases
