@@ -1,9 +1,9 @@
-import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from '@idea/ui/shadcn/ui/breadcrumb';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@idea/ui/shadcn/ui/breadcrumb";
 import { Fragment, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
-import { Icon } from '@idea/ui/base/icon';
-import { Separator } from '@idea/ui/shadcn/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@idea/ui/shadcn/ui/dropdown-menu";
+import { Separator } from "@idea/ui/shadcn/ui/separator";
+import { MoreHorizontal } from "lucide-react";
 import { Emoji } from "emoji-picker-react";
 import useSubSpaceStore, { useGetPathToDocument, usePersonalSubspace } from "@/stores/subspace-store";
 import { useFindNavigationNodeInSharedDocuments } from "@/stores/share-store";
@@ -105,7 +105,7 @@ export default function DocumentBreadcrumb() {
         <BreadcrumbItem>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1">
-              <Icon name="DotsHorizontal" className="h-4 w-4" />
+              <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               {breadcrumbItems.slice(1, -1).map((item) => (

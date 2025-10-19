@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "../utils";
-import { Icon } from "../../base/icon";
+import { ChevronRight, MoreHorizontal } from "lucide-react";
 
 const Breadcrumb = React.forwardRef<
   HTMLElement,
@@ -40,14 +40,14 @@ BreadcrumbPage.displayName = "BreadcrumbPage";
 
 const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentProps<"li">) => (
   <li role="presentation" aria-hidden="true" className={cn("[&>svg]:w-3.5 [&>svg]:h-3.5", className)} {...props}>
-    {children ?? <Icon name="ChevronRight" className="h-4 w-4" />}
+    {children ?? <ChevronRight className="h-4 w-4" />}
   </li>
 );
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator";
 
 const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<"span">) => (
   <span role="presentation" aria-hidden="true" className={cn("flex h-9 w-9 items-center justify-center", className)} {...props}>
-    <Icon name="DotsHorizontal" className="h-4 w-4" />
+    <MoreHorizontal className="h-4 w-4" />
     <span className="sr-only">More</span>
   </span>
 );

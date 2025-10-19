@@ -1,0 +1,13 @@
+import type React from "react";
+
+export function SubspaceInviteOnly(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none" {...props}>
+      <rect x="8" y="20" width="32" height="20" rx="4" fill="currentColor" fillOpacity="0.2" />
+      <rect x="12" y="16" width="24" height="16" rx="3" fill="currentColor" fillOpacity="0.4" />
+      <rect x="16" y="12" width="16" height="12" rx="2" fill="currentColor" />
+      <path d="M20 28 L28 28 M22 32 L26 32" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="32" cy="16" r="2" fill="#FFFFFF" />
+    </svg>
+  );
+}

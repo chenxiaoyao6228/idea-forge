@@ -1,27 +1,33 @@
 import React from "react";
-import { Icon, IconName, IconProps } from '@idea/ui/base/icon';
+import { SubspaceWorkspaceWide, SubspacePublic, SubspaceInviteOnly, SubspacePrivate } from "@idea/icons";
 import type { SubspaceType } from "@idea/contracts";
-import { cn } from '@idea/ui/shadcn/utils';
+import { cn } from "@idea/ui/shadcn/utils";
 
-interface SubspaceIconProps extends Omit<IconProps, "name"> {
+type IconSize = "font" | "xs" | "sm" | "md" | "lg" | "xl";
+
+interface SubspaceIconProps extends React.SVGProps<SVGSVGElement> {
   type: SubspaceType;
   /**
    * Whether to show the background wrapper
    * @default false
    */
   withBackground?: boolean;
+  /**
+   * Icon size
+   */
+  size?: IconSize;
 }
 
-// Helper function to get icon name based on subspace type
-function getSubspaceIconName(type: SubspaceType): IconName {
-  const iconMap: Record<SubspaceType, IconName> = {
-    WORKSPACE_WIDE: "SubspaceWorkspaceWide",
-    PUBLIC: "SubspacePublic",
-    INVITE_ONLY: "SubspaceInviteOnly",
-    PRIVATE: "SubspacePrivate",
-    PERSONAL: "SubspacePrivate", // fallback for personal
+// Helper function to get icon component based on subspace type
+function getSubspaceIconComponent(type: SubspaceType): React.ComponentType<React.SVGProps<SVGSVGElement>> {
+  const iconMap: Record<SubspaceType, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
+    WORKSPACE_WIDE: SubspaceWorkspaceWide,
+    PUBLIC: SubspacePublic,
+    INVITE_ONLY: SubspaceInviteOnly,
+    PRIVATE: SubspacePrivate,
+    PERSONAL: SubspacePrivate, // fallback for personal
   };
-  return iconMap[type] || "SubspaceWorkspaceWide";
+  return iconMap[type] || SubspaceWorkspaceWide;
 }
 
 // Helper function to get color class based on subspace type
@@ -60,6 +66,19 @@ function getSubspaceIconBackgroundStyle(type: SubspaceType): React.CSSProperties
   };
 }
 
+// Helper function to get size class based on size prop
+function getSizeClass(size: IconSize = "md"): string {
+  const sizeMap: Record<IconSize, string> = {
+    font: "w-[1em] h-[1em]",
+    xs: "w-3 h-3",
+    sm: "w-4 h-4",
+    md: "w-5 h-5",
+    lg: "w-6 h-6",
+    xl: "w-8 h-8",
+  };
+  return sizeMap[size];
+}
+
 /**
  * SubspaceIcon component - renders the appropriate icon based on subspace type
  * with its corresponding color scheme
@@ -71,13 +90,17 @@ function getSubspaceIconBackgroundStyle(type: SubspaceType): React.CSSProperties
  * @param title - Accessibility title
  */
 export function SubspaceIcon({ type, withBackground = false, className, size = "md", ...iconProps }: SubspaceIconProps) {
+  const IconComponent = getSubspaceIconComponent(type);
+  const iconColorClass = getSubspaceIconColor(type);
+  const sizeClass = getSizeClass(size);
+
   if (withBackground) {
     return (
       <div className="size-6 rounded-lg flex items-center justify-center shrink-0" style={getSubspaceIconBackgroundStyle(type)}>
-        <Icon name={getSubspaceIconName(type)} className={cn(getSubspaceIconColor(type), "w-4 h-4")} {...iconProps} />
+        <IconComponent className={cn(iconColorClass, "w-4 h-4")} {...iconProps} />
       </div>
     );
   }
 
-  return <Icon name={getSubspaceIconName(type)} className={cn(getSubspaceIconColor(type), className)} size={size} {...iconProps} />;
+  return <IconComponent className={cn(iconColorClass, sizeClass, className)} {...iconProps} />;
 }

@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { Icon } from '@idea/ui/base/icon';
-import { StatusButton } from '@idea/ui/base/status-button';
+import { Google } from "@idea/icons";
+import { StatusButton } from "@idea/ui/base/status-button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Github } from "lucide-react";
 
 export const GITHUB_PROVIDER_NAME = "github";
 export const GOOGLE_PROVIDER_NAME = "google";
@@ -20,8 +21,8 @@ export const providerLabels: Record<ProviderName, string> = {
 } as const;
 
 export const providerIcons: Record<ProviderName, React.ReactNode> = {
-  [GITHUB_PROVIDER_NAME]: <Icon name="GithubLogo" />,
-  // [GOOGLE_PROVIDER_NAME]: <Icon name="Google" />,
+  [GITHUB_PROVIDER_NAME]: <Github />,
+  // [GOOGLE_PROVIDER_NAME]: <Google />,
 } as const;
 
 export function ProviderConnectionForm({

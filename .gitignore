@@ -48,7 +48,7 @@ lerna-debug.log*
 
 # Runtime data
 .turbo
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 pids
 *.pid
 *.seed
@@ -60,7 +60,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Client
 apps/client/node_modules
 apps/client/dist
-apps/client/src/components/ui/icons.d.ts
 
 # Api
 apps/api/node_modules

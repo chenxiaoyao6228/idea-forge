@@ -2,8 +2,8 @@ import * as React from "react";
 import { useSpinDelay } from "spin-delay";
 import { cn } from "../shadcn/utils";
 import { Button, type ButtonProps } from "../shadcn/ui/button";
-import { Icon } from "./icon";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../shadcn/ui/tooltip";
+import { RotateCw, Check, X } from "lucide-react";
 
 export const StatusButton = React.forwardRef<
   HTMLButtonElement,
@@ -20,18 +20,18 @@ export const StatusButton = React.forwardRef<
   });
   const companion = {
     pending: delayedPending ? (
-      <output className="inline-flex h-6 w-6 items-center justify-center">
-        <Icon name="Update" className="animate-spin" title="loading" />
+      <output className="inline-flex h-6 w-6 items-center justify-center" title="loading">
+        <RotateCw className="animate-spin" />
       </output>
     ) : null,
     success: (
-      <output className="inline-flex h-6 w-6 items-center justify-center">
-        <Icon name="Check" title="success" />
+      <output className="inline-flex h-6 w-6 items-center justify-center" title="success">
+        <Check />
       </output>
     ),
     error: (
-      <output className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive">
-        <Icon name="Cross1" className="text-destructive-foreground" title="error" />
+      <output className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive" title="error">
+        <X className="text-destructive-foreground" />
       </output>
     ),
     idle: null,

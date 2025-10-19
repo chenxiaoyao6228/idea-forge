@@ -1,9 +1,9 @@
 import * as React from "react";
-import { Button, type ButtonProps } from '@idea/ui/shadcn/ui/button';
-import { Icon } from '@idea/ui/base/icon';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
-import { cn } from '@idea/ui/shadcn/utils';
+import { Button, type ButtonProps } from "@idea/ui/shadcn/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@idea/ui/shadcn/ui/tooltip";
+import { cn } from "@idea/ui/shadcn/utils";
 import { useSpinDelay } from "spin-delay";
+import { RotateCw, Check, X } from "lucide-react";
 
 export const StatusButton = React.forwardRef<
   HTMLButtonElement,
@@ -20,18 +20,18 @@ export const StatusButton = React.forwardRef<
   });
   const companion = {
     pending: delayedPending ? (
-      <output className="inline-flex h-6 w-6 items-center justify-center">
-        <Icon name="Update" className="animate-spin" title="loading" />
+      <output className="inline-flex h-6 w-6 items-center justify-center" title="loading">
+        <RotateCw className="animate-spin" />
       </output>
     ) : null,
     success: (
-      <output className="inline-flex h-6 w-6 items-center justify-center">
-        <Icon name="Check" title="success" />
+      <output className="inline-flex h-6 w-6 items-center justify-center" title="success">
+        <Check />
       </output>
     ),
     error: (
-      <output className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive">
-        <Icon name="Cross1" className="text-destructive-foreground" title="error" />
+      <output className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive" title="error">
+        <X className="text-destructive-foreground" />
       </output>
     ),
     idle: null,

@@ -4,7 +4,6 @@ import { defineConfig, PluginOption, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { inspectorServer } from "@react-dev-inspector/vite-plugin";
 import tsconfigPaths from "vite-tsconfig-paths";
-import { iconsSpritesheet } from "vite-plugin-icons-spritesheet";
 import timeReporter from "vite-plugin-time-reporter";
 import checker from 'vite-plugin-checker';
 
@@ -37,13 +36,6 @@ export default ({ mode }) => {
       !isDev && timeReporter(),
       react(),
       tsconfigPaths(),
-      iconsSpritesheet({
-        inputDir: "./src/assets/icons",
-        typesOutputFile: "./src/components/ui/icons.d.ts",
-        outputDir: "../api/public/",
-        withTypes: true,
-        fileName: "sprite.svg",
-      }),
       // sentryVitePlugin({
     //   org: "yorkchan6228",
     //   project: "idea-forge-client",

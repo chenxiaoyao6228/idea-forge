@@ -18,8 +18,8 @@ import { Skeleton } from "./skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 import { cn, mergeButtonRefs } from "../utils";
 
-import { Icon } from "../../base/icon";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { PanelLeft } from "lucide-react";
 const SIDEBAR_STORAGE_KEY = "sidebar:state";
 const SIDEBAR_WIDTH_STORAGE_KEY = "sidebar:width";
 const SIDEBAR_WIDTH = "16rem";
@@ -302,7 +302,7 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
       }}
       {...props}
     >
-      <Icon name="PanelLeft" />
+      <PanelLeft className="h-4 w-4 " />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

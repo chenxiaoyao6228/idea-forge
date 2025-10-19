@@ -1,8 +1,8 @@
-import { Button } from '@idea/ui/shadcn/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@idea/ui/shadcn/ui/tooltip";
 import { useEffect, useState } from "react";
 import { useScrollTop } from "@/hooks/use-scroll-top";
-import { Icon } from '@idea/ui/base/icon';
+import { Rocket } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function BackToTop() {
@@ -29,7 +29,7 @@ export default function BackToTop() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="outline" onClick={scrollToTop} className="fixed bottom-16 right-2 rounded-full px-2">
-                <Icon name="RocketLine" className="h-8 w-8" />
+                <Rocket className="h-8 w-8" />
               </Button>
             </TooltipTrigger>
             <TooltipContent align="center">
