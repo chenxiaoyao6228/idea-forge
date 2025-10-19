@@ -24,7 +24,6 @@ export const SlashCommands = Extension.create({
           const $from = state.doc.resolve(range.from);
 
           // Basic condition checks
-          const isRootDepth = $from.depth === 1; // Check if at root level
           const isParagraph = $from.parent.type.name === "paragraph"; // Check if in paragraph
           const isStartOfNode = $from.parent.textContent?.charAt(0) === "/"; // Check if at start of node
 
@@ -33,9 +32,10 @@ export const SlashCommands = Extension.create({
           const isValidAfterContent = !afterContent?.endsWith("  ");
 
           // Combined conditions:
-          // 1. Must be at root level paragraph start
+          // 1. Must be in a paragraph at start
           // 2. Content format must be valid
-          return isRootDepth && isParagraph && isStartOfNode && isValidAfterContent;
+          // Note: Removed root depth check to allow slash commands in nested contexts (task items, lists, blockquotes, etc.)
+          return isParagraph && isStartOfNode && isValidAfterContent;
         },
         command: ({ editor, range, props }) => {
           const { view, state } = editor;
