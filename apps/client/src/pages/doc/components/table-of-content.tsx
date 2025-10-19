@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { cn } from '@idea/ui/shadcn/utils';
+import { cn } from "@idea/ui/shadcn/utils";
 import type { TableOfContentDataItem } from "@tiptap/extension-table-of-contents";
 import { TextSelection } from "@tiptap/pm/state";
 import type React from "react";
@@ -96,7 +96,11 @@ export const TableOfContent = memo(({ editor, items, onInitialNavigation }: Tabl
   }
 
   return (
-    <div className="fixed top-1/2 -translate-y-1/2 right-2 cursor-pointer" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+    <div
+      className="table-of-content fixed top-1/2 -translate-y-1/2 right-2 cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Trigger */}
       {!isHovered && (
         <div className="bg-background p-2 shadow-lg rounded-lg cursor-pointer">
@@ -123,7 +127,7 @@ export const TableOfContent = memo(({ editor, items, onInitialNavigation }: Tabl
       {/* Content */}
       <div
         className={cn(
-          "fixed top-1/2 -translate-y-1/2 right-0  mr-2 w-60 max-h-[60vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto custom-scrollbar",
+          "fixed top-1/2 -translate-y-1/2 right-0  mr-2 w-80 max-h-[60vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto custom-scrollbar",
           "transition-all duration-200 ease-in-out",
           isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none",
         )}

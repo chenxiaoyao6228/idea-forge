@@ -10,12 +10,12 @@ import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
 import { useRef, useMemo, useEffect } from "react";
 import { useEditorStore } from "@/stores/editor-store";
-import { Skeleton } from '@idea/ui/shadcn/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@idea/ui/shadcn/ui/alert';
-import { Button } from '@idea/ui/shadcn/ui/button';
+import { Skeleton } from "@idea/ui/shadcn/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@idea/ui/shadcn/ui/alert";
+import { Button } from "@idea/ui/shadcn/ui/button";
 import { RefreshCw, WifiOff } from "lucide-react";
 import AIPanel from "./ai-panel";
-import { getHierarchicalIndexes } from "@tiptap/extension-table-of-contents";
+import { getHierarchicalIndexes, getHeadlineLevel } from "@tiptap/extension-table-of-contents";
 import TableOfContents from "@tiptap/extension-table-of-contents";
 import React from "react";
 import { TextSelection } from "@tiptap/pm/state";
@@ -85,6 +85,7 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
       TableOfContents.configure({
         scrollParent: () => document?.getElementById("WORK_CONTENT_SCROLL_CONTAINER") || window,
         getIndex: getHierarchicalIndexes,
+        getLevel: getHeadlineLevel,
         onUpdate(content) {
           // console.log('toc content...', content);
           setTocItems(content);

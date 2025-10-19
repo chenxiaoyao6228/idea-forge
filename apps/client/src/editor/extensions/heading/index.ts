@@ -20,6 +20,9 @@ export const Heading = THeading.extend<HeadingOptions>({
   },
   addAttributes() {
     return {
+      // Preserve parent's attributes (including level)
+      ...this.parent?.(),
+      // Add custom id attribute
       id: {
         default: null,
         parseHTML: (element) => element.getAttribute("id"),

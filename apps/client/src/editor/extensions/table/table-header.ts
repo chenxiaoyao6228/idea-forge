@@ -4,6 +4,8 @@ import { createTableDecorationPlugin } from "./plugins/create-table-decoration-p
 export const TableHeader = TiptapTableHeader.extend({
   addAttributes() {
     return {
+      // Preserve parent's attributes (for safety)
+      ...this.parent?.(),
       colspan: {
         default: 1,
       },

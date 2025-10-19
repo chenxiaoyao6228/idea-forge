@@ -315,7 +315,7 @@
     @apply bg-transparent p-0 text-inherit;
   }
 
-  /* 可以根据需要添加更多的语法高亮样式 */
+  /* add more syntax highlight styles if needed */
   .hljs-comment,
   .hljs-quote {
     @apply text-gray-400;
@@ -428,6 +428,19 @@
 .editor-container {
   .drag-handle {
     /* TODO: add drag handle positioning configuration using Floating UI if needed */
+  }
+}
+
+/* table of content */
+.table-of-content {
+  a {
+    @apply flex gap-1 no-underline;
+
+    /* number index of toc, take up to many spaces, so comment it first */
+    /* &::before {
+      content: attr(data-item-index) ".";
+      @apply text-muted-foreground mr-1;
+    } */
   }
 }
 

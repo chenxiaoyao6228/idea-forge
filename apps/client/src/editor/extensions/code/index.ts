@@ -48,6 +48,9 @@ export const Code = TCode.extend<CodeOptions>({
   },
   addAttributes() {
     return {
+      // Preserve parent's attributes (for safety)
+      ...this.parent?.(),
+      // Add custom id attribute
       id: {
         default: null,
         parseHTML: (element) => element.getAttribute("id"),

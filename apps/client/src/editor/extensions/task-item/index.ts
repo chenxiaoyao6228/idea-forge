@@ -15,6 +15,9 @@ export const TaskItem = TTaskItem.extend<TaskItemOptions>({
   },
   addAttributes() {
     return {
+      // Preserve parent's attributes (including checked)
+      ...this.parent?.(),
+      // Add custom id attribute
       id: {
         default: null,
         parseHTML: (element) => element.getAttribute("id"),

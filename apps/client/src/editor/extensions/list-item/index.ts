@@ -7,6 +7,9 @@ export const ListItem = TListItem.extend<ListItemOptions>({
   name: "listItem",
   addAttributes() {
     return {
+      // Preserve parent's attributes (for safety)
+      ...this.parent?.(),
+      // Add custom id attribute
       id: {
         default: null,
         parseHTML: (element) => element.getAttribute("id"),

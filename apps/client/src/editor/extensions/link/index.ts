@@ -29,6 +29,9 @@ export const Link = TLink.extend<LinkOptions>({
   },
   addAttributes() {
     return {
+      // Preserve parent's attributes (including href, target, rel, etc.)
+      ...this.parent?.(),
+      // Add custom id attribute
       id: {
         default: null,
         parseHTML: (element) => element.getAttribute("id"),
