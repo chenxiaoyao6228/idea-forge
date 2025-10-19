@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/react";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { getEnvVariable } from "@/lib/env";
 import { useTranslation } from "react-i18next";
 

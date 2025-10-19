@@ -1,6 +1,6 @@
-import { SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarRail, SidebarMenuButton, Sidebar } from "@/components/ui/sidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
-import { cn } from "@/lib/utils";
+import { SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarRail, SidebarMenuButton, Sidebar } from '@idea/ui/shadcn/ui/sidebar';
+import { SidebarInset, SidebarProvider } from '@idea/ui/shadcn/ui/sidebar';
+import { cn } from '@idea/ui/shadcn/utils';
 import { useDragAndDropContext } from "./hooks/use-dnd";
 import { DndContext } from "@dnd-kit/core";
 import WorkspaceSwitcher from "./workspace-switcher";
@@ -17,12 +17,12 @@ import React from "react";
 import { Search as SearchIcon, Users, Trash2, Box, Settings, Plus, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { showSettingModal } from "@/pages/main/settings/setting-modal";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
 import { useWorkspaceType } from "@/hooks/use-workspace-type";
 import { useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Alert, AlertDescription } from '@idea/ui/shadcn/ui/alert';
 import { NotificationButton } from "@/components/notification";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {

@@ -2,12 +2,12 @@ import type React from "react";
 import { useId, useState } from "react";
 import { type OTPInputProps } from "input-otp";
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
-import { Checkbox, type CheckboxProps } from "./ui/checkbox.tsx";
-import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp.tsx";
-import { Input } from "./ui/input.tsx";
-import { Label } from "./ui/label.tsx";
-import { Textarea } from "./ui/textarea.tsx";
-import { Button } from "./ui/button.tsx";
+import { Checkbox, type CheckboxProps } from '@idea/ui/shadcn/ui/checkbox';
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '@idea/ui/shadcn/ui/input-otp';
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Textarea } from '@idea/ui/shadcn/ui/textarea';
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { Eye, EyeOff } from "lucide-react";
 
 export type ListOfErrors = Array<string | null | undefined> | null | undefined;

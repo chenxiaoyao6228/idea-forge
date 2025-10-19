@@ -1,7 +1,7 @@
 import React from "react";
-import { Icon, IconName, IconProps } from "@/components/ui/icon";
+import { Icon, IconName, IconProps } from '@idea/ui/base/icon';
 import type { SubspaceType } from "@idea/contracts";
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 
 interface SubspaceIconProps extends Omit<IconProps, "name"> {
   type: SubspaceType;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
+import { Switch } from '@idea/ui/shadcn/ui/switch';
+import { Label } from '@idea/ui/shadcn/ui/label';
 import useWorkspaceStore, { useUpdateWorkspace } from "@/stores/workspace-store";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";

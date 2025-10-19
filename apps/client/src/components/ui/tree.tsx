@@ -5,11 +5,11 @@
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronRight, Loader2, Folder, FolderOpen, File, Dot, Pen } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible";
-import { Checkbox } from "./checkbox";
-import { cn } from "@/lib/utils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@idea/ui/shadcn/ui/collapsible';
+import { Checkbox } from '@idea/ui/shadcn/ui/checkbox';
+import { cn } from '@idea/ui/shadcn/utils';
 import { useSpinDelay } from "spin-delay";
-import { Input } from "@/components/ui/input";
+import { Input } from '@idea/ui/shadcn/ui/input';
 import { Emoji } from "emoji-picker-react";
 
 type IconFn = (props: { selected: boolean; node: TreeDataNode; expanded: boolean }) => React.ReactNode;

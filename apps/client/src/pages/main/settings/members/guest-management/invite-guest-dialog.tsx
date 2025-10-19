@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@idea/ui/shadcn/ui/dialog';
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { useInviteGuestToWorkspace } from "@/stores/guest-collaborators-store";
 import useWorkspaceStore from "@/stores/workspace-store";

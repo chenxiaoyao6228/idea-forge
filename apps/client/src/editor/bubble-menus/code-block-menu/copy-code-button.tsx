@@ -4,7 +4,7 @@ import { findParentNode } from "@tiptap/core";
 import copy from "copy-to-clipboard";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 
 interface CopyCodeButtonProps {
   editor: Editor;

@@ -1,8 +1,8 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
 import { StarIcon, MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
 import { useTranslation } from "react-i18next";
 import { SidebarLink } from "./sidebar-link";
 import { useCallback, useEffect, useMemo, useState } from "react";

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { Check, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import useSubspaceStore, { useJoinSubspace } from "@/stores/subspace-store";

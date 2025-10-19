@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader } from '@idea/ui/shadcn/ui/card';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@idea/ui/shadcn/ui/dropdown-menu';
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, MoreVertical, X, Users, UserPlus, Edit2, Trash2 } from "lucide-react";
 import { useRemoveUserFromGroup } from "@/stores/group-store";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 import type { Group } from "./types";
 
 interface GroupCardProps {

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@idea/ui/shadcn/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
 import { UserPlus } from "lucide-react";
 import { MemberSharingTab } from "./member-sharing-tab";
 import { GuestSharingTab } from "./guest-sharing-tab";

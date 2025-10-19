@@ -1,8 +1,8 @@
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupLabel } from '@idea/ui/shadcn/ui/sidebar';
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@idea/ui/shadcn/ui/collapsible';
 import { useOrderedStars, useFetchStars } from "@/stores/star-store";
 import { useFetchSubspaces } from "@/stores/subspace-store";
 import useWorkspaceStore from "@/stores/workspace-store";

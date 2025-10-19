@@ -1,8 +1,8 @@
 import type React from "react";
 import type { Editor } from "@tiptap/react";
 import { LANGUAGES_MAP } from "../../extensions/code-block/constant";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@idea/ui/shadcn/ui/popover';
 import { ChevronDown } from "lucide-react";
 
 interface LanguageSelectorProps {

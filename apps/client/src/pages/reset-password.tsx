@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
 import Logo from "@/components/logo";
 import { ResetPwdForm } from "@/components/reset-pwd-form";
 import { useTranslation } from "react-i18next";

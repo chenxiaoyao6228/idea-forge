@@ -5,7 +5,7 @@ import useWorkspaceStore, { useFetchMembers, useFetchWorkspaces, useSwitchToFirs
 import useUserStore from "@/stores/user-store";
 import { toast } from "sonner";
 import { useInitializeSubjectAbilities } from "@/stores/ability-store";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 import { useTranslation } from "react-i18next";
 
 export function useWorkspaceWebsocketEvents(socket: Socket | null) {

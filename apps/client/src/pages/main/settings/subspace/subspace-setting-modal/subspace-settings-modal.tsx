@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@idea/ui/shadcn/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { Home, Users, Shield, Loader2 } from "lucide-react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";

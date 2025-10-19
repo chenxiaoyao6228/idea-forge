@@ -3,7 +3,7 @@ import { MenuProps } from "../type";
 import Wrapper from "../bubble-menu-wrapper";
 import { Editor } from "@tiptap/core";
 import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 
 export default function ImageBlockMenu(props: MenuProps) {
   const { editor, containerRef } = props;

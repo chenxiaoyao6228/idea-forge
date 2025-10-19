@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
 import { GalleryTab } from "./pickers/gallery-tab";
 import { UploadTab } from "./pickers/upload-tab";
 import { LinkTab } from "./pickers/link-tab";

@@ -1,8 +1,8 @@
 import * as React from "react";
 import { ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { cn } from "@/lib/utils";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@idea/ui/shadcn/ui/collapsible';
+import { cn } from '@idea/ui/shadcn/utils';
 import { NavLink, NavLinkProps } from "./nav-link";
 import { useMemo } from "react";
 

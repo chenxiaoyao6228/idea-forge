@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { Trash2, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@idea/ui/shadcn/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@idea/ui/shadcn/ui/table';
 import { documentApi } from "@/apis/document";
 import { type TrashDocumentResponse } from "@idea/contracts";
 import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 import { useTranslation } from "react-i18next";
-import Loading from "../../../components/ui/loading";
+import Loading from '@idea/ui/base/loading';
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
 interface TrashDialogProps {

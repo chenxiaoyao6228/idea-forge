@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { userApi } from "@/apis/user";
 import { displayUserName } from "@/lib/auth";
 import type { User } from "@idea/contracts";
-import type { Option } from "@/components/ui/multi-selector";
+import type { Option } from '@/components/ui/multi-selector';
 
 // Custom hook for async user search following React Client patterns
 export function useUserSearch() {

@@ -1,8 +1,8 @@
 import * as React from "react";
-import { Button, type ButtonProps } from "./ui/button";
-import { Icon } from "./ui/icon";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Button, type ButtonProps } from '@idea/ui/shadcn/ui/button';
+import { Icon } from '@idea/ui/base/icon';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
+import { cn } from '@idea/ui/shadcn/utils';
 import { useSpinDelay } from "spin-delay";
 
 export const StatusButton = React.forwardRef<

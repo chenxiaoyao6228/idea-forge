@@ -1,9 +1,9 @@
 import { useCallback, useState, useEffect } from "react";
 import type { NodeSelection } from "@tiptap/pm/state";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { GripVertical, RemoveFormatting, Clipboard, Copy, Trash2 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from '@idea/ui/shadcn/ui/popover';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
 import { toast } from "sonner";
 import { IButtonProps } from "./type";
 import copy from "copy-to-clipboard";

@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { cn } from '@idea/ui/shadcn/utils';
 import { HelpCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";

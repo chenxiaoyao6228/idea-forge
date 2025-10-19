@@ -1,4 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
 import { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { User, Users, Building2, Layers } from "lucide-react";
@@ -6,7 +6,7 @@ import { Account } from "@/pages/main/settings/account";
 import { Members } from "@/pages/main/settings/members";
 import { Subspace } from "@/pages/main/settings/subspace";
 import { Workspace } from "@/pages/main/settings/workspace";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from '@idea/ui/shadcn/ui/dialog';
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { useAbilityCan, Action } from "@/hooks/use-ability";
 import useWorkspaceStore from "@/stores/workspace-store";

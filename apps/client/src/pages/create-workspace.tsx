@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
 import { useTranslation } from "react-i18next";
 import { useCreateWorkspace } from "@/stores/workspace-store";
 import { WorkspaceTypeEnum } from "@idea/contracts";

@@ -1,6 +1,6 @@
 import { Editor } from "@tiptap/react";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@idea/ui/shadcn/ui/popover';
 import { Link2 } from "lucide-react";
 import { LinkEditBlock } from "../link-menu/link-edit-block";
 import { useState } from "react";

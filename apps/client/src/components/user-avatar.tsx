@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import { cn } from '@idea/ui/shadcn/utils';
 
 export function UserAvatar({
   user,

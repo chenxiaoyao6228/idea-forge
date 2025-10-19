@@ -1,11 +1,11 @@
 import { LanguageSwitcher } from "@/components/language-switcher";
 import Logo from "@/components/logo";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { Button } from "@/components/ui/button";
-import { Popover } from "@/components/ui/popover";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Popover } from '@idea/ui/shadcn/ui/popover';
 import { Ellipsis } from "lucide-react";
-import { PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
+import { PopoverContent, PopoverTrigger } from '@idea/ui/shadcn/ui/popover';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
 import { useState } from "react";
 
 export default function Header() {

@@ -2,7 +2,7 @@ import { BubbleMenu } from "@tiptap/react";
 import React, { useCallback } from "react";
 import { ArrowLeftToLine, ArrowRightToLine, Trash2 } from "lucide-react";
 import Wrapper from "../bubble-menu-wrapper";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { isColumnGripSelected } from "./utils";
 import { ShouldShowProps, MenuProps } from "../type";
 import { useTranslation } from "react-i18next";

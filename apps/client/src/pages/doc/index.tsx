@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import DocHome from "./home";
-import Loading from "@/components/ui/loading";
+import Loading from "@idea/ui/base/loading";
 import Cover from "./cover";
 import useUserStore from "@/stores/user-store";
 import { useTranslation } from "react-i18next";
 import { useTitle } from "react-use";
 import DocumentHeader from "./components/doc-header";
-import BackToTop from "@/components/ui/back-to-top";
+import BackToTop from "@/components/back-to-top";
 import { getEnvVariable } from "@/lib/env";
 import { Toolbar } from "./toolbar";
 import TiptapEditor from "@/editor";

@@ -1,6 +1,6 @@
 import { useDroppable, useDndContext } from "@dnd-kit/core";
 import { Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 import { useTranslation } from "react-i18next";
 import { showTrashModal } from "../trash-dialog";
 

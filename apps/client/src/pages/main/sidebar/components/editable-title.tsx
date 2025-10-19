@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { cn } from '@idea/ui/shadcn/utils';
 
 interface EditableTitleProps {
   title: string;

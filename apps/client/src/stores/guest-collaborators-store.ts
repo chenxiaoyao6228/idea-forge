@@ -12,7 +12,7 @@ import type {
   GetWorkspaceGuestsRequest,
 } from "@idea/contracts";
 import { guestCollaboratorsApi } from "@/apis/guest-collaborator";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 import useWorkspaceStore from "./workspace-store";
 
 // Store state only - no business logic in store

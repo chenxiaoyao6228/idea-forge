@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
-import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Avatar, AvatarFallback } from '@idea/ui/shadcn/ui/avatar';
+import { PermissionLevelSelector } from '@/components/ui/permission-level-selector';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
 import { Plus, Link, Info } from "lucide-react";
 import { showAddGuestModal } from "./add-guest-dialog";
 import useGuestCollaboratorsStore, {

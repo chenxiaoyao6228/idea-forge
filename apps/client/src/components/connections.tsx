@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { Icon } from "@/components/ui/icon";
-import { StatusButton } from "@/components/ui/status-button";
+import { Icon } from '@idea/ui/base/icon';
+import { StatusButton } from '@idea/ui/base/status-button';
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 

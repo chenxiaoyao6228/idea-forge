@@ -3,9 +3,9 @@ import { useInView } from "react-intersection-observer";
 import { Bell } from "lucide-react";
 import type { NotificationEntity } from "@/stores/notification-store";
 import { NotificationItem } from "./notification-item";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
+import { ScrollArea } from '@idea/ui/shadcn/ui/scroll-area';
+import { Spinner } from '@idea/ui/base/spinner';
+import { cn } from '@idea/ui/shadcn/utils';
 import { ViewportBatchProvider } from "./viewport-batch-context";
 
 interface NotificationListProps {

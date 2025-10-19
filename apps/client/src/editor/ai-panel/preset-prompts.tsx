@@ -1,5 +1,5 @@
 import { MenuSquare, MoreHorizontal, PenLine, ListTree, FileText, Brain, Languages, HelpCircle, BugOff, MicVocal } from "lucide-react";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@idea/ui/shadcn/ui/hover-card';
 import ActionItem from "./action-item";
 import { useAIPanelStore } from "./ai-panel-store";
 import { useTranslation } from "react-i18next";

@@ -1,4 +1,4 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@idea/ui/shadcn/ui/select';
 import { useTranslation } from "react-i18next";
 import { SubspaceType } from "@idea/contracts";
 import { cx } from "class-variance-authority";

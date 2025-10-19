@@ -14,7 +14,7 @@ import { useRefCallback } from "@/hooks/use-ref-callback";
 import useUserStore from "./user-store";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 
 export interface WorkspaceEntity {
   id: string;

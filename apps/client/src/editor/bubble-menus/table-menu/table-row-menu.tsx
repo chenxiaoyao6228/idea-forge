@@ -4,7 +4,7 @@ import { ArrowUpToLine, ArrowDownToLine, Trash2 } from "lucide-react";
 import type { MenuProps, ShouldShowProps } from "../type";
 import { isRowGripSelected } from "./utils";
 import Wrapper from "../bubble-menu-wrapper";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { useTranslation } from "react-i18next";
 
 function AddRowBeforeButton({ editor }: { editor: MenuProps["editor"] }) {

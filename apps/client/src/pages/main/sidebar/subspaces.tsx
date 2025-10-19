@@ -1,9 +1,9 @@
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupLabel } from '@idea/ui/shadcn/ui/sidebar';
 import { useTranslation } from "react-i18next";
 import { useEffect, useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { PlusIcon, ChevronRight, Layers } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@idea/ui/shadcn/ui/collapsible';
 import { DraggableSubspaceContainer } from "./components/draggable-subspace-container";
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";

@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@idea/ui/shadcn/ui/select';
+import { Switch } from '@idea/ui/shadcn/ui/switch';
 import { Copy, Calendar, Loader2 } from "lucide-react";
 import { useGetOrCreatePublicShare, useRevokePublicShare, useUpdateExpiration, usePublicShareByDocId, useFetchPublicShare } from "@/stores/public-share-store";
 import { ExpirationDuration } from "@idea/contracts";

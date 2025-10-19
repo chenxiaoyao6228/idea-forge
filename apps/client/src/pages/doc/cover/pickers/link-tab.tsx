@@ -1,6 +1,6 @@
 import { Field } from "@/components/forms";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Spinner } from '@idea/ui/base/spinner';
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";

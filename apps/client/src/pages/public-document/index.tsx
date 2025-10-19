@@ -4,18 +4,18 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { publicShareApi } from "@/apis/public-share";
 import useUserStore from "@/stores/user-store";
-import { Button } from "@/components/ui/button";
+import { Button } from "@idea/ui/shadcn/ui/button";
 import { Home, AlertCircle } from "lucide-react";
-import Loading from "@/components/ui/loading";
+import Loading from "@idea/ui/base/loading";
 import ReadOnlyEditor from "@/editor/read-only-editor";
 import { PublicSidebar } from "./components/public-sidebar";
 import { TableOfContent } from "@/pages/doc/components/table-of-content";
-import BackToTop from "@/components/ui/back-to-top";
+import BackToTop from "@/components/back-to-top";
 import PublicDocumentBreadcrumb from "./components/public-breadcrumb";
 import Cover from "@/pages/doc/cover";
 import type { TableOfContentDataItem } from "@tiptap/extension-table-of-contents";
 import type { Editor } from "@tiptap/react";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@idea/ui/shadcn/ui/sidebar";
 import { NavigationTreeNode } from "@idea/contracts";
 import { Emoji } from "emoji-picker-react";
 import { DOCUMENT_TITLE_ID } from "@/editor/constant";
@@ -144,7 +144,13 @@ export default function PublicDocument() {
     <SidebarProvider defaultOpen={true}>
       {/* Left Sidebar - Navigation Tree */}
       {navigationTree && (
-        <PublicSidebar navigationTree={navigationTree} token={token!} activeDocId={docId || navigationTree.id} workspaceName={doc.workspace.name} docId={doc.id} />
+        <PublicSidebar
+          navigationTree={navigationTree}
+          token={token!}
+          activeDocId={docId || navigationTree.id}
+          workspaceName={doc.workspace.name}
+          docId={doc.id}
+        />
       )}
 
       {/* Main Content Area */}

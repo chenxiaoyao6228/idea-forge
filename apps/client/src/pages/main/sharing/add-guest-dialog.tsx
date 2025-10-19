@@ -1,19 +1,19 @@
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import { Checkbox } from '@idea/ui/shadcn/ui/checkbox';
+import { Badge } from '@idea/ui/shadcn/ui/badge';
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@idea/ui/shadcn/ui/dialog';
 import { X } from "lucide-react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { PermissionLevel } from "@idea/contracts";
 import useGuestCollaboratorsStore, { useFetchGuests, useInviteGuest, useBatchInviteGuests } from "@/stores/guest-collaborators-store";
 import useWorkspaceStore from "@/stores/workspace-store";
-import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
+import { PermissionLevelSelector } from '@/components/ui/permission-level-selector';
 
 export interface PendingGuest {
   id: string;

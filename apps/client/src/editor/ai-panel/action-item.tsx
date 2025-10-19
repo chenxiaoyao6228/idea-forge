@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 import { CornerDownLeft } from "lucide-react";
 
 interface ActionItemProps {

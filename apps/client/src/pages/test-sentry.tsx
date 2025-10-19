@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 
 export default function TestSentry() {
   return (

@@ -1,8 +1,8 @@
 import { Editor } from "@tiptap/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Checkbox } from '@idea/ui/shadcn/ui/checkbox';
 import { Link2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useClickAway } from "react-use";

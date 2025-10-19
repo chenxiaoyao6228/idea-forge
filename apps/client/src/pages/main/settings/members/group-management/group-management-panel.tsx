@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useOrderedGroups, useFetchGroups, useCreateGroup, useUpdateGroup, useDeleteGroup, useRemoveUserFromGroup } from "@/stores/group-store";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { useTranslation } from "react-i18next";
 import { Search, Plus, Users } from "lucide-react";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 import { GroupCard } from "./group-card";
 import { ManageGroupMembersModal } from "./manage-group-members-modal";
 

@@ -1,10 +1,10 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@idea/ui/shadcn/ui/skeleton';
 import { CoverPicker } from "./cover-picker";
 import { useState, useRef, useEffect } from "react";
 import { useCoverImageStore } from "./coverImageStore";
 import { UpdateCoverDto } from "@idea/contracts";
 import { useImageLoading } from "@/hooks/use-image-loading";
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 import { useTranslation } from "react-i18next";
 import { documentApi } from "@/apis/document";
 import useDocumentStore from "@/stores/document-store";

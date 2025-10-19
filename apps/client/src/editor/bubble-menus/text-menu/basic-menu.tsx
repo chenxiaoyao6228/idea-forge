@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { Bold, Italic, Code, Underline, Strikethrough } from "lucide-react";
 
 interface IProps {

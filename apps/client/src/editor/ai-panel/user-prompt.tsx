@@ -1,6 +1,6 @@
 import { WandSparkles, Send, CircleStop } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { useAIPanelStore } from "./ai-panel-store";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { debounce } from "lodash-es";

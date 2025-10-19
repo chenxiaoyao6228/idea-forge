@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
 import { Star } from "lucide-react";
 import { useIsStarred, useToggleStar } from "@/stores/star-store";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 
 interface StarButtonProps {
   documentId: string;

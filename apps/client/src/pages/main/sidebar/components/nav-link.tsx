@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 import { useCallback, useMemo, useRef } from "react";
 
 export interface NavLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {

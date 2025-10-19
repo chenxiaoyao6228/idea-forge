@@ -1,9 +1,9 @@
 import type { Node } from "@tiptap/pm/model";
 import { type Editor, NodeViewWrapper } from "@tiptap/react";
 import { useCallback, useEffect, useState, useRef } from "react";
-import { cn } from "@/lib/utils";
-import { Resizer } from "@/components/element-resizer";
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from '@idea/ui/shadcn/utils';
+import { Resizer } from "@idea/ui/base/element-resizer";
+import { Skeleton } from '@idea/ui/shadcn/ui/skeleton';
 import { preloadImage } from "@/lib/image";
 
 interface ImageBlockViewProps {

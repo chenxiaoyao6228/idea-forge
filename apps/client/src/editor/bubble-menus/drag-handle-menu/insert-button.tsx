@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { Plus } from "lucide-react";
 import { IButtonProps } from "./type";
 import { useTranslation } from "react-i18next";

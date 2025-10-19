@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
 import { GroupManagementPanel } from "./group-management";
 import MemberManagementPanel from "./member-management";
 import { GuestCollaboratorPanel } from "./guest-management";

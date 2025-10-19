@@ -1,8 +1,8 @@
 import useRequest from "@ahooksjs/use-request";
 import { useInView } from "react-intersection-observer";
 import * as React from "react";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from '@idea/ui/shadcn/ui/card';
+import { Skeleton } from '@idea/ui/shadcn/ui/skeleton';
 import { useTranslation } from "react-i18next";
 import { BasePageResult } from "@idea/contracts";
 

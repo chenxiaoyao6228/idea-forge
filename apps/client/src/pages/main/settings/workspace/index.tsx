@@ -1,20 +1,20 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@idea/ui/shadcn/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
 import { ImageCropper } from "@/components/image-cropper";
 import useWorkspaceStore, { useUpdateWorkspace, useLeaveWorkspace } from "@/stores/workspace-store";
 import { uploadFile } from "@/lib/upload";
 import { dataURLtoFile } from "@/lib/file";
 import { Action, type UpdateWorkspaceRequest, type WorkspaceSettings } from "@idea/contracts";
 import { useAbilityCan } from "@/hooks/use-ability";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Switch } from '@idea/ui/shadcn/ui/switch';
 
 interface FileWithPreview extends File {
   preview: string;

@@ -1,8 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
 import { HelpCircle, Plus } from "lucide-react";
 import { SubspaceBatchSettings } from "./subspace-batch-settings";
 import { WorkspaceSubspaceSettings } from "./workspace-subspace-settings";

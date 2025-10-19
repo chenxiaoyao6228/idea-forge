@@ -1,6 +1,6 @@
 import React from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@idea/ui/shadcn/ui/select';
+import { Badge } from '@idea/ui/shadcn/ui/badge';
 import { useTranslation } from "react-i18next";
 import { PermissionLevel } from "@idea/contracts";
 import { cx } from "class-variance-authority";

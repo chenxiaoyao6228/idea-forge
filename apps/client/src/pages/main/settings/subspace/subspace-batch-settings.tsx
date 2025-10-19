@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import MultipleSelector, { Option } from "@/components/ui/multi-selector";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
+import MultipleSelector, { Option } from '@/components/ui/multi-selector';
 import { Subspace, SubspaceType } from "@idea/contracts";
 import useWorkspaceStore, { useBatchSetWorkspaceWide } from "@/stores/workspace-store";
 import useSubSpaceStore, { useAllSubspaces, useFetchSubspaces } from "@/stores/subspace-store";

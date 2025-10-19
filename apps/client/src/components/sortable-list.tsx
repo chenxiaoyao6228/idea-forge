@@ -2,12 +2,12 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { CSS } from "@dnd-kit/utilities";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { GripVertical } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from '@idea/ui/shadcn/utils';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from '@idea/ui/shadcn/ui/scroll-area';
 
 /**
  * Props for SortableList

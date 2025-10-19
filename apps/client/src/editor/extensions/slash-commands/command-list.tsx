@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import type { CommandListProps } from "./types";
 
 export const CommandList = React.forwardRef<any, CommandListProps>((props, ref) => {

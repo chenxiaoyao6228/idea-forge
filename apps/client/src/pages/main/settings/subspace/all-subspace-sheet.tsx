@@ -1,13 +1,13 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@idea/ui/shadcn/ui/sheet';
 import { Layers, PlusIcon } from "lucide-react";
 import useSubSpaceStore, { useAllSubspaces, useJoinedSubspaces, useFetchSubspaces } from "@/stores/subspace-store";
 import useWorkspaceStore from "@/stores/workspace-store";
 import { showCreateSubspaceModal } from "./create-subspace-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import { Badge } from '@idea/ui/shadcn/ui/badge';
 import { SubspaceJoinButton } from "@/pages/main/settings/subspace/subspace-join-button";
 import { SubspaceType } from "@idea/contracts";
 import { useSubspaceLabels } from "@/hooks/use-subspace-labels";

@@ -1,7 +1,7 @@
 import { uploadFile } from "@/lib/upload";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Spinner } from "@/components/ui/spinner";
+import { Spinner } from '@idea/ui/base/spinner';
 import { UpdateCoverDto } from "@idea/contracts";
 import { useTranslation } from "react-i18next";
 

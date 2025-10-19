@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import Slogan from "./slogan";
 import { User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import HomeNav from "../../components/header";
 import HomeLogo from "@/assets/imgs/home-logo.png";
 import { useTranslation } from "react-i18next";

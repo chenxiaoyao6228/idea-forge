@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@idea/ui/shadcn/ui/dialog';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Textarea } from '@idea/ui/shadcn/ui/textarea';
 import { PermissionLevel } from "@idea/contracts";
-import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
+import { PermissionLevelSelector } from '@/components/ui/permission-level-selector';
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 
 // Permission level hierarchy from lowest to highest

@@ -1,8 +1,8 @@
 import React from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent } from '@idea/ui/shadcn/ui/dialog';
+import { AlertDialog, AlertDialogContent } from '@idea/ui/shadcn/ui/alert-dialog';
 import { useCentralModal, CentralModalHook } from "./use-central-modal";
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 
 export interface CentralModalProps {
   id: string;

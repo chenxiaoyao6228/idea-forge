@@ -2,9 +2,9 @@ import React, { type SyntheticEvent } from "react";
 
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from "react-image-crop";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from '@idea/ui/shadcn/ui/dialog';
 
 import "react-image-crop/dist/ReactCrop.css";
 import { CropIcon, Trash2Icon } from "lucide-react";

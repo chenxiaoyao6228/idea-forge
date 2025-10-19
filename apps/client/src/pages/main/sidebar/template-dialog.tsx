@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Box } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@idea/ui/shadcn/ui/dialog';
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 import { useTranslation } from "react-i18next";
 
 interface TemplateDialogProps {

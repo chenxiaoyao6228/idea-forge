@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useOrderedGroups, useAddUserToGroup, useRemoveUserFromGroup } from "@/stores/group-store";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@idea/ui/shadcn/ui/dialog';
 import { useTranslation } from "react-i18next";
 import { Search, UserPlus, UserMinus } from "lucide-react";
 import { userApi } from "@/apis/user";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 import type { ManageGroupMembersModalProps } from "./types";
 
 export const ManageGroupMembersModal = ({ open, onClose, groupId, refreshGroup }: ManageGroupMembersModalProps) => {

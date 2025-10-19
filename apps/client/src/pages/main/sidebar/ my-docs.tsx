@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, PlusIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { SidebarGroup, SidebarGroupLabel } from '@idea/ui/shadcn/ui/sidebar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@idea/ui/shadcn/ui/collapsible';
 import useDocumentStore, { useCreateDocument } from "@/stores/document-store";
 import DropCursor from "./components/drop-cursor";
 import { useDroppable } from "@dnd-kit/core";
 import useSubSpaceStore, { usePersonalSubspace } from "@/stores/subspace-store";
 import { DraggableDocumentContainer } from "./components/draggable-document-container";
 import { useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 import { useNavigate } from "react-router-dom";
 
 export default function MyDocsArea() {

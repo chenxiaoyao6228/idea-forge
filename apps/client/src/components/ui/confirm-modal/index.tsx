@@ -8,13 +8,13 @@
 import * as React from "react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { useKey } from "react-use";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
+import { cn } from '@idea/ui/shadcn/utils';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@idea/ui/shadcn/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@idea/ui/shadcn/ui/alert-dialog';
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { ButtonProps } from "@/components/ui/button";
+import { ButtonProps } from '@idea/ui/shadcn/ui/button';
 import { useState } from "react";
 
 export interface ConfirmModalProps {

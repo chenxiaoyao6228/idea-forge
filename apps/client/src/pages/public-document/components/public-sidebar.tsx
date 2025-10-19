@@ -1,10 +1,10 @@
 import { FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Alert, AlertDescription } from '@idea/ui/shadcn/ui/alert';
 import { PublicLink } from "./public-link";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarRail } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarRail } from '@idea/ui/shadcn/ui/sidebar';
 import { NavigationTreeNode } from "@idea/contracts";
 import Logo from "@/components/logo";
 import useUserStore from "@/stores/user-store";

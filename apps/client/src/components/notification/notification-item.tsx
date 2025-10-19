@@ -1,10 +1,10 @@
 import { formatDistanceToNow } from "date-fns";
 import { FileText, UserPlus, CheckCircle2, XCircle } from "lucide-react";
 import type { NotificationEntity } from "@/stores/notification-store";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Badge } from '@idea/ui/shadcn/ui/badge';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Card } from '@idea/ui/shadcn/ui/card';
+import { cn } from '@idea/ui/shadcn/utils';
 import { ViewportTracker } from "./viewport-tracker";
 import { useViewportBatch } from "./viewport-batch-context";
 

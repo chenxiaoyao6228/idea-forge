@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
+import { Badge } from '@idea/ui/shadcn/ui/badge';
+import { ScrollArea } from '@idea/ui/shadcn/ui/scroll-area';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { Bell, Check } from "lucide-react";
 import { NotificationList } from "./notification-list";
 import { useMarkAsRead, useMarkAllAsRead, useResolveAction, useCurrentWorkspaceUnreadByCategory, useFetchNotifications } from "@/stores/notification-store";
 import { useCurrentWorkspace } from "@/stores/workspace-store";
 import type { NotificationCategory } from "@idea/contracts";
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 import useInfiniteScroll from "react-infinite-scroll-hook";
 
 interface NotificationPanelProps {

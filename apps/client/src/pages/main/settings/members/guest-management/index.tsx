@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useOrderedGuests, useFetchGuests, useUpdateGuestPermission, useRemoveGuestFromDocument, useRemoveGuest, usePromoteGuest } from "@/stores/guest-collaborators-store";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { useTranslation } from "react-i18next";
 import { Search, Plus, Users } from "lucide-react";
 import { GuestCard } from "./guest-card";

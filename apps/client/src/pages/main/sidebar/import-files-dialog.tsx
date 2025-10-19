@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@idea/ui/shadcn/ui/dialog';
 import { Upload } from "lucide-react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 

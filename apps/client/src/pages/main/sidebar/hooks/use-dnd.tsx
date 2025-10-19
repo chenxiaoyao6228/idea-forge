@@ -21,7 +21,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 import useSubSpaceStore, { useMoveSubspace, usePersonalSubspace, useRemoveDocumentFromStructure } from "@/stores/subspace-store";
 import useDocumentStore, { useMoveDocument, useDeleteDocument } from "@/stores/document-store";
 import { useOrderedStars } from "@/stores/star-store";

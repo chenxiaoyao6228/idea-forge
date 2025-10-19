@@ -1,9 +1,9 @@
-import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from '@idea/ui/shadcn/ui/breadcrumb';
 import { Fragment, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Icon } from "@/components/ui/icon";
-import { Separator } from "@/components/ui/separator";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
+import { Icon } from '@idea/ui/base/icon';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
 import { NavigationTreeNode } from "@idea/contracts";
 import { Emoji } from "emoji-picker-react";
 

@@ -1,8 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { MoreHorizontal, HelpCircle, Keyboard, Info } from "lucide-react";
-import { SidebarMenuButton } from "@/components/ui/sidebar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { SidebarMenuButton } from '@idea/ui/shadcn/ui/sidebar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
 
 export const MoreOptionsDropdown = React.forwardRef<HTMLButtonElement>((props, ref) => {
   const { t } = useTranslation();

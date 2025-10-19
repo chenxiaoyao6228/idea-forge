@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from '@idea/ui/shadcn/utils';
+import { SidebarMenuButton, SidebarMenuItem } from '@idea/ui/shadcn/ui/sidebar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@idea/ui/shadcn/ui/collapsible';
 import { NavigationTreeNode } from "@idea/contracts";
 import { Emoji } from "emoji-picker-react";
 

@@ -1,7 +1,7 @@
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
 import { UserAvatar } from "@/components/user-avatar";
 import { useCurrentDocumentId } from "@/stores/document-store";
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 import { useEditorStore } from "@/stores/editor-store";
 import { useMemo } from "react";
 

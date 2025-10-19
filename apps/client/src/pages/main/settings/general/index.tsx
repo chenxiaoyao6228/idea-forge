@@ -1,9 +1,9 @@
 import { Bell, Users, Inbox, Bookmark } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Switch } from '@idea/ui/shadcn/ui/switch';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
+import { Alert, AlertDescription } from '@idea/ui/shadcn/ui/alert';
+import { showConfirmModal } from '@/components/ui/confirm-modal';
 import { useFetchNotificationSettings, useUpdateCategorySetting } from "@/stores/notification-store";
 import type { NotificationCategory } from "@idea/contracts";
 import { useTranslation } from "react-i18next";

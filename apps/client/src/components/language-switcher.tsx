@@ -1,6 +1,6 @@
 import { Languages } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
 import { useTranslation } from "react-i18next";
 import { LANGUAGE_NAME_MAP } from "@/lib/i18n";
 

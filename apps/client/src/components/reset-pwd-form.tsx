@@ -5,8 +5,8 @@ import { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { TFunction } from "i18next";
 import { ErrorList, Field } from "@/components/forms";
-import { StatusButton } from "@/components/ui/status-button";
-import { Button } from "@/components/ui/button";
+import { StatusButton } from '@idea/ui/base/status-button';
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { authApi } from "@/apis/auth";
 import type { ResetPasswordRequest, SetPasswordRequest } from "@idea/contracts";
 

@@ -2,7 +2,7 @@ import * as React from "react";
 import { useParams } from "react-router-dom";
 import { PlusIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { useTranslation } from "react-i18next";
 import { SubspaceEntity, useFetchNavigationTree, useGetPathToDocument } from "@/stores/subspace-store";
 import { useCreateDocument } from "@/stores/document-store";

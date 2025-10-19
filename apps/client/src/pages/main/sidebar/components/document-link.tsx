@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
 import { EditIcon, PlusIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@idea/ui/shadcn/ui/button';
 import { NavigationNode } from "@idea/contracts";
 import useDocumentStore, { useCreateDocument, useFetchDocumentChildren } from "@/stores/document-store";
 import { SidebarLink } from "./sidebar-link";

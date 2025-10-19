@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import MultipleSelector, { Option } from "@/components/ui/multi-selector";
+import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import MultipleSelector, { Option } from '@/components/ui/multi-selector';
 import { Users, User } from "lucide-react";
 import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace-store";
 import { useFetchWorkspaceGroups } from "@/stores/group-store";

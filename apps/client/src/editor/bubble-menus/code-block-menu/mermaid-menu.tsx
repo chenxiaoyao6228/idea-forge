@@ -3,8 +3,8 @@ import type { Editor } from "@tiptap/react";
 import { ChevronDown, HelpCircle } from "lucide-react";
 import { mermaidTemplates } from "../../extensions/code-block/constant";
 import { useTranslation } from "react-i18next";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from '@idea/ui/shadcn/ui/popover';
+import { Button } from '@idea/ui/shadcn/ui/button';
 
 interface MermaidMenuProps {
   editor: Editor;

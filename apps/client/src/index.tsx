@@ -1,5 +1,6 @@
 // import "./lib/sentry-intrument";
 import { createRoot } from "react-dom/client";
+import "@idea/ui/styles";
 import "./index.css";
 import { RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "./components/theme-provider";
@@ -8,7 +9,7 @@ import router from "./router";
 import { createReactTreeMounter, createMountPoint } from "react-confirm";
 import { I18nextProvider } from "react-i18next";
 import i18n from "./lib/i18n";
-import { Toaster } from "./components/ui/sonner";
+import { Toaster } from "@idea/ui/shadcn/ui/sonner";
 const mounter = createReactTreeMounter();
 export const MountPoint = createMountPoint(mounter);
 

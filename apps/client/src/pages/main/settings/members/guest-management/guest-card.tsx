@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
+import { Badge } from '@idea/ui/shadcn/ui/badge';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, User, Calendar, MoreVertical, Trash2, UserPlus } from "lucide-react";
-import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
+import { PermissionLevelSelector } from '@/components/ui/permission-level-selector';
 import { GuestCollaboratorResponse } from "@idea/contracts";
 import { useTimeFormat } from "@/hooks/use-time-format";
 

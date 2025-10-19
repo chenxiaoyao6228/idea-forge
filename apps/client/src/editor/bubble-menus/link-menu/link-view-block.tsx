@@ -1,8 +1,8 @@
 import { Editor } from "@tiptap/react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
 import { Pencil, Unlink } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
 import { useTranslation } from "react-i18next";
 
 interface LinkViewBlockProps {

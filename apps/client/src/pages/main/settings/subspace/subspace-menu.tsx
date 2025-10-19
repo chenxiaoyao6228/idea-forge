@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { MoreHorizontal, UserPlus, Settings, LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";

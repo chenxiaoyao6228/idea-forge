@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Textarea } from '@idea/ui/shadcn/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Home, Check, Archive, Trash2, ArrowLeft } from "lucide-react";
 import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin, useUpdateSubspaceSettings } from "@/stores/subspace-store";

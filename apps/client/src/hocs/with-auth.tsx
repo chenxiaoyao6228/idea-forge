@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import useUserStore, { UserInfo } from "@/stores/user-store";
-import Loading from "@/components/ui/loading";
+import Loading from '@idea/ui/base/loading';
 import { useInitializeSubjectAbilities } from "@/stores/ability-store";
 
 /**

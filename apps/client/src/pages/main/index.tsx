@@ -1,4 +1,4 @@
-import Loading from "@/components/ui/loading";
+import Loading from '@idea/ui/base/loading';
 import Doc from "../doc";
 import { useAllWorkspaces, useFetchWorkspaces, useCurrentWorkspace } from "@/stores/workspace-store";
 import { useFetchGuests, useIsGuestCollaborator } from "@/stores/guest-collaborators-store";

@@ -1,7 +1,7 @@
-import { cn } from "@/lib/utils";
+import { cn } from '@idea/ui/shadcn/utils';
 import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@idea/ui/shadcn/ui/alert';
 import { markdownToHtml } from "./util";
 import { useTranslation } from "react-i18next";
 

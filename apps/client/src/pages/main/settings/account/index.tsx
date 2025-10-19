@@ -5,19 +5,19 @@ import { userApi } from "@/apis/user";
 import { uploadFile } from "@/lib/upload";
 import { UserAvatar } from "@/components/user-avatar";
 import { ImageCropper, type FileWithPreview } from "@/components/image-cropper";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Input } from '@idea/ui/shadcn/ui/input';
+import { Label } from '@idea/ui/shadcn/ui/label';
+import { Separator } from '@idea/ui/shadcn/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@idea/ui/shadcn/ui/dialog';
 import { ResetPwdForm } from "@/components/reset-pwd-form";
 import { UpdateUserRequest } from "@idea/contracts";
 import { dataURLtoFile } from "@/lib/file";
 import { toast } from "sonner";
 import { authApi } from "@/apis/auth";
 import { SignOutButton } from "../signout-button";
-import Loading from "@/components/ui/loading";
+import Loading from '@idea/ui/base/loading';
 
 const AddPasswordDialog: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t } = useTranslation();
