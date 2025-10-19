@@ -5,6 +5,7 @@ export interface ListItemOptions extends TListItemOptions {}
 
 export const ListItem = TListItem.extend<ListItemOptions>({
   name: "listItem",
+  draggable: true,
   addAttributes() {
     return {
       // Preserve parent's attributes (for safety)
