@@ -34,7 +34,8 @@ export function createCodeBlockVSCodeHandler(type: NodeType) {
 
         // create a code block with the text node
         // replace selection with the code block
-        tr.replaceSelectionWith(type.create({ language }, textNode));
+        // Use detected language or default to plain text
+        tr.replaceSelectionWith(type.create({ language: language || "plaintext" }, textNode));
 
         if (tr.selection.$from.parent.type !== type) {
           // put cursor inside the newly created code block

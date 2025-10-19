@@ -436,15 +436,29 @@
 .tiptap {
   .line-number {
     display: inline-block;
-    min-width: 2em;
+    min-width: 2.5em;
     padding-right: 1em;
     text-align: right;
     color: #999;
     user-select: none;
+    vertical-align: top;
+    flex-shrink: 0;
   }
 
   pre {
     counter-reset: line;
+    white-space: pre !important;
+    overflow-x: auto;
+    word-wrap: normal;
+    overflow-wrap: normal;
+  }
+
+  pre code,
+  pre div {
+    display: block;
+    white-space: pre !important;
+    word-wrap: normal;
+    overflow-wrap: normal;
   }
 
   .line-number::before {

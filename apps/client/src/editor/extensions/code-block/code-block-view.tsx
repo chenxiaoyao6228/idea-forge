@@ -26,7 +26,7 @@ const CodeBlockView: React.FC<NodeViewProps> = ({ node, updateAttributes, extens
     >
       <pre
         ref={codeRef}
-        className={`text-sm font-mono overflow-x-auto transition-all duration-300 ${
+        className={`text-sm font-mono overflow-x-auto overflow-y-hidden transition-all duration-300 ${
           mermaidDisplay === "code" || mermaidDisplay === "split" ? "h-auto opacity-100" : "h-0 opacity-0 overflow-hidden"
         }`}
       >
