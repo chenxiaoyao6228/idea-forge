@@ -20,9 +20,38 @@
 /* list heading */
 .tiptap {
   /* List styles */
-  ul,
+  ul {
+    padding-left: 1rem;
+
+    li {
+      display: list-item;
+      list-style-type: disc;
+      list-style-position: outside;
+    }
+
+    li p {
+      margin-top: 0.25em;
+      margin-bottom: 0.25em;
+    }
+
+    /* Nested ul styles */
+    ul li {
+      list-style-type: circle;
+    }
+
+    ul ul li {
+      list-style-type: square;
+    }
+  }
+
   ol {
-    padding: 0 1rem;
+    padding-left: 1rem;
+
+    li {
+      display: list-item;
+      list-style-type: decimal;
+      list-style-position: outside;
+    }
 
     li p {
       margin-top: 0.25em;
