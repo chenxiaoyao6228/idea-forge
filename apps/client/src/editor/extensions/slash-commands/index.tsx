@@ -2,7 +2,7 @@ import { Extension } from "@tiptap/core";
 import Suggestion from "@tiptap/suggestion";
 import { PluginKey } from "@tiptap/pm/state";
 import { ReactRenderer } from "@tiptap/react";
-import tippy from "tippy.js";
+import { computePosition, flip, shift, offset, autoUpdate } from "@floating-ui/dom";
 import { CommandList } from "./command-list";
 import { commandGroups } from "./groups";
 import { calculateStartPosition } from "./uitl";
@@ -80,7 +80,8 @@ export const SlashCommands = Extension.create({
         },
         render: () => {
           let component: ReactRenderer | null = null;
-          let popup: any = null;
+          let popup: HTMLDivElement | null = null;
+          let cleanup: (() => void) | null = null;
 
           return {
             onStart: (props) => {
@@ -89,29 +90,41 @@ export const SlashCommands = Extension.create({
                 editor: props.editor,
               });
 
-              popup = tippy("body", {
-                getReferenceClientRect: () => (props.clientRect?.() as DOMRect) || null,
-                appendTo: () => document.body,
-                content: component.element,
-                showOnCreate: true,
-                interactive: true,
-                trigger: "manual",
-                placement: "bottom-start",
-                theme: "slash-commands",
+              // Create floating container
+              popup = document.createElement("div");
+              popup.className = "slash-commands-menu";
+              popup.style.position = "absolute";
+              popup.style.zIndex = "9999";
+              popup.appendChild(component.element);
+              document.body.appendChild(popup);
+
+              // Create virtual reference element
+              const virtualElement = {
+                getBoundingClientRect: () => props.clientRect?.() || new DOMRect(-1000, -1000, 0, 0),
+              };
+
+              // Setup floating positioning with auto-update
+              cleanup = autoUpdate(virtualElement, popup, () => {
+                computePosition(virtualElement, popup!, {
+                  placement: "bottom-start",
+                  middleware: [offset(8), flip(), shift({ padding: 8 })],
+                }).then(({ x, y }) => {
+                  if (popup) {
+                    popup.style.left = `${x}px`;
+                    popup.style.top = `${y}px`;
+                  }
+                });
               });
             },
 
             onUpdate: (props) => {
               component?.updateProps(props);
 
-              popup[0]?.setProps({
-                getReferenceClientRect: props.clientRect,
-              });
+              // Position will be updated automatically by autoUpdate
             },
 
             onKeyDown: (props) => {
               if (props.event.key === "Escape") {
-                popup[0]?.hide();
                 return true;
               }
 
@@ -119,8 +132,22 @@ export const SlashCommands = Extension.create({
             },
 
             onExit: () => {
-              popup[0]?.destroy();
+              // Cleanup auto-update
+              if (cleanup) {
+                cleanup();
+                cleanup = null;
+              }
+
+              // Remove popup from DOM
+              if (popup?.parentNode) {
+                popup.parentNode.removeChild(popup);
+              }
+
+              // Destroy React component
               component?.destroy();
+
+              popup = null;
+              component = null;
             },
           };
         },

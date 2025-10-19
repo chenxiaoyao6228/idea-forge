@@ -40,7 +40,7 @@ export const Code = TCode.extend<CodeOptions>({
   name: "code",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
       dictionary: {
         name: "Code",
       },
@@ -60,7 +60,6 @@ export const Code = TCode.extend<CodeOptions>({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "inlineCode",

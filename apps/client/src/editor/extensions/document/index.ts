@@ -5,7 +5,6 @@ export const Document = TiptapDocument.extend({
   content: "(block)+",
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "root",

@@ -1,16 +1,16 @@
-import { BubbleMenu } from "@tiptap/react";
+import { CustomBubbleMenu } from "../custom-bubble-menu";
 import { MenuProps } from "../type";
 import Wrapper from "../bubble-menu-wrapper";
 import { Editor } from "@tiptap/core";
 import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
-import { Button } from '@idea/ui/shadcn/ui/button';
+import { Button } from "@idea/ui/shadcn/ui/button";
 
 export default function ImageBlockMenu(props: MenuProps) {
   const { editor, containerRef } = props;
 
   if (editor == null) return null;
 
-  function shouldShow(editor: Editor) {
+  function shouldShow({ editor }: { editor: Editor }) {
     return editor.isActive("imageBlock");
   }
 
@@ -23,16 +23,7 @@ export default function ImageBlockMenu(props: MenuProps) {
   }
 
   return (
-    <BubbleMenu
-      editor={editor}
-      updateDelay={0}
-      tippyOptions={{
-        duration: 100,
-        moveTransition: "transform 0.2s ease-out",
-        appendTo: () => containerRef?.current || document.body,
-      }}
-      shouldShow={() => shouldShow(editor)}
-    >
+    <CustomBubbleMenu editor={editor} updateDelay={0} shouldShow={shouldShow} appendTo={() => containerRef?.current || document.body}>
       <Wrapper>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" className={`p-2 ${getCurrentAlignment() === "left" ? "bg-muted" : ""}`} onClick={() => setAlignment("left")}>
@@ -46,6 +37,6 @@ export default function ImageBlockMenu(props: MenuProps) {
           </Button>
         </div>
       </Wrapper>
-    </BubbleMenu>
+    </CustomBubbleMenu>
   );
 }

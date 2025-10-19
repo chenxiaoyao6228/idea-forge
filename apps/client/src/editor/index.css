@@ -424,6 +424,13 @@
   }
 }
 
+/* drag handle */
+.editor-container {
+  .drag-handle {
+    /* TODO: add drag handle positioning configuration using Floating UI if needed */
+  }
+}
+
 @keyframes spinner {
   to {
     transform: rotate(360deg);

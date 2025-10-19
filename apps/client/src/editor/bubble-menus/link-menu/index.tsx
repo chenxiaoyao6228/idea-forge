@@ -1,5 +1,5 @@
 import { TextSelection } from "@tiptap/pm/state";
-import { BubbleMenu } from "@tiptap/react";
+import { CustomBubbleMenu } from "../custom-bubble-menu";
 import { useState, useEffect, useMemo } from "react";
 import { LinkEditBlock } from "./link-edit-block";
 import { LinkViewBlock } from "./link-view-block";
@@ -9,11 +9,12 @@ export default function LinkMenu({ editor, containerRef }: MenuProps) {
   const [showEdit, setShowEdit] = useState(false);
 
   const shouldShow = useMemo(
-    () => () => {
-      if (!editor) return false;
-      return editor.isActive("link") && editor.state.selection.empty;
-    },
-    [editor],
+    () =>
+      ({ editor }: { editor: any }) => {
+        if (!editor) return false;
+        return editor.isActive("link") && editor.state.selection.empty;
+      },
+    [],
   );
 
   const { href, target } = editor?.getAttributes("link") || {};
@@ -76,23 +77,18 @@ export default function LinkMenu({ editor, containerRef }: MenuProps) {
   if (!editor) return null;
 
   return (
-    <BubbleMenu
+    <CustomBubbleMenu
       editor={editor}
       updateDelay={0}
       shouldShow={shouldShow}
-      tippyOptions={{
-        popperOptions: {
-          modifiers: [{ name: "flip", enabled: false }],
-        },
-        appendTo: () => containerRef?.current || document.body,
-        onHidden: () => setShowEdit(false),
-      }}
+      appendTo={() => containerRef?.current || document.body}
+      onHidden={() => setShowEdit(false)}
     >
       {showEdit ? (
         <LinkEditBlock editor={editor} onSetLink={setLink} onClickOutside={onClickOutside} />
       ) : (
         <LinkViewBlock editor={editor} link={href} onClear={removeLink} onEdit={() => setShowEdit(true)} />
       )}
-    </BubbleMenu>
+    </CustomBubbleMenu>
   );
 }

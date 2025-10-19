@@ -1,8 +1,7 @@
 import { Image as TImage } from "@tiptap/extension-image";
 import { Editor, ReactNodeViewRenderer } from "@tiptap/react";
-import { mergeAttributes, type Range } from "@tiptap/core";
+import { mergeAttributes } from "@tiptap/core";
 import ImageBlockView from "./image-block-view";
-import { unwrap, wrap } from "../markdown/plugins/wrap";
 import { createPasteImagePlugin } from "./plugins/create-paste-image-plugin";
 import { fileOpen } from "@/lib/filesystem";
 import { uploadFile } from "@/lib/upload";
@@ -10,7 +9,7 @@ import { findPlaceholder, createPlaceholderPlugin } from "./plugins/create-place
 import { v4 as uuidv4 } from "uuid";
 import { getImageDimensionsFromFile } from "@/lib/image";
 import { calculateInitialSize } from "./util";
-import { NodeMarkdownStorage } from "../markdown";
+import type { NodeMarkdownStorage } from "../markdown/types";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -107,18 +106,13 @@ const ImageBlock = TImage.extend({
 
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "image",
           apply: (state, node, type) => {
-            const src = node.url as string;
-            const alt = node.alt as string;
-            const title = node.title as string;
             state.addNode(type, {
-              src,
-              alt,
-              title,
+              src: node.url,
+              alt: node.alt,
             });
           },
         },
@@ -127,19 +121,14 @@ const ImageBlock = TImage.extend({
           apply: (state, node) => {
             state.addNode({
               type: "image",
-              title: node.attrs.title,
               url: node.attrs.src,
-              alt: node.attrs.alt,
+              alt: node.attrs.alt || "",
             });
           },
         },
-        hooks: {
-          afterParse: (root) => (this.options.inline ? root : unwrap(root, (node) => node.type === "image")),
-          beforeSerialize: (root) => (this.options.inline ? root : wrap(root, (node) => node.type === "image")),
-        },
       },
       placeholderPlugin: null,
-    } satisfies NodeMarkdownStorage;
+    } as NodeMarkdownStorage & { placeholderPlugin: any };
   },
 
   addCommands() {

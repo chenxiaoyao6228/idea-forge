@@ -7,7 +7,13 @@ export const Link = TLink.extend<LinkOptions>({
   name: "link",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
+      openOnClick: true,
+      linkOnPaste: true,
+      autolink: true,
+      protocols: [],
+      defaultProtocol: "http",
+      validate: (url: string) => true, // Accept all URLs by default
     };
   },
   addKeyboardShortcuts() {
@@ -35,7 +41,6 @@ export const Link = TLink.extend<LinkOptions>({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "link",

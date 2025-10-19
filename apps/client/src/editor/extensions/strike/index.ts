@@ -32,7 +32,7 @@ export const Strike = TStrike.extend<StrikeOptions>({
   name: "strike",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
       dictionary: {
         name: "Strike",
       },
@@ -40,7 +40,6 @@ export const Strike = TStrike.extend<StrikeOptions>({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "delete",

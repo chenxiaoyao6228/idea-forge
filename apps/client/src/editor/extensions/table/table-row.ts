@@ -6,7 +6,6 @@ export const TableRow = TiptapTableRow.extend({
 
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "tableRow",

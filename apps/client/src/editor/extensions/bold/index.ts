@@ -1,6 +1,6 @@
 import { markInputRule, markPasteRule } from "@tiptap/core";
 import { Bold as TBold } from "@tiptap/extension-bold";
-import { MarkdownStorage } from "../markdown";
+import type { MarkMarkdownStorage } from "../markdown";
 
 // Star input rule: matches text surrounded by double asterisks for bold
 // Example: **bold text**
@@ -23,7 +23,6 @@ export const Bold = TBold.extend({
 
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "strong",
@@ -42,7 +41,7 @@ export const Bold = TBold.extend({
           },
         },
       },
-    } satisfies MarkdownStorage;
+    } satisfies MarkMarkdownStorage;
   },
   addInputRules() {
     return [

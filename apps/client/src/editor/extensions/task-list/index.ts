@@ -7,15 +7,15 @@ export const TaskList = TTaskList.extend<TaskListOptions>({
   name: "taskList",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
+      itemTypeName: "taskItem",
     };
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
-          match: (node) => node.type === "list" && !node.ordered && node.children?.find((item) => item.checked !== null),
+          match: (node) => node.type === "list" && !node.ordered && !!node.children?.find((item) => item.checked !== null),
           apply: (state, node, type) => {
             state.openNode(type);
             state.next(node.children);

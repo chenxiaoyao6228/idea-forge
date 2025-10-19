@@ -24,6 +24,8 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
   const timeoutRef = useRef<any>();
   // Provider ref to access in callbacks
   const providerRef = useRef<HocuspocusProvider | null>(null);
+  // Track connection status since v3 doesn't expose .status
+  const connectionStatusRef = useRef<"connecting" | "connected" | "disconnected">("connecting");
 
   useEffect(() => {
     setCurrentDocument(documentId);
@@ -59,7 +61,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       name: documentId,
       document: doc,
       token: collabToken,
-      connect: false, // Don't connect immediately
+      // Note: v3 connects automatically, we'll call disconnect() after creation if needed
       onAuthenticationFailed: ({ reason }) => {
         queueMicrotask(() => {
           setCollaborationState(documentId, {
@@ -91,6 +93,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
         });
       },
       onConnect: () => {
+        connectionStatusRef.current = "connected";
         queueMicrotask(() => {
           setCollaborationState(documentId, {
             status: "collaborating",
@@ -110,7 +113,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
     });
 
     doc.on("update", () => {
-      if (provider.status !== "connected") {
+      if (connectionStatusRef.current !== "connected") {
         queueMicrotask(() => {
           setCollaborationState(documentId, {
             pendingChanges: true,
@@ -129,7 +132,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       return;
     }
     timeoutRef.current = setTimeout(() => {
-      if (provider.status !== "connected") {
+      if (connectionStatusRef.current !== "connected") {
         setCollaborationState(documentId, {
           status: "error",
           error: t("Connection timed out. Please check your internet connection and try again."),
@@ -163,15 +166,12 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       provider.awareness.setLocalState(user);
     }
 
-    // initiate connection if not connected
-    if (provider.status !== "connected") {
-      console.log("Initiating connection...");
-      provider.connect();
-    }
+    // Provider connects automatically in v3, but we can manually connect if needed
+    console.log("Provider initialized...");
 
     return () => {
       if (!provider) return;
-      const status = provider.status;
+      const status = connectionStatusRef.current;
       if (status === "disconnected" || status === "connecting") return;
 
       console.log("Cleaning up connection...");
@@ -179,6 +179,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       // Fix for: https://github.com/ueberdosis/hocuspocus/issues/594#issuecomment-1740599461
       provider.configuration.websocketProvider.disconnect();
       provider.disconnect();
+      connectionStatusRef.current = "disconnected";
     };
   }, [documentId, provider, user, setCollaborationState, setProvider]);
 
@@ -188,15 +189,17 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
 
     const onConnect = () => {
       console.log("Provider connected");
+      connectionStatusRef.current = "connected";
     };
 
     const onDisconnect = ({ event }: { event: CloseEvent }) => {
       console.log("Provider disconnected", event);
+      connectionStatusRef.current = "disconnected";
       if (event.type === "close") {
         setTimeout(() => {
           if (!provider) return;
-          console.log("3s timeout after disconnect, Provider status is: ", provider.status);
-          if (provider.status === "connected") return;
+          console.log("3s timeout after disconnect, Provider status is: ", connectionStatusRef.current);
+          if (connectionStatusRef.current === "connected") return;
           queueMicrotask(() => {
             setCollaborationState(documentId, {
               status: "offline",

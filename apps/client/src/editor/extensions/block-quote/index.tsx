@@ -17,7 +17,6 @@ export const Blockquote = IBlockquote.extend({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "blockquote",

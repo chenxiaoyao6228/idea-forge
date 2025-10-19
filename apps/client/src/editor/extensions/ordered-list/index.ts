@@ -11,7 +11,10 @@ export const OrderedList = TOrderedList.extend<OrderedListOptions>({
   name: "orderedList",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
+      itemTypeName: "listItem",
+      keepMarks: false,
+      keepAttributes: false,
       dictionary: {
         name: "Ordered List",
       },
@@ -19,7 +22,6 @@ export const OrderedList = TOrderedList.extend<OrderedListOptions>({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "list" && !!node.ordered,

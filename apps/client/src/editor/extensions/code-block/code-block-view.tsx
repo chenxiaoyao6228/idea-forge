@@ -30,7 +30,7 @@ const CodeBlockView: React.FC<NodeViewProps> = ({ node, updateAttributes, extens
           mermaidDisplay === "code" || mermaidDisplay === "split" ? "h-auto opacity-100" : "h-0 opacity-0 overflow-hidden"
         }`}
       >
-        <NodeViewContent as="code" />
+        <NodeViewContent />
       </pre>
       {isMermaid && (mermaidDisplay === "preview" || mermaidDisplay === "split") && <MermaidComponent code={node.textContent} />}
     </NodeViewWrapper>

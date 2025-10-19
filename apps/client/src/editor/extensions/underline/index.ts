@@ -12,7 +12,7 @@ export const Underline = TUnderline.extend<UnderlineOptions>({
   name: "underline",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
       dictionary: {
         name: "Underline",
       },
@@ -20,7 +20,6 @@ export const Underline = TUnderline.extend<UnderlineOptions>({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "underline",

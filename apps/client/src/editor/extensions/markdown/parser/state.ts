@@ -16,14 +16,14 @@ export class ParserState {
   }
 
   public parse(markdown: string) {
-    for (const storage of Object.values(this.editor.storage as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
+    for (const storage of Object.values(this.editor.storage as unknown as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
       if (storage?.markdown?.hooks?.beforeParse) {
         // biome-ignore lint: parameter reassignment is intended here
         markdown = storage.markdown.hooks.beforeParse(markdown);
       }
     }
     let root = this.processor.runSync(this.processor.parse(markdown));
-    for (const storage of Object.values(this.editor.storage as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
+    for (const storage of Object.values(this.editor.storage as unknown as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
       if (storage?.markdown?.hooks?.afterParse) {
         root = storage.markdown.hooks.afterParse(root);
       }

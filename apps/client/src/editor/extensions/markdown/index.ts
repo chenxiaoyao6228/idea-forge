@@ -32,6 +32,12 @@ export interface MarkdownStorage {
   processor: Processor;
 }
 
+declare module "@tiptap/core" {
+  interface Storage {
+    markdown: MarkdownStorage;
+  }
+}
+
 export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
   name: "markdown",
   addStorage() {
@@ -43,12 +49,12 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
   onBeforeCreate() {
     // processor
     this.storage.processor = unified().use(remarkParse).use(remarkStringify).use(remarkGfm).use(remarkDirective) as unknown as Processor;
-    for (const [key, value] of Object.entries(this.editor.storage as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
+    for (const [key, value] of Object.entries(this.editor.storage as unknown as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
       if (key !== this.name && value?.markdown?.hooks?.beforeInit) {
         this.storage.processor = value.markdown.hooks.beforeInit(this.storage.processor);
       }
     }
-    for (const [key, value] of Object.entries(this.editor.storage as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
+    for (const [key, value] of Object.entries(this.editor.storage as unknown as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
       if (key !== this.name && value?.markdown?.hooks?.afterInit) {
         this.storage.processor = value.markdown.hooks.afterInit(this.storage.processor);
       }

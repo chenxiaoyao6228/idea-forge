@@ -1,11 +1,10 @@
-import { BubbleMenu, type Editor } from "@tiptap/react";
-import { v4 as uuid } from "uuid";
+import { type Editor } from "@tiptap/react";
+import { CustomBubbleMenu } from "../custom-bubble-menu";
 import Wrapper from "../bubble-menu-wrapper";
 import CopyCodeButton from "./copy-code-button";
 import LanguageSelector from "./ language-selector";
 import MermaidMenu from "./mermaid-menu";
 import type { MenuProps } from "../type";
-import { sticky } from "tippy.js";
 import { useCallback } from "react";
 import { getRenderContainer } from "../../utils/getRenderContainer";
 
@@ -13,9 +12,9 @@ export default function CodeBlockMenu(props: MenuProps) {
   const { editor, containerRef } = props;
   if (editor == null) return null;
 
-  const shouldShow = useCallback(() => {
+  const shouldShow = useCallback(({ editor }: { editor: Editor }) => {
     return editor.isActive("codeBlock");
-  }, [editor]);
+  }, []);
 
   const getReferenceClientRect = useCallback(() => {
     if (editor == null) return new DOMRect(-1000, -1000, 0, 0);
@@ -29,20 +28,13 @@ export default function CodeBlockMenu(props: MenuProps) {
   const isMermaid = editor.getAttributes("codeBlock").language === "mermaid";
 
   return (
-    <BubbleMenu
+    <CustomBubbleMenu
       editor={editor}
-      pluginKey={`codeBlockMenu-${uuid()}`}
       updateDelay={0}
       shouldShow={shouldShow}
-      tippyOptions={{
-        popperOptions: {
-          modifiers: [{ name: "flip", enabled: false }],
-        },
-        getReferenceClientRect,
-        appendTo: () => containerRef?.current || document.body,
-        plugins: [sticky],
-        sticky: "popper",
-      }}
+      getReferenceClientRect={getReferenceClientRect}
+      appendTo={() => containerRef?.current || document.body}
+      placement="top"
     >
       <Wrapper>
         <div className="flex items-center space-x-2">
@@ -57,6 +49,6 @@ export default function CodeBlockMenu(props: MenuProps) {
           )}
         </div>
       </Wrapper>
-    </BubbleMenu>
+    </CustomBubbleMenu>
   );
 }

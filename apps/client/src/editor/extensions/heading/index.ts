@@ -11,7 +11,8 @@ export const Heading = THeading.extend<HeadingOptions>({
   name: "heading",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
+      levels: [1, 2, 3, 4, 5, 6],
       dictionary: {
         name: "Heading",
       },
@@ -31,7 +32,6 @@ export const Heading = THeading.extend<HeadingOptions>({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "heading",

@@ -8,8 +8,9 @@ export const TaskItem = TTaskItem.extend<TaskItemOptions>({
   name: "taskItem",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
       nested: true,
+      taskListTypeName: "taskList",
     };
   },
   addAttributes() {
@@ -26,7 +27,6 @@ export const TaskItem = TTaskItem.extend<TaskItemOptions>({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "listItem" && node.checked !== null,

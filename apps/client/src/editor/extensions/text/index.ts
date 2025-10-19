@@ -5,7 +5,6 @@ export const Text = TText.extend({
   name: "text",
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: ({ type }) => type === "text",

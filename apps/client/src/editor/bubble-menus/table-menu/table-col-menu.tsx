@@ -1,10 +1,10 @@
-import { BubbleMenu } from "@tiptap/react";
+import { CustomBubbleMenu } from "../custom-bubble-menu";
 import React, { useCallback } from "react";
 import { ArrowLeftToLine, ArrowRightToLine, Trash2 } from "lucide-react";
 import Wrapper from "../bubble-menu-wrapper";
-import { Button } from '@idea/ui/shadcn/ui/button';
+import { Button } from "@idea/ui/shadcn/ui/button";
 import { isColumnGripSelected } from "./utils";
-import { ShouldShowProps, MenuProps } from "../type";
+import { MenuProps } from "../type";
 import { useTranslation } from "react-i18next";
 
 function AddColumnBeforeButton({ editor }: { editor: MenuProps["editor"] }) {
@@ -52,38 +52,25 @@ function DeleteColumnButton({ editor }: { editor: MenuProps["editor"] }) {
 export const TableColMenu = (props: MenuProps) => {
   const { editor, containerRef } = props;
 
-  const shouldShow = useCallback(
-    ({ view, state, from }: ShouldShowProps) => {
-      if (editor == null) return false;
-      if (!state) {
-        return false;
-      }
-      return isColumnGripSelected({ editor, view, state, from: from || 0 });
-    },
-    [editor],
-  );
+  const shouldShow = useCallback(({ editor }: { editor: any }) => {
+    if (editor == null) return false;
+    const { view, state } = editor;
+    const { selection } = state;
+    if (!state) {
+      return false;
+    }
+    return isColumnGripSelected({ editor, view, state, from: selection.from || 0 });
+  }, []);
 
   if (editor == null) return;
 
   return (
-    <BubbleMenu
-      editor={editor}
-      pluginKey="tableColMenu"
-      updateDelay={0}
-      shouldShow={shouldShow}
-      tippyOptions={{
-        offset: [0, 8],
-        popperOptions: {
-          modifiers: [{ name: "flip", enabled: false }],
-        },
-        appendTo: () => containerRef?.current || document.body,
-      }}
-    >
+    <CustomBubbleMenu editor={editor} updateDelay={0} shouldShow={shouldShow} appendTo={() => containerRef?.current || document.body}>
       <Wrapper className="flex-col items-start" menuType="table-menu">
         <AddColumnBeforeButton editor={editor} />
         <AddColumnAfterButton editor={editor} />
         <DeleteColumnButton editor={editor} />
       </Wrapper>
-    </BubbleMenu>
+    </CustomBubbleMenu>
   );
 };

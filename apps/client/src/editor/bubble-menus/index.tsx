@@ -13,8 +13,7 @@ export default function BubbleMenus(props: MenuProps) {
 
   return (
     <>
-      {/* FIXME: this drag handle is causing infinite re-render */}
-      {/* <DragHandleMenu editor={editor} containerRef={containerRef} /> */}
+      <DragHandleMenu editor={editor} containerRef={containerRef} />
       <TextMenu editor={editor} containerRef={containerRef} />
       <LinkMenu editor={editor} containerRef={containerRef} />
       <CodeBlockMenu editor={editor} containerRef={containerRef} />

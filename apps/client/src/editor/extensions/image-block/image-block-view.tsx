@@ -1,14 +1,14 @@
 import type { Node } from "@tiptap/pm/model";
 import { type Editor, NodeViewWrapper } from "@tiptap/react";
 import { useCallback, useEffect, useState, useRef } from "react";
-import { cn } from '@idea/ui/shadcn/utils';
+import { cn } from "@idea/ui/shadcn/utils";
 import { Resizer } from "@idea/ui/base/element-resizer";
-import { Skeleton } from '@idea/ui/shadcn/ui/skeleton';
+import { Skeleton } from "@idea/ui/shadcn/ui/skeleton";
 import { preloadImage } from "@/lib/image";
 
 interface ImageBlockViewProps {
   editor: Editor;
-  getPos: () => number;
+  getPos: () => number | undefined;
   node: Node;
   updateAttributes: (attrs: Record<string, unknown>) => void;
 }

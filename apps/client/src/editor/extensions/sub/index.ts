@@ -11,7 +11,7 @@ export const Subscript = TSubscript.extend<SubscriptOptions>({
   name: "subscript",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
       dictionary: {
         name: "Subscript",
       },
@@ -19,7 +19,6 @@ export const Subscript = TSubscript.extend<SubscriptOptions>({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "textDirective" && node.name === "sub",

@@ -26,7 +26,7 @@ export class SerializerState {
     // Serialize Markdown nodes from stack
     let root = this.stack.serialize() as MarkdownNode;
     // Iterate through storage objects, execute beforeSerialize hooks
-    for (const storage of Object.values(this.editor.storage as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
+    for (const storage of Object.values(this.editor.storage as unknown as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
       if (storage?.markdown?.hooks?.beforeSerialize) {
         root = storage.markdown.hooks.beforeSerialize(root);
       }
@@ -34,7 +34,7 @@ export class SerializerState {
     // Convert Markdown node to string
     let markdown = this.processor.stringify(root) as string;
     // Iterate through storage objects, execute afterSerialize hooks
-    for (const storage of Object.values(this.editor.storage as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
+    for (const storage of Object.values(this.editor.storage as unknown as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
       if (storage?.markdown?.hooks?.afterSerialize) {
         markdown = storage.markdown.hooks.afterSerialize(markdown);
       }

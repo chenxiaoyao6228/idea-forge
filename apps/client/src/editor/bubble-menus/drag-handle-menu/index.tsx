@@ -23,16 +23,8 @@ export default function DragHandleMenu(props: MenuProps) {
   );
 
   return (
-    <DragHandle
-      editor={editor}
-      pluginKey="DragHandleMenu"
-      onNodeChange={handleNodeChange}
-      tippyOptions={{
-        offset: [-4, 10],
-        zIndex: 40,
-      }}
-    >
-      <div className="flex items-center gap-2">
+    <DragHandle editor={editor} pluginKey="DragHandleMenu" onNodeChange={handleNodeChange}>
+      <div className="flex items-center gap-1">
         <InsertNodeButton editor={editor} currentNode={currentNode} currentNodePos={currentNodePos} />
         <DragButton editor={editor} currentNode={currentNode} currentNodePos={currentNodePos} />
       </div>

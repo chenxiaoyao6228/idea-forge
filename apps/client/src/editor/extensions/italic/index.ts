@@ -28,12 +28,14 @@ export const Italic = TItalic.extend<ItalicOptions>({
   name: "italic",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
+      dictionary: {
+        name: "Italic",
+      },
     };
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "emphasis",

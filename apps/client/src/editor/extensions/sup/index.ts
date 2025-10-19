@@ -11,7 +11,7 @@ export const Superscript = TSuperscript.extend<SuperscriptOptions>({
   name: "superscript",
   addOptions() {
     return {
-      ...this.parent?.(),
+      HTMLAttributes: {},
       dictionary: {
         name: "Superscript",
       },
@@ -19,7 +19,6 @@ export const Superscript = TSuperscript.extend<SuperscriptOptions>({
   },
   addStorage() {
     return {
-      ...this.parent?.(),
       markdown: {
         parser: {
           match: (node) => node.type === "textDirective" && node.name === "sup",

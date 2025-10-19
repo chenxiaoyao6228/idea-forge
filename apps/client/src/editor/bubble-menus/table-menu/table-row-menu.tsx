@@ -1,10 +1,10 @@
-import { BubbleMenu } from "@tiptap/react";
+import { CustomBubbleMenu } from "../custom-bubble-menu";
 import React, { useCallback } from "react";
 import { ArrowUpToLine, ArrowDownToLine, Trash2 } from "lucide-react";
-import type { MenuProps, ShouldShowProps } from "../type";
+import type { MenuProps } from "../type";
 import { isRowGripSelected } from "./utils";
 import Wrapper from "../bubble-menu-wrapper";
-import { Button } from '@idea/ui/shadcn/ui/button';
+import { Button } from "@idea/ui/shadcn/ui/button";
 import { useTranslation } from "react-i18next";
 
 function AddRowBeforeButton({ editor }: { editor: MenuProps["editor"] }) {
@@ -52,39 +52,25 @@ function DeleteRowButton({ editor }: { editor: MenuProps["editor"] }) {
 export const TableRowMenu = (props: MenuProps) => {
   const { editor, containerRef } = props;
 
-  const shouldShow = useCallback(
-    ({ view, state, from }: ShouldShowProps) => {
-      if (editor == null) return false;
-      if (!state || !from) {
-        return false;
-      }
-      return isRowGripSelected({ editor, view, state, from });
-    },
-    [editor],
-  );
+  const shouldShow = useCallback(({ editor }: { editor: any }) => {
+    if (editor == null) return false;
+    const { view, state } = editor;
+    const { selection } = state;
+    if (!state || !selection.from) {
+      return false;
+    }
+    return isRowGripSelected({ editor, view, state, from: selection.from });
+  }, []);
 
   if (editor == null) return;
 
   return (
-    <BubbleMenu
-      editor={editor}
-      pluginKey="tableRowMenu"
-      updateDelay={0}
-      shouldShow={shouldShow}
-      tippyOptions={{
-        placement: "left",
-        offset: [0, 8],
-        popperOptions: {
-          modifiers: [{ name: "flip", enabled: false }],
-        },
-        appendTo: () => containerRef?.current || document.body,
-      }}
-    >
+    <CustomBubbleMenu editor={editor} updateDelay={0} shouldShow={shouldShow} placement="left" appendTo={() => containerRef?.current || document.body}>
       <Wrapper className="flex-col items-start" menuType="table-menu">
         <AddRowBeforeButton editor={editor} />
         <AddRowAfterButton editor={editor} />
         <DeleteRowButton editor={editor} />
       </Wrapper>
-    </BubbleMenu>
+    </CustomBubbleMenu>
   );
 };
