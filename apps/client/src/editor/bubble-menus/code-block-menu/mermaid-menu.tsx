@@ -194,15 +194,30 @@ const MermaidMenu: React.FC<MermaidMenuProps> = ({ editor }) => {
       <div className="relative">
         <Popover>
           <PopoverTrigger asChild>
-            <Button size="sm" variant="ghost" className="px-2 border-none bg-transparent text-sm">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="px-2 border-none bg-transparent text-sm"
+              onMouseDown={(e) => e.preventDefault()}
+            >
               {t("Insert Template")}
               <ChevronDown className="h-2 w-2 ml-1" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-2 max-h-[300px] overflow-y-auto">
+          <PopoverContent
+            className="w-auto p-2 max-h-[300px] overflow-y-auto"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
             <div className="flex flex-col gap-1">
               {mermaidTemplates.map((template) => (
-                <Button key={template.value} size="sm" onClick={() => insertTemplate(template.value)} variant="ghost" tabIndex={-1}>
+                <Button
+                  key={template.value}
+                  size="sm"
+                  onClick={() => insertTemplate(template.value)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  variant="ghost"
+                  tabIndex={-1}
+                >
                   {template.name}
                 </Button>
               ))}
@@ -217,6 +232,7 @@ const MermaidMenu: React.FC<MermaidMenuProps> = ({ editor }) => {
           e.preventDefault();
           window.open("https://mermaid.js.org/intro/", "_blank");
         }}
+        onMouseDown={(e) => e.preventDefault()}
         className="flex items-center text-sm text-blue-500 hover:underline px-2 cursor-pointer text-decoration-none"
       >
         <HelpCircle className="w-4 h-4 mr-1 inline-block" />
@@ -240,16 +256,25 @@ const MermaidDisplaySelector: React.FC<{ editor: Editor }> = ({ editor }) => {
     <div className="px-1">
       <Popover>
         <PopoverTrigger asChild>
-          <Button size="sm" variant="ghost" className="px-2 h-8 border-none bg-transparent text-sm">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="px-2 h-8 border-none bg-transparent text-sm"
+            onMouseDown={(e) => e.preventDefault()}
+          >
             {currentDisplay === "code" ? t("Code") : currentDisplay === "preview" ? t("Preview") : t("Split")}
             <ChevronDown className="h-2 w-2 ml-1" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-2">
+        <PopoverContent
+          className="w-auto p-2"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <div className="flex flex-col gap-1">
             <Button
               size="sm"
               onClick={() => editor.chain().focus().updateAttributes("codeBlock", { mermaidDisplay: "code" }).run()}
+              onMouseDown={(e) => e.preventDefault()}
               variant={currentDisplay === "code" ? "secondary" : "ghost"}
               tabIndex={-1}
             >
@@ -258,6 +283,7 @@ const MermaidDisplaySelector: React.FC<{ editor: Editor }> = ({ editor }) => {
             <Button
               size="sm"
               onClick={() => editor.chain().focus().updateAttributes("codeBlock", { mermaidDisplay: "preview" }).run()}
+              onMouseDown={(e) => e.preventDefault()}
               variant={currentDisplay === "preview" ? "secondary" : "ghost"}
               tabIndex={-1}
             >
@@ -266,6 +292,7 @@ const MermaidDisplaySelector: React.FC<{ editor: Editor }> = ({ editor }) => {
             <Button
               size="sm"
               onClick={() => editor.chain().focus().updateAttributes("codeBlock", { mermaidDisplay: "split" }).run()}
+              onMouseDown={(e) => e.preventDefault()}
               variant={currentDisplay === "split" ? "secondary" : "ghost"}
               tabIndex={-1}
             >

@@ -28,6 +28,8 @@ export function CustomBubbleMenu({
 }: CustomBubbleMenuProps) {
   const [isVisible, setIsVisible] = useState(false);
   const updateTimeoutRef = useRef<NodeJS.Timeout>();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isMouseDownInMenuRef = useRef(false);
 
   const { refs, floatingStyles, update } = useFloating({
     placement,
@@ -102,10 +104,19 @@ export function CustomBubbleMenu({
       updatePosition();
     };
 
+    // Handle blur - but don't hide if we're interacting with the menu
+    const handleBlur = () => {
+      // If mouse is down in menu, don't hide yet
+      if (isMouseDownInMenuRef.current) {
+        return;
+      }
+      setIsVisible(false);
+    };
+
     editor.on("selectionUpdate", handleUpdate);
     editor.on("transaction", handleUpdate);
     editor.on("focus", handleUpdate);
-    editor.on("blur", () => setIsVisible(false));
+    editor.on("blur", handleBlur);
 
     // Initial update
     updatePosition();
@@ -114,7 +125,7 @@ export function CustomBubbleMenu({
       editor.off("selectionUpdate", handleUpdate);
       editor.off("transaction", handleUpdate);
       editor.off("focus", handleUpdate);
-      editor.off("blur", () => setIsVisible(false));
+      editor.off("blur", handleBlur);
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
       }
@@ -127,13 +138,30 @@ export function CustomBubbleMenu({
 
   const container = appendTo ? appendTo() : document.body;
 
+  // Track when mouse is down in the menu to prevent blur from hiding it
+  const handleMouseDown = () => {
+    isMouseDownInMenuRef.current = true;
+  };
+
+  const handleMouseUp = () => {
+    isMouseDownInMenuRef.current = false;
+  };
+
   return createPortal(
     <div
-      ref={refs.setFloating}
+      ref={(node) => {
+        refs.setFloating(node);
+        if (menuRef.current !== node) {
+          // @ts-ignore - we need to update the ref
+          menuRef.current = node;
+        }
+      }}
       style={{
         ...floatingStyles,
         zIndex: 1000,
       }}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
     >
       {children}
     </div>,

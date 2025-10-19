@@ -16,17 +16,26 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ editor }) => {
     <div className="flex items-center relative">
       <Popover>
         <PopoverTrigger asChild>
-          <Button size="sm" variant="ghost" className="px-2 h-8 border-none bg-transparent text-sm cursor-pointer">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="px-2 h-8 border-none bg-transparent text-sm cursor-pointer"
+            onMouseDown={(e) => e.preventDefault()}
+          >
             {LANGUAGES_MAP[currentLanguage] || "Plain"}
             <ChevronDown className="h-2 w-2 ml-1" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-2 max-h-[300px] overflow-y-auto">
+        <PopoverContent
+          className="w-auto p-2 max-h-[300px] overflow-y-auto"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <div className="flex flex-col gap-1">
             <Button
               key="none"
               size="sm"
               onClick={() => editor.chain().focus().updateAttributes("codeBlock", { language: "none" }).run()}
+              onMouseDown={(e) => e.preventDefault()}
               variant={currentLanguage === "none" ? "secondary" : "ghost"}
               tabIndex={-1}
             >
@@ -37,6 +46,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ editor }) => {
                 key={id}
                 size="sm"
                 onClick={() => editor.chain().focus().updateAttributes("codeBlock", { language: id }).run()}
+                onMouseDown={(e) => e.preventDefault()}
                 variant={currentLanguage === id ? "secondary" : "ghost"}
                 tabIndex={-1}
               >

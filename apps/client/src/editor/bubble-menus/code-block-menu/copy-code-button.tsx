@@ -26,7 +26,13 @@ const CopyCodeButton: React.FC<CopyCodeButtonProps> = ({ editor }) => {
   };
 
   return (
-    <Button size="sm" variant="ghost" onClick={handleCopy} className="text-sm">
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={handleCopy}
+      onMouseDown={(e) => e.preventDefault()}
+      className="text-sm"
+    >
       {t("Copy")}
     </Button>
   );
