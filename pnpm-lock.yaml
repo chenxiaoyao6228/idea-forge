@@ -1013,6 +1013,46 @@ importers:
         specifier: link:@casl/ability/extra
         version: link:@casl/ability/extra
 
+  packages/editor:
+    dependencies:
+      '@tiptap/core':
+        specifier: ^3.7.2
+        version: 3.7.2(@tiptap/pm@3.7.2)
+      '@tiptap/pm':
+        specifier: ^3.7.2
+        version: 3.7.2
+      mdast-util-to-markdown:
+        specifier: ^2.1.0
+        version: 2.1.0
+      remark-parse:
+        specifier: ^11.0.0
+        version: 11.0.0
+      remark-stringify:
+        specifier: ^11.0.0
+        version: 11.0.0
+      unified:
+        specifier: ^11.0.5
+        version: 11.0.5
+      unist-builder:
+        specifier: ^4.0.0
+        version: 4.0.0
+      unist-util-visit:
+        specifier: ^5.0.0
+        version: 5.0.0
+    devDependencies:
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
+      '@types/unist':
+        specifier: ^3.0.3
+        version: 3.0.3
+      typescript:
+        specifier: ^5.7.2
+        version: 5.8.2
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@18.11.18)(@vitest/ui@3.2.3)
+
   packages/icons:
     devDependencies:
       '@types/react':
