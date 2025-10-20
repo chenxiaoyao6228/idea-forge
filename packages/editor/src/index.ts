@@ -7,8 +7,22 @@
  * @packageDocumentation
  */
 
-// Placeholder exports - will be populated during migration
+// Version
 export const version = "0.1.0";
+
+// Node extensions
+export { Document } from "./extensions/nodes/document";
+export { Heading, type HeadingOptions } from "./extensions/nodes/heading";
+
+// Types
+export type {
+  NodeMarkdownStorage,
+  MarkMarkdownStorage,
+  MarkdownNode,
+  Attrs,
+  ParserState,
+  SerializerState,
+} from "./types/markdown";
 
 /**
  * Core extension collection

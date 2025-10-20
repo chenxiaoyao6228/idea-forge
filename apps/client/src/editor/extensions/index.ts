@@ -7,12 +7,13 @@ import UniqueID from "@tiptap/extension-unique-id";
 
 // custom extensions
 import { HardBreak } from "./hard-break";
-import Document from "./document";
 import HorizontalRule from "./horizontal-rule";
 import { Blockquote } from "./block-quote";
 import { Paragraph } from "./paragraph";
 import { Text } from "./text";
-import { Heading } from "./heading";
+
+// Shared editor package
+import { Document, Heading } from "@idea/editor";
 import { Bold } from "./bold";
 import { Italic } from "./italic";
 import { Strike } from "./strike";

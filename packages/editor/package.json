@@ -32,6 +32,8 @@
     "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
+    "@tiptap/extension-document": "^3.0.0",
+    "@tiptap/extension-heading": "^3.0.0",
     "@types/mdast": "^4.0.4",
     "@types/unist": "^3.0.3",
     "typescript": "^5.7.2",
