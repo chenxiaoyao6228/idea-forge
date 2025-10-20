@@ -18,7 +18,10 @@ module.exports = {
   target: 'node',
   mode: isDevelopment ? 'development' : 'production',
   externals: [nodeExternals({
-    allowlist: isDevelopment ? ['webpack/hot/poll?100', '/^@idea/'] : [],
+    allowlist: isDevelopment
+      ? ['webpack/hot/poll?100', '@idea/editor', /^@idea\/editor\//]
+      : ['@idea/editor', /^@idea\/editor\//],
+    // Bundle @idea/editor since it's now ESM-only with ESM-only dependencies
   }),],
   // ignore tests hot reload
   watchOptions: {
@@ -48,11 +51,19 @@ module.exports = {
           },
         },
       },
+      {
+        test: /\.m?js$/,
+        resolve: {
+          fullySpecified: false,
+        },
+        type: 'javascript/auto',
+      },
     ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
-    mainFields: ['main'],
+    extensions: ['.tsx', '.ts', '.js', '.mjs'],
+    mainFields: ['module', 'main'],
+    conditionNames: ['import', 'require', 'node', 'default'],
     plugins: [new TsconfigPathsPlugin({ configFile: 'tsconfig.json' })],
   },
   output: {
