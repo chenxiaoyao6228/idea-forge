@@ -32,7 +32,8 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        exclude: /node_modules/,
+        // Exclude node_modules except @idea workspace packages
+        exclude: /node_modules\/(?!@idea\/editor)/,
         use: {
           loader: 'swc-loader',
           options: {

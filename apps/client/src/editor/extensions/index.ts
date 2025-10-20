@@ -13,7 +13,7 @@ import { Paragraph } from "./paragraph";
 import { Text } from "./text";
 
 // Shared editor package
-import { Document, Heading } from "@idea/editor";
+import { coreExtensions } from "@idea/editor";
 import { Bold } from "./bold";
 import { Italic } from "./italic";
 import { Strike } from "./strike";
@@ -40,10 +40,7 @@ import { HighlightMark } from "./highlight-marker";
 import i18next from "i18next";
 
 const nodes = [
-  Document,
-  Heading,
-  Paragraph,
-  Text,
+  ...coreExtensions,
   Blockquote,
   BulletList,
   ListItem,
