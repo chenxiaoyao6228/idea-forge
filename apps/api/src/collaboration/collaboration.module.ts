@@ -1,13 +1,13 @@
 import { Module } from "@nestjs/common";
 import { CollaborationService } from "./collaboration.service";
 import { CollaborationGateway } from "./collaboration.gateway";
-import { JwtService } from "@nestjs/jwt";
-import { UserService } from "@/user/user.service";
+import { JwtModule } from "@nestjs/jwt";
+import { UserModule } from "@/user/user.module";
 import { PermissionModule } from "@/permission/permission.module";
 
 @Module({
-  providers: [CollaborationGateway, CollaborationService, JwtService, UserService],
-  imports: [PermissionModule],
+  providers: [CollaborationGateway, CollaborationService],
+  imports: [UserModule, JwtModule, PermissionModule],
   exports: [CollaborationService],
 })
 export class CollaborationModule {}

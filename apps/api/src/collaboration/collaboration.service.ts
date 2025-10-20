@@ -1,11 +1,11 @@
 import { Injectable, OnModuleInit, UnauthorizedException } from "@nestjs/common";
-import { Hocuspocus } from "@hocuspocus/server";
+import { Server as Hocuspocus } from "@hocuspocus/server";
 import { Database } from "@hocuspocus/extension-database";
 import { Throttle } from "@hocuspocus/extension-throttle";
 import { Logger } from "@hocuspocus/extension-logger";
 import { ConfigService } from "@nestjs/config";
 import { UserService } from "@/user/user.service";
-import { TiptapTransformer } from "@hocuspocus/transformer";
+import { tiptapTransformer } from "./extensions/transformer";
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionLevel } from "@idea/contracts";
@@ -240,7 +240,6 @@ export class CollaborationService implements OnModuleInit {
 
     this.hocuspocus = new Hocuspocus({
       name: "/collaboration",
-      port: this.configService.get("NEST_API_WS_PORT"),
       debounce: 5000,
       maxDebounce: 30000,
       quiet: true,
@@ -298,7 +297,7 @@ export class CollaborationService implements OnModuleInit {
              * 1. global text search in postgres
              * 2. duplicate document, first load content from postgres
              */
-            const json = TiptapTransformer.fromYdoc(document, "default");
+            const json = tiptapTransformer.fromYdoc(document, "default");
             const jsonStr = JSON.stringify(json);
 
             await this.prismaService.doc.update({
@@ -310,6 +309,7 @@ export class CollaborationService implements OnModuleInit {
       ],
     });
 
-    await this.hocuspocus.listen();
+    const port = this.configService.get("NEST_API_WS_PORT");
+    await this.hocuspocus.listen(port);
   }
 }
