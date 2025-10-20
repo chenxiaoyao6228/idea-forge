@@ -19,9 +19,9 @@ module.exports = {
   mode: isDevelopment ? 'development' : 'production',
   externals: [nodeExternals({
     allowlist: isDevelopment
-      ? ['webpack/hot/poll?100', '@idea/editor', /^@idea\/editor\//]
-      : ['@idea/editor', /^@idea\/editor\//],
-    // Bundle @idea/editor since it's now ESM-only with ESM-only dependencies
+      ? ['webpack/hot/poll?100', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify']
+      : ['@idea/editor', /^@idea\/editor\//, '@tiptap/html', 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify'],
+    // Bundle @idea/editor and other ESM-only packages (unified, remark, @tiptap/html)
   }),],
   // ignore tests hot reload
   watchOptions: {

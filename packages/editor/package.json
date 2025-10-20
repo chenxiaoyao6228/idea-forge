@@ -3,12 +3,19 @@
   "version": "0.1.0",
   "description": "Shared isomorphic TipTap editor package for Idea Forge",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./server": {
+      "types": "./dist/types/server.d.ts",
+      "import": "./dist/esm/server.js",
+      "default": "./dist/esm/server.js"
     }
   },
   "scripts": {
@@ -19,21 +26,25 @@
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist"
   },
-  "peerDependencies": {
-    "@tiptap/core": "^3.7.2",
-    "@tiptap/pm": "^3.7.2"
-  },
   "dependencies": {
+    "@tiptap/core": "^3.7.2",
+    "@tiptap/pm": "^3.7.2",
+    "@tiptap/extension-document": "^3.0.0",
+    "@tiptap/extension-heading": "^3.0.0",
+    "@tiptap/extension-paragraph": "^3.0.0",
+    "@tiptap/extension-text": "^3.0.0",
     "mdast-util-to-markdown": "^2.1.0",
+    "remark-directive": "^3.0.0",
+    "remark-gfm": "^4.0.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "unified": "^11.0.5",
     "unist-builder": "^4.0.0",
-    "unist-util-visit": "^5.0.0"
+    "unist-util-visit": "^5.0.0",
+    "y-prosemirror": "^1.2.12",
+    "yjs": "^13.6.18"
   },
   "devDependencies": {
-    "@tiptap/extension-document": "^3.0.0",
-    "@tiptap/extension-heading": "^3.0.0",
     "@types/mdast": "^4.0.4",
     "@types/unist": "^3.0.3",
     "typescript": "^5.7.2",

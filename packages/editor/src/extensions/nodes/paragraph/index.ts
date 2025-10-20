@@ -1,27 +1,15 @@
-import { Heading as THeading, type HeadingOptions as THeadingOptions } from "@tiptap/extension-heading";
+import { Paragraph as TParagraph, type ParagraphOptions as TParagraphOptions } from "@tiptap/extension-paragraph";
 import type { Node as ProseMirrorNode, NodeType } from "@tiptap/pm/model";
 import type { MarkdownNode, ParserState, SerializerState } from "../../../markdown";
 
-export interface HeadingOptions extends THeadingOptions {
-  dictionary?: {
-    name: string;
-  };
-}
+// eslint-disable-next-line ts/no-empty-object-type
+export interface ParagraphOptions extends TParagraphOptions {}
 
-export const Heading = THeading.extend<HeadingOptions>({
-  name: "heading",
-  addOptions() {
-    return {
-      HTMLAttributes: {},
-      levels: [1, 2, 3, 4, 5, 6],
-      dictionary: {
-        name: "Heading",
-      },
-    };
-  },
+export const Paragraph = TParagraph.extend<ParagraphOptions>({
+  name: "paragraph",
   addAttributes() {
     return {
-      // Preserve parent's attributes (including level)
+      // Preserve parent's attributes (for safety)
       ...this.parent?.(),
       // Add custom id attribute
       id: {
@@ -38,22 +26,29 @@ export const Heading = THeading.extend<HeadingOptions>({
     return {
       markdown: {
         parser: {
-          match: (node: MarkdownNode) => node.type === "heading",
+          match: (node: MarkdownNode) => node.type === "paragraph",
           apply: (state: ParserState, node: MarkdownNode, type: NodeType) => {
-            const depth = node.depth as number;
-            state.openNode(type, { level: depth });
-            state.next(node.children);
+            state.openNode(type);
+            if (node.children) {
+              state.next(node.children);
+            } else {
+              state.addText(node.value);
+            }
             state.closeNode();
           },
         },
         serializer: {
           match: (node: ProseMirrorNode) => node.type.name === this.name,
           apply: (state: SerializerState, node: ProseMirrorNode) => {
-            state.openNode({
-              type: "heading",
-              depth: node.attrs.level,
-            });
-            state.next(node.content);
+            state.openNode({ type: "paragraph" });
+            if (node.type.name === "text") {
+              state.addNode({
+                type: "text",
+                value: node.text,
+              });
+            } else {
+              state.next(node.content);
+            }
             state.closeNode();
           },
         },
@@ -61,5 +56,3 @@ export const Heading = THeading.extend<HeadingOptions>({
     };
   },
 });
-
-export default Heading;
