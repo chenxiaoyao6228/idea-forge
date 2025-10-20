@@ -1,8 +1,7 @@
 import type { Editor } from "@tiptap/react";
 import type { EditorState } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
-import { isTableSelected } from "../../extensions/table/utils";
-import { Table } from "../../extensions/table";
+import { isTableSelected, Table } from "@idea/editor";
 
 interface GripSelectionProps {
   editor: Editor; // TipTap editor instance

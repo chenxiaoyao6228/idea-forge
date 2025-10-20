@@ -1,0 +1,40 @@
+import { TaskList as TTaskList, type TaskListOptions as TTaskListOptions } from "@tiptap/extension-task-list";
+import { NodeMarkdownStorage } from "../../markdown/types";
+
+export interface TaskListOptions extends TTaskListOptions {}
+
+export const TaskList = TTaskList.extend<TaskListOptions>({
+  name: "taskList",
+  addOptions() {
+    return {
+      HTMLAttributes: {},
+      itemTypeName: "taskItem",
+    };
+  },
+  addStorage() {
+    return {
+      markdown: {
+        parser: {
+          match: (node) => node.type === "list" && !node.ordered && !!node.children?.find((item) => item.checked !== null),
+          apply: (state, node, type) => {
+            state.openNode(type);
+            state.next(node.children);
+            state.closeNode();
+          },
+        },
+        serializer: {
+          match: (node) => node.type.name === this.name,
+          apply: (state, node) => {
+            state
+              .openNode({
+                type: "list",
+                ordered: false,
+              })
+              .next(node.content)
+              .closeNode();
+          },
+        },
+      },
+    } satisfies NodeMarkdownStorage;
+  },
+});

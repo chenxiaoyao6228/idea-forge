@@ -1,7 +1,7 @@
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { Editor } from "@tiptap/core";
-import { getCellsInRow, getCellsInColumn, isColumnSelected, isRowSelected, selectColumn, selectRow } from "../utils";
+import { getCellsInRow, getCellsInColumn, isColumnSelected, isRowSelected, selectColumn, selectRow } from "@idea/editor";
 
 interface CreateTableDecorationPluginProps {
   editor: Editor;
