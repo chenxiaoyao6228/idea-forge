@@ -9,7 +9,11 @@
       "@idea/editor": ["../../packages/editor/src/index.ts"],
       "@idea/editor/*": ["../../packages/editor/src/*"],
       "@idea/icons": ["../../packages/icons/src/index.ts"],
-      "@idea/icons/*": ["../../packages/icons/src/*"]
+      "@idea/icons/*": ["../../packages/icons/src/*"],
+      "@idea/ui": ["../../packages/ui/src/index.ts"],
+      "@idea/ui/*": ["../../packages/ui/src/*"],
+      "@idea/utils": ["../../packages/utils/src/index.ts"],
+      "@idea/utils/*": ["../../packages/utils/src/*"]
     },
     "moduleResolution": "node",
     "outDir": "./dist",

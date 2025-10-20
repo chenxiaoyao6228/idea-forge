@@ -72,8 +72,8 @@ export class ParserStack {
 
   private maybeMerge(a: Node, b: Node) {
     if (a.isText && b.isText && Mark.sameSet(a.marks, b.marks)) {
-      // @ts-expect-error
-      return this.editor.schema.text(a.text + b.text, a.marks);
+      // Non-null assertion is safe here since we've checked isText
+      return this.editor.schema.text(a.text! + b.text!, a.marks);
     }
   }
 }
