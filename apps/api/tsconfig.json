@@ -3,9 +3,13 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],  
-      "@test/*": ["test/*"],  
-      "@shared/*": ["src/_shared/*"]  
+      "@/*": ["src/*"],
+      "@test/*": ["test/*"],
+      "@shared/*": ["src/_shared/*"],
+      "@idea/editor": ["../../packages/editor/src/index.ts"],
+      "@idea/editor/*": ["../../packages/editor/src/*"],
+      "@idea/icons": ["../../packages/icons/src/index.ts"],
+      "@idea/icons/*": ["../../packages/icons/src/*"]
     },
     "moduleResolution": "node",
     "outDir": "./dist",
@@ -24,9 +28,20 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
-    "composite": true,
     "types": ["vitest/globals"]
   },
-  "include": ["src/**/*", "test/**/*"],  
-  "exclude": ["node_modules", "dist"]  
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "../../packages/editor/src/**/*",
+    "../../packages/icons/src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
 }

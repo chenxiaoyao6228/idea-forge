@@ -22,6 +22,10 @@ export default ({ mode }) => {
         '@api': path.resolve(__dirname, '../api/src'),
       },
     },
+    optimizeDeps: {
+      // Exclude workspace packages from pre-bundling to enable HMR
+      exclude: ['@idea/editor', '@idea/icons'],
+    },
     plugins: [
       isDev && checker({
         typescript: {
@@ -41,11 +45,21 @@ export default ({ mode }) => {
     //   project: "idea-forge-client",
     //   authToken: process.env.SENTRY_AUTH_TOKEN,
     // })
-    ].filter(Boolean),
+    ].filter(Boolean) as PluginOption[],
 
     server: {
       port: port,
       origin: `http://localhost:${port}`,
+      watch: {
+        // Enable watching workspace packages by not ignoring node_modules/@idea
+        ignored: ['!**/node_modules/@idea/**'],
+        // Use polling for better cross-platform compatibility (optional)
+        usePolling: false,
+      },
+      fs: {
+        // Allow serving files from workspace packages (monorepo)
+        allow: ['../..'],
+      },
     },
 
     build: {

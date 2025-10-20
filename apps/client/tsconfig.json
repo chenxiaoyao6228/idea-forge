@@ -1,8 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "../", 
-    "baseUrl": ".", 
+    "baseUrl": ".",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "esModuleInterop": true,
@@ -20,8 +19,20 @@
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "paths": {
       "@/*": ["./src/*"],
-      "@api/*": ["../api/src/*"]
+      "@api/*": ["../api/src/*"],
+      "@idea/editor": ["../../packages/editor/src/index.ts"],
+      "@idea/editor/*": ["../../packages/editor/src/*"],
+      "@idea/icons": ["../../packages/icons/src/index.ts"],
+      "@idea/icons/*": ["../../packages/icons/src/*"]
     }
   },
-  "include": ["src", "src/**/*.ts", "src/**/*.tsx", "src/**/*.test.tsx", "src/**/*.d.ts"]
+  "include": [
+    "src",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.test.tsx",
+    "src/**/*.d.ts",
+    "../../packages/editor/src/**/*",
+    "../../packages/icons/src/**/*"
+  ]
 }
