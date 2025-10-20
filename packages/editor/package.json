@@ -1,0 +1,50 @@
+{
+  "name": "@idea/editor",
+  "version": "0.1.0",
+  "description": "Shared isomorphic TipTap editor package for Idea Forge",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "peerDependencies": {
+    "@tiptap/core": "^3.7.2",
+    "@tiptap/pm": "^3.7.2"
+  },
+  "dependencies": {
+    "mdast-util-to-markdown": "^2.1.0",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5",
+    "unist-builder": "^4.0.0",
+    "unist-util-visit": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "@types/unist": "^3.0.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "keywords": [
+    "tiptap",
+    "prosemirror",
+    "editor",
+    "markdown",
+    "collaborative"
+  ],
+  "author": "Idea Forge Team",
+  "license": "MIT",
+  "private": true
+}
