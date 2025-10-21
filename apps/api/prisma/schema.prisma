@@ -540,6 +540,7 @@ model TemporaryImport {
   mimeType    String
   workspaceId String
   subspaceId  String
+  parentId    String?  // Optional parent document ID
   title       String
   userId      String
   status      String   @default("pending") // pending | processing | complete | error

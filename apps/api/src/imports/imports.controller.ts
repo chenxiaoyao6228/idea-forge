@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Logger } from "@nestjs/common";
+import { Body, Controller, Post, Get, Param, Logger } from "@nestjs/common";
 import { ImportsService } from "./imports.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PrepareImportDto, StartImportDto } from "./imports.dto";
@@ -32,5 +32,16 @@ export class ImportsController {
     this.logger.log(`Starting import job: ${dto.importJobId}`);
 
     return this.importsService.startImport(userId, dto);
+  }
+
+  /**
+   * Step 3: Get import status - Poll for progress
+   * GET /api/imports/:importJobId/status
+   */
+  @Get(":importJobId/status")
+  async getStatus(@Param("importJobId") importJobId: string) {
+    this.logger.log(`Getting status for import job: ${importJobId}`);
+
+    return this.importsService.getStatus(importJobId);
   }
 }

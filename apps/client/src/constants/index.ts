@@ -31,6 +31,10 @@ export enum EVENT {
 export const MIME_TYPES = {
   json: "application/json",
   md: "text/markdown",
+  html: "text/html",
+  csv: "text/csv",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  txt: "text/plain",
   png: "png",
   svg: "svg",
   jpg: "jpg",
