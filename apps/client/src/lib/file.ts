@@ -1,26 +1,3 @@
-import { getFileInfo as getFileInfoFromUtils, validateFileType } from "@idea/utils";
-
-/**
- * Get comprehensive file information including detected type.
- * Re-exports the shared utility from @idea/utils for convenience.
- */
-export const getFileInfo = getFileInfoFromUtils;
-
-/**
- * Validate if a file matches expected type(s) using magic number detection.
- * Re-exports the shared utility from @idea/utils for convenience.
- *
- * @param file - File or Blob to validate
- * @param type - Single extension or array of extensions (e.g., 'pdf' or ['jpg', 'png'])
- * @returns True if file matches one of the expected types
- *
- * @example
- * const isImage = await checkFileType(file, ['jpg', 'png', 'gif']);
- */
-export async function checkFileType(file: Blob | File, type: string | string[]): Promise<boolean> {
-  return validateFileType(file, type);
-}
-
 // Convert base64 to Blob
 export function dataURItoBlob(dataURI: string): Blob {
   const byteString = atob(dataURI.split(",")[1]);

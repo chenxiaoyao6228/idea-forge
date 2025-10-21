@@ -1,5 +1,5 @@
 import { importApi } from "@/apis/imports";
-import { getFileInfo } from "./file";
+import { getFileInfo } from "@idea/utils";
 
 /**
  * Upload document for import
