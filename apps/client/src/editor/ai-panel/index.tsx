@@ -45,7 +45,7 @@ export default function AIPanel({ editor }: AIPanelProps) {
   }, []);
 
   function updatePanelPosition() {
-    if (!editor || !panelRef.current) return;
+    if (!editor || !editor.view || !panelRef.current) return;
 
     const selection = editor.state.selection;
     const { from, to } = selection;
@@ -113,7 +113,9 @@ export default function AIPanel({ editor }: AIPanelProps) {
 
   // Update hasSelection when selection changes
   useEffect(() => {
-    window.addEventListener("selectionchange", () => {
+    const handleSelectionChange = () => {
+      if (!editor || !editor.view || editor.isDestroyed) return;
+
       const selection = editor.state.selection;
       const { from, to } = selection;
 
@@ -122,17 +124,19 @@ export default function AIPanel({ editor }: AIPanelProps) {
       } else {
         setHasSelection(true);
       }
-    });
+    };
+
+    window.addEventListener("selectionchange", handleSelectionChange);
 
     return () => {
-      window.removeEventListener("selectionchange", () => {});
+      window.removeEventListener("selectionchange", handleSelectionChange);
     };
   }, [editor, setHasSelection]);
 
   // Listen to keyboard space key
   useEffect(() => {
     function fn(event: KeyboardEvent) {
-      if (!editor?.view) return;
+      if (!editor?.view || editor.isDestroyed) return;
       // Not space or tab key
       if (event.key !== " " && event.code !== "Tab") return;
       if (editor == null) return;
@@ -146,12 +150,17 @@ export default function AIPanel({ editor }: AIPanelProps) {
         setVisible(true);
       }
     }
-    editor.view.dom.addEventListener("keydown", fn);
+
+    const editorDom = editor?.view?.dom;
+    editorDom?.addEventListener("keydown", fn);
 
     return () => {
-      editor.view.dom.removeEventListener("keydown", fn);
+      // Only try to remove listener if editor and DOM still exist
+      if (editorDom && !editor?.isDestroyed) {
+        editorDom.removeEventListener("keydown", fn);
+      }
     };
-  }, [editor, setVisible]);
+  }, [editor, setVisible, setHasSelection]);
 
   if (!portalContainer) return null;
 

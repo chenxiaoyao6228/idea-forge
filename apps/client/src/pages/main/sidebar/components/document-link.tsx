@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { EditIcon, PlusIcon } from "lucide-react";
-import { Button } from '@idea/ui/shadcn/ui/button';
+import { PlusIcon } from "lucide-react";
+import { Button } from "@idea/ui/shadcn/ui/button";
 import { NavigationNode } from "@idea/contracts";
 import useDocumentStore, { useCreateDocument, useFetchDocumentChildren } from "@/stores/document-store";
 import { SidebarLink } from "./sidebar-link";
@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { EditableTitle } from "./editable-title";
 import { documentApi } from "@/apis/document";
 import { DraggableDocumentContainer } from "./draggable-document-container";
-import { StarButton } from "@/components/star-button";
+import { DocumentMenu } from "./document-menu";
 
 export interface DocumentLinkProps {
   node: NavigationNode;
@@ -136,18 +136,14 @@ export function DocumentLink(props: DocumentLinkProps) {
 
   const menu = useMemo(
     () => (
-      <>
-        <StarButton documentId={node.id} size="sm" showTooltip={false} />
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating}>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating} title="Create child document">
           <PlusIcon className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleRename} disabled={isEditing}>
-          <EditIcon className="h-3 w-3" />
-        </Button>
-        {/* TODO:  more operations  */}
-      </>
+        <DocumentMenu documentId={node.id} documentTitle={node.title} onRename={handleRename} />
+      </div>
     ),
-    [handleCreateChild, handleRename, isCreating, isEditing, node.id],
+    [handleCreateChild, handleRename, isCreating, node.id, node.title],
   );
 
   const isExpandedAndNotDragging = isExpanded && !isDragging;

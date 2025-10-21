@@ -515,6 +515,11 @@ export const useDeleteDocument = () => {
           // Call API for soft delete
           await documentApi.delete(documentId);
 
+          // Remove from subspace navigation tree
+          if (doc?.subspaceId) {
+            removeDocumentFromSubspace(doc.subspaceId, documentId);
+          }
+
           // Soft delete - update store if document exists there
           if (doc) {
             useDocumentStore.setState((state) => ({

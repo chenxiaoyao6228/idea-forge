@@ -56,6 +56,7 @@ export class AuthController {
 
     return {
       user,
+      token: accessToken, // Also return token for API clients/testing
     };
   }
 

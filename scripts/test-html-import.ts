@@ -1,15 +1,12 @@
 #!/usr/bin/env tsx
 
 /**
- * Test script for markdown import feature
+ * Test script for HTML import feature
  *
- * Tests all core extensions moved to @idea/editor:
- * - Node extensions: paragraph, blockquote, horizontal-rule, hard-break
- * - Mark extensions: bold, italic, strike, underline, code, link, subscript, superscript
- * - List extensions: bullet-list, ordered-list, list-item, task-list, task-item
+ * Tests importing HTML content and creating documents with TipTap extensions
  *
- * Usage: tsx scripts/test-markdown-import.ts <path-to-markdown-file>
- * Example: tsx scripts/test-markdown-import.ts scripts/test-document.md
+ * Usage: tsx scripts/test-html-import.ts <path-to-html-file>
+ * Example: tsx scripts/test-html-import.ts scripts/test-document.html
  */
 
 import * as fs from "fs";
@@ -20,7 +17,7 @@ const API_URL = process.env.API_URL || "http://localhost:5000";
 /**
  * Login user to get cookies
  */
-async function loginUser(email, password) {
+async function loginUser(email: string, password: string) {
   try {
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
@@ -44,44 +41,44 @@ async function loginUser(email, password) {
     }
 
     return cookies;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Failed to login user ${email}:`, error.message);
     throw error;
   }
 }
 
-async function importMarkdown(filePath: string, cookie: string) {
-  console.log("📄 Reading markdown file:", filePath);
+async function importHtml(filePath: string, cookie: string) {
+  console.log("📄 Reading HTML file:", filePath);
 
   if (!fs.existsSync(filePath)) {
     console.error("❌ File not found:", filePath);
     process.exit(1);
   }
 
-  const markdown = fs.readFileSync(filePath, "utf-8");
-  console.log(`✅ Read ${markdown.length} characters from file`);
+  const html = fs.readFileSync(filePath, "utf-8");
+  console.log(`✅ Read ${html.length} characters from file`);
 
   // Show a preview of the content
-  const lines = markdown.split('\n').slice(0, 5);
+  const lines = html.split('\n').slice(0, 5);
   console.log(`\n📋 Preview (first ${lines.length} lines):`);
   lines.forEach(line => console.log(`   ${line}`));
   console.log(`   ...\n`);
 
   console.log("🚀 Sending import request to API...");
-  console.log(`   URL: ${API_URL}/api/documents-import/markdown\n`);
+  console.log(`   URL: ${API_URL}/api/documents-import/html\n`);
 
   try {
-    const response = await fetch(`${API_URL}/api/documents-import/markdown`, {
+    const response = await fetch(`${API_URL}/api/documents-import/html`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Cookie": cookie!,
+        "Cookie": cookie,
       },
       body: JSON.stringify({
-        markdown,
+        html,
         workspaceId: "cmgulv3a10002c65maw2co6g1",
         subspaceId: "cmgulv43w001mc65m090wsbf8",
-        title: "Test Markdown Import"
+        title: "Test HTML Import"
       }),
     });
 
@@ -96,13 +93,13 @@ async function importMarkdown(filePath: string, cookie: string) {
     const result = await response.json();
     console.log("✅ Import successful!\n");
     console.log("📊 Statistics:");
-    console.log(`   Document nodes: ${result.nodeCount || 'N/A'}`);
-    console.log(`   Document ID: ${result.documentId || result.id || 'N/A'}\n`);
+    console.log(`   Document nodes: ${result.data?.nodeCount || 'N/A'}`);
+    console.log(`   Document ID: ${result.data?.document?.id || 'N/A'}\n`);
     console.log("📋 Full Result:");
     console.log(JSON.stringify(result, null, 2));
 
-  } catch (error) {
-    console.error("❌ Failed to import markdown:");
+  } catch (error: any) {
+    console.error("❌ Failed to import HTML:");
     console.error(error);
     process.exit(1);
   }
@@ -112,12 +109,12 @@ async function importMarkdown(filePath: string, cookie: string) {
 const filePath = process.argv[2];
 
 if (!filePath) {
-  console.error("❌ Usage: tsx scripts/test-markdown-import.ts <path-to-markdown-file>");
+  console.error("❌ Usage: tsx scripts/test-html-import.ts <path-to-html-file>");
   process.exit(1);
 }
 
-(async()=> {
+(async () => {
   const absolutePath = path.resolve(process.cwd(), filePath);
   const cookie = await loginUser("user1@test.com", "Aa111111");
-  await importMarkdown(absolutePath, cookie);
+  await importHtml(absolutePath, cookie);
 })();
