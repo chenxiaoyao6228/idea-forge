@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Document for HTML Import</title>
+</head>
+<body>
+  <h1>Test Document for @idea/editor HTML Import</h1>
+
+  <p>This document tests HTML import functionality with various TipTap extensions.</p>
+
+  <h2>Text Formatting</h2>
+
+  <p>This paragraph contains <strong>bold text</strong>, <em>italic text</em>, <u>underlined text</u>, and <s>strikethrough text</s>.</p>
+
+  <p>Here's some <code>inline code</code> and text with <sub>subscript</sub> and <sup>superscript</sup>.</p>
+
+  <h2>Links</h2>
+
+  <p>Visit <a href="https://example.com">this link</a> for more information.</p>
+
+  <h2>Lists</h2>
+
+  <h3>Bullet List</h3>
+  <ul>
+    <li>First item</li>
+    <li>Second item with <strong>bold</strong></li>
+    <li>Third item
+      <ul>
+        <li>Nested item 1</li>
+        <li>Nested item 2</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>Ordered List</h3>
+  <ol>
+    <li>Step one</li>
+    <li>Step two</li>
+    <li>Step three</li>
+  </ol>
+
+  <h3>Task List</h3>
+  <ul data-type="taskList">
+    <li data-type="taskItem" data-checked="true">Completed task</li>
+    <li data-type="taskItem" data-checked="false">Pending task</li>
+    <li data-type="taskItem" data-checked="false">Another pending task</li>
+  </ul>
+
+  <h2>Blockquote</h2>
+
+  <blockquote>
+    <p>This is a blockquote with multiple lines.</p>
+    <p>It can contain <em>formatted text</em> too.</p>
+  </blockquote>
+
+  <h2>Code Block</h2>
+
+  <pre><code class="language-javascript">function greet(name) {
+  console.log(`Hello, ${name}!`);
+  return true;
+}</code></pre>
+
+  <h2>Horizontal Rule</h2>
+
+  <p>Content above the line</p>
+  <hr>
+  <p>Content below the line</p>
+
+  <h2>Tables</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Header 1</th>
+        <th>Header 2</th>
+        <th>Header 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Cell 1</td>
+        <td>Cell 2</td>
+        <td>Cell 3</td>
+      </tr>
+      <tr>
+        <td>Cell 4</td>
+        <td><strong>Bold cell</strong></td>
+        <td><em>Italic cell</em></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Images</h2>
+
+  <p>
+    <img src="https://via.placeholder.com/300x200" alt="Placeholder image" />
+  </p>
+
+  <h2>Hard Breaks</h2>
+
+  <p>This is line one<br>
+  This is line two after a hard break<br>
+  This is line three</p>
+
+  <h2>Mixed Content</h2>
+
+  <p>This paragraph demonstrates <strong>bold with <em>nested italic</em></strong> and <code>code with <strong>bold inside</strong></code>.</p>
+
+  <ul>
+    <li>List item with <a href="https://example.com">a link</a></li>
+    <li>List item with <code>inline code</code></li>
+  </ul>
+
+</body>
+</html>
