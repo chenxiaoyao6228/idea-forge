@@ -74,7 +74,7 @@ export class ImportsService {
     }
 
     // 2. Verify file exists in OSS
-    const exists = await this.ossService.checkFileExists(dto.fileKey);
+    const exists = await this.ossService.checkFileExists(importRecord.fileKey);
     if (!exists) {
       throw new Error("File not uploaded to storage");
     }
@@ -82,7 +82,7 @@ export class ImportsService {
     // 3. Queue background job
     const job = await this.importQueue.add("import-document", {
       importJobId: dto.importJobId,
-      fileKey: dto.fileKey,
+      fileKey: importRecord.fileKey,
       fileName: importRecord.fileName,
       mimeType: importRecord.mimeType,
       workspaceId: importRecord.workspaceId,

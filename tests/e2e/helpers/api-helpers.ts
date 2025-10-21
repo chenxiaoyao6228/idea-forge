@@ -1,6 +1,6 @@
 import { APIRequestContext } from "@playwright/test";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = process.env.PLAYWRIGHT_BASE_API_URL || "http://localhost:5000";
 
 export async function createUser(email?: string, password?: string) {
   const response = await fetch(`${BASE_URL}/api/auth/signup`, {
@@ -49,11 +49,15 @@ export async function createWorkspace(name?: string, token?: string) {
     headers,
     body: JSON.stringify({
       name: name || `Test Workspace ${Date.now()}`,
+      description: "Test workspace for E2E tests",
+      avatar: "",
+      type: "TEAM",
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create workspace: ${response.status}`);
+    const errorBody = await response.text();
+    throw new Error(`Failed to create workspace: ${response.status} - ${errorBody}`);
   }
 
   return await response.json();

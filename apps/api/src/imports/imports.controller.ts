@@ -24,7 +24,7 @@ export class ImportsController {
   }
 
   /**
-   * Step 2: Start import - Queue background job
+   * Step 2: Start import - Queue background job after file upload
    * POST /api/imports/start
    */
   @Post("start")
