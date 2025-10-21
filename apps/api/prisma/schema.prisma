@@ -158,6 +158,9 @@ model User {
   triggeredNotifications Notification[]        @relation("NotificationActor")
   resolvedNotifications  Notification[]        @relation("NotificationResolver")
   notificationSettings   NotificationSetting[]
+
+  // Import relationships
+  temporaryImports TemporaryImport[] // Temporary import records
 }
 
 enum UserStatus {
@@ -197,6 +200,9 @@ model Workspace {
 
   // Notifications
   notifications Notification[]
+
+  // Import relationships
+  temporaryImports TemporaryImport[] // Temporary import records
 }
 
 model WorkspacePublicInvite {
@@ -340,6 +346,9 @@ model Subspace {
   workspaceId String
   docs        Doc[]
   members     SubspaceMember[]
+
+  // Import relationships
+  temporaryImports TemporaryImport[] // Temporary import records
 }
 
 model SubspaceMember {
@@ -522,6 +531,28 @@ model DocRevision {
   authorId String
 
   @@index([docId, createdAt])
+}
+
+model TemporaryImport {
+  id          String   @id
+  fileKey     String
+  fileName    String
+  mimeType    String
+  workspaceId String
+  subspaceId  String
+  title       String
+  userId      String
+  status      String   @default("pending") // pending | processing | complete | error
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime // Auto-cleanup after 24 hours
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subspace  Subspace  @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt]) // For cleanup job
 }
 
 model File {

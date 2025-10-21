@@ -102,6 +102,14 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.DOCUMENT_ADD_USER:
           await this.handleDocumentAddUserEvent(event, server);
           break;
+
+        // Document import events
+        case BusinessEvents.DOCUMENT_IMPORT_PROGRESS:
+        case BusinessEvents.DOCUMENT_IMPORT_COMPLETE:
+        case BusinessEvents.DOCUMENT_IMPORT_ERROR:
+          await this.handleDocumentImportEvent(event, server);
+          break;
+
         case BusinessEvents.DOCUMENT_SHARED:
           await this.handleDocumentSharedEvent(event, server);
           break;
@@ -988,5 +996,12 @@ export class WebsocketEventProcessor extends WorkerHost {
 
     // Emit notification event to the recipient user's room
     server.to(`user:${payload.userId}`).emit(name, data);
+  }
+
+  private async handleDocumentImportEvent(event: WebsocketEvent<any>, server: any) {
+    const { name, data, actorId } = event;
+
+    // Emit import event to the user who initiated the import
+    server.to(`user:${actorId}`).emit(name, data);
   }
 }

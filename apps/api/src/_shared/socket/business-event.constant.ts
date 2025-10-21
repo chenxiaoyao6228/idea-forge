@@ -54,6 +54,13 @@ export enum BusinessEvents {
   DOCUMENT_DELETE = "document.delete",
   DOCUMENT_ADD_USER = "document.addUser",
 
+  // Document import events
+  DOCUMENT_IMPORT_PREPARE = "document.import.prepare",
+  DOCUMENT_IMPORT_START = "document.import.start",
+  DOCUMENT_IMPORT_PROGRESS = "document.import.progress",
+  DOCUMENT_IMPORT_COMPLETE = "document.import.complete",
+  DOCUMENT_IMPORT_ERROR = "document.import.error",
+
   // Entities events
   ENTITIES = "entities",
 
