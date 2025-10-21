@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./async": "./src/async/index.ts",
+    "./file": "./src/file/index.ts",
     "./string": "./src/string/index.ts",
     "./time": "./src/time/index.ts",
     "./types": "./src/types/index.ts"
@@ -18,12 +19,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "file-type": "^21.0.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@types/uuid": "^9.0.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.6.0",
-    "@types/uuid": "^9.0.0"
+    "vitest": "^1.6.0"
   },
   "keywords": [
     "utilities",

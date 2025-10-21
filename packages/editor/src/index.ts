@@ -109,12 +109,11 @@ export const coreExtensions = [
   Subscript,
   Superscript,
 
-  // FIXME: cause frontend crashes
   // Table extensions
-  // Table,
-  // TableCell,
-  // TableHeader,
-  // TableRow,
+  Table,
+  TableCell,
+  TableHeader,
+  TableRow,
 
   // CodeBlock extension
   CodeBlock,

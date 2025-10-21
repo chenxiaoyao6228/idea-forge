@@ -1,6 +1,9 @@
 // Async utilities
 export { resolvablePromise, toAsync } from "./async";
 
+// File utilities
+export { detectFileType, getFileInfo, validateFileType, type FileTypeResult } from "./file";
+
 // String utilities
 export { generateUuid, getRandomElement } from "./string";
 
