@@ -18,7 +18,6 @@ export const PrepareImportResponseSchema = z.object({
 
 export const StartImportRequestSchema = z.object({
   importJobId: z.string().min(1, "Import job ID is required"),
-  fileKey: z.string().min(1, "File key is required"),
 });
 
 export const StartImportResponseSchema = z.object({

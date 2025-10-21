@@ -164,7 +164,12 @@ export async function cleanupTestUser(email: string): Promise<void> {
         await tx.aITokenUsage.deleteMany({
           where: { userId: existingUser.id },
         });
-        
+
+        // Delete temporary imports
+        await tx.temporaryImport.deleteMany({
+          where: { userId: existingUser.id },
+        });
+
         // Delete files
         await tx.file.deleteMany({
           where: { userId: existingUser.id },
@@ -174,17 +179,12 @@ export async function cleanupTestUser(email: string): Promise<void> {
         await tx.docRevision.deleteMany({
           where: { authorId: existingUser.id },
         });
-        
-        // Delete doc shares
-        await tx.docShare.deleteMany({
-          where: { 
-            OR: [
-              { authorId: existingUser.id },
-              { userId: existingUser.id },
-            ],
-          },
+
+        // Delete documents created by this user
+        await tx.doc.deleteMany({
+          where: { authorId: existingUser.id },
         });
-        
+
         // Delete connections (OAuth)
         await tx.connection.deleteMany({
           where: { userId: existingUser.id },
