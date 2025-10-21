@@ -62,6 +62,7 @@ const ImageBlock = BaseImageBlock.extend({
 
               const { downloadUrl } = await uploadFile({
                 file,
+                context: "document",
               });
 
               const pos = findPlaceholder(this.storage.placeholderPlugin, view.state, id);

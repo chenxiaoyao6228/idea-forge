@@ -2,7 +2,7 @@ import { fileApi } from "@/apis/file";
 import { compressImage } from "./image";
 import type { z } from "zod";
 import { ConfirmUploadResponseSchema, FileContextType } from "@idea/contracts";
-import { getFileInfo } from "./file";
+import { getFileInfo } from "@idea/utils";
 
 export const uploadFile = async ({
   file,
