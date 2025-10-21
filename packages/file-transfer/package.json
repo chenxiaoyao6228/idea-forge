@@ -1,0 +1,26 @@
+{
+  "name": "@idea/file-transfer",
+  "version": "1.0.0",
+  "description": "File transfer library with plugin architecture for uploads and imports",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^9.0.0",
+    "typescript": "^5.8.2"
+  },
+  "peerDependencies": {
+    "@idea/contracts": "workspace:*"
+  }
+}

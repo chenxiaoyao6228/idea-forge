@@ -1,9 +1,10 @@
-import { uploadFile } from "@/lib/upload";
+import { useFileUpload } from "@/hooks/use-file-upload";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Spinner } from '@idea/ui/base/spinner';
+import { Spinner } from "@idea/ui/base/spinner";
 import { UpdateCoverDto } from "@idea/contracts";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 interface UploadTabProps {
   onSelect: (dto: UpdateCoverDto) => Promise<void>;
@@ -12,20 +13,21 @@ interface UploadTabProps {
 
 export function UploadTab({ onSelect, onClose }: UploadTabProps) {
   const { t } = useTranslation();
-  const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Use the new file upload hook with 'document' context
+  const { upload, uploading: isUploading } = useFileUpload({ context: "document" });
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
       if (file) {
         try {
-          setIsUploading(true);
           // Create preview URL
           const objectUrl = URL.createObjectURL(file);
           setPreviewUrl(objectUrl);
 
-          const { downloadUrl } = await uploadFile({ file });
+          const { downloadUrl } = await upload(file);
           await onSelect({ url: downloadUrl, isPreset: false });
 
           // Clean up preview URL
@@ -33,13 +35,13 @@ export function UploadTab({ onSelect, onClose }: UploadTabProps) {
           setPreviewUrl(null);
         } catch (error) {
           console.error("Error uploading file:", error);
+          toast.error(t("Failed to upload cover image. Please try again."));
         } finally {
-          setIsUploading(false);
           onClose();
         }
       }
     },
-    [onSelect],
+    [onSelect, upload, onClose, t],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

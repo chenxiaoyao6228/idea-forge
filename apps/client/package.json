@@ -33,6 +33,7 @@
     "@hookform/resolvers": "^3.9.1",
     "@idea/contracts": "workspace:*",
     "@idea/editor": "workspace:*",
+    "@idea/file-transfer": "workspace:*",
     "@idea/icons": "workspace:*",
     "@idea/ui": "workspace:*",
     "@idea/utils": "workspace:*",

@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import useUserStore from "@/stores/user-store";
 import { userApi } from "@/apis/user";
-import { uploadFile } from "@/lib/upload";
+import { useFileUpload } from "@/hooks/use-file-upload";
 import { UserAvatar } from "@/components/user-avatar";
 import { ImageCropper, type FileWithPreview } from "@/components/image-cropper";
 import { Button } from "@idea/ui/shadcn/ui/button";
@@ -102,13 +102,15 @@ const ChangePasswordDialog: React.FC<{ children: React.ReactNode }> = ({ childre
 export const Account = () => {
   const { t } = useTranslation();
   const userInfo = useUserStore((state) => state.userInfo);
-  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
 
   // Image cropper states
   const [cropperDialogOpen, setCropperDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileWithPreview | null>(null);
+
+  // Use the new file upload hook with 'user' context
+  const { upload, uploading: isUploading, error: uploadError } = useFileUpload({ context: "user" });
 
   // Update user mutation
   function updateUser(data: UpdateUserRequest) {
@@ -123,14 +125,13 @@ export const Account = () => {
       });
   }
 
-  // Update avatar mutation using the upload utility
+  // Update avatar mutation using the new file upload hook
   async function updateAvatar(file: File) {
     if (!userInfo?.id) throw new Error("User not found");
 
     try {
-      setIsUploading(true);
-      // Use the uploadFile utility
-      const uploadResult = await uploadFile({ file });
+      // Use the new upload hook
+      const uploadResult = await upload(file);
 
       // Update user profile with new avatar URL
       const response = (await userApi.update(userInfo.id, { imageUrl: uploadResult.downloadUrl })) as any;
@@ -143,10 +144,16 @@ export const Account = () => {
       setCropperDialogOpen(false);
     } catch (error) {
       console.error("Failed to update avatar:", error);
-    } finally {
-      setIsUploading(false);
+      toast.error(t("Failed to upload avatar. Please try again."));
     }
   }
+
+  // Show upload error if any
+  useEffect(() => {
+    if (uploadError) {
+      toast.error(t("Failed to upload avatar: ") + uploadError);
+    }
+  }, [uploadError, t]);
 
   const handleNameUpdate = (e: React.FocusEvent<HTMLInputElement>) => {
     const name = e.target.value.trim();

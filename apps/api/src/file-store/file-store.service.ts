@@ -3,15 +3,18 @@ import { OssService } from "./oss.service";
 import { v4 as uuidv4 } from "uuid";
 import { validImageExts } from "./constant";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { UploadCredentialsResponse } from "@idea/contracts";
+import { UploadCredentialsResponse, FileContextType } from "@idea/contracts";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
+import { FilePathService } from "./file-path.service";
+import { FileContext } from "./file-context.enum";
 
 @Injectable()
 export class FileService {
   constructor(
     private readonly prismaService: PrismaService,
-    private ossService: OssService,
+    private readonly ossService: OssService,
+    private readonly filePathService: FilePathService,
   ) {}
 
   async generateUploadCredentials(
@@ -19,15 +22,21 @@ export class FileService {
     params: {
       fileName: string;
       ext: string;
+      context?: FileContextType;
     },
   ) {
     // TODO: Permission check, quota check
-    const { ext } = params;
+    const { ext, context = "user-other" } = params;
 
-    const mediaType = validImageExts.includes(ext) ? "image" : "others";
+    // Map FileContextType (string) to FileContext (enum)
+    const fileContext = context as unknown as FileContext;
 
-    const fileName = `${uuidv4()}.${ext}`;
-    const fileKey = `uploads/u-${userId}/${mediaType}/${fileName}`;
+    // Generate file key using FilePathService with context
+    const fileKey = this.filePathService.generateFileKey({
+      context: fileContext,
+      userId,
+      fileName: params.fileName,
+    });
 
     // TODO: Generate corresponding Content-Type based on file type
     const contentType = "image/png";

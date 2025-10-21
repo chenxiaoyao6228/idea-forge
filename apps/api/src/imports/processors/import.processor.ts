@@ -62,7 +62,7 @@ export class ImportProcessor extends WorkerHost {
       });
 
       // Step 6: Clean up temporary file
-      await this.fileCleanupService.cleanupImportTempFileByKey(fileKey);
+      await this.fileCleanupService.deleteFile(fileKey);
 
       // Step 7: Clean up temporary import record
       await this.prismaService.temporaryImport.delete({

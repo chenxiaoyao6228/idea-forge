@@ -1,8 +1,17 @@
 import { z } from "zod";
 
+// FileContext enum values as Zod enum (simplified to 3 contexts)
+export const FileContextSchema = z.enum([
+  "system", // System assets (admin-only)
+  "user", // User uploads (avatars, temp files, general)
+  "document", // Document content (covers, attachments, imports)
+]);
+export type FileContextType = z.infer<typeof FileContextSchema>;
+
 export const UploadCredentialsRequestSchema = z.object({
   fileName: z.string(),
   ext: z.string(),
+  context: FileContextSchema.optional().default("user"), // Default to user context
 });
 export type UploadCredentialsRequest = z.infer<typeof UploadCredentialsRequestSchema>;
 
