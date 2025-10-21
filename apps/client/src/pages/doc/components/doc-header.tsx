@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
-import { SidebarTrigger } from '@idea/ui/shadcn/ui/sidebar';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
-import { cn } from '@idea/ui/shadcn/utils';
+import { SidebarTrigger } from "@idea/ui/shadcn/ui/sidebar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@idea/ui/shadcn/ui/tooltip";
+import { cn } from "@idea/ui/shadcn/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import DocumentBreadcrumb from "../../main/sidebar/doc-breadcrumb";
 import { CollabUsers } from "@/pages/doc/components/collab-users";
 import { useTranslation } from "react-i18next";
 import ExportMarkdownButton from "./export-markdown-button";
-import { Popover, PopoverContent, PopoverTrigger } from '@idea/ui/shadcn/ui/popover';
-import { Button } from '@idea/ui/shadcn/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from "@idea/ui/shadcn/ui/popover";
+import { Button } from "@idea/ui/shadcn/ui/button";
 import { Ellipsis, Share } from "lucide-react";
 import { useScrollTop } from "@/hooks/use-scroll-top";
-import ImportMarkdownButton from "./import-markdown";
-import { Separator } from '@idea/ui/shadcn/ui/separator';
+import { Separator } from "@idea/ui/shadcn/ui/separator";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SharePopover } from "@/pages/main/sharing";
 import { StarButton } from "@/components/star-button";
@@ -76,8 +75,6 @@ function TopBarHandlers() {
         <LanguageSwitcher onSelect={() => setOpen(false)} />
         <Separator className="my-1" />
         <ExportMarkdownButton />
-        <Separator className="my-1" />
-        <ImportMarkdownButton />
       </PopoverContent>
     </Popover>
   );

@@ -5,6 +5,7 @@ import { Upload, FileText, Table, FileCode, FileType, Loader2, CheckCircle2, Ale
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { Button } from "@idea/ui/shadcn/ui/button";
 import { useDocumentImport } from "@/hooks/use-document-import";
+import { useBatchImport } from "@/hooks/use-batch-import";
 import { cn } from "@idea/ui/shadcn/utils";
 import { fileOpen } from "@/lib/filesystem";
 import { useCurrentWorkspace } from "@/stores/workspace-store";
@@ -47,6 +48,7 @@ const ImportFilesDialog: React.FC<ConfirmDialogProps<ImportFilesDialogProps, any
   const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<keyof typeof importConfig | null>(null);
   const { importDocument, isImporting, progress, error, reset } = useDocumentImport();
+  const { importFiles } = useBatchImport();
 
   // Get workspace and subspace context from hooks
   const currentWorkspace = useCurrentWorkspace();
@@ -69,20 +71,29 @@ const ImportFilesDialog: React.FC<ConfirmDialogProps<ImportFilesDialogProps, any
     const config = importConfig[type];
 
     try {
-      // Use fileOpen utility to pick file with proper type filtering
-      const file = await fileOpen({
-        extensions: config.extensions as any, // Type assertion needed for readonly arrays
-        description: `Import ${config.title}`,
+      // Always allow multiple file selection
+      const files = await fileOpen({
+        extensions: config.extensions as any,
+        description: `Import ${config.title} file(s)`,
+        multiple: true,
       });
 
-      if (!file) return;
+      if (!files || files.length === 0) return;
 
-      // Use file name without extension as title
-      const documentTitle = file.name.replace(/\.[^/.]+$/, "");
-
-      await importDocument(file, workspaceId, subspaceId, parentId, documentTitle);
-      // close the dialog
-      proceed?.(null);
+      // Determine single vs batch based on file count
+      if (files.length === 1) {
+        // Single import: keep dialog open with loading, navigate to new doc on success
+        const file = files[0];
+        const documentTitle = file.name.replace(/\.[^/.]+$/, "");
+        await importDocument(file, workspaceId, subspaceId, parentId, documentTitle);
+        // Close the dialog after successful import
+        proceed?.(null);
+      } else {
+        // Batch import: start import and close dialog immediately to show progress bar
+        importFiles(files, workspaceId, subspaceId, parentId); // Don't await
+        // Close the dialog - status bar will show progress
+        proceed?.(null);
+      }
     } catch (err: any) {
       // User cancelled file picker or error occurred
       console.log("File selection cancelled or failed:", err);
@@ -164,24 +175,26 @@ const ImportFilesDialog: React.FC<ConfirmDialogProps<ImportFilesDialogProps, any
 
         {/* File Type Selection */}
         {!isImporting && !progress && (
-          <div className="grid grid-cols-2 gap-3">
-            {Object.entries(importConfig).map(([key, config]) => {
-              const Icon = config.icon;
-              return (
-                <Button
-                  key={key}
-                  variant="outline"
-                  className={cn("h-auto flex-col items-start p-4 hover:bg-accent", selectedType === key && "border-primary")}
-                  onClick={() => handleTypeSelect(key as keyof typeof importConfig)}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icon className="h-5 w-5" />
-                    <span className="font-medium">{t(config.title)}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{t(config.description)}</span>
-                </Button>
-              );
-            })}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(importConfig).map(([key, config]) => {
+                const Icon = config.icon;
+                return (
+                  <Button
+                    key={key}
+                    variant="outline"
+                    className={cn("h-auto flex-col items-start p-4 hover:bg-accent", selectedType === key && "border-primary")}
+                    onClick={() => handleTypeSelect(key as keyof typeof importConfig)}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon className="h-5 w-5" />
+                      <span className="font-medium">{t(config.title)}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{t(config.description)}</span>
+                  </Button>
+                );
+              })}
+            </div>
           </div>
         )}
       </DialogContent>
@@ -189,8 +202,4 @@ const ImportFilesDialog: React.FC<ConfirmDialogProps<ImportFilesDialogProps, any
   );
 };
 
-export const importFilesModal = ContextAwareConfirmation.createConfirmation(confirmable(ImportFilesDialog));
-
-export const showImportFilesModal = () => {
-  return importFilesModal({});
-};
+export const showImportFilesModal = ContextAwareConfirmation.createConfirmation(confirmable(ImportFilesDialog));

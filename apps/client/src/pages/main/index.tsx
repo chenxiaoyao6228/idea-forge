@@ -4,6 +4,7 @@ import { useAllWorkspaces, useFetchWorkspaces, useCurrentWorkspace } from "@/sto
 import { useFetchGuests, useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
 import SidebarContainer from "./sidebar";
 import { WebSocketProvider } from "@/components/websocket-provider";
+import { BatchImportStatusBar } from "@/components/batch-import-status-bar";
 import { useLayoutEffect } from "react";
 import { useFetchCurrentDocument } from "@/hooks/use-current-document";
 import { useSyncOnReconnect } from "@/hooks/use-sync-on-reconnect";
@@ -46,6 +47,7 @@ export default function Main() {
   return (
     <WebSocketProvider>
       <SidebarContainer content={content} />
+      <BatchImportStatusBar />
     </WebSocketProvider>
   );
 }
