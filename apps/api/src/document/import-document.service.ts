@@ -1,31 +1,19 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { generateJSON } from "@tiptap/html";
 import * as Y from "yjs";
 import { tiptapTransformer } from "@/collaboration/extensions/transformer";
-import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { DocumentService } from "./document.service";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkRehype from "remark-rehype";
-import rehypeStringify from "rehype-stringify";
-import { coreExtensions } from "@idea/editor";
+import { convertToTiptapJSON } from "@/_shared/utils/document-converter";
 
 /*
- * https://tiptap.dev/docs/editor/api/utilities/html
- *  https://github.com/ueberdosis/tiptap/blob/develop/packages/html/src/server/generateJSON.ts
+ * Document Import Service
+ * Imports external formats (Markdown, HTML, DOCX, CSV) into Idea Forge documents
+ * Flow: External Format -> HTML -> TipTap JSON -> Yjs Binary -> Database
  */
 
-export interface ImportMarkdownParams {
-  markdown: string;
-  workspaceId: string;
-  subspaceId: string;
-  title: string;
-  authorId: string;
-}
-
-export interface ImportHtmlParams {
-  html: string;
+export interface ImportDocumentParams {
+  content: Buffer | string;
+  fileName: string;
+  mimeType: string;
   workspaceId: string;
   subspaceId: string;
   title: string;
@@ -39,102 +27,31 @@ export interface ImportHtmlParams {
 export class ImportDocumentService {
   private readonly logger = new Logger(ImportDocumentService.name);
 
-  constructor(
-    private readonly documentService: DocumentService,
-    private readonly prismaService: PrismaService,
-  ) {}
+  constructor(private readonly documentService: DocumentService) {}
 
   /**
-   * Import markdown content and create a new document
-   * Server-side implementation using @idea/editor Markdown extension
+   * Import document from external format and create a new document
+   *
+   * Supports: Markdown (.md), HTML (.html), DOCX (.docx), CSV (.csv)
    *
    * Flow:
-   * 1. Parse markdown to HTML using Markdown extension
-   * 2. Convert HTML to ProseMirror JSON using generateJSON
-   * 3. Convert JSON to Yjs binary using tiptapTransformer
-   * 4. Create document with Yjs binary content
-   *
-   * @param params Import parameters (markdown, workspaceId, subspaceId, title, authorId)
-   * @returns Created document
-   */
-  async importMarkdown(params: ImportMarkdownParams) {
-    const { markdown, workspaceId, subspaceId, title, authorId } = params;
-    this.logger.log(`Importing markdown document: ${title}`);
-
-    try {
-      // Step 1: Convert Markdown to HTML using unified + remark
-      const htmlFile = await unified()
-        .use(remarkParse) // Parse markdown to AST
-        .use(remarkGfm) // Add GitHub Flavored Markdown support
-        .use(remarkRehype) // Convert markdown AST to HTML AST
-        .use(rehypeStringify) // Convert HTML AST to string
-        .process(markdown);
-
-      const html = String(htmlFile);
-      this.logger.debug(`Converted markdown to HTML: ${html.substring(0, 100)}...`);
-
-      this.logger.log(`Parsed markdown to JSON for document: ${title}`);
-
-      const json = generateJSON(html, coreExtensions);
-      this.logger.log(`Generated ProseMirror JSON for document: ${title}`);
-
-      // Step 2: Convert ProseMirror JSON to Yjs document
-      const ydoc = tiptapTransformer.toYdoc(json, "default");
-
-      // Step 3: Encode Yjs document to binary
-      const contentBinary = Y.encodeStateAsUpdate(ydoc);
-
-      this.logger.log(`Converted JSON to Yjs binary for document: ${title}`);
-
-      // Step 4: Create document with the content
-      const document = await this.documentService.create(authorId, {
-        workspaceId,
-        subspaceId,
-        title,
-        type: "NOTE",
-        content: JSON.stringify(json),
-        visibility: "WORKSPACE",
-      });
-
-      // Step 5: Update document with content binary
-      // TODO: merge these two steps
-      await this.prismaService.doc.update({
-        where: { id: document.id },
-        data: {
-          contentBinary: Buffer.from(contentBinary),
-        },
-      });
-
-      this.logger.log(`Successfully imported markdown into document ${document.id}`);
-      return document;
-    } catch (error) {
-      this.logger.error("Failed to import markdown", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Import HTML content and create a new document
-   * Server-side implementation using @tiptap/html generateJSON
-   *
-   * Flow:
-   * 1. Convert HTML to ProseMirror JSON using generateJSON
-   * 2. Convert JSON to Yjs binary using tiptapTransformer
+   * 1. Convert external format to TipTap JSON (via convertToTiptapJSON)
+   * 2. Convert TipTap JSON to Yjs binary
    * 3. Create document with Yjs binary content
    *
-   * @param params Import parameters (html, workspaceId, subspaceId, title, authorId)
+   * @param params Import parameters (content, fileName, mimeType, workspaceId, subspaceId, title, authorId)
    * @returns Created document
    */
-  async importHtml(params: ImportHtmlParams) {
-    const { html, workspaceId, subspaceId, title, authorId } = params;
-    this.logger.log(`Importing HTML document: ${title}`);
+  async importDocument(params: ImportDocumentParams) {
+    const { content, fileName, mimeType, workspaceId, subspaceId, title, authorId } = params;
+    this.logger.log(`Importing document: ${title} (${fileName}, ${mimeType})`);
 
     try {
-      // Step 1: Convert HTML to ProseMirror JSON
-      const json = generateJSON(html, coreExtensions);
-      this.logger.log(`Generated ProseMirror JSON for document: ${title}`);
+      // Step 1: Convert external format to TipTap JSON
+      const json = await convertToTiptapJSON(content, fileName, mimeType);
+      this.logger.log(`Converted ${fileName} to TipTap JSON for document: ${title}`);
 
-      // Step 2: Convert ProseMirror JSON to Yjs document
+      // Step 2: Convert TipTap JSON to Yjs document
       const ydoc = tiptapTransformer.toYdoc(json, "default");
 
       // Step 3: Encode Yjs document to binary
@@ -142,28 +59,21 @@ export class ImportDocumentService {
 
       this.logger.log(`Converted JSON to Yjs binary for document: ${title}`);
 
-      // Step 4: Create document with the content
+      // Step 4: Create document with content and binary in one operation
       const document = await this.documentService.create(authorId, {
         workspaceId,
         subspaceId,
         title,
         type: "NOTE",
         content: JSON.stringify(json),
+        contentBinary: Buffer.from(contentBinary),
         visibility: "WORKSPACE",
       });
 
-      // Step 5: Update document with content binary
-      await this.prismaService.doc.update({
-        where: { id: document.id },
-        data: {
-          contentBinary: Buffer.from(contentBinary),
-        },
-      });
-
-      this.logger.log(`Successfully imported HTML into document ${document.id}`);
+      this.logger.log(`Successfully imported ${fileName} into document ${document.id}`);
       return document;
     } catch (error) {
-      this.logger.error("Failed to import HTML", error);
+      this.logger.error(`Failed to import document: ${fileName}`, error);
       throw error;
     }
   }

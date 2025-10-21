@@ -55,8 +55,10 @@ export const createDocumentSchema = DocSchema.pick({
   subspaceId: true,
   type: true,
   visibility: true,
+  contentBinary: true,
 }).partial({
   parentId: true, // parentId is optional - not all documents have a parent
+  contentBinary: true, // contentBinary is optional - can be set later
 });
 export type CreateDocumentDto = z.infer<typeof createDocumentSchema>;
 
@@ -198,10 +200,12 @@ export const docShareUserSchema = z.object({
   permissionSource: permissionSourceMetadataSchema.optional(), // Permission source metadata
   hasParentPermission: z.boolean().optional(), // Indicates user has permission from parent
   parentPermissionSource: parentPermissionSourceMetadataSchema.optional(), // Parent permission details
-  grantedBy: z.object({
-    displayName: z.string().nullable(),
-    email: z.string(),
-  }).optional(), // Who granted this permission
+  grantedBy: z
+    .object({
+      displayName: z.string().nullable(),
+      email: z.string(),
+    })
+    .optional(), // Who granted this permission
   type: z.literal("user"),
 });
 
@@ -219,14 +223,20 @@ export const docShareGroupSchema = z.object({
   permissionSource: permissionSourceMetadataSchema.optional(), // Permission source metadata
   hasParentPermission: z.boolean().optional(), // Indicates group has permission from parent
   parentPermissionSource: parentPermissionSourceMetadataSchema.optional(), // Parent permission details
-  grantedBy: z.object({
-    displayName: z.string().nullable(),
-    email: z.string(),
-  }).optional(), // Who granted this permission
-  sourceGroups: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-  })).optional(), // Groups that granted this permission (for users in multiple groups)
+  grantedBy: z
+    .object({
+      displayName: z.string().nullable(),
+      email: z.string(),
+    })
+    .optional(), // Who granted this permission
+  sourceGroups: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+      }),
+    )
+    .optional(), // Groups that granted this permission (for users in multiple groups)
   type: z.literal("group"),
 });
 
@@ -237,13 +247,15 @@ export const docShareSchema = z.union([docShareUserSchema, docShareGroupSchema])
 export type DocShareItem = z.infer<typeof docShareSchema>;
 
 // update doc - supports both user and group permission updates
-export const updateSharePermissionSchema = z.object({
-  userId: z.string().optional(),
-  groupId: z.string().optional(),
-  permission: PermissionLevelSchema,
-}).refine(data => data.userId || data.groupId, {
-  message: "Either userId or groupId must be provided",
-});
+export const updateSharePermissionSchema = z
+  .object({
+    userId: z.string().optional(),
+    groupId: z.string().optional(),
+    permission: PermissionLevelSchema,
+  })
+  .refine((data) => data.userId || data.groupId, {
+    message: "Either userId or groupId must be provided",
+  });
 
 export type UpdateSharePermissionDto = z.infer<typeof updateSharePermissionSchema>;
 

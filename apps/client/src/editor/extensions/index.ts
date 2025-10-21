@@ -18,24 +18,27 @@ import AddParagraph from "./paragraph/plugins/add-paragraph";
 import i18next from "i18next";
 
 // Configure specific extensions from coreExtensions
-const configuredCoreExtensions = coreExtensions.map((ext) => {
-  // Configure Code extension with custom styling
-  if (ext.name === "code") {
-    return Code.configure({
-      HTMLAttributes: {
-        class: "rounded-md bg-gray-700 dark:bg-gray-200 px-1.5 py-1 font-mono font-medium",
-        spellcheck: "false",
-      },
-    });
-  }
-  // Configure TaskItem with nested option
-  if (ext.name === "taskItem") {
-    return TaskItem.configure({
-      nested: true,
-    });
-  }
-  return ext;
-});
+// Filter out table extensions as they need client-specific configuration below
+const configuredCoreExtensions = coreExtensions
+  .filter((ext) => !["table", "tableCell", "tableRow", "tableHeader"].includes(ext.name))
+  .map((ext) => {
+    // Configure Code extension with custom styling
+    if (ext.name === "code") {
+      return Code.configure({
+        HTMLAttributes: {
+          class: "rounded-md bg-gray-700 dark:bg-gray-200 px-1.5 py-1 font-mono font-medium",
+          spellcheck: "false",
+        },
+      });
+    }
+    // Configure TaskItem with nested option
+    if (ext.name === "taskItem") {
+      return TaskItem.configure({
+        nested: true,
+      });
+    }
+    return ext;
+  });
 
 const nodes = [
   ...configuredCoreExtensions,
