@@ -1,20 +1,20 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Input } from '@idea/ui/shadcn/ui/input';
-import { Label } from '@idea/ui/shadcn/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@idea/ui/shadcn/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
-import { Separator } from '@idea/ui/shadcn/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
+import { Input } from "@idea/ui/shadcn/ui/input";
+import { Label } from "@idea/ui/shadcn/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@idea/ui/shadcn/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@idea/ui/shadcn/ui/avatar";
+import { Separator } from "@idea/ui/shadcn/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@idea/ui/shadcn/ui/tooltip";
 import { ImageCropper } from "@/components/image-cropper";
 import useWorkspaceStore, { useUpdateWorkspace, useLeaveWorkspace } from "@/stores/workspace-store";
-import { uploadFile } from "@/lib/upload";
+import { useFileUpload } from "@/hooks/use-file-upload";
 import { dataURLtoFile } from "@/lib/file";
 import { Action, type UpdateWorkspaceRequest, type WorkspaceSettings } from "@idea/contracts";
 import { useAbilityCan } from "@/hooks/use-ability";
-import { Button } from '@idea/ui/shadcn/ui/button';
-import { Switch } from '@idea/ui/shadcn/ui/switch';
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Switch } from "@idea/ui/shadcn/ui/switch";
 
 interface FileWithPreview extends File {
   preview: string;
@@ -61,12 +61,14 @@ export const Workspace = () => {
   // Form states
   const [workspaceName, setWorkspaceName] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
 
   // Avatar upload states
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropperDialogOpen, setCropperDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileWithPreview | null>(null);
+
+  // Use the new file upload hook with 'user' context (for workspace avatars)
+  const { upload, uploading: isUploading } = useFileUpload({ context: "user" });
 
   // Settings states
   const [timezone, setTimezone] = useState<string>("");
@@ -241,9 +243,8 @@ export const Workspace = () => {
       if (!currentWorkspace || !canEditWorkspace) return;
 
       try {
-        setIsUploading(true);
-        // Upload the file
-        const uploadResult = await uploadFile({ file });
+        // Upload the file using the new upload hook
+        const uploadResult = await upload(file);
 
         // Update workspace with new avatar URL
         const updateData: UpdateWorkspaceRequest = {
@@ -263,11 +264,9 @@ export const Workspace = () => {
       } catch (error) {
         console.error("Failed to update avatar:", error);
         toast.error(t("Failed to update workspace avatar"));
-      } finally {
-        setIsUploading(false);
       }
     },
-    [currentWorkspace, t, canEditWorkspace],
+    [currentWorkspace, t, canEditWorkspace, upload, updateWorkspace],
   );
 
   // Handle cropped image

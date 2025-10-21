@@ -6,8 +6,7 @@ import { FileContext } from "./file-context.enum";
 /**
  * File Cleanup Service
  *
- * Handles cleanup of temporary files and directories
- * Used for import temp files and extracted attachments
+ * Handles cleanup of files from OSS storage
  */
 @Injectable()
 export class FileCleanupService {
@@ -32,56 +31,21 @@ export class FileCleanupService {
   }
 
   /**
-   * Cleanup import temp file
+   * Delete multiple files from OSS
    */
-  async cleanupImportTempFile(params: {
-    userId: string;
-    fileName: string;
-  }): Promise<void> {
-    // We can't delete by context directly since we need the exact filename with timestamp
-    // This method is for when we have the exact file key
-    const { userId, fileName } = params;
-    const fileKey = this.filePathService.generateFileKey({
-      context: FileContext.IMPORT_TEMP,
-      userId,
-      fileName,
-    });
+  async deleteFiles(fileKeys: string[]): Promise<void> {
+    this.logger.log(`Deleting ${fileKeys.length} files`);
 
-    await this.deleteFile(fileKey);
-  }
-
-  /**
-   * Cleanup import temp file by exact key
-   */
-  async cleanupImportTempFileByKey(fileKey: string): Promise<void> {
-    await this.deleteFile(fileKey);
-  }
-
-  /**
-   * Delete import attachment directory (all extracted images for an import job)
-   * Note: For Phase 1, we'll delete files individually as we know their keys
-   * In Phase 2, we might add bulk directory deletion support
-   */
-  async cleanupImportAttachmentDirectory(params: {
-    userId: string;
-    importJobId: string;
-    fileKeys: string[]; // For Phase 1, we'll track file keys
-  }): Promise<void> {
-    const { userId, importJobId, fileKeys } = params;
-
-    this.logger.log(`Cleaning up import attachment directory for job: ${importJobId}`);
-
-    // Delete all files in the directory
     for (const fileKey of fileKeys) {
       try {
         await this.deleteFile(fileKey);
       } catch (error) {
-        this.logger.warn(`Failed to delete attachment ${fileKey}:`, error);
+        this.logger.warn(`Failed to delete file ${fileKey}:`, error);
         // Continue with other files even if one fails
       }
     }
 
-    this.logger.log(`Cleaned up ${fileKeys.length} files for import job: ${importJobId}`);
+    this.logger.log(`Completed deletion of ${fileKeys.length} files`);
   }
 
   /**
@@ -91,28 +55,27 @@ export class FileCleanupService {
     userId: string;
     importJobId: string;
     tempFileKey?: string;
-    attachmentFileKeys?: string[];
+    documentFileKeys?: string[];
   }): Promise<void> {
-    const { userId, importJobId, tempFileKey, attachmentFileKeys } = params;
+    const { userId, importJobId, tempFileKey, documentFileKeys } = params;
 
     this.logger.log(`Cleaning up failed import: ${importJobId}`);
 
-    // Delete temp file if exists
+    const allFileKeys: string[] = [];
+
+    // Add temp file if exists
     if (tempFileKey) {
-      try {
-        await this.deleteFile(tempFileKey);
-      } catch (error) {
-        this.logger.warn(`Failed to delete temp file ${tempFileKey}:`, error);
-      }
+      allFileKeys.push(tempFileKey);
     }
 
-    // Delete attachment files if exist
-    if (attachmentFileKeys && attachmentFileKeys.length > 0) {
-      await this.cleanupImportAttachmentDirectory({
-        userId,
-        importJobId,
-        fileKeys: attachmentFileKeys,
-      });
+    // Add document files if exist
+    if (documentFileKeys && documentFileKeys.length > 0) {
+      allFileKeys.push(...documentFileKeys);
+    }
+
+    // Delete all files
+    if (allFileKeys.length > 0) {
+      await this.deleteFiles(allFileKeys);
     }
 
     this.logger.log(`Completed cleanup for failed import: ${importJobId}`);

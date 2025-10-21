@@ -1,18 +1,18 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Button } from '@idea/ui/shadcn/ui/button';
-import { Input } from '@idea/ui/shadcn/ui/input';
-import { Label } from '@idea/ui/shadcn/ui/label';
-import { Textarea } from '@idea/ui/shadcn/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@idea/ui/shadcn/ui/dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Input } from "@idea/ui/shadcn/ui/input";
+import { Label } from "@idea/ui/shadcn/ui/label";
+import { Textarea } from "@idea/ui/shadcn/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@idea/ui/shadcn/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@idea/ui/shadcn/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@idea/ui/shadcn/ui/tooltip";
 import { ImageCropper } from "@/components/image-cropper";
-import { Option } from '@/components/ui/multi-selector';
+import { Option } from "@/components/ui/multi-selector";
 import { SubspaceTypeSchema } from "@idea/contracts";
 import { useCreateSubspace, useBatchAddSubspaceMembers } from "@/stores/subspace-store";
-import { uploadFile } from "@/lib/upload";
+import { useFileUpload } from "@/hooks/use-file-upload";
 import { dataURLtoFile } from "@/lib/file";
 import { MoreAboutSubspaceTip } from "./more-about-subspace-tip";
 import { SubspaceType } from "@idea/contracts";
@@ -49,7 +49,9 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
   const [cropperDialogOpen, setCropperDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileWithPreview | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false); // Keep for file upload
+
+  // Use the new file upload hook with 'user' context (for subspace avatars)
+  const { upload, uploading } = useFileUpload({ context: "user" });
 
   // Get store methods with loading states
   const { run: createSubspace, loading: creatingSubspace } = useCreateSubspace();
@@ -77,7 +79,6 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
       setType("WORKSPACE_WIDE");
       setSelectedMembers([]);
       setAvatarUrl(null);
-      setUploading(false);
     }
   }, [show]);
 
@@ -115,9 +116,8 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
   const updateAvatar = useCallback(
     async (file: File) => {
       try {
-        setUploading(true);
-        // Upload the file
-        const uploadResult = await uploadFile({ file });
+        // Upload the file using the new upload hook
+        const uploadResult = await upload(file);
         setAvatarUrl(uploadResult.downloadUrl);
 
         // Clean up
@@ -127,11 +127,9 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
       } catch (error) {
         console.error("Failed to update avatar:", error);
         toast.error(t("Failed to update subspace avatar"));
-      } finally {
-        setUploading(false);
       }
     },
-    [t],
+    [t, upload],
   );
 
   // Handle cropped image

@@ -19,9 +19,9 @@ export class ImportsService {
   ) {}
 
   async prepareImport(userId: string, dto: PrepareImportDto) {
-    // 1. Generate file key using FilePathService
+    // 1. Generate file key using FilePathService (USER context for temp files)
     const fileKey = this.filePathService.generateFileKey({
-      context: FileContext.IMPORT_TEMP,
+      context: FileContext.USER,
       userId,
       fileName: dto.fileName,
     });

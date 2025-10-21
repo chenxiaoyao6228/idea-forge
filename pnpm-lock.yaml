@@ -549,6 +549,9 @@ importers:
       '@idea/editor':
         specifier: workspace:*
         version: link:../../packages/editor
+      '@idea/file-transfer':
+        specifier: workspace:*
+        version: link:../../packages/file-transfer
       '@idea/icons':
         specifier: workspace:*
         version: link:../../packages/icons
@@ -1196,6 +1199,22 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@18.11.18)(@vitest/ui@3.2.3)(happy-dom@20.0.7)
+
+  packages/file-transfer:
+    dependencies:
+      '@idea/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      uuid:
+        specifier: ^9.0.0
+        version: 9.0.1
+    devDependencies:
+      '@types/uuid':
+        specifier: ^9.0.0
+        version: 9.0.0
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
 
   packages/icons:
     devDependencies:

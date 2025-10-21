@@ -1,20 +1,27 @@
 import { fileApi } from "@/apis/file";
 import { compressImage } from "./image";
 import type { z } from "zod";
-import { ConfirmUploadResponseSchema } from "@idea/contracts";
+import { ConfirmUploadResponseSchema, FileContextType } from "@idea/contracts";
 import { getFileInfo } from "./file";
 
-export const uploadFile = async ({ file }: { file: File }): Promise<z.infer<typeof ConfirmUploadResponseSchema>> => {
+export const uploadFile = async ({
+  file,
+  context = "user",
+}: {
+  file: File;
+  context?: FileContextType;
+}): Promise<z.infer<typeof ConfirmUploadResponseSchema>> => {
   // Get file information including real mime type and extension
   const fileInfo = await getFileInfo(file);
 
   // Compress file before upload
   const compressedFile = await compressImage(file);
 
-  // Get upload credentials
+  // Get upload credentials with context
   const { credentials, fileKey, fileId } = await fileApi.getUploadCredentials({
     fileName: compressedFile.name,
     ext: fileInfo.ext,
+    context, // Pass context to backend
   });
 
   // Configure upload request
