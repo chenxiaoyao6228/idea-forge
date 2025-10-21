@@ -41,6 +41,7 @@ import { ClsModule } from "@/_shared/utils/cls.module";
 import { HealthModule } from "./health/health.module";
 import { PublicShareService } from "./public-share/public-share.service";
 import { NotificationModule } from "./notification/notification.module";
+import { ImportsModule } from "./imports/imports.module";
 
 @Module({
   controllers: [AppController],
@@ -80,6 +81,7 @@ import { NotificationModule } from "./notification/notification.module";
     UserModule,
     MailModule,
     DocumentModule,
+    ImportsModule,
     FileStoreModule,
     CollaborationModule,
     AIModule,

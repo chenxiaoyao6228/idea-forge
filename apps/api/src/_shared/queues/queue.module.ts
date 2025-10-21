@@ -17,6 +17,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
       inject: [ConfigService],
     }),
     BullModule.registerQueue({ name: "websocket-events" }),
+    BullModule.registerQueue({ name: "imports" }),
   ],
   providers: [WebsocketEventProcessor],
   exports: [BullModule],

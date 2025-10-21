@@ -1,4 +1,12 @@
-import { S3Client, ListBucketsCommand, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, CopyObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  ListBucketsCommand,
+  PutObjectCommand,
+  HeadObjectCommand,
+  DeleteObjectCommand,
+  CopyObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Injectable } from "@nestjs/common";
 import { OssProvider, PresignedUrlResult, PresignedUrlOptions } from "./oss.type";
@@ -163,5 +171,31 @@ export class OssService {
     });
 
     return await this.s3Client.send(command);
+  }
+
+  // Download file from OSS
+  async getFile(key: string): Promise<Buffer> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.config.bucket,
+        Key: key,
+      });
+
+      const response = await this.s3Client.send(command);
+
+      if (!response.Body) {
+        throw new Error("No file body in response");
+      }
+
+      // Stream to buffer
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of response.Body as any) {
+        chunks.push(chunk);
+      }
+
+      return Buffer.concat(chunks);
+    } catch (error: any) {
+      throw new Error(`Failed to download file: ${error.message}`);
+    }
   }
 }
