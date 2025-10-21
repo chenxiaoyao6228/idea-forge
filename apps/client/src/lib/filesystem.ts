@@ -15,12 +15,10 @@ interface FileOpenOptions<M extends boolean | undefined = false> {
 type FileOpenResult<M> = M extends false | undefined ? File : File[];
 
 export function fileOpen<M extends boolean | undefined = false>(opts: FileOpenOptions<M>): Promise<FileOpenResult<M>> {
-  const accept = Object.fromEntries(opts.extensions?.map((ext) => [MIME_TYPES[ext], [`.${ext}`]]) ?? []);
-
   return _fileOpen({
     description: opts.description,
-    // @ts-ignore
-    accept,
+    mimeTypes: opts.extensions?.map((ext) => MIME_TYPES[ext]),
+    extensions: opts.extensions?.map((ext) => `.${ext}`),
     multiple: opts.multiple ?? false,
     legacySetup: createLegacySetup(),
   }) as Promise<FileOpenResult<M>>;

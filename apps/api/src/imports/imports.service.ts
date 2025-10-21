@@ -47,6 +47,7 @@ export class ImportsService {
         mimeType: dto.mimeType,
         workspaceId: dto.workspaceId,
         subspaceId: dto.subspaceId,
+        parentId: dto.parentId,
         title: dto.title,
         userId,
         status: "pending",
@@ -87,6 +88,7 @@ export class ImportsService {
       mimeType: importRecord.mimeType,
       workspaceId: importRecord.workspaceId,
       subspaceId: importRecord.subspaceId,
+      parentId: importRecord.parentId ?? undefined,
       title: importRecord.title,
       userId,
     } as ImportJobData);
@@ -103,6 +105,90 @@ export class ImportsService {
       jobId: job.id?.toString() || "",
       importJobId: dto.importJobId,
       message: "Import started",
+    };
+  }
+
+  async getStatus(importJobId: string) {
+    // 1. Try to fetch from TemporaryImport (if still in progress)
+    const importRecord = await this.prismaService.temporaryImport.findUnique({
+      where: { id: importJobId },
+    });
+
+    if (!importRecord) {
+      // Import record deleted means it's completed or failed and cleaned up
+      // Check BullMQ for job status
+      const jobs = await this.importQueue.getJobs(["completed", "failed"]);
+      const job = jobs.find((j) => (j.data as ImportJobData).importJobId === importJobId);
+
+      if (!job) {
+        throw new Error("Import job not found");
+      }
+
+      // Job completed
+      if (job.returnvalue) {
+        return {
+          importJobId,
+          status: "complete" as const,
+          progress: 100,
+          message: "Import complete!",
+          docId: job.returnvalue.docId,
+          title: job.returnvalue.title,
+        };
+      }
+
+      // Job failed
+      if (job.failedReason) {
+        return {
+          importJobId,
+          status: "failed" as const,
+          progress: 0,
+          message: "Import failed",
+          error: job.failedReason,
+        };
+      }
+
+      // Shouldn't reach here, but handle edge case
+      return {
+        importJobId,
+        status: "pending" as const,
+        progress: 0,
+        message: "Waiting to start...",
+      };
+    }
+
+    // 2. Get active job from queue
+    const jobs = await this.importQueue.getJobs(["active", "waiting", "delayed"]);
+    const job = jobs.find((j) => (j.data as ImportJobData).importJobId === importJobId);
+
+    if (!job) {
+      // Job exists in DB but not in queue - might be stuck
+      return {
+        importJobId,
+        status: importRecord.status as any,
+        progress: 0,
+        message: "Waiting to start...",
+      };
+    }
+
+    // 3. Get job progress from BullMQ
+    const jobState = await job.getState();
+    const progressData = job.progress as any;
+
+    if (progressData && typeof progressData === "object") {
+      return {
+        importJobId,
+        status: progressData.status || "processing",
+        progress: progressData.progress || 0,
+        message: progressData.message || "Processing...",
+      };
+    }
+
+    // Default response for pending jobs
+    return {
+      importJobId,
+      status: jobState === "waiting" ? ("pending" as const) : (importRecord.status as any),
+      progress: 0,
+      message: "Waiting to start...",
     };
   }
 }

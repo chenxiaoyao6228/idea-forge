@@ -14,6 +14,7 @@ export interface ImportJobData {
   mimeType: string;
   workspaceId: string;
   subspaceId: string;
+  parentId?: string;
   title: string;
   userId: string;
 }
