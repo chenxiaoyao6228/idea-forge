@@ -145,7 +145,7 @@ async function bootstrap() {
 
   /*
    * FIXME: fix this if have time
-   * NOTE: standalone vite config might working on stand nestjs project, but not working on monorepo project
+   * NOTE: standalone vite config might working on standalone nestjs project, but not working on monorepo project
    */
   // if (module.hot) {
   //   module.hot.accept(() => {

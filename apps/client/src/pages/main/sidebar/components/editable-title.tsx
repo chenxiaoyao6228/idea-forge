@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Input } from '@idea/ui/shadcn/ui/input';
-import { cn } from '@idea/ui/shadcn/utils';
+import { Input } from "@idea/ui/shadcn/ui/input";
+import { cn } from "@idea/ui/shadcn/utils";
 
 interface EditableTitleProps {
   title: string;
@@ -30,8 +30,13 @@ export const EditableTitle = React.forwardRef<{ setIsEditing: (editing: boolean)
 
     React.useEffect(() => {
       if (editing && inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.select();
+        // Use requestAnimationFrame to ensure the input is fully rendered before selecting
+        requestAnimationFrame(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+          }
+        });
       }
     }, [editing]);
 
@@ -42,19 +47,32 @@ export const EditableTitle = React.forwardRef<{ setIsEditing: (editing: boolean)
       }
     }, [title, editing]);
 
-    const handleSubmit = async () => {
-      if (value.trim() && value !== title) {
-        await onSubmit(value.trim());
-      }
-      setIsEditingInternal(false);
-      onEditing?.(false);
-    };
-
     const handleCancel = () => {
       setValue(title);
       setIsEditingInternal(false);
       onEditing?.(false);
       onCancel?.();
+    };
+
+    const handleSubmit = async () => {
+      // Get the actual current value from the input DOM element
+      // This ensures we capture all keystrokes even if React state batching hasn't caught up
+      const currentValue = inputRef.current?.value ?? value;
+      const trimmedValue = currentValue.trim();
+
+      // If empty, cancel the edit and revert to original title
+      if (!trimmedValue) {
+        handleCancel();
+        return;
+      }
+
+      // Only save if value changed
+      if (trimmedValue !== title) {
+        await onSubmit(trimmedValue);
+      }
+
+      setIsEditingInternal(false);
+      onEditing?.(false);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -82,6 +100,20 @@ export const EditableTitle = React.forwardRef<{ setIsEditing: (editing: boolean)
       );
     }
 
-    return <span className="truncate">{title || placeholder}</span>;
+    return (
+      <span
+        className={cn("truncate", editable && "cursor-text")}
+        onClick={(e) => {
+          if (editable) {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsEditingInternal(true);
+            onEditing?.(true);
+          }
+        }}
+      >
+        {title || placeholder}
+      </span>
+    );
   },
 );

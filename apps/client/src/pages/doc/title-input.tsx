@@ -26,6 +26,18 @@ export function TitleInput({ editable }: TitleInputProps) {
     }
   }, [doc?.title, isEditing]);
 
+  // Auto-select text when entering edit mode
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.select();
+        }
+      });
+    }
+  }, [isEditing]);
+
   useEffect(() => {
     const socket = getWebsocketService().socket;
     const handleDocumentUpdate = (event: any) => {
@@ -51,18 +63,25 @@ export function TitleInput({ editable }: TitleInputProps) {
     if (!editable) return;
 
     setIsEditing(true);
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
+    // Use requestAnimationFrame to ensure the input is fully rendered before selecting
+    requestAnimationFrame(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+    });
   };
 
-  const disableInput = () => {
-    setIsEditing(false);
-    // If the value changed while editing, save it
-    // Handle empty titles by saving empty string (persistence layer decides fallback)
+  const disableInput = async () => {
+    // If the value changed while editing, save it first
     if (value !== doc?.title) {
-      handleTitleUpdate(value.trim());
+      const trimmedValue = value.trim();
+      // If empty after trim, use "Untitled" as fallback
+      const titleToSave = trimmedValue || t("Untitled");
+      await handleTitleUpdate(titleToSave);
     }
+    // Only change editing state after the update completes
+    setIsEditing(false);
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {

@@ -59,6 +59,22 @@ function useDocumentDnD() {
     async ({ draggingItem, toDropItem }: { draggingItem: DragItem; toDropItem: DropTarget }) => {
       if (!toDropItem.accept.includes("document")) return;
 
+      // Prevent dropping document on itself (self-parenting)
+      if (draggingItem.id === toDropItem.documentId && toDropItem.dropType === "reparent") {
+        console.warn("[DnD] Prevented self-parenting: document cannot be its own parent");
+        return;
+      }
+
+      // Prevent no-op moves (same parent and position)
+      if (
+        draggingItem.parentId === toDropItem.parentId &&
+        draggingItem.subspaceId === toDropItem.subspaceId &&
+        toDropItem.dropType !== "trash"
+      ) {
+        console.warn("[DnD] Prevented no-op move: document is already in this location");
+        return;
+      }
+
       // Handle trash drop
       if (toDropItem.dropType === "trash") {
         try {
@@ -210,8 +226,8 @@ export function useDragAndDropContext() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 100,
-        tolerance: 3,
+        delay: 200,
+        tolerance: 5,
       },
     }),
   );
@@ -225,8 +241,21 @@ export function useDragAndDropContext() {
       setActiveId(null);
       const { active, over } = event;
       if (!over) return;
+
+      // Prevent dropping on the same element (no-op)
+      if (active.id === over.id) {
+        console.warn("[DnD] Prevented drop on same element");
+        return;
+      }
+
       const draggingItem = active.data.current as DragItem;
       const toDropItem = over.data.current as DropTarget;
+
+      if (!draggingItem || !toDropItem) {
+        console.warn("[DnD] Missing drag or drop data");
+        return;
+      }
+
       if (draggingItem.type === "document") {
         handleDocumentDrop({ draggingItem, toDropItem });
       } else if (draggingItem.type === "subspace") {

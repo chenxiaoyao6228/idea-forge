@@ -91,7 +91,7 @@ export class UserService {
     const avatarSeed = seed || user.email;
     const newAvatar = this.generateAvatar(avatarSeed);
 
-    const newUser = this.updateUser(id, { imageUrl: newAvatar });
+    const newUser = await this.updateUser(id, { imageUrl: newAvatar });
 
     return {
       data: newUser,

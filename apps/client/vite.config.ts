@@ -24,7 +24,7 @@ export default ({ mode }) => {
     },
     optimizeDeps: {
       // Exclude workspace packages from pre-bundling to enable HMR
-      exclude: ['@idea/editor', '@idea/icons'],
+      exclude: ['@idea/contracts', '@idea/file-transfer', '@idea/editor', '@idea/icons'],
     },
     plugins: [
       isDev && checker({

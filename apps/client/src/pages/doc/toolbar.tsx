@@ -1,5 +1,5 @@
 import React, { ElementRef, useRef, useState, useMemo, useEffect, useCallback } from "react";
-import { Button } from '@idea/ui/shadcn/ui/button';
+import { Button } from "@idea/ui/shadcn/ui/button";
 import { ImageIcon, Smile, X } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
 import { IconPicker } from "./icon-picker";

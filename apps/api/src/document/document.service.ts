@@ -192,6 +192,19 @@ export class DocumentService {
       },
     });
 
+    // Emit WebSocket event to notify all clients about the deletion
+    this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.DOCUMENT_DELETE,
+      workspaceId: doc.workspaceId,
+      actorId: userId,
+      data: {
+        docId: doc.id,
+        subspaceId: doc.subspaceId,
+        updatedAt: new Date().toISOString(),
+      },
+      timestamp: new Date().toISOString(),
+    });
+
     return { success: true };
   }
 

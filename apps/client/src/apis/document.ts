@@ -24,7 +24,7 @@ import type {
 
 export const documentApi = {
   list: async (data: ListDocumentDto) => {
-    return request.post<ListDocumentDto, ListDocumentResponse>(`/api/documents/list`, data);
+    return request.get<null, ListDocumentResponse>(`/api/documents/list`, { params: data });
   },
   // ================ share doc ========================
   shareDocument: (id: string, data: ShareDocumentDto) => request.post<ShareDocumentDto, DocSharesResponse>(`/api/documents/${id}/share`, data),

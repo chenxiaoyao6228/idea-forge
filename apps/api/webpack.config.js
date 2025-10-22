@@ -19,9 +19,9 @@ module.exports = {
   mode: isDevelopment ? 'development' : 'production',
   externals: [nodeExternals({
     allowlist: isDevelopment
-      ? ['webpack/hot/poll?100', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify', '@dicebear/collection', '@dicebear/core']
-      : ['@idea/editor', /^@idea\/editor\//, '@tiptap/html', 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify'],
-    // Bundle @idea/editor and other ESM-only packages (unified, remark, @tiptap/html)
+      ? ['webpack/hot/poll?100', '@idea/contracts', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify', '@dicebear/collection', '@dicebear/core']
+      : ['@idea/contracts', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify'],
+    // Bundle @idea/contracts, @idea/editor and other ESM-only packages (unified, remark, @tiptap/html)
   }),],
   // ignore tests hot reload
   watchOptions: {
@@ -33,7 +33,7 @@ module.exports = {
       {
         test: /\.tsx?$/,
         // Exclude node_modules except @idea workspace packages
-        exclude: /node_modules\/(?!@idea\/editor)/,
+        exclude: /node_modules\/(?!@idea\/(contracts|editor))/,
         use: {
           loader: 'swc-loader',
           options: {

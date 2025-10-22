@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollArea } from '@idea/ui/shadcn/ui/scroll-area';
-import { Skeleton } from '@idea/ui/shadcn/ui/skeleton';
+import { ScrollArea } from "@idea/ui/shadcn/ui/scroll-area";
+import { Skeleton } from "@idea/ui/shadcn/ui/skeleton";
 import { ShareWithMeLink } from "./components/share-with-me-link";
 import { useSharedDocuments, useSharedWithMePagination, useFetchSharedDocuments, useLoadMoreSharedDocuments } from "@/stores/share-store";
 import useUserStore from "@/stores/user-store";
-import { SidebarGroup, SidebarGroupLabel } from '@idea/ui/shadcn/ui/sidebar';
+import { SidebarGroup, SidebarGroupLabel } from "@idea/ui/shadcn/ui/sidebar";
 import { ChevronRight } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@idea/ui/shadcn/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@idea/ui/shadcn/ui/collapsible";
 import { toast } from "sonner";
 
 const SKELETON_KEYS = ["skeleton-1", "skeleton-2", "skeleton-3"] as const;
@@ -32,8 +32,6 @@ export default function SharedWithMe() {
       fetchSharedDocuments.run();
     }
   }, [userInfo?.id]);
-
-  console.log("sharedDocuments.length", sharedDocuments.length);
 
   // Handle manual toggle
   const handleOpenChange = (open: boolean) => {
