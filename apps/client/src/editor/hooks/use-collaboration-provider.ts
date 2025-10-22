@@ -9,7 +9,7 @@ const CONNECTION_TIMEOUT = 10000;
 
 interface Props {
   documentId: string;
-  user: { name: string; color: string; email?: string };
+  user: { name: string; color: string; email?: string; imageUrl?: string };
   editable: boolean;
   collabWsUrl: string;
   collabToken: string;
@@ -80,7 +80,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
             clientId: state.clientId.toString(),
             name: state.user?.name || "Anonymous",
             email: state.user?.email,
-            avatar: state.user?.avatar,
+            imageUrl: state.user?.imageUrl,
             color: state.user?.color || "#000000",
             lastActive: new Date().toISOString(),
           });
@@ -163,7 +163,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
 
     // Set local awareness state with user info
     if (provider.awareness && user) {
-      provider.awareness.setLocalState(user);
+      provider.awareness.setLocalState({ user });
     }
 
     // Provider connects automatically in v3, but we can manually connect if needed

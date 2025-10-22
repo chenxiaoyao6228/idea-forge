@@ -1,7 +1,7 @@
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@idea/ui/shadcn/ui/tooltip";
 import { UserAvatar } from "@/components/user-avatar";
 import { useCurrentDocumentId } from "@/stores/document-store";
-import { cn } from '@idea/ui/shadcn/utils';
+import { cn } from "@idea/ui/shadcn/utils";
 import { useEditorStore } from "@/stores/editor-store";
 import { useMemo } from "react";
 
@@ -19,7 +19,7 @@ export function CollabUsers({
   return (
     <div className={cn("ml-5 flex -space-x-2", className)}>
       {activeUsers.map((user) => {
-        let { clientId, name, avatar, email } = user;
+        let { clientId, name, imageUrl, email } = user;
         if (!name) name = email || "Anonymous";
 
         return (
@@ -30,7 +30,7 @@ export function CollabUsers({
                   <UserAvatar
                     user={{
                       displayName: name,
-                      imageUrl: avatar || "",
+                      imageUrl: imageUrl || "",
                     }}
                     className="h-8 w-8 border-2 border-background"
                   />

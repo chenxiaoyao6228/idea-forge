@@ -142,9 +142,33 @@ export const Account = () => {
       // Clean up the selected file and close cropper
       setSelectedFile(null);
       setCropperDialogOpen(false);
+      toast.success(t("Avatar updated successfully!"));
     } catch (error) {
       console.error("Failed to update avatar:", error);
       toast.error(t("Failed to upload avatar. Please try again."));
+    }
+  }
+
+  // Regenerate avatar with random seed
+  async function regenerateAvatar() {
+    if (!userInfo?.id) throw new Error("User not found");
+
+    try {
+      // Generate random seed for new avatar
+      const randomSeed = Math.random().toString(36).substring(7);
+      const response = await userApi.regenerateAvatar(userInfo.id, randomSeed);
+
+      // Update user store with new avatar (convert null to undefined for type compatibility)
+      const updatedUser = {
+        ...response.data,
+        displayName: response.data.displayName ?? undefined,
+        imageUrl: response.data.imageUrl ?? undefined,
+      };
+      useUserStore.setState({ userInfo: updatedUser as any });
+      toast.success(t("Avatar regenerated successfully!"));
+    } catch (error) {
+      console.error("Failed to regenerate avatar:", error);
+      toast.error(t("Failed to regenerate avatar. Please try again."));
     }
   }
 
@@ -268,19 +292,31 @@ export const Account = () => {
       <Separator />
       <>
         {/* Profile Section */}
-        <div className="flex">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>{avatarComponent}</TooltipTrigger>
-              <TooltipContent>
-                <p>{t("Click to upload and crop your photo")}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <div className="space-y-4">
+          <div className="flex">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>{avatarComponent}</TooltipTrigger>
+                <TooltipContent>
+                  <p>{t("Click to upload and crop your photo")}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-          <div className="ml-4 flex-1">
-            <Input className="w-full" defaultValue={userInfo?.displayName || ""} onBlur={handleNameUpdate} placeholder={t("Enter your display name")} />
-            <Label className="text-xs text-muted-foreground">{t("This is your display name that others will see")}</Label>
+            <div className="ml-4 flex-1">
+              <Input className="w-full" defaultValue={userInfo?.displayName || ""} onBlur={handleNameUpdate} placeholder={t("Enter your display name")} />
+              <Label className="text-xs text-muted-foreground">{t("This is your display name that others will see")}</Label>
+            </div>
+          </div>
+
+          {/* Avatar options */}
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={triggerFileInput} disabled={isUploading}>
+              {isUploading ? t("Uploading...") : t("Upload Photo")}
+            </Button>
+            <Button size="sm" variant="outline" onClick={regenerateAvatar}>
+              {t("Generate Random Avatar")}
+            </Button>
           </div>
         </div>
 

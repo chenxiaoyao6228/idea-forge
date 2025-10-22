@@ -1,5 +1,7 @@
 import { HttpStatus, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { hash, verify } from "argon2";
+import { createAvatar } from "@dicebear/core";
+import { notionists } from "@dicebear/collection";
 import type { AuthJwtPayload } from "./types/auth-jwtPayload";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { JwtService } from "@nestjs/jwt";
@@ -445,11 +447,22 @@ export class AuthService {
       }
 
       // 3. new user, create new user and connection
+      // Use OAuth avatar if provided, otherwise generate default avatar
+      let defaultAvatar = imageUrl;
+      if (!defaultAvatar) {
+        const avatar = createAvatar(notionists, {
+          seed: email,
+          size: 128,
+        });
+        const svg = avatar.toString();
+        defaultAvatar = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+      }
+
       const newUser = await this.prismaService.user.create({
         data: {
           email: email.toLowerCase(),
           displayName,
-          imageUrl,
+          imageUrl: defaultAvatar,
           status: UserStatus.ACTIVE,
           connections: {
             create: {

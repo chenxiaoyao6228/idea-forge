@@ -25,6 +25,8 @@ import { AbilityService } from "@/_shared/casl/casl.service";
 import { ModelName } from "@casl/prisma/dist/types/prismaClientBoundTypes";
 import { ConfigService } from "@nestjs/config";
 import { randomBytes } from "node:crypto";
+import { createAvatar } from "@dicebear/core";
+import { initials } from "@dicebear/collection";
 
 @Injectable()
 export class WorkspaceService {
@@ -73,6 +75,18 @@ export class WorkspaceService {
 
   private generateInviteToken() {
     return randomBytes(18).toString("base64url");
+  }
+
+  /**
+   * Generate avatar using DiceBear initials style
+   */
+  private generateAvatar(seed: string): string {
+    const avatar = createAvatar(initials, {
+      seed,
+      size: 128,
+    });
+    const svg = avatar.toString();
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
   }
 
   private async upsertWorkspaceInvite(workspaceId: string, adminId: string) {
@@ -174,11 +188,14 @@ export class WorkspaceService {
     // Initialize workspace with default settings
     const defaultSettings = this.getDefaultWorkspaceSettings();
 
+    // Generate default avatar if not provided
+    const defaultAvatar = dto.avatar || this.generateAvatar(dto.name);
+
     const workspace = await this.prismaService.workspace.create({
       data: {
         name: dto.name,
         description: dto.description,
-        avatar: dto.avatar,
+        avatar: defaultAvatar,
         type: dto.type || WorkspaceType.PERSONAL,
         settings: defaultSettings as any,
         members: {
