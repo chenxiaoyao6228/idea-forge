@@ -16,12 +16,10 @@ import { PermissionModule } from "@/permission/permission.module";
 import { DocumentTrashService } from "./trash-document.service";
 import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
 import { NotificationModule } from "@/notification/notification.module";
-import { ImportDocumentService } from "./import-document.service";
-import { ImportDocumentController } from "./import-document.controller";
 
 @Module({
   imports: [FileStoreModule, ScheduleModule.forRoot(), SubspaceModule, EventsModule, GroupModule, PermissionModule, forwardRef(() => NotificationModule)],
-  controllers: [ImportDocumentController, DocumentController, ShareDocumentController],
+  controllers: [DocumentController, ShareDocumentController],
   providers: [
     DocumentService,
     ShareDocumentService,
@@ -31,8 +29,7 @@ import { ImportDocumentController } from "./import-document.controller";
     DocumentTrashService,
     DocumentAbility,
     EventDeduplicator,
-    ImportDocumentService,
   ],
-  exports: [DocumentService, SystemDocumentService, SearchDocumentService, MoveDocumentService, DocumentTrashService, ImportDocumentService],
+  exports: [DocumentService, SystemDocumentService, SearchDocumentService, MoveDocumentService, DocumentTrashService],
 })
 export class DocumentModule {}

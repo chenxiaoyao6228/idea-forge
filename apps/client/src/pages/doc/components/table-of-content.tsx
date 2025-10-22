@@ -18,7 +18,8 @@ export const TableOfContent = memo(({ editor, items, onInitialNavigation }: Tabl
 
   // Common function to handle navigation and scrolling
   const handleNavigation = (id: string, shouldUpdateHash = true) => {
-    if (!editor) return;
+    if (!editor || !editor.view || !editor.view.dom) return;
+    if (!id) return; // Don't navigate if no ID provided
 
     const element = editor.view.dom.querySelector(`[data-toc-id="${id}"]`);
     if (!element) return;
@@ -50,15 +51,18 @@ export const TableOfContent = memo(({ editor, items, onInitialNavigation }: Tabl
   // Handle initial navigation
   useEffect(() => {
     const hash = window.location.hash.slice(1);
-    handleNavigation(hash, false); // Don't update hash on initial load
-    if (hash && onInitialNavigation) {
-      onInitialNavigation(hash);
+    // Only navigate if we have a hash and editor is ready
+    if (hash && editor && editor.view && editor.view.dom) {
+      handleNavigation(hash, false); // Don't update hash on initial load
+      if (onInitialNavigation) {
+        onInitialNavigation(hash);
+      }
     }
-  }, [onInitialNavigation]);
+  }, [onInitialNavigation, editor]);
 
   // Must put this after useEditorMount, otherwise two scroll events will be conflicted
   useEffect(() => {
-    if (!editor || items.length === 0) return;
+    if (!editor || !editor.view || !editor.view.dom || items.length === 0) return;
 
     // Create Intersection Observer
     const observer = new IntersectionObserver(

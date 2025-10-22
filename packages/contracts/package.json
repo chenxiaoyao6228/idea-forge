@@ -1,20 +1,16 @@
 {
   "name": "@idea/contracts",
   "version": "1.0.0",
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/types/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "require": "./dist/cjs/index.js",
-      "import": "./dist/esm/index.js",
-      "types": "./dist/types/index.d.ts"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.json",
-    "clean": "rimraf dist",
-    "watch": "tsc -p tsconfig.json -w --preserveWatchOutput"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@casl/ability": "^6.7.3",

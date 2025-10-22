@@ -71,6 +71,9 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.DOCUMENT_CREATE:
           await this.handleDocumentCreateEvent(event, server);
           break;
+        case BusinessEvents.DOCUMENT_DELETE:
+          await this.handleDocumentDeleteEvent(event, server);
+          break;
         case BusinessEvents.DOCUMENT_MOVE:
           await this.handleDocumentMoveEvent(event, server);
           break;
@@ -302,6 +305,42 @@ export class WebsocketEventProcessor extends WorkerHost {
           ]
         : [],
     });
+  }
+
+  private async handleDocumentDeleteEvent(event: WebsocketEvent<any>, server: any) {
+    const { docId, subspaceId, updatedAt } = event.data;
+
+    // For deletion, we emit ENTITIES event with the subspace update
+    // This triggers clients to refresh the navigation tree
+    if (subspaceId) {
+      // Emit to subspace room
+      server.to(`subspace:${subspaceId}`).emit(BusinessEvents.ENTITIES, {
+        event: BusinessEvents.DOCUMENT_DELETE,
+        fetchIfMissing: false,
+        documentIds: [],
+        subspaceIds: [
+          {
+            id: subspaceId,
+            updatedAt,
+          },
+        ],
+        workspaceIds: [],
+      });
+
+      // Emit to workspace room
+      server.to(`workspace:${event.workspaceId}`).emit(BusinessEvents.ENTITIES, {
+        event: BusinessEvents.DOCUMENT_DELETE,
+        fetchIfMissing: false,
+        documentIds: [],
+        subspaceIds: [
+          {
+            id: subspaceId,
+            updatedAt,
+          },
+        ],
+        workspaceIds: [],
+      });
+    }
   }
 
   // Handle document move events

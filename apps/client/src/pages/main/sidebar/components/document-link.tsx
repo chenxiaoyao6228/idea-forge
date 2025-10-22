@@ -13,6 +13,7 @@ import { EditableTitle } from "./editable-title";
 import { documentApi } from "@/apis/document";
 import { DraggableDocumentContainer } from "./draggable-document-container";
 import { DocumentMenu } from "./document-menu";
+import { useTranslation } from "react-i18next";
 
 export interface DocumentLinkProps {
   node: NavigationNode;
@@ -30,6 +31,7 @@ export function DocumentLink(props: DocumentLinkProps) {
   const { node, subspaceId, depth, index, parentId, isDragging, isActiveDrop } = props;
   const { docId: activeDocumentId } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { run: createDocument } = useCreateDocument();
   const { run: fetchChildren } = useFetchDocumentChildren();
@@ -104,8 +106,7 @@ export function DocumentLink(props: DocumentLinkProps) {
     try {
       setIsCreating(true);
       const newDocId = await createDocument({
-        // FIXME: remove the random number
-        title: "New Doc-" + Math.floor(Math.random() * 1000),
+        title: t("Untitled"),
         parentId: node.id,
         subspaceId: subspaceId || null,
       });

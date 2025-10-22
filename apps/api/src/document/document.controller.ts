@@ -33,10 +33,39 @@ export class DocumentController {
     return this.shareDocumentService.getSharedWithMeDocuments(userId, query);
   }
 
-  // FIXME: change to get method
-  @Post("list")
-  async list(@GetUser("id") userId: string, @Body() dto: any) {
-    return this.documentService.list(userId, dto);
+  /**
+   * GET /api/documents/list
+   * List documents with pagination and filtering
+   */
+  @Get("list")
+  async list(
+    @GetUser("id") userId: string,
+    @Query("parentId") parentId: string,
+    @Query("subspaceId") subspaceId?: string,
+    @Query("archivedAt") archivedAt?: string,
+    @Query("sharedDocumentId") sharedDocumentId?: string,
+    @Query("includeSharedChildren") includeSharedChildren?: string,
+    @Query("limit") limit?: string,
+    @Query("page") page?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: string,
+    @Query("cursor") cursor?: string,
+    @Query("query") query?: string,
+  ) {
+    const dto: Record<string, any> = { parentId };
+
+    if (subspaceId) dto.subspaceId = subspaceId;
+    if (archivedAt !== undefined) dto.archivedAt = archivedAt === "true";
+    if (sharedDocumentId) dto.sharedDocumentId = sharedDocumentId;
+    if (includeSharedChildren !== undefined) dto.includeSharedChildren = includeSharedChildren === "true";
+    if (limit) dto.limit = Number.parseInt(limit, 10);
+    if (page) dto.page = Number.parseInt(page, 10);
+    if (sortBy) dto.sortBy = sortBy;
+    if (sortOrder) dto.sortOrder = sortOrder;
+    if (cursor) dto.cursor = cursor;
+    if (query) dto.query = query;
+
+    return this.documentService.list(userId, dto as any);
   }
 
   @Post("move")
