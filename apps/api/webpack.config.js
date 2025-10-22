@@ -19,7 +19,7 @@ module.exports = {
   mode: isDevelopment ? 'development' : 'production',
   externals: [nodeExternals({
     allowlist: isDevelopment
-      ? ['webpack/hot/poll?100', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify']
+      ? ['webpack/hot/poll?100', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify', '@dicebear/collection', '@dicebear/core']
       : ['@idea/editor', /^@idea\/editor\//, '@tiptap/html', 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify'],
     // Bundle @idea/editor and other ESM-only packages (unified, remark, @tiptap/html)
   }),],

@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { hash } from "argon2";
+import { createAvatar } from "@dicebear/core";
+import { notionists } from "@dicebear/collection";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { CreateUserDto, UpdateUserDto } from "./user.dto";
 import { UserListRequestDto } from "@idea/contracts";
@@ -12,13 +14,29 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 export class UserService {
   constructor(private readonly prismaService: PrismaService) {}
 
+  /**
+   * Generate avatar using DiceBear notionists style
+   */
+  generateAvatar(seed: string): string {
+    const avatar = createAvatar(notionists, {
+      seed,
+      size: 128,
+    });
+    const svg = avatar.toString();
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+  }
+
   async createUser(data: CreateUserDto) {
     const { password, email, status } = data;
+
+    // Generate default avatar using DiceBear notionists
+    const defaultAvatar = this.generateAvatar(email);
 
     const user = await this.prismaService.user.create({
       data: {
         email,
         status,
+        imageUrl: defaultAvatar,
       },
     });
 
@@ -61,6 +79,23 @@ export class UserService {
       }
       throw error;
     }
+  }
+
+  async regenerateAvatar(id: string, seed?: string) {
+    const user = await this.getUserById(id);
+    if (!user) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    // Use provided seed or default to user's email
+    const avatarSeed = seed || user.email;
+    const newAvatar = this.generateAvatar(avatarSeed);
+
+    const newUser = this.updateUser(id, { imageUrl: newAvatar });
+
+    return {
+      data: newUser,
+    };
   }
 
   async updateHashedRefreshToken(id: string, hashedRefreshToken: string) {

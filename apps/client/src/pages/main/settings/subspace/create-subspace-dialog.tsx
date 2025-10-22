@@ -240,18 +240,9 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
         <div className="space-y-4">
           {/* Avatar and Name Section */}
           <div className="space-y-2">
-            <Label>{t("Avatar and Name")}</Label>
+            <Label>{t("Subspace Name")}</Label>
             <div className="flex">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>{avatarComponent}</TooltipTrigger>
-                  <TooltipContent>
-                    <p>{t("Click to upload and crop subspace logo")}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <div className="ml-4 flex-1">
+              <div className="flex-1">
                 <Input
                   ref={nameInputRef}
                   className="w-full"
@@ -260,7 +251,7 @@ const CreateSubspaceDialog: React.FC<ConfirmDialogProps<CreateSubspaceDialogProp
                   placeholder={t("Please enter subspace name")}
                   disabled={loading}
                 />
-                <Label className="text-xs text-muted-foreground">{t("This is your subspace name that members will see")}</Label>
+                {/* <Label className="text-xs text-muted-foreground">{t("This is your subspace name that members will see")}</Label> */}
               </div>
             </div>
           </div>

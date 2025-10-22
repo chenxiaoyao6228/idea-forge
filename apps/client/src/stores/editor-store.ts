@@ -18,7 +18,7 @@ export interface CollabUser {
   clientId?: string;
   name: string;
   email?: string;
-  avatar?: string;
+  imageUrl?: string;
   color: string;
   lastActive: string;
 }

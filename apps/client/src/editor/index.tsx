@@ -45,7 +45,7 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
     () => ({
       name: userInfo?.displayName || (userInfo?.email as string),
       email: userInfo?.email,
-      avatar: userInfo?.imageUrl,
+      imageUrl: userInfo?.imageUrl,
       color: getRandomElement(COLLABORATE_EDIT_USER_COLORS) || COLLABORATE_EDIT_USER_COLORS[0],
     }),
     [userInfo],

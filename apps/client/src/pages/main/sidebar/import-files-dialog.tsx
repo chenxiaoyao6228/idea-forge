@@ -202,4 +202,8 @@ const ImportFilesDialog: React.FC<ConfirmDialogProps<ImportFilesDialogProps, any
   );
 };
 
-export const showImportFilesModal = ContextAwareConfirmation.createConfirmation(confirmable(ImportFilesDialog));
+export const importFilesModal = ContextAwareConfirmation.createConfirmation(confirmable(ImportFilesDialog));
+
+export const showImportFilesModal = () => {
+  return importFilesModal({});
+};

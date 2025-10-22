@@ -28,4 +28,12 @@ export const userApi = {
    * @returns Paginated list of users
    */
   search: async (params: UserListRequestDto) => request.get<UserListRequestDto, UserListResponse>("/api/users", { params }),
+
+  /**
+   * Regenerate user avatar with a new seed
+   * @param id - User ID
+   * @param seed - Optional seed for avatar generation (defaults to user's email)
+   * @returns Updated user information with new avatar
+   */
+  regenerateAvatar: async (id: string, seed?: string) => request.post<{ seed?: string }, UserResponse>(`/api/users/${id}/regenerate-avatar`, { seed }),
 };
