@@ -22,3 +22,4 @@ export * from "./guest-collaborators";
 export * from "./public-share";
 export * from "./share";
 export * from "./notification";
+export * from "./comment";
