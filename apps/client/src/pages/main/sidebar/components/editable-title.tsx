@@ -100,20 +100,6 @@ export const EditableTitle = React.forwardRef<{ setIsEditing: (editing: boolean)
       );
     }
 
-    return (
-      <span
-        className={cn("truncate", editable && "cursor-text")}
-        onClick={(e) => {
-          if (editable) {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsEditingInternal(true);
-            onEditing?.(true);
-          }
-        }}
-      >
-        {title || placeholder}
-      </span>
-    );
+    return <span className="truncate">{title || placeholder}</span>;
   },
 );

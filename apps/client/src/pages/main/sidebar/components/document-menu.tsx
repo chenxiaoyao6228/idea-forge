@@ -2,7 +2,7 @@ import { Button } from "@idea/ui/shadcn/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@idea/ui/shadcn/ui/dropdown-menu";
 import { MoreHorizontal, Edit, Trash2, Archive } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useArchiveDocument, useDeleteDocument } from "@/stores/document-store";
+import { useArchiveDocument, useDeleteDocument, useFindNextNavigationTarget, useGetDocument } from "@/stores/document-store";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
@@ -19,6 +19,8 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
   const { docId: currentDocId } = useParams();
   const { run: archiveDocument, loading: isArchiving } = useArchiveDocument();
   const { run: deleteDocument, loading: isDeleting } = useDeleteDocument();
+  const findNextNavigationTarget = useFindNextNavigationTarget();
+  const getDocument = useGetDocument();
   const [isOpen, setIsOpen] = useState(false);
 
   const isCurrentDocument = currentDocId === documentId;
@@ -47,7 +49,9 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
     try {
       // Navigate away first if this is the current document
       if (isCurrentDocument) {
-        navigate("/");
+        const doc = getDocument(documentId);
+        const nextTarget = findNextNavigationTarget(documentId, doc?.subspaceId || null);
+        navigate(nextTarget);
       }
 
       await archiveDocument(documentId);
@@ -75,7 +79,9 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
     try {
       // Navigate away first if this is the current document
       if (isCurrentDocument) {
-        navigate("/");
+        const doc = getDocument(documentId);
+        const nextTarget = findNextNavigationTarget(documentId, doc?.subspaceId || null);
+        navigate(nextTarget);
       }
 
       await deleteDocument(documentId, { permanent: false });

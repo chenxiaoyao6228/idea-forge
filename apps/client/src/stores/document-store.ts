@@ -93,6 +93,7 @@ const removeDocumentFromSubspace = (subspaceId: string, documentId: string) => {
   });
 };
 
+
 // Types
 export interface DocumentEntity {
   id: string;
@@ -927,6 +928,80 @@ export const useFindDescendants = () => {
 export const useCurrentDocumentId = () => {
   const { docId } = useParams();
   return docId;
+};
+
+export const useFindNavigationTreeSiblings = () => {
+  return useRefCallback((documentId: string, subspaceId: string | null) => {
+    // Recursively searches a navigation tree to find a node and its siblings
+    const findNodeInTree = (
+      nodes: NavigationNode[],
+      targetId: string,
+      parent: NavigationNode | null = null
+    ): { siblings: NavigationNode[]; currentIndex: number; parent: NavigationNode | null } | null => {
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+
+        if (node.id === targetId) {
+          return { siblings: nodes, currentIndex: i, parent };
+        }
+
+        // Search in children
+        if (node.children && node.children.length > 0) {
+          const found = findNodeInTree(node.children, targetId, node);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    // Get navigation tree
+    let navigationTree: NavigationNode[] = [];
+    if (subspaceId) {
+      const subspaces = useSubSpaceStore.getState().subspaces;
+      const subspace = subspaces[subspaceId];
+      navigationTree = subspace?.navigationTree || [];
+    } else {
+      const subspaces = useSubSpaceStore.getState().subspaces;
+      const personalSubspace = Object.values(subspaces).find((s) => s.type === "PERSONAL");
+      navigationTree = personalSubspace?.navigationTree || [];
+    }
+
+    if (navigationTree.length === 0) return null;
+
+    const found = findNodeInTree(navigationTree, documentId);
+    if (!found) return null;
+
+    const { siblings, currentIndex, parent } = found;
+
+    return {
+      nextSibling: siblings[currentIndex + 1] || null,
+      previousSibling: siblings[currentIndex - 1] || null,
+      parent,
+      currentIndex,
+    };
+  });
+};
+
+export const useFindNextNavigationTarget = () => {
+  const findSiblings = useFindNavigationTreeSiblings();
+
+  return useRefCallback((documentId: string, subspaceId: string | null) => {
+    const siblings = findSiblings(documentId, subspaceId);
+
+    if (!siblings) return "/";
+
+    // Priority 1: Next sibling
+    if (siblings.nextSibling) return `/${siblings.nextSibling.id}`;
+
+    // Priority 2: Previous sibling
+    if (siblings.previousSibling) return `/${siblings.previousSibling.id}`;
+
+    // Priority 3: Parent document
+    if (siblings.parent) return `/${siblings.parent.id}`;
+
+    // Priority 4: Fallback to home
+    return "/";
+  });
 };
 
 export default useDocumentStore;
