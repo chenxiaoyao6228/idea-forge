@@ -42,6 +42,7 @@ import { HealthModule } from "./health/health.module";
 import { PublicShareService } from "./public-share/public-share.service";
 import { NotificationModule } from "./notification/notification.module";
 import { ImportsModule } from "./imports/imports.module";
+import { CommentModule } from "./comment/comment.module";
 
 @Module({
   controllers: [AppController],
@@ -98,6 +99,7 @@ import { ImportsModule } from "./imports/imports.module";
     PublicShareModule,
     GuestCollaboratorsModule,
     NotificationModule,
+    CommentModule,
     HealthModule,
   ],
   providers: [

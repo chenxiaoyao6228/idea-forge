@@ -7,9 +7,6 @@ import type { NotificationWebSocketEvent } from "@idea/contracts";
 /**
  * Processes notification events from the websocket-events queue
  * Broadcasts notifications to users via Socket.io rooms
- *
- * Follows the existing pattern from websocket-event.processor.ts
- * Room pattern: `user:${userId}` for targeted delivery
  */
 @Processor("websocket-events")
 export class NotificationEventProcessor extends WorkerHost {

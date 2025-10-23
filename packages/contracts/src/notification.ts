@@ -19,6 +19,11 @@ export enum NotificationEventType {
   WORKSPACE_INVITATION = "WORKSPACE_INVITATION", // User invited to workspace (action-required)
   SUBSPACE_INVITATION = "SUBSPACE_INVITATION", // User invited to private subspace (action-required)
   WORKSPACE_REMOVED = "WORKSPACE_REMOVED", // User removed from workspace (informational)
+
+  // Comment events (→ Mentions/Subscribe tab)
+  COMMENT_MENTION = "COMMENT_MENTION", // User is @mentioned in a comment (informational)
+  COMMENT_CREATED = "COMMENT_CREATED", // New comment on user's document (informational)
+  COMMENT_RESOLVED = "COMMENT_RESOLVED", // Comment thread resolved (informational)
 }
 
 /**
@@ -295,9 +300,9 @@ export function getCategoryEventTypes(category: NotificationCategory): Notificat
     case "INBOX":
       return [NotificationEventType.WORKSPACE_INVITATION, NotificationEventType.SUBSPACE_INVITATION, NotificationEventType.WORKSPACE_REMOVED];
     case "MENTIONS":
+      return [NotificationEventType.COMMENT_MENTION];
     case "SUBSCRIBE":
-      // Phase 2+ will add event types for these categories
-      return [];
+      return [NotificationEventType.COMMENT_CREATED, NotificationEventType.COMMENT_RESOLVED];
   }
 }
 
@@ -312,7 +317,13 @@ export function isActionRequiredEvent(eventType: NotificationEventType): boolean
  * Determine if a notification is informational (auto-read eligible)
  */
 export function isInformationalEvent(eventType: NotificationEventType): boolean {
-  return [NotificationEventType.PERMISSION_GRANT, NotificationEventType.PERMISSION_REJECT].includes(eventType);
+  return [
+    NotificationEventType.PERMISSION_GRANT,
+    NotificationEventType.PERMISSION_REJECT,
+    NotificationEventType.COMMENT_MENTION,
+    NotificationEventType.COMMENT_CREATED,
+    NotificationEventType.COMMENT_RESOLVED,
+  ].includes(eventType);
 }
 
 // ============================================

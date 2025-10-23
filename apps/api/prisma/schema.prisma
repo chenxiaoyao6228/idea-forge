@@ -161,6 +161,11 @@ model User {
 
   // Import relationships
   temporaryImports TemporaryImport[] // Temporary import records
+
+  // Comment relationships
+  comments          Comment[] @relation("CommentAuthor")
+  resolvedComments  Comment[] @relation("CommentResolver")
+  reactions         Reaction[]
 }
 
 enum UserStatus {
@@ -288,10 +293,78 @@ model Doc {
   // Notifications
   notifications Notification[]
 
+  // Comments
+  comments Comment[]
+
   // Indexes for performance
   @@index([parentId])
   @@index([workspaceId])
   @@index([subspaceId])
+}
+
+model Comment {
+  id              String    @id @default(cuid())
+
+  // Content (TipTap JSON)
+  data            Json      // Rich text content
+
+  // Relationships
+  documentId      String
+  document        Doc       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Threading (exact same as Outline)
+  parentCommentId String?
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[] @relation("CommentReplies")
+
+  // Author
+  createdById     String
+  createdBy       User      @relation("CommentAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Resolution (exact same as Outline)
+  resolvedAt      DateTime?
+  resolvedById    String?
+  resolvedBy      User?     @relation("CommentResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  // Reactions (aggregated summary like Outline)
+  // Array of {emoji: string, userIds: string[]}
+  reactions       Json?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // Soft delete (paranoid mode)
+
+  // Relations
+  reactionsList   Reaction[]
+
+  // Indexes (optimized for Outline's query patterns)
+  @@index([documentId, deletedAt])
+  @@index([parentCommentId])
+  @@index([createdAt])
+  @@index([createdById])
+
+  @@map("comments")
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  emoji     String   @db.VarChar(10)
+
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  // Unique constraint (one reaction per user per emoji per comment)
+  @@unique([commentId, userId, emoji])
+  @@index([commentId])
+  @@index([userId])
+
+  @@map("reactions")
 }
 
 model WorkspaceMember {

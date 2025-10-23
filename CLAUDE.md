@@ -1,14 +1,17 @@
 <!-- OPENSPEC:START -->
+
 # OpenSpec Instructions
 
 These instructions are for AI assistants working in this project.
 
 Always open `@/openspec/AGENTS.md` when the request:
+
 - Mentions planning or proposals (words like proposal, spec, change, plan)
 - Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
 - Sounds ambiguous and you need the authoritative spec before coding
 
 Use `@/openspec/AGENTS.md` to learn:
+
 - How to create and apply change proposals
 - Spec format and conventions
 - Project structure and guidelines
@@ -43,7 +46,6 @@ pnpm install && pnpm run setup
 
 ## DO NOT run any dev command, they are already started with hot-reload, ask to restart the dev server if needed
 
-pnpm build:contracts # generate prisma client and build contracts for api and client, do it each time you change the prisma.schema and
 
 # Type checking, do it after you finish your change and spot obvious errors
 pnpm -F @idea/client typecheck
