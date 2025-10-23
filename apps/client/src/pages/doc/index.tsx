@@ -14,6 +14,8 @@ import { TableOfContent } from "./components/table-of-content";
 import { Action, useAbilityCan } from "@/hooks/use-ability";
 import { useCurrentDocumentFromStore, useCurrentDocumentId } from "@/stores/document-store";
 import { useEditorStore } from "@/stores/editor-store";
+import useUIStore from "@/stores/ui-store";
+import { cn } from "@idea/ui/shadcn/utils";
 
 export default function Doc() {
   const { t } = useTranslation();
@@ -24,6 +26,7 @@ export default function Doc() {
   // Get editor and toc items from store
   const editor = useEditorStore((state) => state.editor);
   const tocItems = useEditorStore((state) => state.tocItems);
+  const commentsSidebarOpen = useUIStore((state) => state.commentsSidebarOpen);
 
   const isHomeDoc = false;
 
@@ -74,7 +77,7 @@ export default function Doc() {
   return (
     <>
       <DocumentHeader />
-      <div className="flex-auto overflow-y-auto">
+      <div className={cn("flex-auto overflow-y-auto transition-all duration-300", commentsSidebarOpen && "mr-[400px]")}>
         {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={canUpdateDoc} />}
         <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative">
           <Toolbar doc={currentDocument} editable={canUpdateDoc} />
