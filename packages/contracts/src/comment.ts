@@ -20,9 +20,9 @@ export enum CommentSortType {
   ORDER_IN_DOCUMENT = "orderInDocument",
 }
 
-// Zod schemas for validation
-export const CommentStatusFilterSchema = z.nativeEnum(CommentStatusFilter);
-export const CommentSortTypeSchema = z.nativeEnum(CommentSortType);
+// Zod schemas for validation - use z.enum for better JSON API compatibility
+export const CommentStatusFilterSchema = z.enum(["resolved", "unresolved"]);
+export const CommentSortTypeSchema = z.enum(["mostRecent", "orderInDocument"]);
 
 // ============================================
 // Comment Types
@@ -39,6 +39,18 @@ export const ReactionSummarySchema = z.object({
 export type ReactionSummary = z.infer<typeof ReactionSummarySchema>;
 
 /**
+ * User summary for comment relations
+ */
+export const UserSummarySchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  displayName: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+});
+
+export type UserSummary = z.infer<typeof UserSummarySchema>;
+
+/**
  * Comment DTO with computed properties for API responses
  */
 export const CommentDtoSchema = z.object({
@@ -47,8 +59,10 @@ export const CommentDtoSchema = z.object({
   documentId: z.string(),
   parentCommentId: z.string().nullable(),
   createdById: z.string(),
+  createdBy: UserSummarySchema.optional(),
   resolvedAt: z.string().nullable(),
   resolvedById: z.string().nullable(),
+  resolvedBy: UserSummarySchema.optional().nullable(),
   reactions: z.array(ReactionSummarySchema).nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -72,11 +86,12 @@ export type CommentDto = z.infer<typeof CommentDtoSchema>;
  */
 export const createCommentSchema = z
   .object({
-    id: z.string().uuid().optional(),
-    documentId: z.string().uuid(),
-    parentCommentId: z.string().uuid().optional(),
+    id: z.string().optional(),
+    documentId: z.string(),
+    parentCommentId: z.string().optional(),
     data: z.any().optional(), // TipTap JSON
     text: z.string().optional(), // Plain text (will be converted to TipTap)
+    anchorText: z.string().optional(), // The selected text this comment is anchored to
   })
   .refine((obj) => !!(obj.data || obj.text), {
     message: "One of data or text is required",
@@ -90,9 +105,9 @@ export type CreateCommentRequest = z.infer<typeof createCommentSchema>;
  * Following Outline's exact schema with filtering and pagination
  */
 export const listCommentsSchema = z.object({
-  documentId: z.string().uuid().optional(),
-  workspaceId: z.string().uuid().optional(),
-  parentCommentId: z.string().uuid().optional(),
+  documentId: z.string().optional(),
+  workspaceId: z.string().optional(),
+  parentCommentId: z.string().optional(),
   statusFilter: z.array(CommentStatusFilterSchema).optional(),
   includeAnchorText: z.boolean().optional(),
   sort: z.enum(["createdAt", "updatedAt"]).default("createdAt"),
@@ -108,7 +123,7 @@ export type ListCommentsRequest = z.infer<typeof listCommentsSchema>;
  * Update comment request
  */
 export const updateCommentSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   data: z.any(), // TipTap JSON
 });
 
@@ -119,7 +134,7 @@ export type UpdateCommentRequest = z.infer<typeof updateCommentSchema>;
  * Resolve comment request
  */
 export const resolveCommentSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
 });
 
 export const ResolveCommentRequestSchema = resolveCommentSchema;
@@ -129,7 +144,7 @@ export type ResolveCommentRequest = z.infer<typeof resolveCommentSchema>;
  * Unresolve comment request
  */
 export const unresolveCommentSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
 });
 
 export const UnresolveCommentRequestSchema = unresolveCommentSchema;
@@ -139,7 +154,7 @@ export type UnresolveCommentRequest = z.infer<typeof unresolveCommentSchema>;
  * Add reaction request
  */
 export const addReactionSchema = z.object({
-  id: z.string().uuid(), // Comment ID
+  id: z.string(), // Comment ID
   emoji: z.string().regex(/^.{1,10}$/), // Emoji character (1-10 chars)
 });
 
@@ -150,7 +165,7 @@ export type AddReactionRequest = z.infer<typeof addReactionSchema>;
  * Remove reaction request
  */
 export const removeReactionSchema = z.object({
-  id: z.string().uuid(), // Comment ID
+  id: z.string(), // Comment ID
   emoji: z.string().regex(/^.{1,10}$/),
 });
 
@@ -161,7 +176,7 @@ export type RemoveReactionRequest = z.infer<typeof removeReactionSchema>;
  * Delete comment request
  */
 export const deleteCommentSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
 });
 
 export const DeleteCommentRequestSchema = deleteCommentSchema;

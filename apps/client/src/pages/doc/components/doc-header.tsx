@@ -16,10 +16,13 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { SharePopover } from "@/pages/main/sharing";
 import { StarButton } from "@/components/star-button";
 import { useCurrentDocumentId } from "@/stores/document-store";
+import { useEditorStore } from "@/stores/editor-store";
+import { CommentButton } from "@/components/comments";
 
 export default function DocumentHeader() {
   const activeDocumentId = useCurrentDocumentId();
   const { t } = useTranslation();
+  const editor = useEditorStore((state) => state.editor);
 
   const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
 
@@ -53,6 +56,7 @@ export default function DocumentHeader() {
       <div className="flex items-center mr-2 sm:mr-4 ">
         <CollabUsers className="mr-2" />
         {activeDocumentId && <SharePopover documentId={activeDocumentId}></SharePopover>}
+        {activeDocumentId && <CommentButton documentId={activeDocumentId} editor={editor} />}
         {activeDocumentId && <StarButton documentId={activeDocumentId} showTooltip={true} size="sm" />}
         <TopBarHandlers />
       </div>

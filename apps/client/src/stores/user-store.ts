@@ -48,4 +48,9 @@ export const useLogout = () => {
   );
 };
 
+// Computed values
+export const useCurrentUser = () => {
+  return useUserStore((state) => state.userInfo);
+};
+
 export default useUserStore;
