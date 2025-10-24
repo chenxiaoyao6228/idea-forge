@@ -13,12 +13,15 @@ import {
 } from "@idea/contracts";
 import { Comment, Prisma } from "@prisma/client";
 import { CommentPresenter } from "./comment.presenter";
+import { EventPublisherService } from "@/_shared/events/event-publisher.service";
+import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
 export class CommentService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly commentPresenter: CommentPresenter,
+    private readonly eventPublisher: EventPublisherService,
     @InjectQueue("comments") private readonly commentQueue: Queue,
   ) {}
 
@@ -51,6 +54,11 @@ export class CommentService {
           },
         },
         parentComment: true,
+        document: {
+          select: {
+            workspaceId: true,
+          },
+        },
       },
     });
 
@@ -59,6 +67,19 @@ export class CommentService {
       commentId: comment.id,
       userId,
     } as CommentCreatedJobData);
+
+    // Publish WebSocket event for real-time sync
+    const presented = await this.commentPresenter.present(comment);
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.COMMENT_CREATED,
+      workspaceId: comment.document.workspaceId,
+      actorId: userId,
+      data: {
+        documentId: comment.documentId,
+        payload: presented,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     return comment;
   }
@@ -214,6 +235,11 @@ export class CommentService {
           },
         },
         parentComment: true,
+        document: {
+          select: {
+            workspaceId: true,
+          },
+        },
       },
     });
 
@@ -224,6 +250,19 @@ export class CommentService {
         newMentionIds,
       } as CommentUpdatedJobData);
     }
+
+    // Publish WebSocket event for real-time sync
+    const presented = await this.commentPresenter.present(updated);
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.COMMENT_UPDATED,
+      workspaceId: updated.document.workspaceId,
+      actorId: comment.createdById,
+      data: {
+        documentId: updated.documentId,
+        payload: presented,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     return updated;
   }
@@ -270,6 +309,11 @@ export class CommentService {
           },
         },
         parentComment: true,
+        document: {
+          select: {
+            workspaceId: true,
+          },
+        },
       },
     });
 
@@ -278,6 +322,19 @@ export class CommentService {
       commentId: id,
       resolvedById: userId,
     } as CommentResolvedJobData);
+
+    // Publish WebSocket event for real-time sync
+    const presented = await this.commentPresenter.present(updated);
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.COMMENT_RESOLVED,
+      workspaceId: updated.document.workspaceId,
+      actorId: userId,
+      data: {
+        documentId: updated.documentId,
+        payload: presented,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     return updated;
   }
@@ -323,7 +380,25 @@ export class CommentService {
           },
         },
         parentComment: true,
+        document: {
+          select: {
+            workspaceId: true,
+          },
+        },
       },
+    });
+
+    // Publish WebSocket event for real-time sync
+    const presented = await this.commentPresenter.present(updated);
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.COMMENT_UNRESOLVED,
+      workspaceId: updated.document.workspaceId,
+      actorId: comment.createdById,
+      data: {
+        documentId: updated.documentId,
+        payload: presented,
+      },
+      timestamp: new Date().toISOString(),
     });
 
     return updated;
@@ -352,11 +427,30 @@ export class CommentService {
 
     // Aggregate reactions and update comment
     const reactions = await this.commentPresenter.aggregateReactions(commentId);
-    await this.prismaService.comment.update({
+    const updatedComment = await this.prismaService.comment.update({
       where: { id: commentId },
       data: {
         reactions: reactions as any,
       },
+      include: {
+        document: {
+          select: {
+            workspaceId: true,
+          },
+        },
+      },
+    });
+
+    // Publish WebSocket event for real-time sync
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.COMMENT_REACTION_ADDED,
+      workspaceId: updatedComment.document.workspaceId,
+      actorId: userId,
+      data: {
+        documentId: updatedComment.documentId,
+        payload: { commentId, userId, emoji, reactions },
+      },
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -375,11 +469,30 @@ export class CommentService {
 
     // Aggregate reactions and update comment
     const reactions = await this.commentPresenter.aggregateReactions(commentId);
-    await this.prismaService.comment.update({
+    const updatedComment = await this.prismaService.comment.update({
       where: { id: commentId },
       data: {
         reactions: reactions as any,
       },
+      include: {
+        document: {
+          select: {
+            workspaceId: true,
+          },
+        },
+      },
+    });
+
+    // Publish WebSocket event for real-time sync
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.COMMENT_REACTION_REMOVED,
+      workspaceId: updatedComment.document.workspaceId,
+      actorId: userId,
+      data: {
+        documentId: updatedComment.documentId,
+        payload: { commentId, userId, emoji, reactions },
+      },
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -389,6 +502,16 @@ export class CommentService {
    */
   async delete(id: string) {
     const comment = await this.findById(id);
+
+    // Get workspaceId for WebSocket event
+    const document = await this.prismaService.doc.findUnique({
+      where: { id: comment.documentId },
+      select: { workspaceId: true },
+    });
+
+    if (!document) {
+      throw new NotFoundException("Document not found");
+    }
 
     // If it's a top-level comment, also soft-delete all replies
     if (!comment.parentCommentId) {
@@ -408,6 +531,18 @@ export class CommentService {
       data: {
         deletedAt: new Date(),
       },
+    });
+
+    // Publish WebSocket event for real-time sync
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.COMMENT_DELETED,
+      workspaceId: document.workspaceId,
+      actorId: comment.createdById,
+      data: {
+        documentId: comment.documentId,
+        payload: { id },
+      },
+      timestamp: new Date().toISOString(),
     });
   }
 

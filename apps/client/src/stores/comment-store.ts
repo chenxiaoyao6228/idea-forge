@@ -308,8 +308,6 @@ export const useResolveComment = () => {
           // Confirm with server data
           updateComment(id, comment);
 
-          toast.success("Comment resolved");
-
           return comment;
         } catch (error) {
           // Rollback on failure
@@ -357,8 +355,6 @@ export const useUnresolveComment = () => {
 
           // Confirm with server data
           updateComment(id, comment);
-
-          toast.success("Comment unresolved");
 
           return comment;
         } catch (error) {
@@ -505,8 +501,6 @@ export const useDeleteComment = () => {
 
         try {
           await commentApi.delete(id);
-
-          toast.success("Comment deleted");
         } catch (error) {
           // Rollback on failure
           addComment(original);

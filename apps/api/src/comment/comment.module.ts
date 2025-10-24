@@ -5,15 +5,16 @@ import { CommentController } from "./comment.controller";
 import { CommentAbility } from "./comment.ability";
 import { CommentPresenter } from "./comment.presenter";
 import { CommentProcessor } from "./processors/comment.processor";
-import { CommentGateway } from "./comment.gateway";
 import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { DocumentModule } from "@/document/document.module";
 import { PermissionModule } from "@/permission/permission.module";
 import { NotificationModule } from "@/notification/notification.module";
+import { EventsModule } from "@/_shared/events/events.module";
 
 @Module({
   imports: [
     PrismaModule,
+    EventsModule,
     BullModule.registerQueue({
       name: "comments",
     }),
@@ -21,8 +22,8 @@ import { NotificationModule } from "@/notification/notification.module";
     forwardRef(() => PermissionModule),
     forwardRef(() => NotificationModule),
   ],
-  providers: [CommentService, CommentAbility, CommentPresenter, CommentProcessor, CommentGateway],
+  providers: [CommentService, CommentAbility, CommentPresenter, CommentProcessor],
   controllers: [CommentController],
-  exports: [CommentService, CommentAbility, CommentPresenter, CommentGateway],
+  exports: [CommentService, CommentAbility, CommentPresenter],
 })
 export class CommentModule {}
