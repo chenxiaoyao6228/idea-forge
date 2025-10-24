@@ -4,40 +4,52 @@ import { useEffect, useState } from "react";
 import { useScrollTop } from "@/hooks/use-scroll-top";
 import { Rocket } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { cn } from "@idea/ui/shadcn/utils";
+import useUIStore from "@/stores/ui-store";
+import { COMMENT_SIDEBAR_WIDTH } from "./comments/comments-sidebar";
 
 export default function BackToTop() {
   const { t } = useTranslation();
   const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
+  const commentsSidebarOpen = useUIStore((state) => state.commentsSidebarOpen);
 
   useEffect(() => {
-    setScrollContainer(document.getElementsByClassName("main")[0] as HTMLElement);
+    setScrollContainer(document.getElementById("WORK_CONTENT_SCROLL_CONTAINER"));
   }, []);
 
   const scrolled = useScrollTop(10, scrollContainer || undefined);
 
   const scrollToTop = () => {
-    document.querySelector("main")!.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+    const container = document.getElementById("WORK_CONTENT_SCROLL_CONTAINER");
+    if (container) {
+      container.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
   };
 
+  if (!scrolled) return null;
+
   return (
-    <>
-      {scrolled && (
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" onClick={scrollToTop} className="fixed bottom-16 right-2 rounded-full px-2">
-                <Rocket className="h-8 w-8" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent align="center">
-              <p>{t("Back to top")}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-    </>
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            onClick={scrollToTop}
+            className={cn(
+              "fixed right-4 bottom-10 rounded-full px-2 z-50 transition-all duration-300 select-none",
+              commentsSidebarOpen && `mr-[${COMMENT_SIDEBAR_WIDTH + 10}px]`,
+            )}
+          >
+            <Rocket className="h-8 w-8" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent align="center">
+          <p>{t("Back to top")}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

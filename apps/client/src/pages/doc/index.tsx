@@ -16,6 +16,7 @@ import { useCurrentDocumentFromStore, useCurrentDocumentId } from "@/stores/docu
 import { useEditorStore } from "@/stores/editor-store";
 import useUIStore from "@/stores/ui-store";
 import { cn } from "@idea/ui/shadcn/utils";
+import { CommentsSidebar } from "@/components/comments";
 
 export default function Doc() {
   const { t } = useTranslation();
@@ -75,23 +76,37 @@ export default function Doc() {
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <DocumentHeader />
-      <div className={cn("flex-auto overflow-y-auto transition-all duration-300", commentsSidebarOpen && "mr-[400px]")}>
-        {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={canUpdateDoc} />}
-        <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative">
-          <Toolbar doc={currentDocument} editable={canUpdateDoc} />
-          <TiptapEditor
-            key={currentDocument.id}
-            id={currentDocument.id!}
-            editable={canUpdateDoc}
-            collabToken={collabToken}
-            collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")}
-          />
+      <div className="flex flex-1 overflow-hidden ">
+        {/* Article section */}
+        <div className="flex-1 relative h-[calc(100vh-48px)] border border-red">
+          <div id="WORK_CONTENT_SCROLL_CONTAINER" className="absolute inset-0 overflow-y-auto">
+            {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={canUpdateDoc} />}
+            <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative">
+              <Toolbar doc={currentDocument} editable={canUpdateDoc} />
+              <TiptapEditor
+                key={currentDocument.id}
+                id={currentDocument.id!}
+                editable={canUpdateDoc}
+                collabToken={collabToken}
+                collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")}
+              />
+            </div>
+          </div>
+          {/* Table of content - absolute positioned within article section */}
           <TableOfContent editor={editor} items={tocItems} />
         </div>
+
+        {/* Comment sidebar */}
+        {commentsSidebarOpen && (
+          <div className="w-[400px] flex-shrink-0 border-l">
+            <CommentsSidebar documentId={currentDocument.id!} open={commentsSidebarOpen} />
+          </div>
+        )}
       </div>
+      {/* Back to top - fixed positioned globally */}
       <BackToTop />
-    </>
+    </div>
   );
 }

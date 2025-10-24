@@ -17,6 +17,9 @@ import { createTableDecorationPlugin } from "./table/plugins/create-table-decora
 import AddParagraph from "./paragraph/plugins/add-paragraph";
 import i18next from "i18next";
 
+// Export CommentMark for dynamic configuration in editor
+export { CommentMark } from "./comment-mark";
+
 // Configure specific extensions from coreExtensions
 // Filter out table extensions as they need client-specific configuration below
 const configuredCoreExtensions = coreExtensions
@@ -59,6 +62,8 @@ const nodes = [
   }),
 ];
 
+// CommentMark needs to be configured dynamically with documentId and onCommentClick
+// It's exported above and configured in editor/index.tsx
 const marks: any[] = [];
 
 const _extensions = [

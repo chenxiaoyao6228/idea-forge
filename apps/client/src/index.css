@@ -6,12 +6,7 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
-  /* TODO: This line of code case table of content failed */
-  /* overflow-x: hidden; */
-}
-
-html {
-  @apply custom-scrollbar;
+  overflow: hidden; /* Prevent scrolling at root level */
 }
 
 /* https://github.com/shadcn-ui/ui/discussions/6908 */
@@ -22,7 +17,13 @@ body {
 #root {
   height: 100%;
   width: 100%;
+  overflow: hidden; /* Prevent scrolling at root level */
 }
+
+#WORK_CONTENT_SCROLL_CONTAINER {
+  @apply custom-scrollbar;
+}
+
 li {
   list-style: none;
 }

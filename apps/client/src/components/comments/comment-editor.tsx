@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from "@tiptap/react";
+import { useEffect } from "react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -12,6 +13,7 @@ interface CommentEditorProps {
   autoFocus?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
+  onSubmit?: () => void;
 }
 
 export function CommentEditor({
@@ -22,6 +24,7 @@ export function CommentEditor({
   autoFocus = false,
   onFocus,
   onBlur,
+  onSubmit,
 }: CommentEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -56,14 +59,34 @@ export function CommentEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "prose prose-sm max-w-none focus:outline-none p-1",
-          readOnly ? "cursor-default" : "min-h-[80px]",
+          "prose prose-sm max-w-none focus:outline-none p-2",
+          readOnly ? "cursor-default" : "min-h-[60px]",
           "prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 ",
           "prose-p:mx-0.5 prose-ul:mx-0.5 prose-ol:mx-0.5 prose-li:mx-0.5 prose-headings:mx-0.5 prose-blockquote:mx-0.5 prose-code:mx-0.5 prose-pre:mx-0.5 prose-strong:mx-0.5 prose-em:mx-0.5 prose-a:mx-0.5",
         ),
       },
+      handleKeyDown: (_view, event) => {
+        // Handle Enter key for submission
+        if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey && !readOnly) {
+          event.preventDefault();
+          onSubmit?.();
+          return true;
+        }
+        return false;
+      },
     },
   });
+
+  // Sync editor content when value prop changes
+  useEffect(() => {
+    if (editor && !readOnly) {
+      const currentContent = editor.getJSON();
+      // Only update if the content is actually different to avoid cursor issues
+      if (JSON.stringify(currentContent) !== JSON.stringify(value)) {
+        editor.commands.setContent(value || "");
+      }
+    }
+  }, [editor, value, readOnly]);
 
   return (
     <div className={cn("comment-editor", readOnly && "cursor-default")}>

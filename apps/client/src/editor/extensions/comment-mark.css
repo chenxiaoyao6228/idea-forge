@@ -1,0 +1,70 @@
+/* Comment mark styles */
+
+.comment-mark {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* Active comment (unresolved) */
+.comment-mark-active {
+  background-color: rgba(255, 213, 0, 0.3); /* Yellow highlight */
+  border-bottom: 2px solid rgba(255, 213, 0, 0.8);
+}
+
+.comment-mark-active:hover {
+  background-color: rgba(255, 213, 0, 0.5);
+}
+
+/* Resolved comment */
+.comment-mark-resolved {
+  background-color: rgba(156, 163, 175, 0.2); /* Gray */
+  border-bottom: 1px solid rgba(156, 163, 175, 0.5);
+  opacity: 0.6;
+}
+
+.comment-mark-resolved:hover {
+  background-color: rgba(156, 163, 175, 0.3);
+  opacity: 0.8;
+}
+
+/* Draft comment (not yet saved) */
+.comment-mark-draft {
+  background-color: rgba(59, 130, 246, 0.2); /* Blue */
+  border-bottom: 2px dashed rgba(59, 130, 246, 0.8);
+}
+
+.comment-mark-draft:hover {
+  background-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .comment-mark-active {
+    background-color: rgba(255, 213, 0, 0.2);
+    border-bottom-color: rgba(255, 213, 0, 0.6);
+  }
+
+  .comment-mark-active:hover {
+    background-color: rgba(255, 213, 0, 0.3);
+  }
+
+  .comment-mark-resolved {
+    background-color: rgba(156, 163, 175, 0.15);
+    border-bottom-color: rgba(156, 163, 175, 0.4);
+  }
+
+  .comment-mark-resolved:hover {
+    background-color: rgba(156, 163, 175, 0.25);
+  }
+
+  .comment-mark-draft {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-bottom-color: rgba(59, 130, 246, 0.6);
+  }
+
+  .comment-mark-draft:hover {
+    background-color: rgba(59, 130, 246, 0.25);
+  }
+}
