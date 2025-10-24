@@ -89,8 +89,8 @@ export function CommentEditor({
   }, [editor, value, readOnly]);
 
   return (
-    <div className={cn("comment-editor", readOnly && "cursor-default")}>
-      <EditorContent editor={editor} />
+    <div className={cn(readOnly && "cursor-default")}>
+      <EditorContent editor={editor} className="comment-editor" />
     </div>
   );
 }

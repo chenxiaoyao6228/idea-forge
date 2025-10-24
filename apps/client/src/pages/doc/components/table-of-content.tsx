@@ -104,10 +104,10 @@ export const TableOfContent = memo(({ editor, items, onInitialNavigation }: Tabl
 
   return (
     <div
-      className={cn(
-        "table-of-content fixed top-1/2 -translate-y-1/2 right-4 cursor-pointer transition-all duration-300",
-        commentsSidebarOpen && `mr-[${COMMENT_SIDEBAR_WIDTH + 10}px]`,
-      )}
+      className={cn("table-of-content fixed top-1/2 -translate-y-1/2 right-4 cursor-pointer transition-all duration-300")}
+      style={{
+        marginRight: commentsSidebarOpen ? `${COMMENT_SIDEBAR_WIDTH + 10}px` : "0px",
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

@@ -5,3 +5,4 @@ export { CommentForm } from "./comment-form";
 export { CommentEditor } from "./comment-editor";
 export { CommentMenu } from "./comment-menu";
 export { CommentButton } from "./comment-button";
+import "./index.css";
