@@ -93,4 +93,13 @@ export enum BusinessEvents {
   NOTIFICATION_CREATE = "notification.create",
   NOTIFICATION_UPDATE = "notification.update",
   NOTIFICATION_ACTION_RESOLVED = "notification.action_resolved",
+
+  // Comment events
+  COMMENT_CREATED = "comment.created",
+  COMMENT_UPDATED = "comment.updated",
+  COMMENT_DELETED = "comment.deleted",
+  COMMENT_RESOLVED = "comment.resolved",
+  COMMENT_UNRESOLVED = "comment.unresolved",
+  COMMENT_REACTION_ADDED = "comment.reaction_added",
+  COMMENT_REACTION_REMOVED = "comment.reaction_removed",
 }

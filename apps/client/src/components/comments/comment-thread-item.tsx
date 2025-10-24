@@ -9,7 +9,6 @@ import { useUpdateComment, useResolveComment, useUnresolveComment } from "@/stor
 import { useCurrentUser } from "@/stores/user-store";
 import type { CommentEntity } from "@/stores/comment-store";
 import { useEditorStore } from "@/stores/editor-store";
-import { TextSelection } from "@tiptap/pm/state";
 
 interface CommentThreadItemProps {
   comment: CommentEntity;
@@ -19,7 +18,7 @@ interface CommentThreadItemProps {
   canReply?: boolean;
 }
 
-export function CommentThreadItem({ comment, highlightedText, firstOfThread = false, firstOfAuthor = true, canReply = false }: CommentThreadItemProps) {
+export function CommentThreadItem({ comment, highlightedText, firstOfThread = false, firstOfAuthor = true }: CommentThreadItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(comment.data);
   const currentUser = useCurrentUser();

@@ -8,8 +8,6 @@ import { DocPermissionResolveService } from "@/permission/document-permission.se
 
 /**
  * Comment background processor
- * Handles notification generation for comment events
- * Following Outline's notification pattern
  */
 @Processor("comments")
 export class CommentProcessor extends WorkerHost {

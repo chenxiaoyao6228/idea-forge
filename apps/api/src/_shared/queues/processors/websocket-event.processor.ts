@@ -165,6 +165,20 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.NOTIFICATION_ACTION_RESOLVED:
           await this.handleNotificationEvent(event, server);
           break;
+
+        // Comment events
+        case BusinessEvents.COMMENT_CREATED:
+        case BusinessEvents.COMMENT_UPDATED:
+        case BusinessEvents.COMMENT_RESOLVED:
+        case BusinessEvents.COMMENT_UNRESOLVED:
+        case BusinessEvents.COMMENT_REACTION_ADDED:
+        case BusinessEvents.COMMENT_REACTION_REMOVED:
+          await this.handleCommentEvent(event, server);
+          break;
+
+        case BusinessEvents.COMMENT_DELETED:
+          await this.handleCommentDeletedEvent(event, server);
+          break;
       }
     } catch (error) {
       console.error(`Error processing websocket event: ${event.name}`, error);
@@ -1042,5 +1056,55 @@ export class WebsocketEventProcessor extends WorkerHost {
 
     // Emit import event to the user who initiated the import
     server.to(`user:${actorId}`).emit(name, data);
+  }
+
+  /**
+   * Handle comment events (create, update, resolve, unresolve, reactions)
+   * Broadcasts to all users who have permissions for the document
+   */
+  private async handleCommentEvent(event: WebsocketEvent<any>, server: any) {
+    const { name, data } = event;
+    const { documentId, payload } = data;
+
+    if (!documentId) {
+      console.warn("[websocket-event-processor]: Comment event missing documentId", event);
+      return;
+    }
+
+    const channels = await this.getDocumentEventChannels(event, { id: documentId });
+    server.to(channels).emit(name, payload);
+  }
+
+  /**
+   * Handle comment deleted event
+   * Broadcasts to all users who have permissions for the document
+   */
+  private async handleCommentDeletedEvent(event: WebsocketEvent<any>, server: any) {
+    const { name, data } = event;
+    const { documentId, payload } = data;
+
+    if (!documentId) {
+      console.warn("[websocket-event-processor]: Comment deleted event missing documentId", event);
+      return;
+    }
+
+    // Find all users who have permissions for this document
+    const permissions = await this.prismaService.documentPermission.findMany({
+      where: {
+        docId: documentId,
+      },
+      select: { userId: true },
+    });
+
+    // Deduplicate user IDs
+    const userIds = Array.from(new Set(permissions.map((p) => p.userId).filter(Boolean)));
+
+    // Emit to all users who have permissions for the document
+    for (const userId of userIds) {
+      server.to(`user:${userId}`).emit(name, payload);
+    }
+
+    // Also emit to document channel for any connected clients viewing this document
+    server.to(`document:${documentId}`).emit(name, payload);
   }
 }

@@ -5,14 +5,13 @@ import { NotificationController } from "./notification.controller";
 import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { EventsModule } from "@/_shared/events/events.module";
 import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
-import { NotificationEventProcessor } from "./processors/notification-event.processor";
 import { DocumentModule } from "@/document/document.module";
 import { WorkspaceModule } from "@/workspace/workspace.module";
 import { SubspaceModule } from "@/subspace/subspace.module";
 
 @Module({
   imports: [PrismaModule, EventsModule, forwardRef(() => DocumentModule), forwardRef(() => WorkspaceModule), forwardRef(() => SubspaceModule)],
-  providers: [NotificationService, NotificationSettingService, NotificationEventProcessor, EventDeduplicator],
+  providers: [NotificationService, NotificationSettingService, EventDeduplicator],
   controllers: [NotificationController],
   exports: [NotificationService, NotificationSettingService],
 })
