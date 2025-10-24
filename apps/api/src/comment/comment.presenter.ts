@@ -58,14 +58,6 @@ export class CommentPresenter {
       presented.isResolved = !!comment.resolvedAt;
     }
 
-    // Extract anchor text if requested
-    if (options?.includeAnchorText) {
-      const anchorText = await this.extractAnchorText(comment.documentId, comment.id);
-      if (anchorText) {
-        presented.anchorText = anchorText;
-      }
-    }
-
     return presented;
   }
 
@@ -74,57 +66,6 @@ export class CommentPresenter {
    */
   async presentMany(comments: CommentWithRelations[], options?: { includeAnchorText?: boolean }): Promise<CommentDto[]> {
     return Promise.all(comments.map((comment) => this.present(comment, options)));
-  }
-
-  /**
-   * Extract anchor text for a comment from the document
-   * This finds the text that was selected when the comment was created
-   */
-  private async extractAnchorText(documentId: string, commentId: string): Promise<string | null> {
-    try {
-      const doc = await this.prismaService.doc.findUnique({
-        where: { id: documentId },
-        select: { content: true },
-      });
-
-      if (!doc || !doc.content) {
-        return null;
-      }
-
-      const tiptapContent = JSON.parse(doc.content);
-      const anchorText = this.findCommentMarkText(tiptapContent, commentId);
-
-      return anchorText;
-    } catch (error) {
-      // If extraction fails, return null
-      return null;
-    }
-  }
-
-  /**
-   * Recursively search TipTap JSON for comment mark and extract text
-   */
-  private findCommentMarkText(node: any, commentId: string): string | null {
-    // If this is a text node, check if it has the comment mark
-    if (node.type === "text" && node.marks) {
-      const commentMark = node.marks.find((mark: any) => mark.type === "commentMark" && mark.attrs?.id === commentId);
-
-      if (commentMark) {
-        return node.text || null;
-      }
-    }
-
-    // Recursively search child nodes
-    if (node.content && Array.isArray(node.content)) {
-      for (const child of node.content) {
-        const text = this.findCommentMarkText(child, commentId);
-        if (text) {
-          return text;
-        }
-      }
-    }
-
-    return null;
   }
 
   /**

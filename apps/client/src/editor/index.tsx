@@ -1,4 +1,5 @@
 import "./index.css";
+import "./extensions/comment-mark.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
@@ -6,7 +7,7 @@ import { useCollaborationProvider } from "./hooks/use-collaboration-provider";
 import { getRandomElement } from "@idea/utils/string";
 import useUserStore from "@/stores/user-store";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
-import { extensions } from "./extensions";
+import { extensions, CommentMark } from "./extensions";
 import BubbleMenus from "./bubble-menus";
 import { useRef, useMemo, useEffect } from "react";
 import { useEditorStore } from "@/stores/editor-store";
@@ -19,6 +20,7 @@ import { getHierarchicalIndexes, getHeadlineLevel } from "@tiptap/extension-tabl
 import TableOfContents from "@tiptap/extension-table-of-contents";
 import React from "react";
 import { TextSelection } from "@tiptap/pm/state";
+import useUIStore from "@/stores/ui-store";
 
 interface Props {
   id: string;
@@ -40,6 +42,8 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
   };
   const setEditor = useEditorStore((state) => state.setEditor);
   const setTocItems = useEditorStore((state) => state.setTocItems);
+  const setCommentsSidebarOpen = useUIStore((state) => state.setCommentsSidebarOpen);
+  const setFocusedCommentId = useUIStore((state) => state.setFocusedCommentId);
 
   const user = useMemo(
     () => ({
@@ -62,6 +66,14 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
     editable,
     extensions: [
       ...extensions,
+      CommentMark.configure({
+        documentId: id,
+        onCommentClick: (commentId: string) => {
+          // Open sidebar and focus the comment
+          setCommentsSidebarOpen(true);
+          setFocusedCommentId(commentId);
+        },
+      }),
       ...(provider?.document
         ? [
             Collaboration.configure({

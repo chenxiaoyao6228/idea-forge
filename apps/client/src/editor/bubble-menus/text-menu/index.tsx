@@ -8,6 +8,7 @@ import AlignMenu from "./align-menu";
 import ContentTypeMenu from "./content-type-menu";
 import SetLinkMenu from "./set-link-menu";
 import AIMenu from "./ai-menu";
+import CommentMenu from "./comment-menu";
 
 export default function TextMenu(props: MenuProps) {
   const { editor, containerRef } = props;
@@ -28,6 +29,8 @@ export default function TextMenu(props: MenuProps) {
           <AIMenu editor={editor} />
           <div className="w-px h-4 bg-border mx-1" />
           <ContentTypeMenu editor={editor} />
+          <div className="w-px h-4 bg-border mx-1" />
+          <CommentMenu editor={editor} />
           <div className="w-px h-4 bg-border mx-1" />
           <BasicMenu editor={editor} />
           <div className="w-px h-4 bg-border mx-1" />

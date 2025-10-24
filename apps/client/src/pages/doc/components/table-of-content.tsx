@@ -5,6 +5,8 @@ import { TextSelection } from "@tiptap/pm/state";
 import type React from "react";
 import type { Editor } from "@tiptap/react";
 import scrollIntoView from "scroll-into-view-if-needed";
+import useUIStore from "@/stores/ui-store";
+import { COMMENT_SIDEBAR_WIDTH } from "@/components/comments/comments-sidebar";
 
 interface TableOfContentProps {
   editor: Editor | null;
@@ -15,6 +17,7 @@ interface TableOfContentProps {
 export const TableOfContent = memo(({ editor, items, onInitialNavigation }: TableOfContentProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [activeId, setActiveId] = useState<string>("");
+  const commentsSidebarOpen = useUIStore((state) => state.commentsSidebarOpen);
 
   // Common function to handle navigation and scrolling
   const handleNavigation = (id: string, shouldUpdateHash = true) => {
@@ -101,7 +104,10 @@ export const TableOfContent = memo(({ editor, items, onInitialNavigation }: Tabl
 
   return (
     <div
-      className="table-of-content fixed top-1/2 -translate-y-1/2 right-2 cursor-pointer"
+      className={cn(
+        "table-of-content fixed top-1/2 -translate-y-1/2 right-4 cursor-pointer transition-all duration-300",
+        commentsSidebarOpen && `mr-[${COMMENT_SIDEBAR_WIDTH + 10}px]`,
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -131,8 +137,8 @@ export const TableOfContent = memo(({ editor, items, onInitialNavigation }: Tabl
       {/* Content */}
       <div
         className={cn(
-          "fixed top-1/2 -translate-y-1/2 right-0  mr-2 w-80 max-h-[60vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto custom-scrollbar",
-          "transition-all duration-200 ease-in-out",
+          "fixed top-1/2 -translate-y-1/2 right-0 w-80 max-h-[60vh] bg-background rounded-lg shadow-lg p-4 overflow-y-auto custom-scrollbar",
+          "transition-all duration-300 ease-in-out",
           isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none",
         )}
       >

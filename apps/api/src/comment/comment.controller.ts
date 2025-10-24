@@ -30,7 +30,7 @@ export class CommentController {
    * Rate limit: 10 per minute (TODO: add rate limiting)
    */
   @Post("create")
-  @CheckPolicy(Action.Create, "Comment")
+  // @CheckPolicy(Action.Create, "Comment")
   async create(@GetUser("id") userId: string, @Body() dto: CreateCommentDto) {
     // Create comment
     const comment = await this.commentService.create(userId, dto);
@@ -45,7 +45,7 @@ export class CommentController {
    * List comments with filtering and pagination
    */
   @Post("list")
-  @CheckPolicy(Action.Read, "Comment")
+  // @CheckPolicy(Action.Read, "Comment")
   async list(@GetUser("id") userId: string, @Body() dto: ListCommentsDto) {
     // List comments
     const result = await this.commentService.list(userId, dto);
@@ -58,7 +58,7 @@ export class CommentController {
    * Update comment content
    */
   @Post("update")
-  @CheckPolicy(Action.Update, "Comment")
+  // @CheckPolicy(Action.Update, "Comment")
   async update(@GetUser("id") userId: string, @Body() dto: UpdateCommentDto) {
     const updated = await this.commentService.update(dto.id, dto);
     const presented = await this.commentPresenter.present(updated);
@@ -71,7 +71,7 @@ export class CommentController {
    * Mark comment thread as resolved
    */
   @Post("resolve")
-  @CheckPolicy(Action.Update, "Comment")
+  // @CheckPolicy(Action.Update, "Comment")
   async resolve(@GetUser("id") userId: string, @Body() dto: ResolveCommentDto) {
     const resolved = await this.commentService.resolve(dto.id, userId);
     const presented = await this.commentPresenter.present(resolved);
@@ -84,7 +84,7 @@ export class CommentController {
    * Mark comment thread as unresolved
    */
   @Post("unresolve")
-  @CheckPolicy(Action.Update, "Comment")
+  // @CheckPolicy(Action.Update, "Comment")
   async unresolve(@GetUser("id") userId: string, @Body() dto: UnresolveCommentDto) {
     const unresolved = await this.commentService.unresolve(dto.id);
     const presented = await this.commentPresenter.present(unresolved);

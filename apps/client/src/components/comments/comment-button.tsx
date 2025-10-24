@@ -33,8 +33,6 @@ export function CommentButton({ documentId, editor }: CommentButtonProps) {
       {/* Comment button */}
       <Button variant={commentsSidebarOpen ? "secondary" : "ghost"} size="sm" onClick={() => setCommentsSidebarOpen(!commentsSidebarOpen)} className="relative">
         <MessageSquareText className="w-6 h-6" />
-
-        {unresolvedCount > 0 && <span className="absolute -top-0 -right-0 w-2 h-2 bg-red-500 rounded-full" />}
       </Button>
 
       {/* Comments sidebar */}

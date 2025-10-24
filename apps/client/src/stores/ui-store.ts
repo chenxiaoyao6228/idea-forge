@@ -6,15 +6,17 @@ const useUIStore = create<{
   commentsSidebarOpen: boolean;
   setCommentsSidebarOpen: (open: boolean) => void;
   pendingDraftCommentId?: string;
-  pendingDraftAnchorText?: string;
-  setPendingDraftComment: (id?: string, anchorText?: string) => void;
+  setPendingDraftComment: (id?: string) => void;
+  focusedCommentId?: string;
+  setFocusedCommentId: (id?: string) => void;
 }>((set) => ({
   activeDocumentId: undefined,
-  commentsSidebarOpen: true,
+  commentsSidebarOpen: false,
   setCommentsSidebarOpen: (open) => set({ commentsSidebarOpen: open }),
   pendingDraftCommentId: undefined,
-  pendingDraftAnchorText: undefined,
-  setPendingDraftComment: (id, anchorText) => set({ pendingDraftCommentId: id, pendingDraftAnchorText: anchorText }),
+  setPendingDraftComment: (id) => set({ pendingDraftCommentId: id }),
+  focusedCommentId: undefined,
+  setFocusedCommentId: (id) => set({ focusedCommentId: id }),
 }));
 
 export default useUIStore;

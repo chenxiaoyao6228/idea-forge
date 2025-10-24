@@ -91,7 +91,6 @@ export const createCommentSchema = z
     parentCommentId: z.string().optional(),
     data: z.any().optional(), // TipTap JSON
     text: z.string().optional(), // Plain text (will be converted to TipTap)
-    anchorText: z.string().optional(), // The selected text this comment is anchored to
   })
   .refine((obj) => !!(obj.data || obj.text), {
     message: "One of data or text is required",

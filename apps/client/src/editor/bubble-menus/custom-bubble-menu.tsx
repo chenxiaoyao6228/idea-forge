@@ -158,7 +158,7 @@ export function CustomBubbleMenu({
       }}
       style={{
         ...floatingStyles,
-        zIndex: 1000,
+        zIndex: 1,
       }}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
