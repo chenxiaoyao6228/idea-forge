@@ -6,6 +6,7 @@ import { useCreateComment } from "@/stores/comment-store";
 import { cn } from "@idea/ui/shadcn/utils";
 import useUIStore from "@/stores/ui-store";
 import { useEditorStore } from "@/stores/editor-store";
+import type { Editor } from "@tiptap/react";
 
 interface CommentFormProps {
   documentId: string;
@@ -23,8 +24,9 @@ export function CommentForm({ documentId, parentCommentId, placeholder = "Add a 
   const createComment = useCreateComment();
   const pendingDraftCommentId = useUIStore((state) => state.pendingDraftCommentId);
   const setPendingDraftComment = useUIStore((state) => state.setPendingDraftComment);
-  const editor = useEditorStore((state) => state.editor);
+  const documentEditor = useEditorStore((state) => state.editor);
   const draftIdRef = useRef<string | undefined>(undefined);
+  const commentEditorRef = useRef<Editor | null>(null);
 
   // Load draft from localStorage
   useEffect(() => {
@@ -63,16 +65,22 @@ export function CommentForm({ documentId, parentCommentId, placeholder = "Add a 
   useEffect(() => {
     return () => {
       // If there's a pending draft that wasn't saved, remove the mark
-      if (draftIdRef.current && editor) {
-        editor.chain().focus().unsetCommentMark(draftIdRef.current).run();
+      if (draftIdRef.current && documentEditor) {
+        documentEditor.chain().focus().unsetCommentMark(draftIdRef.current).run();
       }
     };
-  }, [editor]);
+  }, [documentEditor]);
 
   const isEmpty = !content || (content.content && content.content.length === 0) || content.content?.[0]?.content?.length === 0;
 
   const handleSubmit = async () => {
-    if (isEmpty) return;
+    // Get the latest content from comment editor (to handle Enter key press timing)
+    const latestContent = commentEditorRef.current?.getJSON() || content;
+
+    // Check if the latest content is empty
+    const isLatestEmpty = !latestContent || (latestContent.content && latestContent.content.length === 0) || latestContent.content?.[0]?.content?.length === 0;
+
+    if (isLatestEmpty) return;
 
     const commentDraftId = draftIdRef.current;
 
@@ -81,12 +89,12 @@ export function CommentForm({ documentId, parentCommentId, placeholder = "Add a 
         id: commentDraftId, // Pass draft ID if present
         documentId,
         parentCommentId,
-        data: content,
+        data: latestContent,
       });
 
       // If this was a draft comment, update the mark with the real ID
-      if (commentDraftId && editor && comment) {
-        editor
+      if (commentDraftId && documentEditor && comment) {
+        documentEditor
           .chain()
           .focus()
           .updateCommentMark(commentDraftId, {
@@ -97,7 +105,7 @@ export function CommentForm({ documentId, parentCommentId, placeholder = "Add a 
         // Also need to update the ID attribute
         // First unset the old mark, then set a new one with the real ID
         // Get the text range for the old mark by finding it in the document
-        const { doc } = editor.state;
+        const { doc } = documentEditor.state;
         let markRange: { from: number; to: number } | null = null;
 
         doc.nodesBetween(0, doc.content.size, (node, pos) => {
@@ -109,7 +117,7 @@ export function CommentForm({ documentId, parentCommentId, placeholder = "Add a 
         });
 
         if (markRange) {
-          editor
+          documentEditor
             .chain()
             .focus()
             .setTextSelection(markRange)
@@ -153,6 +161,10 @@ export function CommentForm({ documentId, parentCommentId, placeholder = "Add a 
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           onSubmit={handleSubmit}
+          onEditorReady={(editor) => {
+            commentEditorRef.current = editor;
+          }}
+          documentId={documentId}
         />
       </div>
 

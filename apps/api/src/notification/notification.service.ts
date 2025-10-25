@@ -1,4 +1,4 @@
-import { Injectable, forwardRef, Inject } from "@nestjs/common";
+import { Injectable, forwardRef, Inject, Logger } from "@nestjs/common";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
@@ -23,6 +23,8 @@ import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventPublisher: EventPublisherService,
@@ -75,13 +77,12 @@ export class NotificationService {
     }
 
     // Use unified pagination method with custom ordering
-    // Sort unread notifications (viewedAt IS NULL) first, then by creation date
+    // Sort by creation date (newest first) for all notifications
     // @ts-ignore
     const result = await this.prisma.notification.paginateWithApiFormat({
       where,
       orderBy: [
-        { viewedAt: { sort: "asc", nulls: "first" } }, // Unread (NULL) notifications first
-        { createdAt: "desc" }, // Within each group, sort by newest first
+        { createdAt: "desc" }, // Sort by newest first
       ],
       page,
       limit,
@@ -468,41 +469,70 @@ export class NotificationService {
     actionType?: "PERMISSION_REQUEST" | "WORKSPACE_INVITATION" | "SUBSPACE_INVITATION";
     actionPayload?: Record<string, any>;
   }) {
-    // Check user notification settings before creating notification
-    const isEnabled = await this.notificationSettingService.isNotificationEnabled(data.userId, data.event);
-    if (!isEnabled) {
-      // User has disabled this notification type - skip creation
-      return null;
-    }
+    this.logger.log(`[NOTIFICATION] Creating notification: event=${data.event}, userId=${data.userId}, actorId=${data.actorId}, documentId=${data.documentId}`);
+    this.logger.log(`[DEBUG] Notification data:`, JSON.stringify(data));
 
-    const notification = await this.prisma.notification.create({
-      data: {
-        userId: data.userId,
-        event: data.event,
+    try {
+      // Check user notification settings before creating notification
+      const isEnabled = await this.notificationSettingService.isNotificationEnabled(data.userId, data.event);
+      if (!isEnabled) {
+        // User has disabled this notification type - skip creation
+        this.logger.log(`[NOTIFICATION] User ${data.userId} has disabled ${data.event} notifications, skipping`);
+        return null;
+      }
+
+      this.logger.log(`[DEBUG] User notification settings check passed, creating notification in database`);
+
+      const notification = await this.prisma.notification.create({
+        data: {
+          userId: data.userId,
+          event: data.event,
+          workspaceId: data.workspaceId,
+          actorId: data.actorId || null,
+          documentId: data.documentId || null,
+          metadata: data.metadata as any, // Prisma JSON type
+          actionRequired: data.actionRequired || false,
+          actionType: data.actionType || null,
+          actionStatus: data.actionRequired ? "PENDING" : "APPROVED",
+          actionPayload: data.actionPayload as any, // Prisma JSON type
+        },
+      });
+
+      this.logger.log(`[NOTIFICATION] Notification created with ID: ${notification.id}`);
+
+      // Publish WebSocket event to notify user in real-time
+      this.logger.log(`[DEBUG] Publishing WebSocket event for notification ${notification.id}`);
+      await this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.NOTIFICATION_CREATE,
         workspaceId: data.workspaceId,
-        actorId: data.actorId || null,
-        documentId: data.documentId || null,
-        metadata: data.metadata as any, // Prisma JSON type
-        actionRequired: data.actionRequired || false,
-        actionType: data.actionType || null,
-        actionStatus: data.actionRequired ? "PENDING" : "APPROVED",
-        actionPayload: data.actionPayload as any, // Prisma JSON type
-      },
-    });
+        actorId: data.actorId,
+        data: {
+          type: "notification.create",
+          payload: notification,
+        },
+        timestamp: new Date().toISOString(),
+      });
 
-    // Publish WebSocket event to notify user in real-time
-    await this.eventPublisher.publishWebsocketEvent({
-      name: BusinessEvents.NOTIFICATION_CREATE,
-      workspaceId: data.workspaceId,
-      actorId: data.actorId,
-      data: {
-        type: "notification.create",
-        payload: notification,
-      },
-      timestamp: new Date().toISOString(),
-    });
+      this.logger.log(`[NOTIFICATION] WebSocket event published for notification ${notification.id}`);
 
-    return notification;
+      return notification;
+    } catch (error) {
+      const err = error as any;
+      this.logger.error(
+        `[ERROR] Failed to create notification`,
+        JSON.stringify({
+          event: data.event,
+          userId: data.userId,
+          actorId: data.actorId,
+          documentId: data.documentId,
+          workspaceId: data.workspaceId,
+          error: err?.message || String(error),
+          errorCode: err?.code,
+          errorStack: err?.stack,
+        }),
+      );
+      throw error; // Re-throw for caller to handle
+    }
   }
   // ================================ call other services =======================================================================
 

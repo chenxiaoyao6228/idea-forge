@@ -253,6 +253,55 @@ pnpm -F @idea/api add <new-package>     # For API
 - **Socket.io:** Debug panel available in development mode
 - **Document State:** Prisma Studio to inspect stored Yjs documents
 
+### Debugging with Server Logs
+
+**IMPORTANT:** When debugging API issues, background jobs, or processor errors, ALWAYS check server logs.
+
+**Log Files Location:** `apps/api/logs/`
+
+**Log Files:**
+- `app-error-YYYY-MM-DD.log` - Error-level logs only
+- `app-YYYY-MM-DD.log` - All logs (info, warn, error)
+- `app-debug-YYYY-MM-DD.log` - Debug logs (development only)
+
+**Common Debugging Workflows:**
+
+1. **When given a curl command or traceId:**
+   ```bash
+   # Search for the traceId in logs
+   grep "trace-id-here" apps/api/logs/app-$(date +%Y-%m-%d).log
+
+   # View recent errors
+   tail -100 apps/api/logs/app-error-$(date +%Y-%m-d).log
+
+   # Follow logs in real-time
+   tail -f apps/api/logs/app-$(date +%Y-%m-%d).log
+   ```
+
+2. **Background job/processor errors:**
+   ```bash
+   # Processor errors are logged, not thrown to console
+   # Always check error logs for background job failures
+   grep "CommentProcessor\|NotificationProcessor" apps/api/logs/app-error-*.log
+
+   # Search for specific error patterns
+   grep -i "error\|exception\|failed" apps/api/logs/app-$(date +%Y-%m-%d).log
+   ```
+
+3. **Trace a specific request:**
+   ```bash
+   # Client sends x-trace-id header with each request
+   # Find the traceId from browser DevTools Network tab
+   # Then search logs for that traceId
+   grep "f47ac10b-58cc-4372-a567-0e02b2c3d479" apps/api/logs/*.log
+   ```
+
+**Request ID System:**
+- Every client request includes `x-request-id` header (auto-generated UUID)
+- Server logs include `traceId` field (from x-request-id) for correlating requests
+- Same request ID appears in all related log entries (controller, service, processor)
+- Use request ID to track request flow through the system
+
 ## Environment Setup
 
 ### Required Services

@@ -1,5 +1,5 @@
 import request from "@/lib/request";
-import type { UpdateUserRequest, UserListRequestDto, UserListResponse } from "@idea/contracts";
+import type { UpdateUserRequest, UserListRequestDto, UserListResponse, SuggestMentionUsersRequest, SuggestMentionUsersResponse } from "@idea/contracts";
 import type { User } from "@idea/contracts";
 
 export interface UserResponse {
@@ -36,4 +36,12 @@ export const userApi = {
    * @returns Updated user information with new avatar
    */
   regenerateAvatar: async (id: string, seed?: string) => request.post<{ seed?: string }, UserResponse>(`/api/users/${id}/regenerate-avatar`, { seed }),
+
+  /**
+   * Suggest users for mention autocomplete
+   * @param body - Request with documentId and optional query string
+   * @returns List of users matching the query within the document's workspace
+   */
+  suggestMentionUsers: async (body: SuggestMentionUsersRequest) =>
+    request.post<SuggestMentionUsersRequest, SuggestMentionUsersResponse>("/api/users/suggest-mentions", body),
 };

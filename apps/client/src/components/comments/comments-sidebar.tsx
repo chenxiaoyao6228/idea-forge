@@ -27,7 +27,8 @@ interface CommentsSidebarProps {
 export function CommentsSidebar({ documentId, open, sortType = "mostRecent", referencedCommentIds }: CommentsSidebarProps) {
   const [activeTab, setActiveTab] = useState<"current" | "resolved">("current");
   const [focusedCommentId, setFocusedCommentId] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const currentScrollRef = useRef<HTMLDivElement>(null);
+  const resolvedScrollRef = useRef<HTMLDivElement>(null);
 
   const fetchComments = useFetchComments();
   const unresolvedThreads = useUnresolvedThreadsInDocument(documentId, sortType, referencedCommentIds);
@@ -60,19 +61,41 @@ export function CommentsSidebar({ documentId, open, sortType = "mostRecent", ref
 
       // Check if the comment is resolved and switch tab if needed
       const comment = findComment(globalFocusedCommentId);
-      if (comment?.resolvedAt) {
+      const isResolved = !!comment?.resolvedAt;
+      if (isResolved) {
         setActiveTab("resolved");
-      } else if (comment && !comment.resolvedAt) {
+      } else if (comment) {
         setActiveTab("current");
       }
 
       // Scroll to the comment in sidebar
+      // Use a longer timeout to ensure tab switch and render are complete
       setTimeout(() => {
         const commentElement = document.querySelector(`[data-comment-thread-id="${globalFocusedCommentId}"]`);
-        if (commentElement) {
-          commentElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        // Use the correct scroll ref based on whether the comment is resolved
+        const scrollRef = isResolved ? resolvedScrollRef : currentScrollRef;
+
+        if (commentElement && scrollRef.current) {
+          // Get the ScrollArea's viewport element (the actual scrollable container)
+          const viewport = scrollRef.current.querySelector("[data-radix-scroll-area-viewport]");
+
+          if (viewport) {
+            // Calculate the position to scroll to
+            const commentRect = commentElement.getBoundingClientRect();
+            const viewportRect = viewport.getBoundingClientRect();
+            const scrollTop = viewport.scrollTop;
+
+            // Calculate target scroll position (center the comment in viewport)
+            const targetScrollTop = scrollTop + (commentRect.top - viewportRect.top) - viewportRect.height / 2 + commentRect.height / 2;
+
+            // Smooth scroll to the target position
+            viewport.scrollTo({
+              top: targetScrollTop,
+              behavior: "smooth",
+            });
+          }
         }
-      }, 100);
+      }, 200);
     }
   }, [globalFocusedCommentId, findComment]);
 
@@ -110,7 +133,7 @@ export function CommentsSidebar({ documentId, open, sortType = "mostRecent", ref
 
         {/* Current Comments Tab */}
         <TabsContent value="current" className="flex-1 mt-0 p-0 overflow-hidden flex flex-col">
-          <ScrollArea ref={scrollRef} className="flex-1">
+          <ScrollArea ref={currentScrollRef} className="flex-1">
             <div className="space-y-4 px-2 py-3">
               {fetchComments.loading && unresolvedThreads.length === 0 ? (
                 <div className="flex items-center justify-center py-8 text-muted-foreground">Loading comments...</div>
@@ -142,7 +165,7 @@ export function CommentsSidebar({ documentId, open, sortType = "mostRecent", ref
 
         {/* Resolved Comments Tab */}
         <TabsContent value="resolved" className="flex-1 mt-0 p-0 overflow-hidden flex flex-col">
-          <ScrollArea className="flex-1">
+          <ScrollArea ref={resolvedScrollRef} className="flex-1">
             <div className="space-y-4 px-2 py-3">
               {fetchComments.loading && resolvedThreads.length === 0 ? (
                 <div className="flex items-center justify-center py-8 text-muted-foreground">Loading comments...</div>

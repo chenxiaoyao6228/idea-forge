@@ -230,6 +230,9 @@ importers:
       '@sentry/profiling-node':
         specifier: ^8.54.0
         version: 8.54.0
+      '@tiptap/core':
+        specifier: ^3.7.2
+        version: 3.7.2(@tiptap/pm@3.7.2)
       '@tiptap/html':
         specifier: ^3.7.2
         version: 3.7.2(@tiptap/core@3.7.2)(@tiptap/pm@3.7.2)(happy-dom@20.0.7)
@@ -1054,6 +1057,9 @@ importers:
 
   packages/editor:
     dependencies:
+      '@idea/contracts':
+        specifier: workspace:^
+        version: link:../contracts
       '@tiptap/core':
         specifier: ^3.7.2
         version: 3.7.2(@tiptap/pm@3.7.2)
@@ -1138,6 +1144,9 @@ importers:
       '@tiptap/react':
         specifier: ^3.7.2
         version: 3.7.2(@floating-ui/dom@1.7.4)(@tiptap/core@3.7.2)(@tiptap/pm@3.7.2)(@types/react-dom@18.3.1)(@types/react@18.3.12)(react-dom@18.3.1)(react@18.3.1)
+      '@tiptap/suggestion':
+        specifier: ^3.0.0
+        version: 3.0.0(@tiptap/core@3.7.2)(@tiptap/pm@3.7.2)
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1

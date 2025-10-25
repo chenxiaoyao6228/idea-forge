@@ -25,8 +25,14 @@ const request = axios.create({
   timeout: REQUEST_TIMEOUT,
   headers: {
     "Content-Type": "application/json",
-    "x-request-id": generateUuid(),
   },
+});
+
+// Add request ID to each request for tracing
+request.interceptors.request.use((config) => {
+  // Generate a new request ID for each request
+  config.headers["x-request-id"] = generateUuid();
+  return config;
 });
 
 // Handle token refresh in response interceptor

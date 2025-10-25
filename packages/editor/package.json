@@ -27,6 +27,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@idea/contracts": "workspace:^",
     "@tiptap/core": "^3.7.2",
     "@tiptap/extension-blockquote": "^3.0.0",
     "@tiptap/extension-bold": "^3.0.0",
@@ -55,6 +56,7 @@
     "@tiptap/extension-underline": "^3.0.0",
     "@tiptap/pm": "^3.7.2",
     "@tiptap/react": "^3.7.2",
+    "@tiptap/suggestion": "^3.0.0",
     "highlight.js": "^11.11.1",
     "lodash-es": "^4.17.21",
     "lowlight": "^3.3.0",

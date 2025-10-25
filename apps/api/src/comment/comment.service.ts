@@ -15,6 +15,8 @@ import { Comment, Prisma } from "@prisma/client";
 import { CommentPresenter } from "./comment.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
+import { parseMentions, calculateMentionDiff, getUniqueMentionedUserIds } from "@idea/editor/server";
+import type { JSONContent } from "@tiptap/core";
 
 @Injectable()
 export class CommentService {
@@ -206,10 +208,9 @@ export class CommentService {
   async update(id: string, dto: UpdateCommentRequest) {
     const comment = await this.findById(id);
 
-    // Extract mentions from old and new data
-    const existingMentions = this.parseMentions(comment.data);
-    const updatedMentions = this.parseMentions(dto.data);
-    const newMentionIds = updatedMentions.filter((mentionId) => !existingMentions.includes(mentionId));
+    // Calculate mention diff - only new mentions need notifications
+    const newMentions = calculateMentionDiff(comment.data as JSONContent, dto.data as JSONContent);
+    const newMentionIds = getUniqueMentionedUserIds(newMentions);
 
     // Update comment
     const updated = await this.prismaService.comment.update({
@@ -585,28 +586,6 @@ export class CommentService {
         deletedAt: null,
       },
     });
-  }
-
-  /**
-   * Extract user IDs from TipTap mention nodes
-   */
-  private parseMentions(data: any): string[] {
-    const mentions: string[] = [];
-
-    const traverse = (node: any) => {
-      if (node.type === "mention" && node.attrs?.id) {
-        mentions.push(node.attrs.id);
-      }
-      if (node.content && Array.isArray(node.content)) {
-        node.content.forEach(traverse);
-      }
-    };
-
-    if (data) {
-      traverse(data);
-    }
-
-    return [...new Set(mentions)]; // Remove duplicates
   }
 
   /**
