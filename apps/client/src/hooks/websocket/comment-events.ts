@@ -4,6 +4,9 @@ import { addComment, updateComment, removeComment, useFindComment, type CommentE
 import { SocketEvents } from "@/lib/websocket";
 import { toast } from "sonner";
 import { useEditorStore } from "@/stores/editor-store";
+import { parseMentions, getUniqueMentionedUserIds } from "@idea/editor/server";
+import type { JSONContent } from "@tiptap/core";
+import useUserStore from "@/stores/user-store";
 
 /**
  * Hook to handle comment-related WebSocket events
@@ -12,6 +15,7 @@ import { useEditorStore } from "@/stores/editor-store";
 export function useCommentWebsocketEvents(socket: Socket | null) {
   const editor = useEditorStore((state) => state.editor);
   const findComment = useFindComment();
+  const userInfo = useUserStore((state) => state.userInfo);
 
   useEffect(() => {
     if (!socket) return;
@@ -30,11 +34,6 @@ export function useCommentWebsocketEvents(socket: Socket | null) {
           draft: false,
           resolved: false,
         });
-      }
-
-      // Show notification
-      if (comment.createdBy) {
-        toast.info(`${comment.createdBy.displayName || comment.createdBy.email} added a comment`);
       }
     };
 
@@ -130,5 +129,5 @@ export function useCommentWebsocketEvents(socket: Socket | null) {
       socket.off(SocketEvents.COMMENT_REACTION_ADDED, onCommentReactionAdded);
       socket.off(SocketEvents.COMMENT_REACTION_REMOVED, onCommentReactionRemoved);
     };
-  }, [socket, editor, findComment]);
+  }, [socket, editor, findComment, userInfo]);
 }

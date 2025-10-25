@@ -1,5 +1,4 @@
 import "./index.css";
-import "./extensions/comment-mark.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
@@ -7,7 +6,7 @@ import { useCollaborationProvider } from "./hooks/use-collaboration-provider";
 import { getRandomElement } from "@idea/utils/string";
 import useUserStore from "@/stores/user-store";
 import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
-import { extensions, CommentMark } from "./extensions";
+import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
 import { useRef, useMemo, useEffect } from "react";
 import { useEditorStore } from "@/stores/editor-store";
@@ -21,6 +20,7 @@ import TableOfContents from "@tiptap/extension-table-of-contents";
 import React from "react";
 import { TextSelection } from "@tiptap/pm/state";
 import useUIStore from "@/stores/ui-store";
+import { CommentMark } from "@idea/editor";
 
 interface Props {
   id: string;

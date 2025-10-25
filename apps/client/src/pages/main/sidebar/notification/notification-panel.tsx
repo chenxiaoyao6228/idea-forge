@@ -18,7 +18,7 @@ interface NotificationPanelProps {
 }
 
 export function NotificationPanel({ className, onClose }: NotificationPanelProps) {
-  const [activeTab, setActiveTab] = useState<NotificationCategory>("SHARING");
+  const [activeTab, setActiveTab] = useState<NotificationCategory>("MENTIONS");
 
   // Get workspace context
   const currentWorkspace = useCurrentWorkspace();

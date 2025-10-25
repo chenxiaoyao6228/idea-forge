@@ -139,7 +139,7 @@ export function CommentThreadItem({ comment, highlightedText, firstOfThread = fa
 
           {isEditing ? (
             <>
-              <CommentEditor value={editData} onChange={setEditData} autoFocus onSubmit={handleSave} />
+              <CommentEditor value={editData} onChange={setEditData} autoFocus onSubmit={handleSave} documentId={comment.documentId} />
               <div className="flex gap-2 mt-2">
                 <Button size="sm" onClick={handleSave} disabled={updateComment.loading}>
                   <Check className="w-4 h-4 mr-1" />
@@ -152,7 +152,7 @@ export function CommentThreadItem({ comment, highlightedText, firstOfThread = fa
               </div>
             </>
           ) : (
-            <CommentEditor value={comment.data} readOnly />
+            <CommentEditor value={comment.data} readOnly documentId={comment.documentId} />
           )}
         </div>
 

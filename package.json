@@ -28,6 +28,7 @@
     "build:api": "pnpm -F @idea/api build",
     "prisma:push": "pnpm -F @idea/api push",
     "prisma:studio": "pnpm -F @idea/api studio",
+    "prisma:generate": "pnpm -F @idea/api prisma:generate",
     "migrate:dev": "pnpm -F @idea/api migrate:dev",
     "migrate:deploy": "pnpm -F @idea/api migrate:deploy",
     "start": "turbo run start",

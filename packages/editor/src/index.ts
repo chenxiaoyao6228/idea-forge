@@ -48,6 +48,10 @@ import { CodeBlock, type CodeBlockOptions } from "./extensions/nodes/code-block"
 // ImageBlock extension
 import { ImageBlock, type ImageBlockOptions } from "./extensions/nodes/image-block";
 
+// Comment and Mention extensions
+import { CommentMark, type CommentMarkOptions } from "./extensions/comment-mark";
+import { Mention, type MentionOptions, MentionPluginKey } from "./extensions/mention";
+
 // Re-export all node extensions and their types
 export { Document, Heading, Paragraph, Text, Blockquote, HorizontalRule, HardBreak };
 export { BulletList, OrderedList, ListItem, TaskList, TaskItem };
@@ -63,6 +67,10 @@ export type { ImageBlockOptions };
 // Re-export all mark extensions and their types
 export { Bold, Italic, Strike, Underline, Code, Link, HighlightMark, Subscript, Superscript };
 export type { ItalicOptions, StrikeOptions, UnderlineOptions, CodeOptions, LinkOptions, SubscriptOptions, SuperscriptOptions };
+
+// Re-export comment and mention extensions
+export { CommentMark, Mention, MentionPluginKey };
+export type { CommentMarkOptions, MentionOptions };
 
 // Re-export base extensions
 export { AutoFocus, CustomKeys };

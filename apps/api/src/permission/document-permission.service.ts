@@ -180,6 +180,8 @@ export class DocPermissionResolveService {
       where: { id: subspaceId },
       select: {
         id: true,
+        name: true,
+        type: true,
         subspaceAdminPermission: true,
         subspaceMemberPermission: true,
         nonSubspaceMemberPermission: true,
@@ -191,13 +193,19 @@ export class DocPermissionResolveService {
     });
 
     if (!subspace) {
+      this.logger.warn(`[PERMISSION] Subspace ${subspaceId} not found`);
       return PermissionLevel.NONE;
     }
+
+    this.logger.log(
+      `[PERMISSION] Subspace ${subspace.name} (${subspace.type}): admin=${subspace.subspaceAdminPermission}, member=${subspace.subspaceMemberPermission}, nonMember=${subspace.nonSubspaceMemberPermission}`,
+    );
 
     // Check if user is a member of the subspace
     const membership = subspace.members[0];
     if (membership) {
       // User is a member, check their role
+      this.logger.log(`[PERMISSION] User ${userId} is a ${membership.role} of subspace ${subspace.name}`);
       switch (membership.role) {
         case "ADMIN":
           return subspace.subspaceAdminPermission;
@@ -209,6 +217,9 @@ export class DocPermissionResolveService {
     }
 
     // User is not a member, use non-subspace member permission
+    this.logger.log(
+      `[PERMISSION] User ${userId} is NOT a member of subspace ${subspace.name}, using nonSubspaceMemberPermission=${subspace.nonSubspaceMemberPermission}`,
+    );
     return subspace.nonSubspaceMemberPermission;
   }
 

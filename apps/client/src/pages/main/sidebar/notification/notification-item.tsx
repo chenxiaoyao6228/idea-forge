@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
-import { FileText, UserPlus, CheckCircle2, XCircle } from "lucide-react";
+import { FileText, UserPlus, CheckCircle2, XCircle, MessageSquare, AtSign } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { NotificationEntity } from "@/stores/notification-store";
 import { Badge } from "@idea/ui/shadcn/ui/badge";
 import { Button } from "@idea/ui/shadcn/ui/button";
@@ -15,6 +16,7 @@ interface NotificationItemProps {
 }
 
 export function NotificationItem({ notification, onMarkAsRead, onResolveAction }: NotificationItemProps) {
+  const navigate = useNavigate();
   const isUnread = !notification.viewedAt;
   const isActionRequired = notification.actionRequired && notification.actionStatus === "PENDING";
   const isCanceled = notification.actionStatus === "CANCELED";
@@ -32,6 +34,11 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
       case "WORKSPACE_INVITATION":
       case "SUBSPACE_INVITATION":
         return <UserPlus className="h-4 w-4 text-green-500" />;
+      case "COMMENT_MENTION":
+        return <AtSign className="h-4 w-4 text-blue-500" />;
+      case "COMMENT_CREATED":
+      case "COMMENT_RESOLVED":
+        return <MessageSquare className="h-4 w-4 text-blue-500" />;
       default:
         return <FileText className="h-4 w-4 text-gray-500" />;
     }
@@ -76,6 +83,21 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
           title: "Subspace invitation",
           description: `${metadata?.inviterName || actorName} invited you to join ${metadata?.subspaceName || "a subspace"}`,
         };
+      case "COMMENT_MENTION":
+        return {
+          title: "Mentioned you in a comment",
+          description: `${actorName} mentioned you in ${metadata?.isReply ? "a reply" : "a comment"} on "${documentTitle}"`,
+        };
+      case "COMMENT_CREATED":
+        return {
+          title: "New comment",
+          description: `${actorName} commented on "${documentTitle}"`,
+        };
+      case "COMMENT_RESOLVED":
+        return {
+          title: "Comment resolved",
+          description: `${actorName} resolved a comment thread on "${documentTitle}"`,
+        };
       default:
         return {
           title: "Notification",
@@ -93,15 +115,35 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
     }
   };
 
+  const handleClick = () => {
+    // Mark as read
+    if (isUnread && onMarkAsRead) {
+      onMarkAsRead(notification.id);
+    }
+
+    // Navigate to document for comment notifications
+    if (
+      notification.documentId &&
+      (notification.event === "COMMENT_MENTION" || notification.event === "COMMENT_CREATED" || notification.event === "COMMENT_RESOLVED")
+    ) {
+      // Get commentId from metadata to focus the specific comment
+      const commentId = (notification.metadata as any)?.commentId;
+
+      if (commentId) {
+        // Navigate with commentId to open sidebar and focus the comment
+        navigate(`/${notification.documentId}?commentId=${commentId}`);
+      } else {
+        // Fallback: just navigate to document
+        navigate(`/${notification.documentId}`);
+      }
+    }
+  };
+
   // Render the card content
   const cardContent = (
     <Card
       className={cn("p-4 transition-colors cursor-pointer hover:bg-accent", isUnread && "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800")}
-      onClick={() => {
-        if (isUnread && onMarkAsRead) {
-          onMarkAsRead(notification.id);
-        }
-      }}
+      onClick={handleClick}
     >
       <div className="flex gap-3">
         {/* Icon */}

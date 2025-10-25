@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import DocHome from "./home";
 import Loading from "@idea/ui/base/loading";
 import Cover from "./cover";
@@ -17,17 +17,21 @@ import { useEditorStore } from "@/stores/editor-store";
 import useUIStore from "@/stores/ui-store";
 import { cn } from "@idea/ui/shadcn/utils";
 import { CommentsSidebar } from "@/components/comments";
+import { useSearchParams } from "react-router-dom";
 
 export default function Doc() {
   const { t } = useTranslation();
   const activeDocumentId = useCurrentDocumentId();
   const collabToken = useUserStore((s) => s.userInfo?.collabToken);
   const currentDocument = useCurrentDocumentFromStore();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Get editor and toc items from store
   const editor = useEditorStore((state) => state.editor);
   const tocItems = useEditorStore((state) => state.tocItems);
   const commentsSidebarOpen = useUIStore((state) => state.commentsSidebarOpen);
+  const setCommentsSidebarOpen = useUIStore((state) => state.setCommentsSidebarOpen);
+  const setFocusedCommentId = useUIStore((state) => state.setFocusedCommentId);
 
   const isHomeDoc = false;
 
@@ -49,6 +53,24 @@ export default function Doc() {
   const { can: canReadDoc } = useAbilityCan("Doc", Action.Read, docAbilitySubject);
   const { can: canUpdateDoc } = useAbilityCan("Doc", Action.Update, docAbilitySubject);
   const { can: canManageDoc } = useAbilityCan("Doc", Action.Manage, docAbilitySubject);
+
+  // Handle commentId URL parameter (from notification clicks)
+  useEffect(() => {
+    const commentId = searchParams.get("commentId");
+
+    if (commentId) {
+      // Open comments sidebar
+      setCommentsSidebarOpen(true);
+
+      // Set focused comment to scroll to it
+      setFocusedCommentId(commentId);
+
+      // Clean up URL parameter after handling it
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("commentId");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setCommentsSidebarOpen, setFocusedCommentId, setSearchParams]);
 
   // Handle loading state
   if (currentDocument?.isLoading) {

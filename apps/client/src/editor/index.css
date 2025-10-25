@@ -17,6 +17,153 @@
   }
 }
 
+/* comment mark */
+.tiptap {
+  .comment-mark {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 2px;
+    padding: 0 2px;
+  }
+  
+  /* Active comment (unresolved) */
+  .comment-mark-active {
+    background-color: rgba(255, 213, 0, 0.3); /* Yellow highlight */
+    border-bottom: 2px solid rgba(255, 213, 0, 0.8);
+  }
+  
+  .comment-mark-active:hover {
+    background-color: rgba(255, 213, 0, 0.5);
+  }
+  
+  /* Resolved comment */
+  .comment-mark-resolved {
+    background-color: rgba(156, 163, 175, 0.2); /* Gray */
+    border-bottom: 1px solid rgba(156, 163, 175, 0.5);
+    opacity: 0.6;
+  }
+  
+  .comment-mark-resolved:hover {
+    background-color: rgba(156, 163, 175, 0.3);
+    opacity: 0.8;
+  }
+  
+  /* Draft comment (not yet saved) */
+  .comment-mark-draft {
+    background-color: rgba(59, 130, 246, 0.2); /* Blue */
+    border-bottom: 2px dashed rgba(59, 130, 246, 0.8);
+  }
+  
+  .comment-mark-draft:hover {
+    background-color: rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .comment-mark-active {
+      background-color: rgba(255, 213, 0, 0.2);
+      border-bottom-color: rgba(255, 213, 0, 0.6);
+    }
+  
+    .comment-mark-active:hover {
+      background-color: rgba(255, 213, 0, 0.3);
+    }
+  
+    .comment-mark-resolved {
+      background-color: rgba(156, 163, 175, 0.15);
+      border-bottom-color: rgba(156, 163, 175, 0.4);
+    }
+  
+    .comment-mark-resolved:hover {
+      background-color: rgba(156, 163, 175, 0.25);
+    }
+  
+    .comment-mark-draft {
+      background-color: rgba(59, 130, 246, 0.15);
+      border-bottom-color: rgba(59, 130, 246, 0.6);
+    }
+  
+    .comment-mark-draft:hover {
+      background-color: rgba(59, 130, 246, 0.25);
+    }
+  }
+  
+}
+
+/* mention */
+.mention {
+  @apply inline-flex items-center;
+  @apply rounded px-1 py-0.5;
+  @apply bg-primary/10 text-primary;
+  @apply font-medium;
+  @apply cursor-pointer;
+  @apply transition-colors;
+  @apply no-underline;
+}
+
+.mention:hover {
+  @apply bg-primary/20;
+}
+
+/* Mention in read-only mode (e.g., displayed comments) */
+.ProseMirror[contenteditable="false"] .mention {
+  @apply cursor-default;
+}
+
+/* Mention suggestion dropdown styling */
+.mention-suggestion {
+  @apply bg-background border border-border rounded-md shadow-lg;
+  @apply overflow-hidden;
+  @apply z-50;
+}
+
+.mention-suggestion-list {
+  @apply max-h-[300px] overflow-y-auto;
+  @apply p-1;
+}
+
+.mention-suggestion-item {
+  @apply flex items-start gap-2;
+  @apply px-3 py-2 rounded-sm;
+  @apply cursor-pointer;
+  @apply transition-colors;
+  @apply w-full text-left;
+}
+
+.mention-suggestion-item:hover,
+.mention-suggestion-item.is-selected {
+  @apply bg-accent;
+}
+
+.mention-suggestion-item-avatar {
+  @apply w-6 h-6 rounded-full;
+  @apply flex-shrink-0;
+}
+
+.mention-suggestion-item-content {
+  @apply flex-1 min-w-0;
+}
+
+.mention-suggestion-item-name {
+  @apply text-sm font-medium;
+  @apply truncate;
+}
+
+.mention-suggestion-item-email {
+  @apply text-xs text-muted-foreground;
+  @apply truncate;
+}
+
+.mention-suggestion-empty {
+  @apply px-3 py-4 text-center text-sm text-muted-foreground;
+}
+
+.mention-suggestion-loading {
+  @apply px-3 py-4 text-center text-sm text-muted-foreground;
+}
+
+
+
 /* list heading */
 .tiptap {
   /* List styles */

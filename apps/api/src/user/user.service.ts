@@ -196,4 +196,76 @@ export class UserService {
       throw new ApiException(ErrorCodeEnum.AccountError);
     }
   }
+
+  /**
+   * Suggest users for mention autocomplete
+   *
+   * Returns workspace users matching the search query.
+   * All workspace members are returned (permission warnings handled client-side).
+   *
+   * @param userId - Current user ID
+   * @param dto - Request with documentId and optional query
+   * @returns Array of user summaries
+   */
+  async suggestMentionUsers(userId: string, dto: { documentId: string; query?: string }) {
+    const { documentId, query } = dto;
+
+    // First, verify the requesting user has access to the document
+    const document = await this.prismaService.doc.findUnique({
+      where: { id: documentId },
+      select: { workspaceId: true },
+    });
+
+    if (!document) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Check if user is a member of the workspace
+    const membership = await this.prismaService.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: document.workspaceId,
+          userId,
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
+    }
+
+    // Build search query
+    const where: Prisma.UserWhereInput = {
+      status: UserStatus.ACTIVE,
+      // Only users in the same workspace
+      workspaceMembers: {
+        some: {
+          workspaceId: document.workspaceId,
+        },
+      },
+    };
+
+    // Add search filter if query provided
+    if (query?.trim()) {
+      where.OR = [
+        { displayName: { contains: query.trim(), mode: Prisma.QueryMode.insensitive } },
+        { email: { contains: query.trim(), mode: Prisma.QueryMode.insensitive } },
+      ];
+    }
+
+    // Fetch users
+    const users = await this.prismaService.user.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        imageUrl: true,
+      },
+      orderBy: [{ displayName: "asc" }, { email: "asc" }],
+      take: 25, // Limit to 25 results for performance
+    });
+
+    return users;
+  }
 }
