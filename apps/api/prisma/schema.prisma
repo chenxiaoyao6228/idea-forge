@@ -166,6 +166,9 @@ model User {
   comments          Comment[] @relation("CommentAuthor")
   resolvedComments  Comment[] @relation("CommentResolver")
   reactions         Reaction[]
+
+  // Workspace ordering (per-user)
+  workspaceOrdering UserWorkspaceOrder[]
 }
 
 enum UserStatus {
@@ -174,6 +177,23 @@ enum UserStatus {
   SUSPENDED // Temporarily suspended (violation of rules, etc.)
   REVOKED // Permanently banned (serious violation)
   ARCHIVED // Account archived (long-term inactive)
+}
+
+// Per-user workspace ordering table
+// Stores the display order of workspaces for each user
+// Supports both member workspaces and guest workspaces
+model UserWorkspaceOrder {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  index     String   // Fractional index for ordering (e.g., "a0", "a1", "a2")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, workspaceId])
+  @@index([userId, index]) // Query optimization for fetching ordered workspaces
 }
 
 model Workspace {
@@ -202,6 +222,9 @@ model Workspace {
 
   // Current workspace users
   currentUsers User[] @relation("UserCurrentWorkspace")
+
+  // Per-user workspace ordering
+  userOrdering UserWorkspaceOrder[]
 
   // Notifications
   notifications Notification[]

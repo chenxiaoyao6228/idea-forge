@@ -274,7 +274,12 @@ export class WorkspaceService {
           include: {
             workspace: true,
           },
-          orderBy: [{ index: "asc" }, { createdAt: "desc" }],
+        },
+        workspaceOrdering: {
+          include: {
+            workspace: true,
+          },
+          orderBy: { index: "asc" },
         },
       },
     });
@@ -311,6 +316,13 @@ export class WorkspaceService {
       orderBy: { createdAt: "desc" },
     });
 
+    // Create ordered workspace ID list from UserWorkspaceOrder table
+    const orderedWorkspaceIds = user.workspaceOrdering.map((order) => order.workspaceId);
+    const orderIndexMap = new Map<string, number>();
+    orderedWorkspaceIds.forEach((id, index) => {
+      orderIndexMap.set(id, index);
+    });
+
     // Create a map to merge member and guest workspaces
     const workspaceMap = new Map<
       string,
@@ -342,22 +354,22 @@ export class WorkspaceService {
       }
     });
 
-    // Convert map to array and sort (members first, then guests by creation date)
+    // Convert map to array and sort by UserWorkspaceOrder
     const workspaces = Array.from(workspaceMap.values()).sort((a, b) => {
-      // Members come first
-      if (a.accessLevel === "member" && b.accessLevel === "guest") return -1;
-      if (a.accessLevel === "guest" && b.accessLevel === "member") return 1;
+      const aIndex = orderIndexMap.get(a.workspace.id);
+      const bIndex = orderIndexMap.get(b.workspace.id);
 
-      // Within same access level, sort by creation date (newest first for members, oldest first for guests)
-      if (a.accessLevel === "member" && b.accessLevel === "member") {
-        return new Date(b.workspace.createdAt).getTime() - new Date(a.workspace.createdAt).getTime();
+      // Both have ordering - use order from UserWorkspaceOrder table
+      if (aIndex !== undefined && bIndex !== undefined) {
+        return aIndex - bIndex;
       }
 
-      if (a.accessLevel === "guest" && b.accessLevel === "guest") {
-        return new Date(a.workspace.createdAt).getTime() - new Date(b.workspace.createdAt).getTime();
-      }
+      // If one has ordering and other doesn't, prioritize the one with ordering
+      if (aIndex !== undefined && bIndex === undefined) return -1;
+      if (aIndex === undefined && bIndex !== undefined) return 1;
 
-      return 0;
+      // Neither has ordering - fallback to creation date (newest first)
+      return new Date(b.workspace.createdAt).getTime() - new Date(a.workspace.createdAt).getTime();
     });
 
     const result = workspaces.map(({ workspace, accessLevel, isPendingGuest, guestId }) => {
@@ -1056,6 +1068,7 @@ export class WorkspaceService {
   /**
    * Reorder user's workspaces using fractional indexing
    * Maintains stable ordering without conflicts
+   * Works for both member and guest workspaces
    */
   async reorderWorkspaces(workspaceIds: string[], userId: string) {
     // Verify all workspaces exist and user has access to them
@@ -1066,37 +1079,52 @@ export class WorkspaceService {
       }
     }
 
-    // Get current workspace members with their indices
-    const workspaceMembers = await this.prismaService.workspaceMember.findMany({
+    // Get existing ordering records for this user
+    const existingOrders = await this.prismaService.userWorkspaceOrder.findMany({
       where: {
         userId,
         workspaceId: {
           in: workspaceIds,
         },
       },
-      orderBy: { index: "asc" },
     });
 
-    // Update indices using fractional indexing to prevent conflicts
-    const updates: Promise<WorkspaceMember>[] = [];
+    const existingOrderMap = new Map(existingOrders.map((o) => [o.workspaceId, o]));
+
+    // Create or update ordering records using fractional indexing
+    const operations: Promise<any>[] = [];
     let lastIndex: string | null = null;
 
     for (const workspaceId of workspaceIds) {
-      const member = workspaceMembers.find((m) => m.workspaceId === workspaceId);
-      if (member) {
-        const newIndex = fractionalIndex(lastIndex, null);
-        updates.push(
-          this.prismaService.workspaceMember.update({
-            where: { id: member.id },
+      const newIndex = fractionalIndex(lastIndex, null);
+      const existingOrder = existingOrderMap.get(workspaceId);
+
+      if (existingOrder) {
+        // Update existing order
+        operations.push(
+          this.prismaService.userWorkspaceOrder.update({
+            where: { id: existingOrder.id },
             data: { index: newIndex },
           }),
         );
-        lastIndex = newIndex;
+      } else {
+        // Create new order record
+        operations.push(
+          this.prismaService.userWorkspaceOrder.create({
+            data: {
+              userId,
+              workspaceId,
+              index: newIndex,
+            },
+          }),
+        );
       }
+
+      lastIndex = newIndex;
     }
 
     // Apply all updates in parallel for performance
-    await Promise.all(updates);
+    await Promise.all(operations);
 
     return { success: true };
   }

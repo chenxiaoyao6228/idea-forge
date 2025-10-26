@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
-import { Button } from '@idea/ui/shadcn/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
-import { Badge } from '@idea/ui/shadcn/ui/badge';
-import { Separator } from '@idea/ui/shadcn/ui/separator';
-import { ScrollArea } from '@idea/ui/shadcn/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from "@idea/ui/shadcn/ui/avatar";
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@idea/ui/shadcn/ui/dropdown-menu";
+import { Badge } from "@idea/ui/shadcn/ui/badge";
+import { Separator } from "@idea/ui/shadcn/ui/separator";
+import { ScrollArea } from "@idea/ui/shadcn/ui/scroll-area";
 import { Plus, ChevronDown, MoreHorizontal, User, Check, Eye, Clock } from "lucide-react";
-import { cn } from '@idea/ui/shadcn/utils';
+import { cn } from "@idea/ui/shadcn/utils";
 import { useTranslation } from "react-i18next";
 import useUserStore from "@/stores/user-store";
 import { useAllWorkspaces, useCurrentWorkspace, useSwitchWorkspace, useReorderWorkspaces, useFetchWorkspaces } from "@/stores/workspace-store";
@@ -31,23 +31,6 @@ export default function WorkspaceSwitcher() {
   const unreadCountByWorkspace = useUnreadCountByWorkspace();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const otherWorkspacesTotalUnreadCount = useOtherWorkspacesTotalUnreadCount();
-
-  // Check if other workspaces have high-priority unread notifications
-  const hasOtherWorkspaceUnread = useMemo(() => {
-    if (!unreadCountByWorkspace || !currentWorkspace) return false;
-
-    // Check other workspaces for MENTIONS + INBOX notifications
-    const otherWorkspaces = workspaces.filter((w) => w.id !== currentWorkspace.id);
-    const hasOtherWorkspaceUnread = otherWorkspaces.some((workspace) => {
-      const unread = unreadCountByWorkspace.byWorkspace[workspace.id];
-      return unread && unread.MENTIONS + unread.INBOX > 0;
-    });
-
-    // Include cross-workspace INBOX notifications (workspace invitations)
-    const hasCrossWorkspaceInbox = (unreadCountByWorkspace.crossWorkspace.INBOX || 0) > 0;
-
-    return hasOtherWorkspaceUnread || hasCrossWorkspaceInbox;
-  }, [workspaces, currentWorkspace, unreadCountByWorkspace]);
 
   const handleWorkspaceClick = async (workspace: any) => {
     if (isSwitching || isAccepting) return;
@@ -83,13 +66,10 @@ export default function WorkspaceSwitcher() {
   };
 
   const handleReorder = async (reorderedWorkspaces: typeof workspaces) => {
-    // Filter out guest workspaces from reordering
-    const memberWorkspaces = reorderedWorkspaces.filter((w) => w.accessLevel !== "guest");
-    if (memberWorkspaces.length === 0) return;
+    if (reorderedWorkspaces.length === 0) return;
 
-    // update the server
     try {
-      await reorderWorkspaces(memberWorkspaces.map((w) => w.id));
+      await reorderWorkspaces(reorderedWorkspaces.map((w) => w.id));
     } catch (error) {
       console.error("Failed to reorder workspaces:", error);
     }

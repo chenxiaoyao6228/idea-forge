@@ -14,7 +14,7 @@ import { useRefCallback } from "@/hooks/use-ref-callback";
 import useUserStore from "./user-store";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { showConfirmModal } from '@/components/ui/confirm-modal';
+import { showConfirmModal } from "@/components/ui/confirm-modal";
 
 export interface WorkspaceEntity {
   id: string;
@@ -37,10 +37,12 @@ const useWorkspaceStore = create<{
   currentWorkspace?: WorkspaceEntity;
   workspaceMembers: WorkspaceMemberListResponse;
   workspaces: Record<string, WorkspaceEntity>;
+  workspaceOrder: string[]; // Array of workspace IDs in order from API
 }>((set) => ({
   currentWorkspace: undefined,
   workspaceMembers: [],
   workspaces: {},
+  workspaceOrder: [],
 }));
 
 // Data Access Hooks
@@ -63,7 +65,9 @@ export const useCurrentWorkspace = () => {
 export const useWorkspaceMembers = () => useWorkspaceStore((state) => state.workspaceMembers);
 export const useAllWorkspaces = () => {
   const workspaces = useWorkspaceStore((state) => state.workspaces);
-  return Object.values(workspaces);
+  const workspaceOrder = useWorkspaceStore((state) => state.workspaceOrder);
+  // Return workspaces in the order specified by workspaceOrder
+  return workspaceOrder.map((id) => workspaces[id]).filter(Boolean);
 };
 
 // Computed Value Hooks
@@ -99,8 +103,9 @@ export const useFetchWorkspaces = () => {
             },
             {} as Record<string, WorkspaceEntity>,
           );
+          const workspaceOrder = workspaces.map((w) => w.id);
 
-          useWorkspaceStore.setState({ workspaces: workspacesMap });
+          useWorkspaceStore.setState({ workspaces: workspacesMap, workspaceOrder });
 
           // Get current workspace from user info first, then fallback to localStorage
           const userInfo = useUserStore.getState().userInfo;
@@ -198,29 +203,22 @@ export const useSwitchWorkspace = () => {
 export const useReorderWorkspaces = () => {
   return useRequest(
     async (workspaceIds: string[]) => {
+      // Save the current state for rollback on error
+      const currentState = useWorkspaceStore.getState();
+      const previousWorkspaceOrder = [...currentState.workspaceOrder];
+
       try {
+        // Optimistic update: Update the order immediately in the UI
+        useWorkspaceStore.setState({ workspaceOrder: workspaceIds });
+
+        // Send the update to the server
         await workspaceApi.reorderWorkspaces(workspaceIds);
-        // Refresh the list to get the updated order
-        const response = await workspaceApi.getWorkspaces();
-        if (response && Array.isArray(response)) {
-          // Use spread operator to automatically include all fields from API response
-          const workspaceEntities: WorkspaceEntity[] = response.map((workspace) => ({
-            ...workspace,
-            settings: workspace.settings as WorkspaceSettings | null,
-          }));
-
-          const workspacesMap = workspaceEntities.reduce(
-            (acc, workspace) => {
-              acc[workspace.id] = workspace;
-              return acc;
-            },
-            {} as Record<string, WorkspaceEntity>,
-          );
-
-          useWorkspaceStore.setState({ workspaces: workspacesMap });
-        }
       } catch (error) {
         console.error("Failed to reorder workspaces:", error);
+
+        // Rollback to previous order on error
+        useWorkspaceStore.setState({ workspaceOrder: previousWorkspaceOrder });
+
         throw error;
       }
     },
@@ -360,8 +358,9 @@ export const useBatchSetWorkspaceWide = () => {
               },
               {} as Record<string, WorkspaceEntity>,
             );
+            const workspaceOrder = workspaceEntities.map((w) => w.id);
 
-            useWorkspaceStore.setState({ workspaces: workspacesMap });
+            useWorkspaceStore.setState({ workspaces: workspacesMap, workspaceOrder });
           }
         }
       } catch (error) {
@@ -390,6 +389,7 @@ export const useClearWorkspace = () => {
       currentWorkspace: undefined,
       workspaceMembers: [],
       workspaces: {},
+      workspaceOrder: [],
     });
   });
 };
