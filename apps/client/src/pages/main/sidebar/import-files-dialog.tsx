@@ -10,6 +10,7 @@ import { cn } from "@idea/ui/shadcn/utils";
 import { fileOpen } from "@/lib/filesystem";
 import { useCurrentWorkspace } from "@/stores/workspace-store";
 import { useCurrentDocumentFromStore } from "@/stores/document-store";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
 
 interface ImportFilesDialogProps {
   show?: boolean;
@@ -47,7 +48,7 @@ const importConfig = {
 const ImportFilesDialog: React.FC<ConfirmDialogProps<ImportFilesDialogProps, any>> = ({ show = false, proceed }) => {
   const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<keyof typeof importConfig | null>(null);
-  const { importDocument, isImporting, progress, error, reset } = useDocumentImport();
+  const { importDocument, isImporting, progress, error, reset, abort } = useDocumentImport();
   const { importFiles } = useBatchImport();
 
   // Get workspace and subspace context from hooks
@@ -58,10 +59,28 @@ const ImportFilesDialog: React.FC<ConfirmDialogProps<ImportFilesDialogProps, any
   // Import as child of current document (use current document's id as parentId)
   const parentId = currentDocument?.id ?? undefined;
 
-  const handleClose = () => {
-    reset();
-    setSelectedType(null);
-    proceed?.(null);
+  const handleClose = async () => {
+    // If importing, show confirmation modal
+    if (isImporting) {
+      const confirmed = await showConfirmModal({
+        title: t("Cancel Import?"),
+        description: t("The file is still being imported. Are you sure you want to cancel?"),
+        confirmText: t("Yes, Cancel"),
+        cancelText: t("No, Continue"),
+        confirmVariant: "destructive",
+      });
+
+      if (confirmed) {
+        abort();
+        setSelectedType(null);
+        proceed?.(null);
+      }
+      // If not confirmed, do nothing (keep dialog open)
+    } else {
+      reset();
+      setSelectedType(null);
+      proceed?.(null);
+    }
   };
 
   const handleTypeSelect = async (type: keyof typeof importConfig) => {

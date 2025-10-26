@@ -16,6 +16,7 @@ interface UseDocumentImportResult {
   progress: ImportProgress | null;
   error: string | null;
   reset: () => void;
+  abort: () => void;
 }
 
 /**
@@ -30,18 +31,24 @@ export const useDocumentImport = (): UseDocumentImportResult => {
   const transferRef = useRef<Transfer | null>(null);
   const currentFileIdRef = useRef<string | null>(null);
 
-  const reset = useCallback(() => {
-    setIsImporting(false);
-    setProgress(null);
-    setError(null);
+  const abort = useCallback(() => {
+    console.log("[useDocumentImport]: Aborting import");
 
     // Cancel any ongoing transfers
     if (transferRef.current && currentFileIdRef.current) {
       transferRef.current.cancelFile(currentFileIdRef.current);
     }
 
+    // Stop polling and cleanup
+    setIsImporting(false);
+    setProgress(null);
+    setError(null);
     currentFileIdRef.current = null;
   }, []);
+
+  const reset = useCallback(() => {
+    abort();
+  }, [abort]);
 
   const importDocument = useCallback(
     async (file: File, workspaceId: string, subspaceId: string, parentId: string | undefined, title: string) => {
@@ -188,5 +195,6 @@ export const useDocumentImport = (): UseDocumentImportResult => {
     progress,
     error,
     reset,
+    abort,
   };
 };

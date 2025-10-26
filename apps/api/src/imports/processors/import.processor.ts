@@ -80,7 +80,7 @@ export class ImportProcessor extends WorkerHost {
         title: document.title,
       };
     } catch (error: any) {
-      this.logger.error(`Import failed: ${importJobId}`, error);
+      this.logger.error(`Import failed: ${importJobId}`, error?.stack || error?.message || String(error));
       throw error; // Let BullMQ handle retry logic
     }
   }

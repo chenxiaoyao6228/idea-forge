@@ -135,6 +135,9 @@ export const coreExtensions = [
   // ImageBlock extension
   ImageBlock,
 
+  // Comment mark
+  CommentMark,
+
   // Emoji extension
   EmojiNode,
 
