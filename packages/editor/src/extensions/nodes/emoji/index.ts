@@ -11,13 +11,19 @@ import type { NodeMarkdownStorage } from "../../../markdown/types";
 export const EmojiNode = Emoji.extend({
   name: "emoji",
 
+  // Explicitly set as inline node
+  inline: true,
+  group: "inline",
+  atom: true,
+  selectable: false,
+
   addOptions() {
     return {
       //@ts-ignore
       ...this.parent?.(),
       enableEmoticons: true, // Enable <3 -> ❤️ by default
       HTMLAttributes: {
-        class: "emoji-node",
+        class: "emoji-node inline-block align-baseline",
       },
     };
   },

@@ -1,4 +1,4 @@
-import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout, Image, Table } from "lucide-react";
+import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout, Image, Table, Smile } from "lucide-react";
 import type { CommandGroup } from "./types";
 import i18next from "i18next";
 
@@ -134,6 +134,17 @@ export const commandGroups: CommandGroup[] = [
         Icon: Link,
         command: ({ editor }) => {
           editor.chain().focus().setLink({ href: "" }).run();
+        },
+      },
+      {
+        name: "emoji",
+        label: t("Emoji"),
+        description: t("Insert an emoji"),
+        Icon: Smile,
+        aliases: ["biaoqing", "bq", "emoji", "emoticon"],
+        command: ({ editor }) => {
+          // Insert ':' to trigger emoji suggestion picker
+          editor.chain().focus().insertContent(":").run();
         },
       },
     ],

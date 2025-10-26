@@ -25,18 +25,24 @@ export const emojiSuggestion: Omit<SuggestionOptions, "editor"> = {
   },
 
   command: ({ editor, range, props }) => {
-    // Replace the :text with the emoji node
+    // Replace the :text with the emoji node, followed by a space
     editor
       .chain()
       .focus()
       .deleteRange(range)
-      .insertContent({
-        type: "emoji",
-        attrs: {
-          name: props.shortcodes?.[0] || props.name,
-          emoji: props.emoji,
+      .insertContent([
+        {
+          type: "emoji",
+          attrs: {
+            name: props.shortcodes?.[0] || props.name,
+            emoji: props.emoji,
+          },
         },
-      })
+        {
+          type: "text",
+          text: " ",
+        },
+      ])
       .run();
   },
 
@@ -46,8 +52,17 @@ export const emojiSuggestion: Omit<SuggestionOptions, "editor"> = {
 
     return {
       onStart: (props) => {
+        // Only show popup if editor has focus and is editable
+        if (!props.editor.view.hasFocus() || !props.editor.isEditable) {
+          return;
+        }
+
         component = new ReactRenderer(EmojiList, {
-          props,
+          props: {
+            items: props.items,
+            command: props.command,
+            query: props.query,
+          },
           editor: props.editor,
         });
 
@@ -68,7 +83,11 @@ export const emojiSuggestion: Omit<SuggestionOptions, "editor"> = {
       },
 
       onUpdate(props) {
-        component?.updateProps(props);
+        component?.updateProps({
+          items: props.items,
+          command: props.command,
+          query: props.query,
+        });
 
         if (!props.clientRect) {
           return;
