@@ -6,7 +6,7 @@ import Focus from "@tiptap/extension-focus";
 import UniqueID from "@tiptap/extension-unique-id";
 
 // Shared editor package - includes all core nodes, marks, and base extensions
-import { coreExtensions, Code, TaskItem, Markdown, Table, TableCell, TableHeader, TableRow } from "@idea/editor";
+import { coreExtensions, Code, TaskItem, Markdown, Table, TableCell, TableHeader, TableRow, EmojiNode } from "@idea/editor";
 
 // Client-specific extensions
 import { SlashCommands } from "./slash-commands";
@@ -15,12 +15,13 @@ import { CodeBlock } from "./code-block";
 import ImageBlock from "./image-block";
 import { createTableDecorationPlugin } from "./table/plugins/create-table-decoration-plugin";
 import AddParagraph from "./paragraph/plugins/add-paragraph";
+import { emojiSuggestion } from "./emoji/suggestion";
 import i18next from "i18next";
 
 // Configure specific extensions from coreExtensions
-// Filter out table extensions as they need client-specific configuration below
+// Filter out table and emoji extensions as they need client-specific configuration below
 const configuredCoreExtensions = coreExtensions
-  .filter((ext) => !["table", "tableCell", "tableRow", "tableHeader"].includes(ext.name))
+  .filter((ext) => !["table", "tableCell", "tableRow", "tableHeader", "emoji"].includes(ext.name))
   .map((ext) => {
     // Configure Code extension with custom styling
     if (ext.name === "code") {
@@ -45,6 +46,15 @@ const nodes = [
   // Client-specific complex nodes
   CodeBlock,
   ImageBlock,
+  // Emoji extension with suggestion
+  EmojiNode.configure({
+    enableEmoticons: true,
+    HTMLAttributes: {
+      class: "emoji-node inline-block",
+    },
+    // @ts-ignore - suggestion is a valid option from TipTap Emoji extension
+    suggestion: emojiSuggestion,
+  }),
   // Table extensions with client-specific decorations
   Table.configure({
     resizable: true,

@@ -52,6 +52,9 @@ import { ImageBlock, type ImageBlockOptions } from "./extensions/nodes/image-blo
 import { CommentMark, type CommentMarkOptions } from "./extensions/comment-mark";
 import { Mention, type MentionOptions, MentionPluginKey } from "./extensions/mention";
 
+// Emoji extension
+import { EmojiNode } from "./extensions/nodes/emoji";
+
 // Re-export all node extensions and their types
 export { Document, Heading, Paragraph, Text, Blockquote, HorizontalRule, HardBreak };
 export { BulletList, OrderedList, ListItem, TaskList, TaskItem };
@@ -71,6 +74,9 @@ export type { ItalicOptions, StrikeOptions, UnderlineOptions, CodeOptions, LinkO
 // Re-export comment and mention extensions
 export { CommentMark, Mention, MentionPluginKey };
 export type { CommentMarkOptions, MentionOptions };
+
+// Re-export emoji extension
+export { EmojiNode };
 
 // Re-export base extensions
 export { AutoFocus, CustomKeys };
@@ -128,6 +134,9 @@ export const coreExtensions = [
 
   // ImageBlock extension
   ImageBlock,
+
+  // Emoji extension
+  EmojiNode,
 
   // Base extensions
   AutoFocus,
