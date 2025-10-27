@@ -100,8 +100,10 @@ function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) 
         getIndex: getHierarchicalIndexes,
         getLevel: getHeadlineLevel,
         onUpdate(content) {
-          // console.log('toc content...', content);
-          setTocItems(content);
+          // Queue the state update to avoid updating during render
+          queueMicrotask(() => {
+            setTocItems(content);
+          });
         },
       }),
     ],
