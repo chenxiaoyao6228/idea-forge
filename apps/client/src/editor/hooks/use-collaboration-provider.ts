@@ -197,6 +197,13 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
     const onConnect = () => {
       console.log("Provider connected");
       connectionStatusRef.current = "connected";
+      queueMicrotask(() => {
+        setCollaborationState(documentId, {
+          status: "collaborating",
+          error: undefined,
+          lastSyncedAt: new Date(),
+        });
+      });
     };
 
     const onDisconnect = ({ event }: { event: CloseEvent }) => {

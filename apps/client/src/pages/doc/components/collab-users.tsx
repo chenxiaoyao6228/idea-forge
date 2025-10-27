@@ -3,7 +3,6 @@ import { UserAvatar } from "@/components/user-avatar";
 import { useCurrentDocumentId } from "@/stores/document-store";
 import { cn } from "@idea/ui/shadcn/utils";
 import { useEditorStore } from "@/stores/editor-store";
-import { useMemo } from "react";
 
 export function CollabUsers({
   className,
@@ -12,9 +11,8 @@ export function CollabUsers({
 }) {
   const id = useCurrentDocumentId();
   const documentState = useEditorStore((state) => state.documents[id || ""]);
-  const activeUsers = useMemo(() => documentState?.activeUsers, [documentState?.activeUsers]);
-  const status = documentState?.status;
-  if (!activeUsers?.length || status !== "collaborating") return null;
+  const { activeUsers } = documentState || {};
+  if (!activeUsers?.length) return null;
 
   return (
     <div className={cn("ml-5 flex -space-x-2", className)}>

@@ -1,16 +1,10 @@
 import "./index.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
-import { useCollaborationProvider } from "./hooks/use-collaboration-provider";
-import { getRandomElement } from "@idea/utils/string";
-import useUserStore from "@/stores/user-store";
-import { COLLABORATE_EDIT_USER_COLORS } from "./constant";
 import { extensions } from "./extensions";
 import BubbleMenus from "./bubble-menus";
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { useEditorStore } from "@/stores/editor-store";
-import { Skeleton } from "@idea/ui/shadcn/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@idea/ui/shadcn/ui/alert";
 import { Button } from "@idea/ui/shadcn/ui/button";
 import { RefreshCw, WifiOff } from "lucide-react";
@@ -21,42 +15,38 @@ import React from "react";
 import { TextSelection } from "@tiptap/pm/state";
 import useUIStore from "@/stores/ui-store";
 import { CommentMark } from "@idea/editor";
+import { CollaborationCursor } from "@tiptap/extension-collaboration-cursor";
+import type { HocuspocusProvider } from "@hocuspocus/provider";
+import { withCollaborationProvider } from "./with-collaboration-provider";
+import { Skeleton } from "@idea/ui/shadcn/ui/skeleton";
+
+interface CollaborationUser {
+  name: string;
+  email?: string;
+  imageUrl?: string;
+  color: string;
+}
 
 interface Props {
   id: string;
   editable: boolean;
-  collabToken: string;
-  collabWsUrl: string;
+  provider: HocuspocusProvider;
+  user: CollaborationUser;
 }
 
-function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) {
+function TiptapEditor({ id, editable = true, provider, user }: Props) {
   const menuContainerRef = useRef(null);
-  const userInfo = useUserStore((s) => s.userInfo);
   const collaborationState = useEditorStore((state) => state.documents[id]);
-  const { status, error, lastSyncedAt, pendingChanges, isIndexedDBLoaded } = collaborationState || {
+  const { status, error, lastSyncedAt, pendingChanges } = collaborationState || {
     status: "loading",
     error: undefined,
     lastSyncedAt: undefined,
     pendingChanges: false,
-    isIndexedDBLoaded: false,
   };
   const setEditor = useEditorStore((state) => state.setEditor);
   const setTocItems = useEditorStore((state) => state.setTocItems);
   const setCommentsSidebarOpen = useUIStore((state) => state.setCommentsSidebarOpen);
   const setFocusedCommentId = useUIStore((state) => state.setFocusedCommentId);
-
-  // Memoize user based on specific fields to prevent recreation on unrelated changes
-  const user = useMemo(
-    () => ({
-      name: userInfo?.displayName || (userInfo?.email as string),
-      email: userInfo?.email,
-      imageUrl: userInfo?.imageUrl,
-      color: getRandomElement(COLLABORATE_EDIT_USER_COLORS) || COLLABORATE_EDIT_USER_COLORS[0],
-    }),
-    [userInfo?.displayName, userInfo?.email, userInfo?.imageUrl],
-  );
-
-  const provider = useCollaborationProvider({ documentId: id, user, editable, collabToken, collabWsUrl });
 
   const editor = useEditor({
     editorProps: {
@@ -75,26 +65,14 @@ function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) 
           setFocusedCommentId(commentId);
         },
       }),
-      ...(provider?.document
-        ? [
-            Collaboration.configure({
-              document: provider.document,
-            }),
-          ]
-        : []),
-      // FIXME: the cursor will cause the editor to crash somehow, need to fix it later
-      // if we have the condition 'provider?.awareness && provider.status === "connected"'
-      // the extension won't work somehow, need to update this when making the tiptap 3.x upgrade
-      // Only add CollaborationCursor if provider is available and ready
-      // Add a small delay to ensure provider is fully initialized
-      // ...(provider?.awareness && provider.status === "connected"
-      //   ? [
-      //       CollaborationCursor.configure({
-      //         provider,
-      //         user,
-      //       }),
-      //     ]
-      //   : []),
+      // Collaboration extensions - provider is guaranteed to be ready by the HOC
+      Collaboration.configure({
+        document: provider.document,
+      }),
+      CollaborationCursor.configure({
+        provider,
+        user,
+      }),
       TableOfContents.configure({
         scrollParent: () => document?.getElementById("WORK_CONTENT_SCROLL_CONTAINER") || window,
         getIndex: getHierarchicalIndexes,
@@ -115,10 +93,10 @@ function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) 
     //     selection: transaction.selection.toJSON(),
     //   });
     // },
-    onCreate: ({ editor }) => {
-      console.log("Editor created:", editor);
+    onCreate: () => {
+      console.log("Editor created");
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: () => {
       // console.log("Editor content:", editor.getJSON());
     },
     onDestroy: () => {
@@ -182,18 +160,6 @@ function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) 
 
   // @ts-ignore for debug
   window._editor = editor;
-
-  // Add safety checks AFTER all hooks
-  if (!provider || !provider.document || !user || !editor || !id || !collabToken || !collabWsUrl) {
-    console.log("provider, user, editor, id, collabToken, collabWsUrl", provider, user, editor, id, collabToken, collabWsUrl);
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-8 w-32" />
-      </div>
-    );
-  }
 
   const renderStatusBanner = () => {
     switch (status) {
@@ -275,5 +241,8 @@ function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) 
   );
 }
 
-// Memoize to prevent unnecessary re-renders on parent updates (e.g., i18n language changes)
-export default React.memo(TiptapEditor);
+// Export the base editor component
+export const TiptapEditorBase = React.memo(TiptapEditor);
+
+// Export the editor wrapped with collaboration provider HOC as default
+export default withCollaborationProvider(TiptapEditorBase);
