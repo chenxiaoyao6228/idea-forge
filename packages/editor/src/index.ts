@@ -55,6 +55,9 @@ import { Mention, type MentionOptions, MentionPluginKey } from "./extensions/men
 // Emoji extension
 import { EmojiNode } from "./extensions/nodes/emoji";
 
+// Math extension
+import { MathExtension, Mathematics } from "./extensions/nodes/math";
+
 // Re-export all node extensions and their types
 export { Document, Heading, Paragraph, Text, Blockquote, HorizontalRule, HardBreak };
 export { BulletList, OrderedList, ListItem, TaskList, TaskItem };
@@ -77,6 +80,9 @@ export type { CommentMarkOptions, MentionOptions };
 
 // Re-export emoji extension
 export { EmojiNode };
+
+// Re-export math extension
+export { MathExtension, Mathematics };
 
 // Re-export base extensions
 export { AutoFocus, CustomKeys };
@@ -140,6 +146,9 @@ export const coreExtensions = [
 
   // Emoji extension
   EmojiNode,
+
+  // Math extension
+  MathExtension,
 
   // Base extensions
   AutoFocus,

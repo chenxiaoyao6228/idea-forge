@@ -135,8 +135,9 @@ export const CodeBlock = Node.create<CodeBlockOptions>({
 
   /**
    * The parseHTML method defines how to parse code block nodes from HTML.
-   * It specifies a <div> tag with "code-block" class that may contain a <code> element.
-   * It extracts the data-language attribute as the code language.
+   * It supports two formats:
+   * 1. Custom format: <div class="code-block"> with data-language attribute
+   * 2. Standard markdown format: <pre><code class="language-*">
    */
   parseHTML() {
     return [
@@ -148,6 +149,24 @@ export const CodeBlock = Node.create<CodeBlockOptions>({
           language: (node as HTMLElement).getAttribute("data-language"),
           id: (node as HTMLElement).getAttribute("id") || (node as HTMLElement).getAttribute("data-node-id"),
         }),
+      },
+      // Support standard markdown-generated HTML: <pre><code class="language-js">
+      {
+        tag: "pre",
+        preserveWhitespace: "full",
+        contentElement: "code",
+        getAttrs: (node) => {
+          const codeElement = (node as HTMLElement).querySelector("code");
+          if (!codeElement) return false;
+
+          // Extract language from class attribute (e.g., "language-js" -> "js")
+          const classAttr = codeElement.getAttribute("class") || "";
+          const languageMatch = classAttr.match(/language-(\S+)/);
+
+          return {
+            language: languageMatch ? languageMatch[1] : null,
+          };
+        },
       },
     ];
   },

@@ -104,7 +104,64 @@ A paragraph with **bold**, *italic*, ~~strike~~, `code`, and [links](https://exa
   2. Another nested ordered
 - Final bullet
 
-## Another H2 - Final Tests
+## Another H2 - Math Formulas
+
+### Inline Math Examples
+
+The Pythagorean theorem is $a^2 + b^2 = c^2$ and Einstein's famous equation is $E = mc^2$.
+
+The quadratic formula is $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$ which is used to solve quadratic equations.
+
+Simple algebraic expressions: $x + y = 10$ and $2x - 3y = 5$.
+
+### Block Math Examples
+
+The quadratic formula in display mode:
+
+$$
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+$$
+
+Integration formula:
+
+$$
+\int_{a}^{b} f(x) \, dx = F(b) - F(a)
+$$
+
+Summation notation:
+
+$$
+\sum_{i=1}^{n} i = \frac{n(n+1)}{2}
+$$
+
+Matrix representation:
+
+$$
+\begin{bmatrix}
+a & b \\
+c & d
+\end{bmatrix}
+$$
+
+Fraction and square root:
+
+$$
+\frac{a}{b} = \frac{c}{d}
+$$
+
+Limit definition:
+
+$$
+\lim_{x \to \infty} \frac{1}{x} = 0
+$$
+
+Greek letters and complex formulas:
+
+$$
+\alpha + \beta = \gamma \quad \text{and} \quad \Delta = b^2 - 4ac
+$$
+
+## Final Tests
 
 Final paragraph to test multiple nodes with all formatting: **bold**, *italic*, ~~strike~~, +underline+, `code`, [link](https://example.com), :sub[subscript], and :sup[superscript].
 

@@ -1,4 +1,4 @@
-import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout, Image, Table, Smile } from "lucide-react";
+import { Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Minus, Link, SquareCode, Sprout, Image, Table, Smile, Sigma } from "lucide-react";
 import type { CommandGroup } from "./types";
 import i18next from "i18next";
 
@@ -145,6 +145,32 @@ export const commandGroups: CommandGroup[] = [
         command: ({ editor }) => {
           // Insert ':' to trigger emoji suggestion picker
           editor.chain().focus().insertContent(":").run();
+        },
+      },
+      {
+        name: "inlineMath",
+        label: t("Inline Formula"),
+        description: t("Insert an inline math formula (LaTeX)"),
+        Icon: Sigma,
+        aliases: ["math", "formula", "latex", "gongshi", "gs"],
+        command: ({ editor }) => {
+          const latex = prompt("Enter LaTeX formula:", "x^2 + y^2 = r^2");
+          if (latex) {
+            editor.chain().focus().insertInlineMath({ latex }).run();
+          }
+        },
+      },
+      {
+        name: "blockMath",
+        label: t("Block Formula"),
+        description: t("Insert a block math formula (LaTeX)"),
+        Icon: Sigma,
+        aliases: ["mathblock", "formulablock", "latex", "gongshikuai", "gsk"],
+        command: ({ editor }) => {
+          const latex = prompt("Enter LaTeX formula:", "\\frac{a}{b} = \\frac{c}{d}");
+          if (latex) {
+            editor.chain().focus().insertBlockMath({ latex }).run();
+          }
         },
       },
     ],

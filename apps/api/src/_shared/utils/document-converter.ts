@@ -2,12 +2,8 @@ import { parse } from "@fast-csv/parse";
 import escapeRegExp from "lodash/escapeRegExp";
 import mammoth from "mammoth";
 import { generateJSON } from "@tiptap/html";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkRehype from "remark-rehype";
-import rehypeStringify from "rehype-stringify";
 import { coreExtensions } from "@idea/editor";
+import { markdownToHtml } from "@idea/editor/server";
 import { detectFileType } from "@idea/utils";
 
 /**
@@ -141,22 +137,17 @@ export async function htmlToTiptapJSON(content: Buffer | string): Promise<Record
 /**
  * Convert Markdown to TipTap JSON
  *
- * Uses the unified ecosystem (remark) to parse markdown and convert to HTML.
+ * Uses the editor package's markdown converter for consistent parsing.
  * Supports GitHub Flavored Markdown (tables, task lists, strikethrough, etc.)
- * Flow: Markdown -> HTML (via unified) -> TipTap JSON (via generateJSON)
+ * and math formulas (inline: $...$ and block: $$...$$).
+ * Flow: Markdown -> HTML (via @idea/editor/server) -> TipTap JSON (via generateJSON)
  */
 export async function markdownToTiptapJSON(content: Buffer | string): Promise<Record<string, any>> {
   const markdown = typeof content === "string" ? content : content.toString("utf8");
 
-  // Step 1: Convert Markdown to HTML using unified + remark
-  const htmlFile = await unified()
-    .use(remarkParse) // Parse markdown to AST
-    .use(remarkGfm) // Add GitHub Flavored Markdown support (tables, task lists, etc.)
-    .use(remarkRehype) // Convert markdown AST to HTML AST
-    .use(rehypeStringify) // Convert HTML AST to string
-    .process(markdown);
-
-  const html = String(htmlFile);
+  // Step 1: Convert Markdown to HTML using editor package's converter
+  // This ensures consistency with client-side markdown parsing
+  const html = await markdownToHtml(markdown);
 
   // Step 2: Convert HTML to TipTap JSON
   return htmlToTiptapJSON(html);

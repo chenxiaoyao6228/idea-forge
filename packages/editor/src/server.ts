@@ -6,3 +6,4 @@
  */
 
 export * from "./server/mention-parser";
+export * from "./server/markdown-converter";

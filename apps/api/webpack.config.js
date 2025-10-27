@@ -19,10 +19,11 @@ module.exports = {
   mode: isDevelopment ? 'development' : 'production',
   externals: [nodeExternals({
     allowlist: isDevelopment
-      ? ['webpack/hot/poll?100', '@idea/contracts', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', '@tiptap/core', '@tiptap/pm', /^@tiptap\/extension-/, 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify', '@dicebear/collection', '@dicebear/core']
-      : ['@idea/contracts', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', '@tiptap/core', '@tiptap/pm', /^@tiptap\/extension-/, 'unified', 'remark-parse', 'remark-gfm', 'remark-rehype', 'rehype-stringify'],
-    // Bundle @idea/contracts, @idea/editor and other ESM-only packages (unified, remark, @tiptap)
+      ? ['webpack/hot/poll?100', '@idea/contracts', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', '@tiptap/core', '@tiptap/pm', /^@tiptap\/extension-/, '@dicebear/collection', '@dicebear/core']
+      : ['@idea/contracts', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', '@tiptap/core', '@tiptap/pm', /^@tiptap\/extension-/],
+    // Bundle @idea/contracts, @idea/editor (which includes unified/remark) and @tiptap packages
     // Note: @tiptap packages must be bundled to avoid ProseMirror version conflicts
+    // Note: unified/remark are now bundled as part of @idea/editor
   }),],
   // ignore tests hot reload
   watchOptions: {

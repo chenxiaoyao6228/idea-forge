@@ -648,3 +648,44 @@
 .dark .highlight-mark {
   background-color: theme("colors.yellow.900/30");
 }
+
+/* Math formula styling */
+.tiptap .tiptap-mathematics-render {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+/* Editable math nodes */
+.tiptap .tiptap-mathematics-render--editable:hover {
+  background-color: theme("colors.accent.DEFAULT");
+  outline: 1px solid theme("colors.ring.DEFAULT");
+}
+
+/* Inline math */
+.tiptap .tiptap-mathematics-render[data-type="inline-math"] {
+  display: inline-block;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+
+/* Block math */
+.tiptap .tiptap-mathematics-render[data-type="block-math"] {
+  @apply mx-10 my-4 block rounded-md p-4 overflow-x-auto;
+  background-color: theme("colors.muted.DEFAULT/50");
+  border-left: 3px solid theme("colors.primary.DEFAULT");
+}
+
+.dark .tiptap .tiptap-mathematics-render[data-type="block-math"] {
+  background-color: theme("colors.muted.DEFAULT/30");
+}
+
+/* KaTeX styling adjustments for theme compatibility */
+.tiptap .katex {
+  font-size: 1.1em;
+}
+
+.tiptap .katex-display {
+  margin: 0;
+}

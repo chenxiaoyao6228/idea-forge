@@ -2,6 +2,7 @@
 import { createRoot } from "react-dom/client";
 import "@idea/ui/styles";
 import "./index.css";
+import "katex/dist/katex.min.css";
 import { RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "./components/theme-provider";
 import AppWithInspector from "./components/react-dev-inspector";

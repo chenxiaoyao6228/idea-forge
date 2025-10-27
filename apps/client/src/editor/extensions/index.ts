@@ -6,7 +6,7 @@ import Focus from "@tiptap/extension-focus";
 import UniqueID from "@tiptap/extension-unique-id";
 
 // Shared editor package - includes all core nodes, marks, and base extensions
-import { coreExtensions, Code, TaskItem, Markdown, Table, TableCell, TableHeader, TableRow, EmojiNode } from "@idea/editor";
+import { coreExtensions, Code, TaskItem, Markdown, Table, TableCell, TableHeader, TableRow, EmojiNode, MathExtension } from "@idea/editor";
 
 // Client-specific extensions
 import { SlashCommands } from "./slash-commands";
@@ -19,9 +19,9 @@ import { emojiSuggestion } from "./emoji/suggestion";
 import i18next from "i18next";
 
 // Configure specific extensions from coreExtensions
-// Filter out table and emoji extensions as they need client-specific configuration below
+// Filter out table, emoji, and math extensions as they need client-specific configuration below
 const configuredCoreExtensions = coreExtensions
-  .filter((ext) => !["table", "tableCell", "tableRow", "tableHeader", "emoji"].includes(ext.name))
+  .filter((ext) => !["table", "tableCell", "tableRow", "tableHeader", "emoji", "inlineMath", "blockMath"].includes(ext.name))
   .map((ext) => {
     // Configure Code extension with custom styling
     if (ext.name === "code") {
@@ -54,6 +54,13 @@ const nodes = [
     },
     // @ts-ignore - suggestion is a valid option from TipTap Emoji extension
     suggestion: emojiSuggestion,
+  }),
+  // Math extension for LaTeX formulas
+  MathExtension.configure({
+    katexOptions: {
+      throwOnError: false,
+      output: "html",
+    },
   }),
   // Table extensions with client-specific decorations
   Table.configure({

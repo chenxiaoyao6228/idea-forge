@@ -341,18 +341,6 @@ importers:
       reflect-metadata:
         specifier: ^0.1.13
         version: 0.1.13
-      rehype-stringify:
-        specifier: ^10.0.1
-        version: 10.0.1
-      remark-gfm:
-        specifier: ^4.0.0
-        version: 4.0.0
-      remark-parse:
-        specifier: ^11.0.0
-        version: 11.0.0
-      remark-rehype:
-        specifier: ^11.1.2
-        version: 11.1.2
       request-ip:
         specifier: ^3.3.0
         version: 3.3.0
@@ -365,9 +353,6 @@ importers:
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1
-      unified:
-        specifier: ^11.0.5
-        version: 11.0.5
       uuid:
         specifier: ^11.0.3
         version: 11.0.3
@@ -729,6 +714,9 @@ importers:
       '@tiptap/extension-list-item':
         specifier: ^3.0.0
         version: 3.0.0(@tiptap/core@3.7.2)
+      '@tiptap/extension-mathematics':
+        specifier: ^3.8.0
+        version: 3.8.0(@tiptap/core@3.7.2)(@tiptap/pm@3.7.2)(katex@0.16.25)
       '@tiptap/extension-ordered-list':
         specifier: ^3.0.0
         version: 3.0.0(@tiptap/core@3.7.2)
@@ -870,6 +858,9 @@ importers:
       js-cookie:
         specifier: ^3.0.5
         version: 3.0.5
+      katex:
+        specifier: ^0.16.25
+        version: 0.16.25
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
@@ -1117,6 +1108,9 @@ importers:
       '@tiptap/extension-list-item':
         specifier: ^3.0.0
         version: 3.7.2(@tiptap/extension-list@3.7.2)
+      '@tiptap/extension-mathematics':
+        specifier: ^3.8.0
+        version: 3.8.0(@tiptap/core@3.7.2)(@tiptap/pm@3.7.2)(katex@0.16.25)
       '@tiptap/extension-ordered-list':
         specifier: ^3.0.0
         version: 3.7.2(@tiptap/extension-list@3.7.2)
@@ -1168,6 +1162,9 @@ importers:
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
+      katex:
+        specifier: ^0.16.25
+        version: 0.16.25
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
@@ -1186,15 +1183,27 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
+      rehype-katex:
+        specifier: ^7.0.1
+        version: 7.0.1
+      rehype-stringify:
+        specifier: ^10.0.1
+        version: 10.0.1
       remark-directive:
         specifier: ^3.0.0
         version: 3.0.0
       remark-gfm:
         specifier: ^4.0.0
         version: 4.0.0
+      remark-math:
+        specifier: ^6.0.0
+        version: 6.0.0
       remark-parse:
         specifier: ^11.0.0
         version: 11.0.0
+      remark-rehype:
+        specifier: ^11.1.2
+        version: 11.1.2
       remark-stringify:
         specifier: ^11.0.0
         version: 11.0.0
@@ -1214,6 +1223,9 @@ importers:
         specifier: ^13.6.18
         version: 13.6.20
     devDependencies:
+      '@types/hast':
+        specifier: ^3.0.4
+        version: 3.0.4
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
@@ -10217,6 +10229,18 @@ packages:
       '@tiptap/pm': 3.7.2
     dev: false
 
+  /@tiptap/extension-mathematics@3.8.0(@tiptap/core@3.7.2)(@tiptap/pm@3.7.2)(katex@0.16.25):
+    resolution: {integrity: sha512-7WP9V3oAqlXMTwaZkvU1zg8ty/pgCR8YxWt99U1qw1jqNV40Q5uxtuka6kCWZ0uKhooyvAOjuRyr06L6TH1yTA==}
+    peerDependencies:
+      '@tiptap/core': ^3.8.0
+      '@tiptap/pm': ^3.8.0
+      katex: ^0.16.4
+    dependencies:
+      '@tiptap/core': 3.7.2(@tiptap/pm@3.7.2)
+      '@tiptap/pm': 3.7.2
+      katex: 0.16.25
+    dev: false
+
   /@tiptap/extension-node-range@3.7.2(@tiptap/core@3.7.2)(@tiptap/pm@3.7.2):
     resolution: {integrity: sha512-j4ZkxEhf1QF97OO/SiHcCceTzGstcjl4Bt4XtZoK++9N3tTKly8gUIYis+IjxAa0TiNyQPbnJvT3fon2iwtTLg==}
     peerDependencies:
@@ -10951,7 +10975,6 @@ packages:
     resolution: {integrity: sha512-WPs+bbQw5aCj+x6laNGWLH3wviHtoCv/P3+otBhbOhJgG8qtpdAMlTCxLtsTWA7LH1Oh/bFCHsBn0TPS5m30EQ==}
     dependencies:
       '@types/unist': 3.0.3
-    dev: false
 
   /@types/http-cache-semantics@4.0.4:
     resolution: {integrity: sha512-1m0bIFVc7eJWyve9S0RnuRgcQqF/Xd5QsUZAZeQFr1Q3/p9JWoQQEqmVy+DPTNpGXwhgIetAoYF8JSc33q29QA==}
@@ -10972,6 +10995,10 @@ packages:
     resolution: {integrity: sha512-VRLSGzik+Unrup6BsouBeHsf4d1hOEgYWTm/7Nmw1sXoN1+tRly/Gy/po3yeahnP4jfnQWWAhQAqcNfH7ngOkA==}
     dependencies:
       '@types/node': 18.11.18
+    dev: false
+
+  /@types/katex@0.16.7:
+    resolution: {integrity: sha512-HMwFiRujE5PjrgwHQ25+bsLJgowjGjm5Z8FVSf0N6PwgJrwxH0QxzHYDcKsTfV3wva0vzrpqMTJS2jXPr5BMEQ==}
     dev: false
 
   /@types/linkify-it@5.0.0:
@@ -16267,6 +16294,23 @@ packages:
       hast-util-is-element: 3.0.0
     dev: false
 
+  /hast-util-from-dom@5.0.1:
+    resolution: {integrity: sha512-N+LqofjR2zuzTjCPzyDUdSshy4Ma6li7p/c3pA78uTwzFgENbgbUrm2ugwsOdcjI1muO+o6Dgzp9p8WHtn/39Q==}
+    dependencies:
+      '@types/hast': 3.0.4
+      hastscript: 9.0.1
+      web-namespaces: 2.0.1
+    dev: false
+
+  /hast-util-from-html-isomorphic@2.0.0:
+    resolution: {integrity: sha512-zJfpXq44yff2hmE0XmwEOzdWin5xwH+QIhMLOScpX91e/NSGPsAzNCvLQDIEPyO2TXi+lBmU6hjLIhV8MwP2kw==}
+    dependencies:
+      '@types/hast': 3.0.4
+      hast-util-from-dom: 5.0.1
+      hast-util-from-html: 2.0.3
+      unist-util-remove-position: 5.0.0
+    dev: false
+
   /hast-util-from-html@2.0.3:
     resolution: {integrity: sha512-CUSRHXyKjzHov8yKsQjGOElXy/3EKpyX56ELnkHH34vDVw1N1XSQ1ZcAvTyAPtGqLTuKP/uxM+aLkSPqF/EtMw==}
     dependencies:
@@ -16404,6 +16448,15 @@ packages:
     resolution: {integrity: sha512-XelQVTDWvqcl3axRfI0xSeoVKzyIFPwsAGSLIsKdJKQMXDYJS4WYrBNF/8J7RdhIcFI2BOHgAifggsvsxp/3+A==}
     dependencies:
       '@types/hast': 3.0.4
+    dev: false
+
+  /hast-util-to-text@4.0.2:
+    resolution: {integrity: sha512-KK6y/BN8lbaq654j7JgBydev7wuNMcID54lkRav1P0CaE1e47P72AWWPiGKXTJU271ooYzcvTAn/Zt0REnvc7A==}
+    dependencies:
+      '@types/hast': 3.0.4
+      '@types/unist': 3.0.3
+      hast-util-is-element: 3.0.0
+      unist-util-find-after: 5.0.0
     dev: false
 
   /hast-util-whitespace@3.0.0:
@@ -17545,8 +17598,8 @@ packages:
       safe-buffer: 5.2.1
     dev: false
 
-  /katex@0.16.23:
-    resolution: {integrity: sha512-7VlC1hsEEolL9xNO05v9VjrvWZePkCVBJqj8ruICxYjZfHaHbaU53AlP+PODyFIXEnaEIEWi3wJy7FPZ95JAVg==}
+  /katex@0.16.25:
+    resolution: {integrity: sha512-woHRUZ/iF23GBP1dkDQMh1QBad9dmr8/PAwNA54VrSOVYgI12MAcE14TqnDdQOdzyEonGzMepYnqBMYdsoAr8Q==}
     hasBin: true
     dependencies:
       commander: 8.3.0
@@ -18417,6 +18470,20 @@ packages:
       - supports-color
     dev: false
 
+  /mdast-util-math@3.0.0:
+    resolution: {integrity: sha512-Tl9GBNeG/AhJnQM221bJR2HPvLOSnLE/T9cJI9tlc6zwQk2nPk/4f0cHkOdEixQPC/j8UtKDdITswvLAy1OZ1w==}
+    dependencies:
+      '@types/hast': 3.0.4
+      '@types/mdast': 4.0.4
+      devlop: 1.1.0
+      longest-streak: 3.1.0
+      mdast-util-from-markdown: 2.0.2
+      mdast-util-to-markdown: 2.1.0
+      unist-util-remove-position: 5.0.0
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
   /mdast-util-phrasing@4.1.0:
     resolution: {integrity: sha512-TqICwyvJJpBwvGAMZjj4J2n0X8QWp21b9l0o7eXyVJ25YNWYbJDVIyD1bZXE6WtV6RmKJVYmQAKWa0zWOABz2w==}
     dependencies:
@@ -18533,7 +18600,7 @@ packages:
       dagre-d3-es: 7.0.11
       dayjs: 1.11.18
       dompurify: 3.2.7
-      katex: 0.16.23
+      katex: 0.16.25
       khroma: 2.1.0
       lodash-es: 4.17.21
       marked: 15.0.12
@@ -18651,6 +18718,18 @@ packages:
       micromark-extension-gfm-tagfilter: 2.0.0
       micromark-extension-gfm-task-list-item: 2.1.0
       micromark-util-combine-extensions: 2.0.1
+      micromark-util-types: 2.0.2
+    dev: false
+
+  /micromark-extension-math@3.1.0:
+    resolution: {integrity: sha512-lvEqd+fHjATVs+2v/8kg9i5Q0AP2k85H0WUOwpIVvUML8BapsMvh1XAogmQjOCsLpoKRCVQqEkQBB3NhVBcsOg==}
+    dependencies:
+      '@types/katex': 0.16.7
+      devlop: 1.1.0
+      katex: 0.16.25
+      micromark-factory-space: 2.0.1
+      micromark-util-character: 2.1.1
+      micromark-util-symbol: 2.0.1
       micromark-util-types: 2.0.2
     dev: false
 
@@ -21156,6 +21235,18 @@ packages:
       set-function-name: 2.0.2
     dev: true
 
+  /rehype-katex@7.0.1:
+    resolution: {integrity: sha512-OiM2wrZ/wuhKkigASodFoo8wimG3H12LWQaH8qSPVJn9apWKFSH3YOCtbKpBorTVw/eI7cuT21XBbvwEswbIOA==}
+    dependencies:
+      '@types/hast': 3.0.4
+      '@types/katex': 0.16.7
+      hast-util-from-html-isomorphic: 2.0.0
+      hast-util-to-text: 4.0.2
+      katex: 0.16.25
+      unist-util-visit-parents: 6.0.1
+      vfile: 6.0.3
+    dev: false
+
   /rehype-minify-attribute-whitespace@4.0.1:
     resolution: {integrity: sha512-QAfUrcZ6KCfpYonDbiWKTRpnVu9DYxFlvXMWWZe4BQbojwjjUbGIg1zoqyInJiJHAdYYyTHN5yJV2THa3opIng==}
     dependencies:
@@ -21357,6 +21448,17 @@ packages:
       hast-util-to-html: 9.0.5
       mdast-util-to-hast: 13.2.0
       unified: 11.0.5
+    dev: false
+
+  /remark-math@6.0.0:
+    resolution: {integrity: sha512-MMqgnP74Igy+S3WwnhQ7kqGlEerTETXMvJhrUzDikVZ2/uogJCb+WHUg97hK9/jcfc0dkD73s3LN8zU49cTEtA==}
+    dependencies:
+      '@types/mdast': 4.0.4
+      mdast-util-math: 3.0.0
+      micromark-extension-math: 3.1.0
+      unified: 11.0.5
+    transitivePeerDependencies:
+      - supports-color
     dev: false
 
   /remark-parse@11.0.0:
@@ -23482,6 +23584,13 @@ packages:
       '@types/unist': 3.0.3
     dev: false
 
+  /unist-util-find-after@5.0.0:
+    resolution: {integrity: sha512-amQa0Ep2m6hE2g72AugUItjbuM8X8cGQnFoHk0pGfrFeT9GZhzN5SW8nRsiGKK7Aif4CrACPENkA6P/Lw6fHGQ==}
+    dependencies:
+      '@types/unist': 3.0.3
+      unist-util-is: 6.0.0
+    dev: false
+
   /unist-util-is@6.0.0:
     resolution: {integrity: sha512-2qCTHimwdxLfz+YzdGfkqNlH0tLi9xjTnHddPmJwtIG9MGsdbutfTc4P+haPD7l7Cjxf/WZj+we5qfVPvvxfYw==}
     dependencies:
@@ -23492,6 +23601,13 @@ packages:
     resolution: {integrity: sha512-fucsC7HjXvkB5R3kTCO7kUjRdrS0BJt3M/FPxmHMBOm8JQi2BsHAHFsy27E0EolP8rp0NzXsJ+jNPyDWvOJZPA==}
     dependencies:
       '@types/unist': 3.0.3
+    dev: false
+
+  /unist-util-remove-position@5.0.0:
+    resolution: {integrity: sha512-Hp5Kh3wLxv0PHj9m2yZhhLt58KzPtEYKQQ4yxfYFEO7EvHwzyDYnduhHnY1mDxoqr7VUwVuHXk9RXKIiYS1N8Q==}
+    dependencies:
+      '@types/unist': 3.0.3
+      unist-util-visit: 5.0.0
     dev: false
 
   /unist-util-remove@4.0.0:
