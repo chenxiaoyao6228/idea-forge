@@ -29,7 +29,7 @@ interface Props {
   collabWsUrl: string;
 }
 
-export default function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) {
+function TiptapEditor({ id, editable = true, collabToken, collabWsUrl }: Props) {
   const menuContainerRef = useRef(null);
   const userInfo = useUserStore((s) => s.userInfo);
   const collaborationState = useEditorStore((state) => state.documents[id]);
@@ -45,6 +45,7 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
   const setCommentsSidebarOpen = useUIStore((state) => state.setCommentsSidebarOpen);
   const setFocusedCommentId = useUIStore((state) => state.setFocusedCommentId);
 
+  // Memoize user based on specific fields to prevent recreation on unrelated changes
   const user = useMemo(
     () => ({
       name: userInfo?.displayName || (userInfo?.email as string),
@@ -52,7 +53,7 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
       imageUrl: userInfo?.imageUrl,
       color: getRandomElement(COLLABORATE_EDIT_USER_COLORS) || COLLABORATE_EDIT_USER_COLORS[0],
     }),
-    [userInfo],
+    [userInfo?.displayName, userInfo?.email, userInfo?.imageUrl],
   );
 
   const provider = useCollaborationProvider({ documentId: id, user, editable, collabToken, collabWsUrl });
@@ -271,3 +272,6 @@ export default function TiptapEditor({ id, editable = true, collabToken, collabW
     </React.Fragment>
   );
 }
+
+// Memoize to prevent unnecessary re-renders on parent updates (e.g., i18n language changes)
+export default React.memo(TiptapEditor);

@@ -20,12 +20,18 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
   const setCollaborationState = useEditorStore((state) => state.setCollaborationState);
   const resetDocumentState = useEditorStore((state) => state.resetDocumentState);
   const setCurrentDocument = useEditorStore((state) => state.setCurrentDocument);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const timeoutRef = useRef<any>();
   // Provider ref to access in callbacks
   const providerRef = useRef<HocuspocusProvider | null>(null);
   // Track connection status since v3 doesn't expose .status
   const connectionStatusRef = useRef<"connecting" | "connected" | "disconnected">("connecting");
+
+  // Store translation function refs to avoid provider recreation on language change
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   useEffect(() => {
     setCurrentDocument(documentId);
@@ -66,7 +72,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
         queueMicrotask(() => {
           setCollaborationState(documentId, {
             status: "unauthorized",
-            error: reason || t("You don't have permission to access this document"),
+            error: reason || tRef.current("You don't have permission to access this document"),
           });
         });
       },
@@ -124,7 +130,8 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
 
     providerRef.current = provider;
     return provider;
-  }, [documentId, collabWsUrl, collabToken, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentId, collabWsUrl, collabToken]);
 
   // Handle connection timeout
   useEffect(() => {
@@ -135,7 +142,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
       if (connectionStatusRef.current !== "connected") {
         setCollaborationState(documentId, {
           status: "error",
-          error: t("Connection timed out. Please check your internet connection and try again."),
+          error: tRef.current("Connection timed out. Please check your internet connection and try again."),
         });
       }
     }, CONNECTION_TIMEOUT);
@@ -145,7 +152,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [provider, documentId, t]);
+  }, [provider, documentId]);
 
   // Initialize state and setup provider
   useEffect(() => {
@@ -203,7 +210,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
           queueMicrotask(() => {
             setCollaborationState(documentId, {
               status: "offline",
-              error: t("Disconnected from server"),
+              error: tRef.current("Disconnected from server"),
             });
           });
         }, 3000);
@@ -219,7 +226,7 @@ export function useCollaborationProvider({ documentId, user, editable, collabWsU
         provider.off("disconnect", onDisconnect);
       }
     };
-  }, [provider, documentId, t, setCollaborationState]);
+  }, [provider, documentId, setCollaborationState]);
 
   // Cleanup
   useEffect(() => {
