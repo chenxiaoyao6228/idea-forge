@@ -1,5 +1,5 @@
 import Emoji from "@tiptap/extension-emoji";
-import type { NodeMarkdownStorage } from "../../../markdown/types";
+import type { NodeMarkdownStorage } from "../../markdown/types";
 
 /**
  * Emoji extension for inline emoji nodes

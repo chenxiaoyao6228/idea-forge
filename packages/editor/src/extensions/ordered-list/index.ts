@@ -1,5 +1,5 @@
 import { OrderedList as TOrderedList, type OrderedListOptions as TOrderedListOptions } from "@tiptap/extension-ordered-list";
-import type { NodeMarkdownStorage } from "../../markdown/types";
+import type { NodeMarkdownStorage } from "../markdown/types";
 
 export interface OrderedListOptions extends TOrderedListOptions {
   dictionary: {

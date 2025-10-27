@@ -1,5 +1,5 @@
 import { Link as TLink, type LinkOptions as TLinkOptions } from "@tiptap/extension-link";
-import type { MarkMarkdownStorage } from "../../markdown/types";
+import type { MarkMarkdownStorage } from "../markdown/types";
 
 export interface LinkOptions extends TLinkOptions {}
 

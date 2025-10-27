@@ -1,5 +1,5 @@
 import { BulletList as TBulletList, type BulletListOptions as TBulletListOptions } from "@tiptap/extension-bullet-list";
-import type { NodeMarkdownStorage } from "../../markdown/types";
+import type { NodeMarkdownStorage } from "../markdown/types";
 
 export interface BulletListOptions extends TBulletListOptions {}
 

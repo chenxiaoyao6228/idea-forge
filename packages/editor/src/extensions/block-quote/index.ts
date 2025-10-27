@@ -1,5 +1,5 @@
 import { Blockquote as IBlockquote, BlockquoteOptions as TBlockquoteOptions } from "@tiptap/extension-blockquote";
-import { NodeMarkdownStorage } from "../../markdown/types";
+import { NodeMarkdownStorage } from "../markdown/types";
 
 export const Blockquote = IBlockquote.extend({
   name: "blockquote",

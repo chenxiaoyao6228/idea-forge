@@ -19,11 +19,52 @@ module.exports = {
   mode: isDevelopment ? 'development' : 'production',
   externals: [nodeExternals({
     allowlist: isDevelopment
-      ? ['webpack/hot/poll?100', '@idea/contracts', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', '@tiptap/core', '@tiptap/pm', /^@tiptap\/extension-/, '@dicebear/collection', '@dicebear/core']
-      : ['@idea/contracts', '@idea/editor', /^@idea\/editor\//, '@tiptap/html', '@tiptap/core', '@tiptap/pm', /^@tiptap\/extension-/],
-    // Bundle @idea/contracts, @idea/editor (which includes unified/remark) and @tiptap packages
-    // Note: @tiptap packages must be bundled to avoid ProseMirror version conflicts
-    // Note: unified/remark are now bundled as part of @idea/editor
+      ? [
+          'webpack/hot/poll?100',
+          '@idea/contracts',
+          '@idea/editor',
+          '@tiptap/html',
+          '@tiptap/core',
+          '@tiptap/pm',
+          /^@tiptap\/extension-/,
+          '@dicebear/collection',
+          '@dicebear/core',
+          // ESM packages that need to be bundled
+          /^prosemirror-/,
+          'unified',
+          /^remark-/,
+          /^rehype-/,
+          /^mdast-/,
+          /^hast-/,
+          /^unist-/,
+          'micromark',
+          /^micromark-/,
+          'vfile',
+          'lowlight',
+          'highlight.js',
+        ]
+      : [
+          '@idea/contracts',
+          '@idea/editor',
+          '@tiptap/html',
+          '@tiptap/core',
+          '@tiptap/pm',
+          /^@tiptap\/extension-/,
+          // ESM packages that need to be bundled
+          'unified',
+          /^remark-/,
+          /^rehype-/,
+          /^mdast-/,
+          /^hast-/,
+          /^unist-/,
+          'micromark',
+          /^micromark-/,
+          'vfile',
+          'lowlight',
+          'highlight.js',
+        ],
+    // Bundle ESM packages (unified, remark, rehype, etc.) to avoid ESM/CommonJS issues
+    // These packages are ESM-only and need to be bundled for Node.js
   }),],
   // ignore tests hot reload
   watchOptions: {
@@ -86,7 +127,7 @@ module.exports = {
   },
   plugins: [
     isDevelopment && new webpack.HotModuleReplacementPlugin(),
-    isDevelopment && new RunScriptWebpackPlugin({ 
+    isDevelopment && new RunScriptWebpackPlugin({
       name: 'main.js',
       // FIXME: webpack hmr not working, no time to fix it, should change to false after fixing it
       // https://github.com/nestjs/nest-cli/issues/1614
@@ -105,4 +146,18 @@ module.exports = {
     //   silent: true,
     // }),
   ].filter(Boolean),
+  // Suppress warnings about TypeScript type-only exports from @idea/contracts
+  // These are harmless - types are erased at compile time, so webpack can't see them
+  ignoreWarnings: [
+    (warning) => {
+      // FIXME: this is a workaround to suppress the warning, should find a better way to do this
+      // Suppress "export 'X' was not found in '@idea/contracts'" warnings
+      // These are TypeScript type-only exports that are erased at compile time
+      if (warning.message) {
+        const msg = typeof warning.message === 'string' ? warning.message : warning.message.toString();
+        return msg.includes("was not found in '@idea/contracts'");
+      }
+      return false;
+    },
+  ],
 }; 

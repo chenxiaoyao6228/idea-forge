@@ -1,5 +1,5 @@
 import { type SubscriptExtensionOptions, Subscript as TSubscript } from "@tiptap/extension-subscript";
-import type { MarkMarkdownStorage } from "../../markdown/types";
+import type { MarkMarkdownStorage } from "../markdown/types";
 
 export interface SubscriptOptions extends SubscriptExtensionOptions {
   dictionary: {

@@ -1,6 +1,6 @@
 import { Italic as TItalic, type ItalicOptions as TItalicOptions } from "@tiptap/extension-italic";
 import { markInputRule, markPasteRule } from "@tiptap/core";
-import type { MarkMarkdownStorage } from "../../markdown/types";
+import type { MarkMarkdownStorage } from "../markdown/types";
 
 // Star input rule: matches text surrounded by asterisks for italics
 // Example: *italic text*

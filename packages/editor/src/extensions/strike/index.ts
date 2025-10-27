@@ -1,6 +1,6 @@
 import { Strike as TStrike, type StrikeOptions as TStrikeOptions } from "@tiptap/extension-strike";
 import { markInputRule, markPasteRule } from "@tiptap/core";
-import type { MarkMarkdownStorage } from "../../markdown/types";
+import type { MarkMarkdownStorage } from "../markdown/types";
 
 // Input rule: Matches text wrapped in double tildes for strikethrough, e.g. ~~strikethrough text~~
 // Explanation:

@@ -1,5 +1,5 @@
 import { type SuperscriptExtensionOptions, Superscript as TSuperscript } from "@tiptap/extension-superscript";
-import type { MarkMarkdownStorage } from "../../markdown/types";
+import type { MarkMarkdownStorage } from "../markdown/types";
 
 export interface SuperscriptOptions extends SuperscriptExtensionOptions {
   dictionary: {

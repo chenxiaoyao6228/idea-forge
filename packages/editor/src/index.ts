@@ -1,9 +1,7 @@
 /**
- * @idea/editor - Shared isomorphic TipTap editor package
- *
- * This package contains the core editor extensions, parsers, and utilities
- * that can be used in both client and server environments.
- *
+ * @idea/editor - TipTap editor package for Idea Forge
+ * this package mainly export the schema, and can be used on client and server
+ * if client need extra behavior, please extend the extensions from the client package
  * @packageDocumentation
  */
 
@@ -88,11 +86,11 @@ export { MathExtension, Mathematics };
 export { AutoFocus, CustomKeys };
 
 // Markdown extension and types
-export { Markdown, type MarkdownOptions, type MarkdownStorage } from "./markdown";
-export type { NodeMarkdownStorage, MarkMarkdownStorage, MarkdownNode, Attrs } from "./markdown/types";
+export { Markdown, type MarkdownOptions, type MarkdownStorage } from "./extensions/markdown";
+export type { NodeMarkdownStorage, MarkMarkdownStorage, MarkdownNode, Attrs } from "./extensions/markdown/types";
 
 // Additional markdown types
-export type { ParserState, SerializerState } from "./markdown";
+export type { ParserState, SerializerState } from "./extensions/markdown";
 
 // Table utilities
 export * from "./extensions/nodes/table/utils";

@@ -1,6 +1,6 @@
 import { Image as TImage } from "@tiptap/extension-image";
 import { mergeAttributes } from "@tiptap/core";
-import type { NodeMarkdownStorage } from "../../../markdown/types";
+import type { NodeMarkdownStorage } from "../../markdown/types";
 
 export interface ImageBlockOptions {
   /**

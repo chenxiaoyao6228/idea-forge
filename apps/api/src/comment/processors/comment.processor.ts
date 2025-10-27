@@ -5,7 +5,7 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { NotificationService } from "@/notification/notification.service";
 import { CommentCreatedJobData, CommentUpdatedJobData, CommentResolvedJobData, NotificationEventType } from "@idea/contracts";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
-import { parseMentions, getUniqueMentionedUserIds } from "@idea/editor/server";
+import { parseMentions, getUniqueMentionedUserIds } from "@/editor/mention-parser";
 import type { JSONContent } from "@tiptap/core";
 
 /**

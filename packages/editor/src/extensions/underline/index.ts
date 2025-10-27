@@ -1,6 +1,6 @@
 import { Underline as TUnderline, type UnderlineOptions as TUnderlineOptions } from "@tiptap/extension-underline";
-import type { MarkMarkdownStorage } from "../../markdown/types";
-import { remarkDecoration } from "../../markdown/plugins/decoration";
+import type { MarkMarkdownStorage } from "../markdown/types";
+import { remarkDecoration } from "../markdown/plugins/decoration";
 
 export interface UnderlineOptions extends TUnderlineOptions {
   dictionary: {

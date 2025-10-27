@@ -1,5 +1,5 @@
 import { TaskItem as TTaskItem, type TaskItemOptions as TTaskItemOptions } from "@tiptap/extension-task-item";
-import type { NodeMarkdownStorage } from "../../markdown/types";
+import type { NodeMarkdownStorage } from "../markdown/types";
 import { TextSelection } from "@tiptap/pm/state";
 
 // eslint-disable-next-line ts/no-empty-object-type

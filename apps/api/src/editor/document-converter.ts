@@ -2,9 +2,9 @@ import { parse } from "@fast-csv/parse";
 import escapeRegExp from "lodash/escapeRegExp";
 import mammoth from "mammoth";
 import { generateJSON } from "@tiptap/html";
-import { coreExtensions } from "@idea/editor";
-import { markdownToHtml } from "@idea/editor/server";
 import { detectFileType } from "@idea/utils";
+import { serverExtensions } from "./extensions";
+import { markdownToHtml } from "./markdown-converter";
 
 /**
  * Custom error for file import failures
@@ -131,7 +131,7 @@ export async function htmlToTiptapJSON(content: Buffer | string): Promise<Record
   const html = typeof content === "string" ? content : content.toString("utf8");
 
   // Use TipTap's generateJSON to convert HTML to TipTap JSON
-  return generateJSON(html, coreExtensions);
+  return generateJSON(html, serverExtensions);
 }
 
 /**

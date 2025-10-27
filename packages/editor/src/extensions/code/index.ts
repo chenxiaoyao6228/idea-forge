@@ -1,6 +1,6 @@
 import { Code as TCode, type CodeOptions as TCodeOptions } from "@tiptap/extension-code";
 import { markInputRule, markPasteRule } from "@tiptap/core";
-import type { MarkMarkdownStorage } from "../../markdown/types";
+import type { MarkMarkdownStorage } from "../markdown/types";
 
 /*
 Differences between code and code-block:

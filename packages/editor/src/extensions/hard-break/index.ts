@@ -1,5 +1,5 @@
 import { HardBreak as THardBreak, type HardBreakOptions as THardBreakOptions } from "@tiptap/extension-hard-break";
-import type { NodeMarkdownStorage } from "../../markdown/types";
+import type { NodeMarkdownStorage } from "../markdown/types";
 
 export interface HardBreakOptions extends THardBreakOptions {}
 

@@ -1,6 +1,6 @@
 import { findParentNode, mergeAttributes, Node, textblockTypeInputRule } from "@tiptap/core";
 import { Selection } from "@tiptap/pm/state";
-import type { NodeMarkdownStorage } from "../../../markdown/types";
+import type { NodeMarkdownStorage } from "../../markdown/types";
 
 export interface CodeBlockOptions {
   /**

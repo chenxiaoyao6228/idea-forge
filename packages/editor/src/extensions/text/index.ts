@@ -1,5 +1,5 @@
 import { Text as TText } from "@tiptap/extension-text";
-import type { NodeMarkdownStorage } from "../../markdown/types";
+import type { NodeMarkdownStorage } from "../markdown/types";
 
 export const Text = TText.extend({
   name: "text",

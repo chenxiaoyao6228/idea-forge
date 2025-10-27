@@ -1,7 +1,7 @@
 {
   "name": "@idea/editor",
   "version": "0.1.0",
-  "description": "Shared isomorphic TipTap editor package for Idea Forge",
+  "description": "Client-side TipTap editor package for Idea Forge",
   "type": "module",
   "main": "./src/index.ts",
   "module": "./src/index.ts",
@@ -11,11 +11,6 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
-    },
-    "./server": {
-      "types": "./src/server.ts",
-      "import": "./src/server.ts",
-      "default": "./src/server.ts"
     }
   },
   "scripts": {
@@ -33,6 +28,7 @@
     "@tiptap/extension-bold": "^3.0.0",
     "@tiptap/extension-bullet-list": "^3.0.0",
     "@tiptap/extension-code": "^3.0.0",
+    "@tiptap/extension-code-block-lowlight": "^3.0.0",
     "@tiptap/extension-document": "^3.0.0",
     "@tiptap/extension-emoji": "^3.8.0",
     "@tiptap/extension-hard-break": "^3.0.0",

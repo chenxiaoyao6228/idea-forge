@@ -1,6 +1,6 @@
 import { Heading as THeading, type HeadingOptions as THeadingOptions } from "@tiptap/extension-heading";
 import type { Node as ProseMirrorNode, NodeType } from "@tiptap/pm/model";
-import type { MarkdownNode, ParserState, SerializerState } from "../../markdown";
+import type { MarkdownNode, ParserState, SerializerState } from "../markdown";
 
 export interface HeadingOptions extends THeadingOptions {
   dictionary?: {

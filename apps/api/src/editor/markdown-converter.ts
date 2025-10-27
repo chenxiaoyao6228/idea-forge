@@ -1,8 +1,8 @@
 /**
  * Server-side markdown to HTML converter
  *
- * Uses the same unified + remark pipeline as the client-side editor
- * to ensure consistent markdown parsing across the application.
+ * Converts markdown to HTML format compatible with TipTap editor.
+ * Used for document imports (markdown files → TipTap JSON).
  */
 
 import { unified } from "unified";
@@ -27,8 +27,8 @@ import { rehypeTiptapMath } from "./rehype-tiptap-math";
 export async function markdownToHtml(markdown: string): Promise<string> {
   const htmlFile = await unified()
     .use(remarkParse) // Parse markdown to AST
-    .use(remarkGfm) // Add GitHub Flavored Markdown support
-    .use(remarkMath) // Add math support (inline: $...$ and block: $$...$$)
+    .use(remarkGfm) // GitHub Flavored Markdown (tables, task lists, etc.)
+    .use(remarkMath) // Math formulas (inline: $...$ and block: $$...$$)
     .use(remarkRehype) // Convert markdown AST to HTML AST
     .use(rehypeTiptapMath) // Convert math to TipTap format (data-type, data-latex)
     .use(rehypeStringify) // Convert HTML AST to string

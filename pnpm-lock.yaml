@@ -341,6 +341,21 @@ importers:
       reflect-metadata:
         specifier: ^0.1.13
         version: 0.1.13
+      rehype-stringify:
+        specifier: ^10.0.1
+        version: 10.0.1
+      remark-gfm:
+        specifier: ^4.0.0
+        version: 4.0.0
+      remark-math:
+        specifier: ^6.0.0
+        version: 6.0.0
+      remark-parse:
+        specifier: ^11.0.0
+        version: 11.0.0
+      remark-rehype:
+        specifier: ^11.1.2
+        version: 11.1.2
       request-ip:
         specifier: ^3.3.0
         version: 3.3.0
@@ -353,6 +368,12 @@ importers:
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1
+      unified:
+        specifier: ^11.0.5
+        version: 11.0.5
+      unist-util-visit:
+        specifier: ^5.0.0
+        version: 5.0.0
       uuid:
         specifier: ^11.0.3
         version: 11.0.3
@@ -414,6 +435,9 @@ importers:
       '@types/express-session':
         specifier: ^1.18.0
         version: 1.18.0
+      '@types/hast':
+        specifier: ^3.0.4
+        version: 3.0.4
       '@types/lodash':
         specifier: ^4.17.13
         version: 4.17.13
@@ -1081,6 +1105,9 @@ importers:
       '@tiptap/extension-code':
         specifier: ^3.0.0
         version: 3.7.2(@tiptap/core@3.7.2)
+      '@tiptap/extension-code-block-lowlight':
+        specifier: ^3.0.0
+        version: 3.0.0(@tiptap/core@3.7.2)(@tiptap/extension-code-block@3.7.2)(@tiptap/pm@3.7.2)
       '@tiptap/extension-document':
         specifier: ^3.0.0
         version: 3.0.0(@tiptap/core@3.7.2)
@@ -9863,6 +9890,19 @@ packages:
     dependencies:
       '@tiptap/core': 3.7.2(@tiptap/pm@3.7.2)
       '@tiptap/extension-code-block': 3.0.0(@tiptap/core@3.7.2)(@tiptap/pm@3.7.2)
+      '@tiptap/pm': 3.7.2
+    dev: false
+
+  /@tiptap/extension-code-block-lowlight@3.0.0(@tiptap/core@3.7.2)(@tiptap/extension-code-block@3.7.2)(@tiptap/pm@3.7.2):
+    resolution: {integrity: sha512-FM7gTeTpgw0Z4yZJKAz9uW8OYyhg8Pnwa8vMXoUTdq/NZAf5rAXkn4X0pN2Qle1Me676UBgNv/ii1DAaCGmSEQ==}
+    deprecated: There are no breaking changes in this packages, we meant to release 2.5.0
+    peerDependencies:
+      '@tiptap/core': ^3.0.0
+      '@tiptap/extension-code-block': ^3.0.0
+      '@tiptap/pm': ^3.0.0
+    dependencies:
+      '@tiptap/core': 3.7.2(@tiptap/pm@3.7.2)
+      '@tiptap/extension-code-block': 3.7.2(@tiptap/core@3.7.2)(@tiptap/pm@3.7.2)
       '@tiptap/pm': 3.7.2
     dev: false
 

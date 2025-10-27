@@ -15,7 +15,7 @@ import { Comment, Prisma } from "@prisma/client";
 import { CommentPresenter } from "./comment.presenter";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
-import { parseMentions, calculateMentionDiff, getUniqueMentionedUserIds } from "@idea/editor/server";
+import { parseMentions, calculateMentionDiff, getUniqueMentionedUserIds } from "@/editor/mention-parser";
 import type { JSONContent } from "@tiptap/core";
 
 @Injectable()

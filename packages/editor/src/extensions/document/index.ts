@@ -1,5 +1,5 @@
 import { Document as TiptapDocument } from "@tiptap/extension-document";
-import type { NodeMarkdownStorage } from "../../markdown/types";
+import type { NodeMarkdownStorage } from "../markdown/types";
 
 export const Document = TiptapDocument.extend({
   content: "(block)+",

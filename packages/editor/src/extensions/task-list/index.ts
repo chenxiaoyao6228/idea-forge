@@ -1,5 +1,5 @@
 import { TaskList as TTaskList, type TaskListOptions as TTaskListOptions } from "@tiptap/extension-task-list";
-import { NodeMarkdownStorage } from "../../markdown/types";
+import { NodeMarkdownStorage } from "../markdown/types";
 
 export interface TaskListOptions extends TTaskListOptions {}
 

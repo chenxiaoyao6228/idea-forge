@@ -1,5 +1,5 @@
 import { Mathematics } from "@tiptap/extension-mathematics";
-import type { NodeMarkdownStorage } from "../../../markdown/types";
+import type { NodeMarkdownStorage } from "../../markdown/types";
 
 /**
  * Mathematics extension for inline and block math formulas
@@ -14,6 +14,7 @@ import type { NodeMarkdownStorage } from "../../../markdown/types";
 export const MathExtension = Mathematics.extend({
   addOptions() {
     return {
+      // @ts-ignore
       ...this.parent?.(),
       // KaTeX options
       katexOptions: {
@@ -33,6 +34,7 @@ export const MathExtension = Mathematics.extend({
 
   addStorage() {
     return {
+      // @ts-ignore
       ...this.parent?.(),
       markdown: {
         parser: {

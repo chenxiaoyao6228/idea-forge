@@ -1,6 +1,6 @@
 import { markInputRule, markPasteRule } from "@tiptap/core";
 import { Bold as TBold } from "@tiptap/extension-bold";
-import type { MarkMarkdownStorage } from "../../markdown/types";
+import type { MarkMarkdownStorage } from "../markdown/types";
 
 // Star input rule: matches text surrounded by double asterisks for bold
 // Example: **bold text**

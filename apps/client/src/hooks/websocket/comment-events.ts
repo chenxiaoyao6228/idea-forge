@@ -2,10 +2,7 @@ import { useEffect } from "react";
 import { Socket } from "socket.io-client";
 import { addComment, updateComment, removeComment, useFindComment, type CommentEntity } from "@/stores/comment-store";
 import { SocketEvents } from "@/lib/websocket";
-import { toast } from "sonner";
 import { useEditorStore } from "@/stores/editor-store";
-import { parseMentions, getUniqueMentionedUserIds } from "@idea/editor/server";
-import type { JSONContent } from "@tiptap/core";
 import useUserStore from "@/stores/user-store";
 
 /**

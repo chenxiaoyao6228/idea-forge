@@ -1,5 +1,6 @@
 import { Mark, mergeAttributes } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
+import { Fragment, Slice } from "@tiptap/pm/model";
 
 export interface CommentMarkOptions {
   HTMLAttributes: Record<string, any>;
@@ -234,10 +235,10 @@ export const CommentMark = Mark.create<CommentMarkOptions>({
 
                 mapped.push(newNode);
               });
-              return require("prosemirror-model").Fragment.from(mapped);
+              return Fragment.from(mapped);
             };
 
-            return new (require("prosemirror-model").Slice)(removeMarks(slice.content), slice.openStart, slice.openEnd);
+            return new Slice(removeMarks(slice.content), slice.openStart, slice.openEnd);
           },
         },
       }),

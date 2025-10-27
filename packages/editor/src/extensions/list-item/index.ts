@@ -1,5 +1,5 @@
 import { ListItem as TListItem, type ListItemOptions as TListItemOptions } from "@tiptap/extension-list-item";
-import type { NodeMarkdownStorage } from "../../markdown/types";
+import type { NodeMarkdownStorage } from "../markdown/types";
 
 export interface ListItemOptions extends TListItemOptions {}
 

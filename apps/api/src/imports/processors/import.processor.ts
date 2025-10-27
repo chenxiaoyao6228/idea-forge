@@ -5,7 +5,7 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { OssService } from "@/file-store/oss.service";
 import { FileCleanupService } from "@/file-store/file-cleanup.service";
 import { DocumentService } from "@/document/document.service";
-import { convertToTiptapJSON } from "@/_shared/utils/document-converter";
+import { convertToTiptapJSON } from "@/editor/document-converter";
 import { tiptapTransformer } from "@/collaboration/extensions/transformer";
 import { ImportJobData } from "../imports.dto";
 import * as Y from "yjs";

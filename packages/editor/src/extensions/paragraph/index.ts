@@ -1,6 +1,6 @@
 import { Paragraph as TParagraph, type ParagraphOptions as TParagraphOptions } from "@tiptap/extension-paragraph";
 import type { Node as ProseMirrorNode, NodeType } from "@tiptap/pm/model";
-import type { MarkdownNode, ParserState, SerializerState } from "../../markdown";
+import type { MarkdownNode, ParserState, SerializerState } from "../markdown";
 
 // eslint-disable-next-line ts/no-empty-object-type
 export interface ParagraphOptions extends TParagraphOptions {}

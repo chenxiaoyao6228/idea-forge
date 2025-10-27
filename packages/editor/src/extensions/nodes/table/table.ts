@@ -1,5 +1,5 @@
 import { Table as TiptapTable } from "@tiptap/extension-table";
-import type { NodeMarkdownStorage } from "../../../markdown/types";
+import type { NodeMarkdownStorage } from "../../markdown/types";
 
 export const Table = TiptapTable.extend({
   name: "table",
