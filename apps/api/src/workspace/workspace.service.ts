@@ -566,6 +566,12 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.UserNotFound);
     }
 
+    // Get inviter information
+    const inviter = await this.prismaService.user.findUnique({
+      where: { id: adminId },
+      select: { displayName: true, email: true },
+    });
+
     // Create workspace invitation notification
     const notification = await this.notificationService.createNotification({
       userId,
@@ -574,7 +580,10 @@ export class WorkspaceService {
       actorId: adminId,
       metadata: {
         workspaceName: workspace.name,
+        workspaceId: workspaceId,
         workspaceAvatar: workspace.avatar,
+        role,
+        inviterName: inviter?.displayName || inviter?.email || "Someone",
       },
       actionRequired: true,
       actionType: ActionType.WORKSPACE_INVITATION,

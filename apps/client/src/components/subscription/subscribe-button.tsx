@@ -1,6 +1,7 @@
 import { Button } from "@idea/ui/shadcn/ui/button";
 import { Bell, BellOff } from "lucide-react";
-import { useIsSubscribedToDocument, useToggleDocumentSubscription } from "@/stores/subscription-store";
+import { useIsSubscribedToDocumentOrSubspace, useToggleDocumentSubscription } from "@/stores/subscription-store";
+import { useDocumentById } from "@/stores/document-store";
 import { cn } from "@idea/ui/shadcn/utils";
 import { TooltipWrapper } from "../tooltip-wrapper";
 import { useTranslation } from "react-i18next";
@@ -13,11 +14,14 @@ interface SubscribeButtonProps {
 /**
  * Subscribe button component for documents
  * Allows users to subscribe/unsubscribe to document updates
+ * Shows subscribed state if user is subscribed to either the document or its parent subspace
  */
 export function SubscribeButton({ documentId, className }: SubscribeButtonProps) {
   const { t } = useTranslation();
-  const isSubscribed = useIsSubscribedToDocument(documentId);
-  const toggleSubscription = useToggleDocumentSubscription(documentId);
+  const document = useDocumentById(documentId);
+  const subspaceId = document?.subspaceId ?? undefined;
+  const isSubscribed = useIsSubscribedToDocumentOrSubspace(documentId, subspaceId);
+  const toggleSubscription = useToggleDocumentSubscription(documentId, subspaceId);
 
   // Icon based on subscription status
   const Icon = isSubscribed ? Bell : BellOff;

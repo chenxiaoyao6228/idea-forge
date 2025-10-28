@@ -17,6 +17,7 @@ export enum NotificationEventType {
 
   // Invitation events (→ Inbox tab)
   WORKSPACE_INVITATION = "WORKSPACE_INVITATION", // User invited to workspace (action-required)
+  WORKSPACE_INVITATION_ACCEPTED = "WORKSPACE_INVITATION_ACCEPTED", // User accepted workspace invitation (informational)
   SUBSPACE_INVITATION = "SUBSPACE_INVITATION", // User invited to private subspace (action-required)
   WORKSPACE_REMOVED = "WORKSPACE_REMOVED", // User removed from workspace (informational)
 
@@ -119,6 +120,15 @@ export const WorkspaceInvitationMetadataSchema = z.object({
 });
 
 export type WorkspaceInvitationMetadata = z.infer<typeof WorkspaceInvitationMetadataSchema>;
+
+// Workspace invitation accepted metadata
+export const WorkspaceInvitationAcceptedMetadataSchema = z.object({
+  workspaceName: z.string(),
+  workspaceId: z.string(),
+  userName: z.string(),
+});
+
+export type WorkspaceInvitationAcceptedMetadata = z.infer<typeof WorkspaceInvitationAcceptedMetadataSchema>;
 
 // Subspace invitation metadata
 export const SubspaceInvitationMetadataSchema = z.object({
@@ -301,7 +311,7 @@ export function getCategoryEventTypes(category: NotificationCategory): Notificat
     case "SHARING":
       return [NotificationEventType.PERMISSION_REQUEST, NotificationEventType.PERMISSION_GRANT, NotificationEventType.PERMISSION_REJECT];
     case "INBOX":
-      return [NotificationEventType.WORKSPACE_INVITATION, NotificationEventType.SUBSPACE_INVITATION, NotificationEventType.WORKSPACE_REMOVED];
+      return [NotificationEventType.WORKSPACE_INVITATION, NotificationEventType.WORKSPACE_INVITATION_ACCEPTED, NotificationEventType.SUBSPACE_INVITATION, NotificationEventType.WORKSPACE_REMOVED];
     case "MENTIONS":
       return [NotificationEventType.COMMENT_MENTION];
     case "SUBSCRIBE":

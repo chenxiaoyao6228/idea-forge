@@ -36,6 +36,7 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
       case "PERMISSION_REJECT":
         return <XCircle className="h-4 w-4 text-red-500" />;
       case "WORKSPACE_INVITATION":
+      case "WORKSPACE_INVITATION_ACCEPTED":
       case "SUBSPACE_INVITATION":
         return <UserPlus className="h-4 w-4 text-green-500" />;
       case "COMMENT_MENTION":
@@ -81,6 +82,11 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
         return {
           title: "Workspace invitation",
           description: `${metadata?.inviterName || actorName} invited you to join ${metadata?.workspaceName || "a workspace"}`,
+        };
+      case "WORKSPACE_INVITATION_ACCEPTED":
+        return {
+          title: "Invitation accepted",
+          description: `${metadata?.userName || actorName} has accepted your invitation and joined ${metadata?.workspaceName || "your workspace"}`,
         };
       case "SUBSPACE_INVITATION":
         return {
@@ -191,19 +197,19 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{timeAgo}</span>
-            {notification.actionStatus === "APPROVED" && (
+            {notification.actionRequired && notification.actionStatus === "APPROVED" && (
               <Badge variant="secondary" className="text-xs">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 Approved
               </Badge>
             )}
-            {notification.actionStatus === "REJECTED" && (
+            {notification.actionRequired && notification.actionStatus === "REJECTED" && (
               <Badge variant="destructive" className="text-xs">
                 <XCircle className="h-3 w-3 mr-1" />
                 Rejected
               </Badge>
             )}
-            {isCanceled && (
+            {notification.actionRequired && isCanceled && (
               <Badge variant="outline" className="text-xs text-muted-foreground">
                 <XCircle className="h-3 w-3 mr-1" />
                 Already handled
@@ -212,7 +218,9 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
           </div>
 
           {/* Show info message for canceled requests */}
-          {isCanceled && <p className="text-xs text-muted-foreground mt-2 italic">This request was already processed by another administrator.</p>}
+          {notification.actionRequired && isCanceled && (
+            <p className="text-xs text-muted-foreground mt-2 italic">This request was already processed by another administrator.</p>
+          )}
 
           {/* Action buttons for action-required notifications */}
           {isActionRequired && (

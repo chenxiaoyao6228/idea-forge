@@ -57,7 +57,6 @@ export default function DocumentHeader() {
       <div className="flex items-center mr-2 sm:mr-4 ">
         <CollabUsers className="mr-2" />
         <Separator orientation="vertical" className="h-4" />
-        {/* FIXME: only user with EDIT permission can publish */}
         {activeDocumentId && <PublishButton documentId={activeDocumentId} />}
         {activeDocumentId && <SubscribeButton documentId={activeDocumentId} />}
         {activeDocumentId && <SharePopover documentId={activeDocumentId}></SharePopover>}
