@@ -18,6 +18,7 @@ import { DocumentTrashService } from "./trash-document.service";
 import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
 import { NotificationModule } from "@/notification/notification.module";
 import { SubscriptionModule } from "@/subscription/subscription.module";
+import { DocumentViewService } from "./document-view.service";
 
 @Module({
   imports: [
@@ -41,9 +42,10 @@ import { SubscriptionModule } from "@/subscription/subscription.module";
     MoveDocumentService,
     SearchDocumentService,
     DocumentTrashService,
+    DocumentViewService,
     DocumentAbility,
     EventDeduplicator,
   ],
-  exports: [DocumentService, SystemDocumentService, SearchDocumentService, MoveDocumentService, DocumentTrashService],
+  exports: [DocumentService, SystemDocumentService, SearchDocumentService, MoveDocumentService, DocumentTrashService, DocumentViewService],
 })
 export class DocumentModule {}
