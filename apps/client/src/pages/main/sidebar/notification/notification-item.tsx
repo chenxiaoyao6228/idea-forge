@@ -98,6 +98,11 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
           title: "Comment resolved",
           description: `${actorName} resolved a comment thread on "${documentTitle}"`,
         };
+      case "DOCUMENT_UPDATE":
+        return {
+          title: "Document updated",
+          description: `${actorName} has updated "${documentTitle}"`,
+        };
       default:
         return {
           title: "Notification",
@@ -121,19 +126,19 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
       onMarkAsRead(notification.id);
     }
 
-    // Navigate to document for comment notifications
-    if (
-      notification.documentId &&
-      (notification.event === "COMMENT_MENTION" || notification.event === "COMMENT_CREATED" || notification.event === "COMMENT_RESOLVED")
-    ) {
-      // Get commentId from metadata to focus the specific comment
-      const commentId = (notification.metadata as any)?.commentId;
-
-      if (commentId) {
-        // Navigate with commentId to open sidebar and focus the comment
-        navigate(`/${notification.documentId}?commentId=${commentId}`);
-      } else {
-        // Fallback: just navigate to document
+    // Navigate to document for document-related notifications
+    if (notification.documentId) {
+      // Comment notifications with specific comment focus
+      if (notification.event === "COMMENT_MENTION" || notification.event === "COMMENT_CREATED" || notification.event === "COMMENT_RESOLVED") {
+        const commentId = (notification.metadata as any)?.commentId;
+        if (commentId) {
+          navigate(`/${notification.documentId}?commentId=${commentId}`);
+        } else {
+          navigate(`/${notification.documentId}`);
+        }
+      }
+      // Document update notifications - just navigate to document
+      else if (notification.event === "DOCUMENT_UPDATE") {
         navigate(`/${notification.documentId}`);
       }
     }

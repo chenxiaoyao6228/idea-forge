@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { Button } from "@idea/ui/shadcn/ui/button";
 import { Badge } from "@idea/ui/shadcn/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@idea/ui/shadcn/ui/popover";
@@ -50,7 +50,7 @@ export function NotificationButton({ className, size = "lg", as }: NotificationB
             className,
           )}
         >
-          <Bell className={iconSize} />
+          <Inbox className={iconSize} />
           {badgeCount > 0 && (
             <Badge variant="destructive" className={cn("absolute px-1 text-[10px] font-medium flex items-center justify-center rounded-full", badgeSize)}>
               {badgeCount > 99 ? "99+" : badgeCount}

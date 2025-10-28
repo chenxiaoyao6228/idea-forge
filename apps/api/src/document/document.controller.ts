@@ -1,5 +1,13 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from "@nestjs/common";
-import { CreateDocumentDto, UpdateDocumentDto, MoveDocumentsDto, ShareDocumentDto, SearchDocumentDto, RequestDocumentPermissionDto } from "./document.dto";
+import {
+  CreateDocumentDto,
+  UpdateDocumentDto,
+  MoveDocumentsDto,
+  ShareDocumentDto,
+  SearchDocumentDto,
+  RequestDocumentPermissionDto,
+  PublishDocumentDto,
+} from "./document.dto";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { DocumentService } from "./document.service";
 import { MoveDocumentService } from "./move-document.service";
@@ -143,5 +151,10 @@ export class DocumentController {
   @Patch(":id/subspace-permissions")
   async updateSubspacePermissions(@GetUser("id") userId: string, @Param("id") id: string, @Body() dto: UpdateDocumentSubspacePermissionsDto) {
     return this.documentService.updateSubspacePermissions(id, userId, dto);
+  }
+
+  @Post(":id/publish")
+  async publishDocument(@GetUser("id") userId: string, @Param("id") id: string) {
+    return this.documentService.publishDocument(userId, id);
   }
 }

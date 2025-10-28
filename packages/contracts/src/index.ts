@@ -24,3 +24,4 @@ export * from "./share";
 export * from "./notification";
 export * from "./comment";
 export * from "./mention";
+export * from "./subscription";

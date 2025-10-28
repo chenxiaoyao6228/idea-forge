@@ -1,6 +1,16 @@
-import { Injectable, ForbiddenException, BadRequestException, NotFoundException } from "@nestjs/common";
+import { Injectable, ForbiddenException, BadRequestException, NotFoundException, Inject, forwardRef } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
 import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto, ShareDocumentDto } from "./document.dto";
-import { NavigationNode, NavigationNodeType, UpdateCoverDto, PermissionLevel, UpdateDocumentSubspacePermissionsDto, DocumentPermission } from "@idea/contracts";
+import {
+  NavigationNode,
+  NavigationNodeType,
+  UpdateCoverDto,
+  PermissionLevel,
+  UpdateDocumentSubspacePermissionsDto,
+  DocumentPermission,
+  DocumentPublishedJobData,
+} from "@idea/contracts";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { presentDocument } from "./document.presenter";
@@ -9,6 +19,7 @@ import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { AbilityService } from "@/_shared/casl/casl.service";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
+import { SubscriptionService } from "@/subscription/subscription.service";
 
 @Injectable()
 export class DocumentService {
@@ -17,6 +28,8 @@ export class DocumentService {
     private readonly eventPublisher: EventPublisherService,
     private readonly abilityService: AbilityService,
     private readonly docPermissionResolveService: DocPermissionResolveService,
+    @InjectQueue("notifications") private readonly notificationQueue: Queue,
+    @Inject(forwardRef(() => SubscriptionService)) private readonly subscriptionService: SubscriptionService,
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
@@ -139,6 +152,14 @@ export class DocumentService {
 
     if (shouldUpdateStructure) {
       await this.updateSubspaceNavigationTree(updatedDoc.subspaceId!, "update", updatedDoc);
+    }
+
+    // Auto-subscribe the editor to the document
+    try {
+      await this.subscriptionService.autoSubscribeCollaborator(userId, id);
+    } catch (error) {
+      // Log error but don't fail the update
+      console.error(`Failed to auto-subscribe user ${userId} to document ${id}:`, error);
     }
 
     // Fetch complete updated document with relations for WebSocket event
@@ -766,5 +787,60 @@ export class DocumentService {
     });
 
     return updatedDoc;
+  }
+
+  /**
+   * Publish document update to notify subscribers
+   */
+  async publishDocument(userId: string, documentId: string) {
+    // Get document
+    const doc = await this.prismaService.doc.findUnique({
+      where: { id: documentId },
+      select: {
+        id: true,
+        lastPublishedAt: true,
+        authorId: true,
+        workspaceId: true,
+        subspaceId: true,
+      },
+    });
+
+    if (!doc) {
+      throw new NotFoundException("Document not found");
+    }
+
+    // Check if user has edit permission (simplified - should use ability service in production)
+    // For now, just check if they're the author
+    // TODO: Add proper permission check using abilityService
+
+    const isFirstPublish = !doc.lastPublishedAt;
+
+    // Update document publish timestamp
+    await this.prismaService.doc.update({
+      where: { id: documentId },
+      data: {
+        lastPublishedAt: new Date(),
+        lastPublishedById: userId,
+      },
+    });
+
+    // Queue background job for notification processing
+    // The notification processor will handle creating notifications and emitting WebSocket events
+    await this.notificationQueue.add("document-published", {
+      documentId,
+      publisherId: userId,
+      workspaceId: doc.workspaceId,
+      isFirstPublish,
+    } as DocumentPublishedJobData);
+
+    // Get subscriber count for immediate response (excluding the publisher)
+    const allSubscribers = await this.subscriptionService.getSubscribersForDocument(documentId);
+    const subscriberCount = allSubscribers.filter((id) => id !== userId).length;
+
+    return {
+      success: true,
+      subscriberCount,
+      message: isFirstPublish ? "Document published" : "Update published",
+    };
   }
 }

@@ -67,7 +67,6 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-1 border-b">
         <div className="flex items-center gap-2">
-          <Bell className="h-5 w-5" />
           <h3 className="text-md font-semibold">Notifications</h3>
         </div>
         <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} disabled={markAllAsRead.loading}>
@@ -87,6 +86,14 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="SUBSCRIBE" className="relative">
+            Subscribe
+            {subscribeUnread > 0 && (
+              <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5">
+                {subscribeUnread > 99 ? "99+" : subscribeUnread}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="SHARING" className="relative">
             Sharing
             {sharingUnread > 0 && (
@@ -103,18 +110,24 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="SUBSCRIBE" className="relative">
-            Subscribe
-            {subscribeUnread > 0 && (
-              <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5">
-                {subscribeUnread > 99 ? "99+" : subscribeUnread}
-              </Badge>
-            )}
-          </TabsTrigger>
         </TabsList>
 
         {/* Tab Contents */}
         <TabsContent value="MENTIONS" className="flex-1 m-0 overflow-y-auto custom-scrollbar">
+          <NotificationList
+            notifications={notifications}
+            loading={loading}
+            loadingMore={loadingMore}
+            noMore={noMore}
+            onLoadMore={loadMore}
+            onMarkAsRead={handleMarkAsRead}
+            onResolveAction={handleResolveAction}
+            infiniteRef={infiniteRef}
+            className="h-full"
+          />
+        </TabsContent>
+
+        <TabsContent value="SUBSCRIBE" className="flex-1 m-0 overflow-y-auto custom-scrollbar">
           <NotificationList
             notifications={notifications}
             loading={loading}
@@ -143,20 +156,6 @@ export function NotificationPanel({ className, onClose }: NotificationPanelProps
         </TabsContent>
 
         <TabsContent value="INBOX" className="flex-1 m-0 overflow-y-auto custom-scrollbar">
-          <NotificationList
-            notifications={notifications}
-            loading={loading}
-            loadingMore={loadingMore}
-            noMore={noMore}
-            onLoadMore={loadMore}
-            onMarkAsRead={handleMarkAsRead}
-            onResolveAction={handleResolveAction}
-            infiniteRef={infiniteRef}
-            className="h-full"
-          />
-        </TabsContent>
-
-        <TabsContent value="SUBSCRIBE" className="flex-1 m-0 overflow-y-auto custom-scrollbar">
           <NotificationList
             notifications={notifications}
             loading={loading}

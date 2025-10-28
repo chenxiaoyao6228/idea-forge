@@ -24,6 +24,9 @@ export enum NotificationEventType {
   COMMENT_MENTION = "COMMENT_MENTION", // User is @mentioned in a comment (informational)
   COMMENT_CREATED = "COMMENT_CREATED", // New comment on user's document (informational)
   COMMENT_RESOLVED = "COMMENT_RESOLVED", // Comment thread resolved (informational)
+
+  // Subscription events (→ Subscribe tab)
+  DOCUMENT_UPDATE = "DOCUMENT_UPDATE", // Subscribed document has been published (informational)
 }
 
 /**
@@ -302,7 +305,7 @@ export function getCategoryEventTypes(category: NotificationCategory): Notificat
     case "MENTIONS":
       return [NotificationEventType.COMMENT_MENTION];
     case "SUBSCRIBE":
-      return [NotificationEventType.COMMENT_CREATED, NotificationEventType.COMMENT_RESOLVED];
+      return [NotificationEventType.COMMENT_CREATED, NotificationEventType.COMMENT_RESOLVED, NotificationEventType.DOCUMENT_UPDATE];
   }
 }
 
@@ -323,6 +326,7 @@ export function isInformationalEvent(eventType: NotificationEventType): boolean 
     NotificationEventType.COMMENT_MENTION,
     NotificationEventType.COMMENT_CREATED,
     NotificationEventType.COMMENT_RESOLVED,
+    NotificationEventType.DOCUMENT_UPDATE,
   ].includes(eventType);
 }
 

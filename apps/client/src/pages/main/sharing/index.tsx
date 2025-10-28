@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
-import { Button } from '@idea/ui/shadcn/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@idea/ui/shadcn/ui/popover';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@idea/ui/shadcn/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@idea/ui/shadcn/ui/tabs";
 import { UserPlus } from "lucide-react";
 import { MemberSharingTab } from "./member-sharing-tab";
 import { GuestSharingTab } from "./guest-sharing-tab";
+import { useState } from "react";
 
 interface ShareButtonProps {
   documentId: string;
@@ -12,11 +13,12 @@ interface ShareButtonProps {
 
 export function SharePopover({ documentId }: ShareButtonProps) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm">
+        <Button variant={open ? "secondary" : "ghost"} size="sm">
           <UserPlus className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
@@ -24,10 +26,10 @@ export function SharePopover({ documentId }: ShareButtonProps) {
         <Tabs defaultValue="members" className="w-full">
           <TabsList className="grid w-[calc(100%-2rem)] grid-cols-2 mx-4 mb-2 mt-2">
             <TabsTrigger value="members" className="px-2 py-1">
-              Members
+              {t("Members")}
             </TabsTrigger>
             <TabsTrigger value="guests" className="px-2 py-1">
-              Guests & Public
+              {t("Guests & Public")}
             </TabsTrigger>
           </TabsList>
 
