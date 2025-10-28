@@ -148,7 +148,7 @@ export const useSwitchWorkspace = () => {
   const { t } = useTranslation();
 
   return useRequest(
-    async (workspaceId: string) => {
+    async (workspaceId: string, redirectPath?: string) => {
       try {
         // Call the new API to switch workspace
         const response = await workspaceApi.switchWorkspace(workspaceId);
@@ -190,7 +190,8 @@ export const useSwitchWorkspace = () => {
         }
 
         // Refresh the page to ensure all components get the new workspace context
-        window.location.href = "/";
+        // If redirectPath is provided, navigate to it after workspace switch
+        window.location.href = redirectPath || "/";
       } catch (error) {
         console.error("Failed to switch workspace:", error);
         throw error;

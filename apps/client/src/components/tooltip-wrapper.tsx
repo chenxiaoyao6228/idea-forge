@@ -1,5 +1,5 @@
 import React from "react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@idea/ui/shadcn/ui/tooltip";
 
 interface TooltipWrapperProps {
   children: React.ReactNode;
@@ -8,7 +8,7 @@ interface TooltipWrapperProps {
 }
 
 export function TooltipWrapper({ children, disabled, tooltip }: TooltipWrapperProps) {
-  if (!disabled) {
+  if (disabled) {
     return <>{children}</>;
   }
 
