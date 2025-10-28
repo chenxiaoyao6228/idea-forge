@@ -24,8 +24,11 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const currentUser = useCurrentUser();
 
+  // Filter out current user from mention suggestions
+  const filteredItems = props.items.filter((item) => item.id !== currentUser?.id);
+
   const selectItem = (index: number) => {
-    const item = props.items[index];
+    const item = filteredItems[index];
 
     if (item) {
       props.command({
@@ -39,11 +42,11 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
   };
 
   const upHandler = () => {
-    setSelectedIndex((selectedIndex + props.items.length - 1) % props.items.length);
+    setSelectedIndex((selectedIndex + filteredItems.length - 1) % filteredItems.length);
   };
 
   const downHandler = () => {
-    setSelectedIndex((selectedIndex + 1) % props.items.length);
+    setSelectedIndex((selectedIndex + 1) % filteredItems.length);
   };
 
   const enterHandler = () => {
@@ -83,7 +86,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
     );
   }
 
-  if (props.items.length === 0) {
+  if (filteredItems.length === 0) {
     return (
       <div className="mention-suggestion">
         <div className="mention-suggestion-empty">No users found</div>
@@ -94,7 +97,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
   return (
     <div className="mention-suggestion">
       <div className="mention-suggestion-list">
-        {props.items.map((item, index) => (
+        {filteredItems.map((item, index) => (
           <button
             key={item.id}
             type="button"
