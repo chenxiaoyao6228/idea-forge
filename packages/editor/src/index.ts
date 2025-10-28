@@ -33,8 +33,6 @@ import { HighlightMark } from "./extensions/highlight";
 import { Subscript, type SubscriptOptions } from "./extensions/subscript";
 import { Superscript, type SuperscriptOptions } from "./extensions/superscript";
 
-// Base extensions
-import { AutoFocus } from "./extensions/base/auto-focus";
 import { CustomKeys } from "./extensions/base/custom-keys";
 
 // Table extensions
@@ -83,7 +81,7 @@ export { EmojiNode };
 export { MathExtension, Mathematics };
 
 // Re-export base extensions
-export { AutoFocus, CustomKeys };
+export { CustomKeys };
 
 // Markdown extension and types
 export { Markdown, type MarkdownOptions, type MarkdownStorage } from "./extensions/markdown";
@@ -148,7 +146,5 @@ export const coreExtensions = [
   // Math extension
   MathExtension,
 
-  // Base extensions
-  AutoFocus,
   CustomKeys,
 ];
