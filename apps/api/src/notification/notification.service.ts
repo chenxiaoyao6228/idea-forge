@@ -614,13 +614,13 @@ export class NotificationService {
       if (user && workspace) {
         await this.createNotification({
           userId: adminId, // Send to the inviter
-          event: NotificationEventType.PERMISSION_GRANT, // Reuse existing event type (invitation accepted)
+          event: NotificationEventType.WORKSPACE_INVITATION_ACCEPTED, // Use dedicated event type for inbox category
           workspaceId: workspaceId, // Workspace-scoped notification
           actorId: userId, // The user who accepted
           metadata: {
             userName: user.displayName || user.email,
             workspaceName: workspace.name,
-            message: `${user.displayName || user.email} has accepted your invitation and joined ${workspace.name}`,
+            workspaceId: workspaceId,
           },
           actionRequired: false,
         });

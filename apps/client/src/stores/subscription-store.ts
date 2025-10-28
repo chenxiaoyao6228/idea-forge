@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { subscriptionApi } from "@/apis/subscription";
 import useRequest from "@ahooksjs/use-request";
 import { useRefCallback } from "@/hooks/use-ref-callback";
-import type { CreateSubscriptionRequest, SubscriptionEventType } from "@idea/contracts";
+import type { CreateSubscriptionRequest } from "@idea/contracts";
 
 export interface SubscriptionEntity {
   id: string;
@@ -47,11 +47,37 @@ export const useSubspaceSubscriptions = (subspaceId?: string) => {
   }, [subscriptions, subspaceId]);
 };
 
-// Check if user is subscribed to a document
+// Check if user is subscribed to a document (direct subscription only)
 export const useIsSubscribedToDocument = (documentId?: string) => {
   const subscriptions = useSubscriptionStore((state) => state.subscriptions);
   if (!documentId) return false;
   return subscriptions.some((sub) => sub.documentId === documentId && !sub.deletedAt);
+};
+
+// Check if user is subscribed to a document or its parent subspace
+// This matches the backend logic in subscription.service.ts:getSubscribersForDocument
+export const useIsSubscribedToDocumentOrSubspace = (documentId?: string, subspaceId?: string) => {
+  const subscriptions = useSubscriptionStore((state) => state.subscriptions);
+  if (!documentId) return false;
+
+  // Check for document-level subscription (active or soft-deleted)
+  const documentSub = subscriptions.find((sub) => sub.documentId === documentId);
+  const hasDocumentSubscription = documentSub && !documentSub.deletedAt;
+  const hasDocumentUnsubscription = documentSub?.deletedAt;
+
+  // If there's an active document subscription, return true
+  if (hasDocumentSubscription) return true;
+
+  // If there's a document-level unsubscription, return false (even if subscribed to subspace)
+  if (hasDocumentUnsubscription) return false;
+
+  // Check if subscribed to the parent subspace (and no explicit document unsubscription)
+  if (subspaceId) {
+    const hasSubspaceSubscription = subscriptions.some((sub) => sub.subspaceId === subspaceId && !sub.deletedAt);
+    if (hasSubspaceSubscription) return true;
+  }
+
+  return false;
 };
 
 // Check if user is subscribed to a subspace
@@ -164,13 +190,14 @@ export const useDeleteSubscription = () => {
   );
 };
 
-// Find subscription by document ID
+// Find subscription by document ID (includes soft-deleted)
 export const useFindDocumentSubscription = () => {
   const subscriptions = useSubscriptionStore((state) => state.subscriptions);
 
   return useRefCallback((documentId?: string) => {
     if (!documentId) return undefined;
-    return subscriptions.find((sub) => sub.documentId === documentId && !sub.deletedAt);
+    // Return any document subscription (active or soft-deleted)
+    return subscriptions.find((sub) => sub.documentId === documentId);
   });
 };
 
@@ -185,9 +212,9 @@ export const useFindSubspaceSubscription = () => {
 };
 
 // Toggle document subscription
-export const useToggleDocumentSubscription = (documentId?: string) => {
-  const isSubscribed = useIsSubscribedToDocument(documentId);
-  const findSubscription = useFindDocumentSubscription();
+// Note: This needs to be called with subspaceId to properly handle subspace subscriptions
+export const useToggleDocumentSubscription = (documentId?: string, subspaceId?: string) => {
+  const subscriptions = useSubscriptionStore((state) => state.subscriptions);
   const createSubscription = useCreateSubscription();
   const deleteSubscription = useDeleteSubscription();
 
@@ -196,13 +223,40 @@ export const useToggleDocumentSubscription = (documentId?: string) => {
       throw new Error("Document ID is required");
     }
 
-    if (isSubscribed) {
-      const subscription = findSubscription(documentId);
-      if (subscription) {
-        await deleteSubscription.run(subscription.id);
+    // Find existing document subscription (active or soft-deleted)
+    const documentSub = subscriptions.find((sub) => sub.documentId === documentId);
+    const hasDocumentSubscription = documentSub && !documentSub.deletedAt;
+    const hasDocumentUnsubscription = documentSub?.deletedAt;
+
+    // Check if subscribed via subspace
+    const hasSubspaceSubscription = subspaceId ? subscriptions.some((sub) => sub.subspaceId === subspaceId && !sub.deletedAt) : false;
+
+    // Determine effective subscription state
+    const isEffectivelySubscribed = hasDocumentSubscription || (hasSubspaceSubscription && !hasDocumentUnsubscription);
+
+    if (isEffectivelySubscribed) {
+      // Unsubscribe
+      if (hasDocumentSubscription && documentSub) {
+        // Has direct document subscription - soft delete it
+        await deleteSubscription.run(documentSub.id);
+      } else if (hasSubspaceSubscription) {
+        // Subscribed via subspace - create a soft-deleted document subscription to exclude this doc
+        const newSub = await createSubscription.run({ documentId, event: "documents.update" });
+        // Immediately soft-delete it to act as an exclusion
+        if (newSub) {
+          await deleteSubscription.run(newSub.id);
+        }
       }
     } else {
-      await createSubscription.run({ documentId, event: "documents.update" });
+      // Subscribe or re-subscribe
+      if (hasDocumentUnsubscription && documentSub) {
+        // Had unsubscribed from this doc - restore the subscription by deleting and recreating
+        // (or we could update deletedAt to null, but creating new is cleaner)
+        await createSubscription.run({ documentId, event: "documents.update" });
+      } else {
+        // No previous subscription - create new
+        await createSubscription.run({ documentId, event: "documents.update" });
+      }
     }
   });
 };

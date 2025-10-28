@@ -93,7 +93,6 @@ const removeDocumentFromSubspace = (subspaceId: string, documentId: string) => {
   });
 };
 
-
 // Types
 export interface DocumentEntity {
   id: string;
@@ -731,6 +730,14 @@ export const useCurrentDocumentFromStore = () => {
   }, [documents, activeDocumentId]);
 };
 
+// Get document by ID from store
+export const useDocumentById = (documentId?: string) => {
+  const documents = useDocuments();
+  return useMemo(() => {
+    return documentId ? documents[documentId] : undefined;
+  }, [documents, documentId]);
+};
+
 // Computed value hooks
 export const useArchivedDocuments = () => {
   const documents = useDocuments();
@@ -936,7 +943,7 @@ export const useFindNavigationTreeSiblings = () => {
     const findNodeInTree = (
       nodes: NavigationNode[],
       targetId: string,
-      parent: NavigationNode | null = null
+      parent: NavigationNode | null = null,
     ): { siblings: NavigationNode[]; currentIndex: number; parent: NavigationNode | null } | null => {
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];

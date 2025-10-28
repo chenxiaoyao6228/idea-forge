@@ -216,6 +216,8 @@ export class SubscriptionService {
 
   /**
    * Get all subscribers for a document (for notification filtering)
+   * Includes users subscribed to the document OR its subspace,
+   * but excludes users who explicitly unsubscribed from this specific document
    */
   async getSubscribersForDocument(documentId: string): Promise<string[]> {
     const document = await this.prisma.doc.findUnique({
@@ -227,16 +229,44 @@ export class SubscriptionService {
       return [];
     }
 
-    // Find subscriptions for this document OR its subspace
+    // Find all subscriptions (both document and subspace level)
     const subscriptions = await this.prisma.subscription.findMany({
       where: {
         OR: [{ documentId }, { subspaceId: document.subspaceId || undefined }],
-        deletedAt: null,
       },
-      select: { userId: true },
+      select: { userId: true, documentId: true, subspaceId: true, deletedAt: true },
     });
 
-    return subscriptions.map((sub) => sub.userId);
+    // Group subscriptions by userId
+    const userSubscriptions = new Map<string, { hasDocument: boolean; hasSubspace: boolean; documentDeleted: boolean }>();
+
+    for (const sub of subscriptions) {
+      const existing = userSubscriptions.get(sub.userId) || { hasDocument: false, hasSubspace: false, documentDeleted: false };
+
+      if (sub.documentId === documentId) {
+        if (sub.deletedAt) {
+          existing.documentDeleted = true; // Explicit unsubscription from this document
+        } else {
+          existing.hasDocument = true; // Active document subscription
+        }
+      } else if (sub.subspaceId === document.subspaceId && !sub.deletedAt) {
+        existing.hasSubspace = true; // Active subspace subscription
+      }
+
+      userSubscriptions.set(sub.userId, existing);
+    }
+
+    // Filter users: include if they have document subscription OR (subspace subscription AND no document unsubscription)
+    const subscribers: string[] = [];
+    for (const [userId, { hasDocument, hasSubspace, documentDeleted }] of userSubscriptions) {
+      if (hasDocument) {
+        subscribers.push(userId); // Direct document subscription takes precedence
+      } else if (hasSubspace && !documentDeleted) {
+        subscribers.push(userId); // Subspace subscription, but not explicitly unsubscribed from this doc
+      }
+    }
+
+    return subscribers;
   }
 
   /**
