@@ -137,12 +137,12 @@ export function DocumentLink(props: DocumentLinkProps) {
 
   const menu = useMemo(
     () => (
-      <div className="flex items-center gap-1">
+      <>
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating} title="Create child document">
           <PlusIcon className="h-3 w-3" />
         </Button>
         <DocumentMenu documentId={node.id} documentTitle={node.title} onRename={handleRename} />
-      </div>
+      </>
     ),
     [handleCreateChild, handleRename, isCreating, node.id, node.title],
   );

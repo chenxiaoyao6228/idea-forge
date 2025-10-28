@@ -117,7 +117,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
 
   const menu = useMemo(
     () => (
-      <div className="flex items-center gap-1">
+      <>
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateDocument} disabled={isCreating} title={t("Create new document")}>
           <PlusIcon className="h-3 w-3" />
         </Button>
@@ -127,7 +127,7 @@ export function SubspaceLink({ subspace, depth = 0, isDragging = false, isActive
         </Button> */}
 
         <SubspaceMenu subspaceId={subspace.id} subspaceName={subspace.name} subspaceType={subspace.type} workspaceId={subspace.workspaceId} />
-      </div>
+      </>
     ),
     [handleCreateDocument, handleRename, subspaceId, subspace.name, subspace.workspaceId, subspace.type],
   );

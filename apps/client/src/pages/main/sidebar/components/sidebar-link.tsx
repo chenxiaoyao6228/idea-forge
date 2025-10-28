@@ -4,7 +4,7 @@ import { Button } from '@idea/ui/shadcn/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@idea/ui/shadcn/ui/collapsible';
 import { cn } from '@idea/ui/shadcn/utils';
 import { NavLink, NavLinkProps } from "./nav-link";
-import { useMemo } from "react";
+import { useState } from "react";
 
 export interface SidebarLinkProps extends Omit<NavLinkProps, "children"> {
   icon?: React.ReactNode;
@@ -41,10 +41,12 @@ export function SidebarLink({
   style,
   ...rest
 }: SidebarLinkProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   const linkContent = (
     <div
       className={cn(
-        "sidebar-link group relative flex w-full items-center gap-2 rounded-lg pl-6 pr-3 py-1 text-sm transition-colors",
+        "sidebar-link relative flex w-full items-center gap-2 rounded-lg pl-6 pr-3 py-1 text-sm transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
         active && "bg-accent text-accent-foreground",
         isActiveDrop && "bg-accent text-accent-foreground border border-foreground",
@@ -52,6 +54,8 @@ export function SidebarLink({
         isDraft && "border border-dashed border-muted-foreground/50",
         className,
       )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       // style={computedStyle}
     >
       {expanded !== undefined && (
@@ -64,7 +68,12 @@ export function SidebarLink({
       <div className="flex-1 truncate">{label}</div>
 
       {menu && (
-        <div className={cn("invisible opacity-0 transition-all", "group-hover:visible group-hover:opacity-100", showActions && "visible opacity-100")}>
+        <div
+          className={cn(
+            "flex items-center gap-1 transition-opacity duration-150",
+            (showActions || isHovered) ? "opacity-100" : "opacity-0"
+          )}
+        >
           {menu}
         </div>
       )}
