@@ -5,7 +5,9 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { NotificationService } from "../notification.service";
 import { SubscriptionService } from "@/subscription/subscription.service";
+import { DocumentViewService } from "@/document/document-view.service";
 import { DocumentPublishedJobData, NotificationEventType, SPECIAL_WORKSPACE_ID } from "@idea/contracts";
+import { isChangeOverThreshold } from "@/_shared/utils/document-diff.util";
 
 /**
  * Notification background processor
@@ -20,6 +22,7 @@ export class NotificationProcessor extends WorkerHost {
     private readonly prismaService: PrismaService,
     private readonly notificationService: NotificationService,
     private readonly subscriptionService: SubscriptionService,
+    private readonly documentViewService: DocumentViewService,
     private readonly configService: ConfigService,
   ) {
     super();
@@ -76,7 +79,14 @@ export class NotificationProcessor extends WorkerHost {
       return; // Don't notify on first publish
     }
 
-    // 2. Get all subscribers
+    // 2. Check change threshold - only notify if changes are significant
+    const isSignificantChange = await this.checkChangeThreshold(documentId);
+    if (!isSignificantChange) {
+      this.logger.log(`[DEBUG] Suppressing notifications - changes below threshold for document ${documentId}`);
+      return;
+    }
+
+    // 3. Get all subscribers
     const subscriberUserIds = await this.subscriptionService.getSubscribersForDocument(documentId);
     this.logger.log(`[DEBUG] Found ${subscriberUserIds.length} subscribers for document ${documentId}`);
 
@@ -85,11 +95,12 @@ export class NotificationProcessor extends WorkerHost {
       return;
     }
 
-    // 3. Get document info for notification metadata
+    // 4. Get document info for notification metadata
     const document = await this.prismaService.doc.findUnique({
       where: { id: documentId },
       select: {
         title: true,
+        updatedAt: true,
         lastPublishedBy: {
           select: {
             displayName: true,
@@ -106,7 +117,7 @@ export class NotificationProcessor extends WorkerHost {
 
     const actorName = document.lastPublishedBy?.displayName || document.lastPublishedBy?.email || "Unknown";
 
-    // 4. Filter and notify each subscriber
+    // 5. Filter and notify each subscriber
     // Note: since we are using deduplication window, we need to check if the user should be notified before creating the notification instead of batching them all at once.
     let notifiedCount = 0;
     for (const subscriberId of subscriberUserIds) {
@@ -117,9 +128,16 @@ export class NotificationProcessor extends WorkerHost {
       }
 
       // Check deduplication window
-      const shouldNotify = await this.shouldNotifyUser(subscriberId, documentId);
+      const shouldNotify = await this.checkUserViewTimeWindowSpan(subscriberId, documentId);
       if (!shouldNotify) {
         this.logger.log(`[DEBUG] Skipping notification for user ${subscriberId} due to deduplication window`);
+        continue;
+      }
+
+      // Check if user has already viewed the document since last update
+      const hasViewed = await this.documentViewService.hasViewedAfter(subscriberId, documentId, document.updatedAt);
+      if (hasViewed) {
+        this.logger.log(`[DEBUG] Skipping notification for user ${subscriberId} - already viewed update`);
         continue;
       }
 
@@ -164,7 +182,7 @@ export class NotificationProcessor extends WorkerHost {
    * Check if a user should be notified based on deduplication window
    * Returns true if enough time has passed since their last notification for this document
    */
-  private async shouldNotifyUser(userId: string, documentId: string): Promise<boolean> {
+  private async checkUserViewTimeWindowSpan(userId: string, documentId: string): Promise<boolean> {
     // Find the most recent DOCUMENT_UPDATE notification for this user and document
     const recentNotification = await this.prismaService.notification.findFirst({
       where: {
@@ -199,5 +217,80 @@ export class NotificationProcessor extends WorkerHost {
     );
 
     return shouldNotify;
+  }
+
+  /**
+   * Check if document changes exceed threshold
+   * Compares current version with previous revision to determine if changes are significant
+   *
+   * @param documentId - Document ID to check
+   * @returns true if changes exceed threshold (5 characters), false otherwise
+   */
+  private async checkChangeThreshold(documentId: string): Promise<boolean> {
+    try {
+      // Get current document and previous revision
+      const [currentDoc, previousRevision] = await Promise.all([
+        this.prismaService.doc.findUnique({
+          where: { id: documentId },
+          select: {
+            content: true,
+            contentBinary: true,
+            title: true,
+          },
+        }),
+        this.prismaService.docRevision.findFirst({
+          where: { docId: documentId },
+          orderBy: { createdAt: "desc" },
+          select: {
+            content: true,
+            title: true,
+          },
+        }),
+      ]);
+
+      if (!currentDoc) {
+        this.logger.warn(`[DEBUG] Document ${documentId} not found for change threshold check`);
+        return true; // Assume significant change if document not found
+      }
+
+      if (!previousRevision) {
+        this.logger.log(`[DEBUG] No previous revision found for document ${documentId}, assuming significant change`);
+        return true; // First version, always notify
+      }
+
+      // Compare content - prefer JSON content over binary for text comparison
+      const beforeContent = previousRevision.content ? JSON.parse(previousRevision.content) : null;
+      const afterContent = currentDoc.content ? JSON.parse(currentDoc.content) : null;
+
+      // Also compare titles
+      const titleChanged = currentDoc.title !== previousRevision.title;
+      const titleChanges = titleChanged ? Math.abs(currentDoc.title.length - previousRevision.title.length) : 0;
+
+      // Check content changes
+      const contentChangeExceedsThreshold = isChangeOverThreshold(beforeContent, afterContent, 5);
+
+      // If title changed significantly OR content changed significantly, notify
+      const isSignificant = titleChanges > 5 || contentChangeExceedsThreshold;
+
+      this.logger.log(
+        `[DEBUG] Change threshold check for document ${documentId}: ` +
+          `titleChanged=${titleChanged}, titleChanges=${titleChanges}, ` +
+          `contentChangeExceedsThreshold=${contentChangeExceedsThreshold}, ` +
+          `isSignificant=${isSignificant}`,
+      );
+
+      return isSignificant;
+    } catch (error) {
+      const err = error as any;
+      this.logger.error(
+        `[ERROR] Failed to check change threshold for document ${documentId}`,
+        JSON.stringify({
+          error: err?.message || String(error),
+          errorStack: err?.stack,
+        }),
+      );
+      // On error, assume significant change to avoid suppressing notifications incorrectly
+      return true;
+    }
   }
 }

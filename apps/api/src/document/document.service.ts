@@ -20,6 +20,7 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { AbilityService } from "@/_shared/casl/casl.service";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { SubscriptionService } from "@/subscription/subscription.service";
+import { DocumentViewService } from "./document-view.service";
 
 @Injectable()
 export class DocumentService {
@@ -30,6 +31,7 @@ export class DocumentService {
     private readonly docPermissionResolveService: DocPermissionResolveService,
     @InjectQueue("notifications") private readonly notificationQueue: Queue,
     @Inject(forwardRef(() => SubscriptionService)) private readonly subscriptionService: SubscriptionService,
+    private readonly documentViewService: DocumentViewService,
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
@@ -345,6 +347,13 @@ export class DocumentService {
       workspaceId: document.workspaceId,
       parentId: document.parentId,
       subspaceId: document.subspaceId,
+    });
+
+    // Record view for spam prevention in notifications
+    // This is non-blocking and doesn't throw errors if it fails
+    this.documentViewService.recordView(userId, id).catch((err) => {
+      // Silently log error - view tracking is non-critical
+      console.error(`Failed to record view for user ${userId} on document ${id}:`, err);
     });
 
     return {

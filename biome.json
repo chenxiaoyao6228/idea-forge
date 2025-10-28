@@ -30,7 +30,7 @@
       "complexity": {
         "noForEach": "off",
         "noBannedTypes": "off",
-        "noStaticOnlyClass": "off"
+        "noStaticOnlyClass": "error"
       },
       "security": {
         "noDangerouslySetInnerHtml": "off"

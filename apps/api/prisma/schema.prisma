@@ -173,6 +173,9 @@ model User {
 
   // Workspace ordering (per-user)
   workspaceOrdering UserWorkspaceOrder[]
+
+  // Document view tracking
+  documentViews DocumentView[]
 }
 
 enum UserStatus {
@@ -330,6 +333,9 @@ model Doc {
 
   // Subscriptions
   subscriptions Subscription[]
+
+  // Document view tracking
+  documentViews DocumentView[]
 
   // Indexes for performance
   @@index([parentId])
@@ -833,4 +839,27 @@ model Subscription {
   @@index([documentId])
   @@index([subspaceId])
   @@index([deletedAt])
+}
+
+// Document view tracking
+// Records when users view documents to prevent redundant notifications
+model DocumentView {
+  id         String   @id @default(cuid())
+  userId     String
+  documentId String
+
+  // Timestamps
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Doc  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Unique constraint: one view record per user per document
+  @@unique([userId, documentId])
+
+  // Indexes for query performance
+  @@index([userId, documentId, updatedAt])
+  @@index([documentId, updatedAt])
 }
