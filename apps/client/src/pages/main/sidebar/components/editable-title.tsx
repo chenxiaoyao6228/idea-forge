@@ -30,12 +30,15 @@ export const EditableTitle = React.forwardRef<{ setIsEditing: (editing: boolean)
 
     React.useEffect(() => {
       if (editing && inputRef.current) {
-        // Use requestAnimationFrame to ensure the input is fully rendered before selecting
+        // Use double requestAnimationFrame to ensure dropdown menu is fully closed
+        // and the input is fully rendered before selecting
         requestAnimationFrame(() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.select();
-          }
+          requestAnimationFrame(() => {
+            if (inputRef.current) {
+              inputRef.current.focus();
+              inputRef.current.select();
+            }
+          });
         });
       }
     }, [editing]);
@@ -93,6 +96,13 @@ export const EditableTitle = React.forwardRef<{ setIsEditing: (editing: boolean)
           onChange={(e) => setValue(e.target.value)}
           onBlur={handleSubmit}
           onKeyDown={handleKeyDown}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
           maxLength={maxLength}
           placeholder={placeholder}
           className="h-auto p-0 border-none bg-transparent text-sm"

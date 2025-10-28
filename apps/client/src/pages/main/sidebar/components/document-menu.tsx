@@ -22,12 +22,19 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
   const findNextNavigationTarget = useFindNextNavigationTarget();
   const getDocument = useGetDocument();
   const [isOpen, setIsOpen] = useState(false);
+  const [shouldPreventAutoFocus, setShouldPreventAutoFocus] = useState(false);
 
   const isCurrentDocument = currentDocId === documentId;
 
   const handleRename = () => {
+    setShouldPreventAutoFocus(true);
     setIsOpen(false);
-    onRename?.();
+    // Delay rename until dropdown animation completes
+    setTimeout(() => {
+      onRename?.();
+      // Reset the flag after a short delay
+      setTimeout(() => setShouldPreventAutoFocus(false), 200);
+    }, 100);
   };
 
   const handleArchive = async () => {
@@ -102,7 +109,16 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
           <MoreHorizontal className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenuContent
+        align="end"
+        className="w-48"
+        onClick={(e) => e.stopPropagation()}
+        onCloseAutoFocus={(e) => {
+          if (shouldPreventAutoFocus) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DropdownMenuItem onClick={handleRename}>
           <Edit className="mr-2 h-4 w-4" />
           {t("Rename")}
