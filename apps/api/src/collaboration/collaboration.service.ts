@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, UnauthorizedException } from "@nestjs/common";
+import { Injectable, OnModuleInit, UnauthorizedException, forwardRef, Inject } from "@nestjs/common";
 import { Server as Hocuspocus } from "@hocuspocus/server";
 import { Database } from "@hocuspocus/extension-database";
 import { Throttle } from "@hocuspocus/extension-throttle";
@@ -9,6 +9,7 @@ import { tiptapTransformer } from "./extensions/transformer";
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PermissionLevel } from "@idea/contracts";
+import { SubscriptionService } from "@/subscription/subscription.service";
 // import { PermissionWebsocketService } from "@/permission/permission-websocket.service";
 
 function delay(ms: number) {
@@ -32,6 +33,8 @@ export class CollaborationService implements OnModuleInit {
     private readonly prismaService: PrismaService,
     private configService: ConfigService,
     private userService: UserService,
+    @Inject(forwardRef(() => SubscriptionService))
+    private readonly subscriptionService: SubscriptionService,
   ) {
     const secret = this.configService.get("COLLAB_SECRET_KEY");
     this.secretKey = createHash("sha256").update(secret).digest();
@@ -238,6 +241,10 @@ export class CollaborationService implements OnModuleInit {
       return await this.userService.getUserById(userId);
     };
 
+    const autoSubscribe = async (userId: string, documentId: string) => {
+      return await this.subscriptionService.autoSubscribeCollaborator(userId, documentId);
+    };
+
     this.hocuspocus = new Hocuspocus({
       name: "/collaboration",
       debounce: 5000,
@@ -266,14 +273,31 @@ export class CollaborationService implements OnModuleInit {
           // 3. Validate document access
           const access = await validateAccess(documentName, user.id);
 
-          // 4. Return only permission info
-          // We don't need to return user info as it will be handled by awareness
+          // 4. Return user context including userId for later use
           return {
             permission: access.permission,
+            userId: user.id, // Store userId in context for onStoreDocument
           };
         } catch (err: any) {
           throw new UnauthorizedException(err.message || "Authentication failed");
         }
+      },
+
+      async onStoreDocument(data) {
+        // Auto-subscribe the user who made the edit
+        // Get userId from the context (set in onAuthenticate)
+        const userId = (data.context as any)?.userId;
+
+        if (userId && data.documentName) {
+          try {
+            await autoSubscribe(userId, data.documentName);
+          } catch (error) {
+            // Log error but don't fail the document save
+            console.error(`Failed to auto-subscribe user ${userId} to document ${data.documentName}:`, error);
+          }
+        }
+
+        return data;
       },
 
       extensions: [
