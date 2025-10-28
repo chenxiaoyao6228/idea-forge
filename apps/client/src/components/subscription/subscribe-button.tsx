@@ -23,7 +23,7 @@ export function SubscribeButton({ documentId, className }: SubscribeButtonProps)
   const Icon = isSubscribed ? Bell : BellOff;
 
   return (
-    <TooltipWrapper disabled={false} tooltip={isSubscribed ? t("Unsubscribe") : t("Subscribe")}>
+    <TooltipWrapper disabled={false} tooltip={isSubscribed ? t("Click to unsubscribe") : t("Click to subscribe")}>
       <Button variant="ghost" size="icon" className={cn("transition-all", className)} onClick={toggleSubscription}>
         <Icon className={cn("h-4 w-4")} />
       </Button>

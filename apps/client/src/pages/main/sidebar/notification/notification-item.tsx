@@ -8,6 +8,8 @@ import { Card } from "@idea/ui/shadcn/ui/card";
 import { cn } from "@idea/ui/shadcn/utils";
 import { ViewportTracker } from "./viewport-tracker";
 import { useViewportBatch } from "./viewport-batch-context";
+import { useSwitchWorkspace, useCurrentWorkspace } from "@/stores/workspace-store";
+import { documentApi } from "@/apis/document";
 
 interface NotificationItemProps {
   notification: NotificationEntity;
@@ -21,6 +23,8 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
   const isActionRequired = notification.actionRequired && notification.actionStatus === "PENDING";
   const isCanceled = notification.actionStatus === "CANCELED";
   const { markAsViewed } = useViewportBatch();
+  const { run: switchWorkspace } = useSwitchWorkspace();
+  const currentWorkspace = useCurrentWorkspace();
 
   // Get icon based on event type
   const getIcon = () => {
@@ -120,7 +124,7 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
     }
   };
 
-  const handleClick = () => {
+  const handleClick = async () => {
     // Mark as read
     if (isUnread && onMarkAsRead) {
       onMarkAsRead(notification.id);
@@ -128,17 +132,39 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
 
     // Navigate to document for document-related notifications
     if (notification.documentId) {
-      // Comment notifications with specific comment focus
-      if (notification.event === "COMMENT_MENTION" || notification.event === "COMMENT_CREATED" || notification.event === "COMMENT_RESOLVED") {
-        const commentId = (notification.metadata as any)?.commentId;
-        if (commentId) {
-          navigate(`/${notification.documentId}?commentId=${commentId}`);
-        } else {
-          navigate(`/${notification.documentId}`);
+      try {
+        // Determine the target path based on notification type
+        let targetPath = `/${notification.documentId}`;
+
+        // Comment notifications with specific comment focus
+        if (notification.event === "COMMENT_MENTION" || notification.event === "COMMENT_CREATED" || notification.event === "COMMENT_RESOLVED") {
+          const commentId = (notification.metadata as any)?.commentId;
+          if (commentId) {
+            targetPath = `/${notification.documentId}?commentId=${commentId}`;
+          }
         }
-      }
-      // Document update notifications - just navigate to document
-      else if (notification.event === "DOCUMENT_UPDATE") {
+
+        // For cross-workspace notifications (subscription updates), we need to:
+        // 1. Check if we're in the correct workspace
+        // 2. If not, switch workspace WITH the target document path
+        // 3. The page will reload and navigate to the document
+        const metadata = notification.metadata as any;
+        const sourceWorkspaceId = metadata?.sourceWorkspaceId;
+
+        // If this is a cross-workspace notification and we're not in the right workspace
+        if (sourceWorkspaceId && currentWorkspace?.id !== sourceWorkspaceId) {
+          // Switch to the document's workspace and pass the redirect path
+          // This will cause a page reload and navigate to the document
+          await switchWorkspace(sourceWorkspaceId, targetPath);
+          // Note: Code below won't execute because page will reload
+          return;
+        }
+
+        // If we're already in the correct workspace, just navigate
+        navigate(targetPath);
+      } catch (error) {
+        console.error("Failed to navigate to document:", error);
+        // Fallback: try to navigate anyway
         navigate(`/${notification.documentId}`);
       }
     }

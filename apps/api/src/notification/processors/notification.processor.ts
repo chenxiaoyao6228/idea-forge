@@ -5,7 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { NotificationService } from "../notification.service";
 import { SubscriptionService } from "@/subscription/subscription.service";
-import { DocumentPublishedJobData, NotificationEventType } from "@idea/contracts";
+import { DocumentPublishedJobData, NotificationEventType, SPECIAL_WORKSPACE_ID } from "@idea/contracts";
 
 /**
  * Notification background processor
@@ -124,20 +124,23 @@ export class NotificationProcessor extends WorkerHost {
       }
 
       try {
-        // Create notification
+        // Create notification with SPECIAL_WORKSPACE_ID for cross-workspace visibility
+        // Subscription notifications should be visible regardless of which workspace the user is viewing
+        // This allows users to see updates from subscribed documents even when in a different workspace
         await this.notificationService.createNotification({
           userId: subscriberId,
           event: NotificationEventType.DOCUMENT_UPDATE,
-          workspaceId,
+          workspaceId: SPECIAL_WORKSPACE_ID, // Cross-workspace visibility
           documentId,
           actorId: publisherId,
           metadata: {
             documentTitle: document.title,
             actorName,
+            sourceWorkspaceId: workspaceId, // Store original workspace ID in metadata for reference
           },
         });
         notifiedCount++;
-        this.logger.log(`[DEBUG] Created DOCUMENT_UPDATE notification for subscriber ${subscriberId}`);
+        this.logger.log(`[DEBUG] Created cross-workspace DOCUMENT_UPDATE notification for subscriber ${subscriberId}`);
       } catch (error) {
         const err = error as any;
         this.logger.error(
