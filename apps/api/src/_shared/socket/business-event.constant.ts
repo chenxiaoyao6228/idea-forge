@@ -53,6 +53,7 @@ export enum BusinessEvents {
   DOCUMENT_ARCHIVE = "document.archive",
   DOCUMENT_DELETE = "document.delete",
   DOCUMENT_ADD_USER = "document.addUser",
+  DOCUMENT_PUBLISHED = "document.published",
 
   // Document import events
   DOCUMENT_IMPORT_PREPARE = "document.import.prepare",
@@ -102,4 +103,8 @@ export enum BusinessEvents {
   COMMENT_UNRESOLVED = "comment.unresolved",
   COMMENT_REACTION_ADDED = "comment.reaction_added",
   COMMENT_REACTION_REMOVED = "comment.reaction_removed",
+
+  // Subscription events
+  SUBSCRIPTION_CREATED = "subscription.created",
+  SUBSCRIPTION_DELETED = "subscription.deleted",
 }

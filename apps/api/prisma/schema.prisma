@@ -111,9 +111,10 @@ model User {
   currentWorkspace   Workspace? @relation("UserCurrentWorkspace", fields: [currentWorkspaceId], references: [id])
 
   // Document relationships
-  authoredDocs     Doc[] @relation("DocAuthor") // Documents created by user
-  createdDocs      Doc[] @relation("DocCreator") // Documents created by user
-  lastModifiedDocs Doc[] @relation("DocLastModifier") // Documents last modified by user
+  authoredDocs      Doc[] @relation("DocAuthor") // Documents created by user
+  createdDocs       Doc[] @relation("DocCreator") // Documents created by user
+  lastModifiedDocs  Doc[] @relation("DocLastModifier") // Documents last modified by user
+  lastPublishedDocs Doc[] @relation("DocLastPublisher") // Documents last published by user
 
   // Public shares
   publicSharesCreated PublicShare[] @relation("PublicShareAuthor")
@@ -163,9 +164,12 @@ model User {
   temporaryImports TemporaryImport[] // Temporary import records
 
   // Comment relationships
-  comments          Comment[] @relation("CommentAuthor")
-  resolvedComments  Comment[] @relation("CommentResolver")
-  reactions         Reaction[]
+  comments         Comment[]  @relation("CommentAuthor")
+  resolvedComments Comment[]  @relation("CommentResolver")
+  reactions        Reaction[]
+
+  // Subscription relationships
+  subscriptions Subscription[]
 
   // Workspace ordering (per-user)
   workspaceOrdering UserWorkspaceOrder[]
@@ -183,14 +187,14 @@ enum UserStatus {
 // Stores the display order of workspaces for each user
 // Supports both member workspaces and guest workspaces
 model UserWorkspaceOrder {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspaceId String
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  index     String   // Fractional index for ordering (e.g., "a0", "a1", "a2")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  index       String // Fractional index for ordering (e.g., "a0", "a1", "a2")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@unique([userId, workspaceId])
   @@index([userId, index]) // Query optimization for fetching ordered workspaces
@@ -289,6 +293,11 @@ model Doc {
   lastModifiedBy   User   @relation("DocLastModifier", fields: [lastModifiedById], references: [id])
   lastModifiedById String
 
+  // Publish tracking for subscription notifications
+  lastPublishedAt   DateTime?
+  lastPublishedBy   User?     @relation("DocLastPublisher", fields: [lastPublishedById], references: [id])
+  lastPublishedById String?
+
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId String
 
@@ -319,66 +328,65 @@ model Doc {
   // Comments
   comments Comment[]
 
+  // Subscriptions
+  subscriptions Subscription[]
+
   // Indexes for performance
   @@index([parentId])
   @@index([workspaceId])
   @@index([subspaceId])
+  @@index([lastPublishedAt])
 }
 
 model Comment {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Content (TipTap JSON)
-  data            Json      // Rich text content
+  data Json // Rich text content
 
   // Relationships
-  documentId      String
-  document        Doc       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+  document   Doc    @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
-  // Threading (exact same as Outline)
   parentCommentId String?
   parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
   replies         Comment[] @relation("CommentReplies")
 
   // Author
-  createdById     String
-  createdBy       User      @relation("CommentAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User   @relation("CommentAuthor", fields: [createdById], references: [id], onDelete: Cascade)
 
-  // Resolution (exact same as Outline)
-  resolvedAt      DateTime?
-  resolvedById    String?
-  resolvedBy      User?     @relation("CommentResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   User?     @relation("CommentResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
 
-  // Reactions (aggregated summary like Outline)
   // Array of {emoji: string, userIds: string[]}
-  reactions       Json?
+  reactions Json?
 
   // Timestamps
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime? // Soft delete (paranoid mode)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete (paranoid mode)
 
   // Relations
-  reactionsList   Reaction[]
+  reactionsList Reaction[]
 
-  // Indexes (optimized for Outline's query patterns)
   @@index([documentId, deletedAt])
   @@index([parentCommentId])
   @@index([createdAt])
   @@index([createdById])
-
   @@map("comments")
 }
 
 model Reaction {
-  id        String   @id @default(cuid())
-  emoji     String   @db.VarChar(10)
+  id    String @id @default(cuid())
+  emoji String @db.VarChar(10)
 
   commentId String
-  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -386,7 +394,6 @@ model Reaction {
   @@unique([commentId, userId, emoji])
   @@index([commentId])
   @@index([userId])
-
   @@map("reactions")
 }
 
@@ -445,6 +452,9 @@ model Subspace {
 
   // Import relationships
   temporaryImports TemporaryImport[] // Temporary import records
+
+  // Subscription relationships
+  subscriptions Subscription[]
 }
 
 model SubspaceMember {
@@ -636,7 +646,7 @@ model TemporaryImport {
   mimeType    String
   workspaceId String
   subspaceId  String
-  parentId    String?  // Optional parent document ID
+  parentId    String? // Optional parent document ID
   title       String
   userId      String
   status      String   @default("pending") // pending | processing | complete | error
@@ -750,9 +760,9 @@ model Notification {
   // OR when notification enters viewport for 2s (informational)
 
   // Action-required fields (for permission requests)
-  actionRequired   Boolean @default(false)
+  actionRequired   Boolean   @default(false)
   actionType       String? // ActionType (validated at application layer)
-  actionStatus     String  @default("PENDING") // ActionStatus (validated at application layer)
+  actionStatus     String    @default("PENDING") // ActionStatus (validated at application layer)
   actionPayload    Json? // Action-specific data
   actionResolvedAt DateTime?
   actionResolvedBy String? // User ID who resolved
@@ -795,4 +805,32 @@ model NotificationSetting {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventType])
+}
+
+model Subscription {
+  id         String  @id @default(cuid())
+  userId     String
+  documentId String?
+  subspaceId String?
+  event      String // SubscriptionEventType (e.g., "documents.update")
+
+  // Soft delete support
+  deletedAt DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Doc?      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  subspace Subspace? @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
+
+  // Unique constraint: one subscription per user per resource
+  @@unique([userId, documentId, subspaceId])
+  // Indexes
+  @@index([userId])
+  @@index([documentId])
+  @@index([subspaceId])
+  @@index([deletedAt])
 }

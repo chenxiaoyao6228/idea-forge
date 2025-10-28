@@ -8,6 +8,7 @@ import { usePermissionWebsocketEvents } from "@/hooks/websocket/permission-event
 import { usePublicShareEventHandlers } from "@/hooks/websocket/public-share-events";
 import { useNotificationWebsocketEvents } from "@/hooks/websocket/notification-events";
 import { useCommentWebsocketEvents } from "@/hooks/websocket/comment-events";
+import { useSubscriptionWebsocketEvents } from "@/hooks/websocket/subscription-events";
 import { Socket } from "socket.io-client";
 
 /**
@@ -25,4 +26,5 @@ export function useWebsocketEventHandlers(socket: Socket | null) {
   usePublicShareEventHandlers(socket);
   useNotificationWebsocketEvents(socket);
   useCommentWebsocketEvents(socket);
+  useSubscriptionWebsocketEvents(socket);
 }

@@ -1,11 +1,12 @@
 import { Button } from '@idea/ui/shadcn/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
-import { MoreHorizontal, UserPlus, Settings, LogOut } from "lucide-react";
+import { MoreHorizontal, UserPlus, Settings, LogOut, Bell, BellOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { showAddSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
 import { showSubspaceSettingsModal } from "@/pages/main/settings/subspace/subspace-setting-modal/subspace-settings-modal";
 import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin, useFetchSubspace } from "@/stores/subspace-store";
+import { useIsSubscribedToSubspace, useToggleSubspaceSubscription } from "@/stores/subscription-store";
 
 interface SubspaceMenuProps {
   subspaceId: string;
@@ -19,6 +20,8 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
   const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
   const isLastAdmin = useIsLastSubspaceAdmin(subspaceId);
   const { run: fetchSubspace } = useFetchSubspace();
+  const isSubscribed = useIsSubscribedToSubspace(subspaceId);
+  const toggleSubscription = useToggleSubspaceSubscription(subspaceId);
 
   const handleAddMembers = async () => {
     const result = await showAddSubspaceMemberModal({
@@ -68,6 +71,22 @@ export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspace
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onClick={toggleSubscription}>
+          {isSubscribed ? (
+            <>
+              <BellOff className="mr-2 h-4 w-4" />
+              {t("Unsubscribe")}
+            </>
+          ) : (
+            <>
+              <Bell className="mr-2 h-4 w-4" />
+              {t("Subscribe")}
+            </>
+          )}
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
         <TooltipWrapper disabled={subspaceType !== "WORKSPACE_WIDE"} tooltip={t("Workspace-wide subspaces automatically include all workspace members")}>
           <DropdownMenuItem onClick={handleAddMembers} disabled={subspaceType === "WORKSPACE_WIDE"}>
             <UserPlus className="mr-2 h-4 w-4" />

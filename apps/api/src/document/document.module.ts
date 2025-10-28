@@ -1,5 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
+import { BullModule } from "@nestjs/bullmq";
 import { DocumentService } from "./document.service";
 import { DocumentController } from "./document.controller";
 import { ShareDocumentService } from "./share-document.services";
@@ -16,9 +17,22 @@ import { PermissionModule } from "@/permission/permission.module";
 import { DocumentTrashService } from "./trash-document.service";
 import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
 import { NotificationModule } from "@/notification/notification.module";
+import { SubscriptionModule } from "@/subscription/subscription.module";
 
 @Module({
-  imports: [FileStoreModule, ScheduleModule.forRoot(), SubspaceModule, EventsModule, GroupModule, PermissionModule, forwardRef(() => NotificationModule)],
+  imports: [
+    FileStoreModule,
+    ScheduleModule.forRoot(),
+    SubspaceModule,
+    EventsModule,
+    GroupModule,
+    PermissionModule,
+    BullModule.registerQueue({
+      name: "notifications",
+    }),
+    forwardRef(() => NotificationModule),
+    forwardRef(() => SubscriptionModule),
+  ],
   controllers: [DocumentController, ShareDocumentController],
   providers: [
     DocumentService,

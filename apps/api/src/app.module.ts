@@ -34,6 +34,7 @@ import { EventsModule } from "./_shared/events/events.module";
 import { StarModule } from "./star/star.module";
 import { GroupModule } from "./group/group.module";
 import { PermissionModule } from "./permission/permission.module";
+import { SubscriptionModule } from "./subscription/subscription.module";
 import { PublicShareModule } from "./public-share/public-share.module";
 import { GuestCollaboratorsModule } from "./guest-collaborators/guest-collaborators.module";
 import { UserIpInterceptor } from "./_shared/interceptors/user-ip.interceptor";
@@ -96,6 +97,7 @@ import { CommentModule } from "./comment/comment.module";
     StarModule,
     GroupModule,
     PermissionModule,
+    SubscriptionModule,
     PublicShareModule,
     GuestCollaboratorsModule,
     NotificationModule,

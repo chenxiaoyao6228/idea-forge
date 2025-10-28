@@ -10,7 +10,6 @@ export interface CommentMark {
 
 /**
  * Extracts all comment marks from the editor document
- * Similar to Outline's ProsemirrorHelper.getComments()
  */
 export function getCommentMarks(editor: Editor | null): CommentMark[] {
   if (!editor) return [];
@@ -39,7 +38,6 @@ export function getCommentMarks(editor: Editor | null): CommentMark[] {
 
 /**
  * Gets the anchor text for a specific comment by ID
- * Similar to Outline's ProsemirrorHelper.getAnchorTextForComment()
  */
 export function getAnchorTextForComment(editor: Editor | null, commentId: string): string | undefined {
   const marks = getCommentMarks(editor);

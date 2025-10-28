@@ -1,0 +1,32 @@
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Bell, BellOff } from "lucide-react";
+import { useIsSubscribedToDocument, useToggleDocumentSubscription } from "@/stores/subscription-store";
+import { cn } from "@idea/ui/shadcn/utils";
+import { TooltipWrapper } from "../tooltip-wrapper";
+import { useTranslation } from "react-i18next";
+
+interface SubscribeButtonProps {
+  documentId: string;
+  className?: string;
+}
+
+/**
+ * Subscribe button component for documents
+ * Allows users to subscribe/unsubscribe to document updates
+ */
+export function SubscribeButton({ documentId, className }: SubscribeButtonProps) {
+  const { t } = useTranslation();
+  const isSubscribed = useIsSubscribedToDocument(documentId);
+  const toggleSubscription = useToggleDocumentSubscription(documentId);
+
+  // Icon based on subscription status
+  const Icon = isSubscribed ? Bell : BellOff;
+
+  return (
+    <TooltipWrapper disabled={false} tooltip={isSubscribed ? t("Unsubscribe") : t("Subscribe")}>
+      <Button variant="ghost" size="icon" className={cn("transition-all", className)} onClick={toggleSubscription}>
+        <Icon className={cn("h-4 w-4")} />
+      </Button>
+    </TooltipWrapper>
+  );
+}

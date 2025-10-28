@@ -18,6 +18,7 @@ import { StarButton } from "@/components/star-button";
 import { useCurrentDocumentId } from "@/stores/document-store";
 import { useEditorStore } from "@/stores/editor-store";
 import { CommentButton } from "@/components/comments";
+import { SubscribeButton, PublishButton } from "@/components/subscription";
 
 export default function DocumentHeader() {
   const activeDocumentId = useCurrentDocumentId();
@@ -55,6 +56,10 @@ export default function DocumentHeader() {
       {/* right */}
       <div className="flex items-center mr-2 sm:mr-4 ">
         <CollabUsers className="mr-2" />
+        <Separator orientation="vertical" className="h-4" />
+        {/* FIXME: only user with EDIT permission can publish */}
+        {activeDocumentId && <PublishButton documentId={activeDocumentId} />}
+        {activeDocumentId && <SubscribeButton documentId={activeDocumentId} />}
         {activeDocumentId && <SharePopover documentId={activeDocumentId}></SharePopover>}
         {activeDocumentId && <CommentButton documentId={activeDocumentId} editor={editor} />}
         {activeDocumentId && <StarButton documentId={activeDocumentId} showTooltip={true} size="sm" />}

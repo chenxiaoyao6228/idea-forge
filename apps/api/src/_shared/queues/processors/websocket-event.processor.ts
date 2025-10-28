@@ -83,6 +83,7 @@ export class WebsocketEventProcessor extends WorkerHost {
         case BusinessEvents.ENTITIES:
           await this.handleEntitiesEvent(event, server);
           break;
+        // TODO: refactor this
         case BusinessEvents.STAR_CREATE:
         case BusinessEvents.STAR_UPDATE: {
           const star = await this.prismaService.star.findUnique({

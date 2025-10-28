@@ -143,7 +143,7 @@ export const useCurrentWorkspaceUnreadByCategory = () => {
       MENTIONS: workspaceCounts.MENTIONS || 0,
       SHARING: workspaceCounts.SHARING || 0,
       INBOX: (workspaceCounts.INBOX || 0) + (crossWorkspaceCounts.INBOX || 0),
-      SUBSCRIBE: crossWorkspaceCounts.SUBSCRIBE || 0, // SUBSCRIBE is cross-workspace only
+      SUBSCRIBE: (workspaceCounts.SUBSCRIBE || 0) + (crossWorkspaceCounts.SUBSCRIBE || 0),
     };
   }, [unreadCountByWorkspace, currentWorkspace]);
 };

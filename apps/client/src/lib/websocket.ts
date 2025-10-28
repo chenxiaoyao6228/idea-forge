@@ -281,6 +281,11 @@ export enum SocketEvents {
   COMMENT_UNRESOLVED = "comment.unresolved",
   COMMENT_REACTION_ADDED = "comment.reaction_added",
   COMMENT_REACTION_REMOVED = "comment.reaction_removed",
+
+  // Subscription events
+  SUBSCRIPTION_CREATED = "subscription.created",
+  SUBSCRIPTION_DELETED = "subscription.deleted",
+  DOCUMENT_PUBLISHED = "document.published",
 }
 
 // Interface for gateway message structure
