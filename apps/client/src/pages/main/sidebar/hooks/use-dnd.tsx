@@ -21,7 +21,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
-import { showConfirmModal } from '@/components/ui/confirm-modal';
+import { showConfirmModal } from "@/components/ui/confirm-modal";
 import useSubSpaceStore, { useMoveSubspace, usePersonalSubspace, useRemoveDocumentFromStructure } from "@/stores/subspace-store";
 import useDocumentStore, { useMoveDocument, useDeleteDocument } from "@/stores/document-store";
 import { useOrderedStars } from "@/stores/star-store";
@@ -33,6 +33,7 @@ export interface DragItem {
   parentId: string | null;
   subspaceId: string | null;
   title: string;
+  index?: number; // Current position in the parent's children array
   [key: string]: any;
 }
 
@@ -65,14 +66,28 @@ function useDocumentDnD() {
         return;
       }
 
-      // Prevent no-op moves (same parent and position)
+      // Prevent no-op moves (same parent, subspace, and position)
       if (
         draggingItem.parentId === toDropItem.parentId &&
         draggingItem.subspaceId === toDropItem.subspaceId &&
         toDropItem.dropType !== "trash"
       ) {
-        console.warn("[DnD] Prevented no-op move: document is already in this location");
-        return;
+        // For reorder operations, check if the target index matches current index
+        if (
+          (toDropItem.dropType === "reorder-top" || toDropItem.dropType === "reorder-bottom") &&
+          typeof draggingItem.index === "number" &&
+          typeof toDropItem.index === "number" &&
+          draggingItem.index === toDropItem.index
+        ) {
+          console.warn("[DnD] Prevented no-op reorder: document is already at this position");
+          return;
+        }
+
+        // For reparent to the same parent, it's a no-op
+        if (toDropItem.dropType === "reparent") {
+          console.warn("[DnD] Prevented no-op reparent: document is already a child of this parent");
+          return;
+        }
       }
 
       // Handle trash drop
