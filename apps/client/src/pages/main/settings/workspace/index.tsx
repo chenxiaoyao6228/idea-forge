@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Input } from "@idea/ui/shadcn/ui/input";
@@ -11,8 +11,8 @@ import { ImageCropper } from "@/components/image-cropper";
 import useWorkspaceStore, { useUpdateWorkspace, useLeaveWorkspace } from "@/stores/workspace-store";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { dataURLtoFile } from "@/lib/file";
-import { Action, type UpdateWorkspaceRequest, type WorkspaceSettings } from "@idea/contracts";
-import { useAbilityCan } from "@/hooks/use-ability";
+import { type UpdateWorkspaceRequest, type WorkspaceSettings } from "@idea/contracts";
+import { useWorkspacePermissions } from "@/hooks/permissions";
 import { Button } from "@idea/ui/shadcn/ui/button";
 import { Switch } from "@idea/ui/shadcn/ui/switch";
 
@@ -53,10 +53,7 @@ export const Workspace = () => {
   const { run: updateWorkspace, loading: isUpdatingWorkspace } = useUpdateWorkspace();
   const { run: leaveWorkspace } = useLeaveWorkspace();
   const workspaceId = currentWorkspace?.id;
-  const workspaceSubject = useMemo(() => (workspaceId ? { id: workspaceId } : undefined), [workspaceId]);
-  const { can: canManageSettings } = useAbilityCan("Workspace", Action.ManageSettings, workspaceSubject);
-  const { can: canManage } = useAbilityCan("Workspace", Action.Manage, workspaceSubject);
-  const canEditWorkspace = canManageSettings || canManage;
+  const { canEditWorkspace } = useWorkspacePermissions(workspaceId);
 
   // Form states
   const [workspaceName, setWorkspaceName] = useState("");

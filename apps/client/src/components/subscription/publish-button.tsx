@@ -1,9 +1,8 @@
-import { useMemo } from "react";
 import { Button } from "@idea/ui/shadcn/ui/button";
 import { Send } from "lucide-react";
 import { usePublishDocument } from "@/stores/subscription-store";
 import { useDocumentById } from "@/stores/document-store";
-import { useAbilityCan, Action } from "@/hooks/use-ability";
+import { useDocumentPermissions } from "@/hooks/permissions";
 import { cn } from "@idea/ui/shadcn/utils";
 import { TooltipWrapper } from "../tooltip-wrapper";
 import { useTranslation } from "react-i18next";
@@ -27,19 +26,8 @@ export function PublishButton({ documentId, className, onPublished }: PublishBut
   const publishDocument = usePublishDocument();
   const document = useDocumentById(documentId);
 
-  // Build CASL subject for ability check
-  const docAbilitySubject = useMemo(() => {
-    if (!document) return undefined;
-    return {
-      id: document.id,
-      createdById: document.createdById,
-    };
-  }, [document]);
-
-  // Check if user has Update or Manage permission using CASL abilities
-  const { can: canUpdate } = useAbilityCan("Doc", Action.Update, docAbilitySubject);
-  const { can: canManage } = useAbilityCan("Doc", Action.Manage, docAbilitySubject);
-  const canPublish = canUpdate || canManage;
+  // Check if user has publish permission
+  const { canPublishDocument } = useDocumentPermissions(document);
 
   const handlePublish = async () => {
     await publishDocument.run(documentId);
@@ -47,7 +35,7 @@ export function PublishButton({ documentId, className, onPublished }: PublishBut
   };
 
   // Don't render button if user doesn't have permission
-  if (!canPublish) {
+  if (!canPublishDocument) {
     return null;
   }
 

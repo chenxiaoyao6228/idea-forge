@@ -2,20 +2,20 @@ import { useState, useMemo, useEffect } from "react";
 import { workspaceApi } from "@/apis/workspace";
 import useWorkspaceStore, { useFetchMembers } from "@/stores/workspace-store";
 import type { WorkspaceMember, WorkspacePublicInviteLink } from "@idea/contracts";
-import { Input } from '@idea/ui/shadcn/ui/input';
-import { Button } from '@idea/ui/shadcn/ui/button';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@idea/ui/shadcn/ui/select';
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@idea/ui/shadcn/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
-import { Spinner } from '@idea/ui/base/spinner';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
+import { Input } from "@idea/ui/shadcn/ui/input";
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@idea/ui/shadcn/ui/select";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@idea/ui/shadcn/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@idea/ui/shadcn/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@idea/ui/shadcn/ui/card";
+import { Spinner } from "@idea/ui/base/spinner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@idea/ui/shadcn/ui/dropdown-menu";
 import { Search, UserPlus, MoreHorizontal, UserMinus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { displayUserName } from "@/lib/auth";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { showAddWorkspaceMemberModal } from "./add-workspace-member-modal";
-import { useAbilityCan, Action } from "@/hooks/use-ability";
+import { useWorkspacePermissions } from "@/hooks/permissions";
 import { toast } from "sonner";
 
 const MemberManagementPanel = () => {
@@ -31,11 +31,10 @@ const MemberManagementPanel = () => {
   const members = useWorkspaceStore((state) => state.workspaceMembers);
   const { run: fetchMembers, loading: fetchMembersLoading } = useFetchMembers();
 
-  const workspaceSubject = workspaceId ? { id: workspaceId } : undefined;
-  const { can: canManageMembers } = useAbilityCan("Workspace", Action.ManageMembers, workspaceSubject);
+  const { canManageWorkspaceMembers } = useWorkspacePermissions(workspaceId);
 
   const fetchInvite = useRefCallback(async () => {
-    if (!workspaceId || !canManageMembers) return;
+    if (!workspaceId || !canManageWorkspaceMembers) return;
     setInviteLoading(true);
     try {
       const response = await workspaceApi.getPublicInviteLink(workspaceId);
@@ -52,10 +51,10 @@ const MemberManagementPanel = () => {
   useEffect(() => {
     if (!workspaceId) return;
     fetchMembers(workspaceId);
-    if (canManageMembers) {
+    if (canManageWorkspaceMembers) {
       fetchInvite();
     }
-  }, [workspaceId, canManageMembers, fetchInvite, fetchMembers]);
+  }, [workspaceId, canManageWorkspaceMembers, fetchInvite, fetchMembers]);
 
   // Filter members based on search query
   const filteredMembers = useMemo(() => {
@@ -126,7 +125,7 @@ const MemberManagementPanel = () => {
   });
 
   const handleResetInvite = useRefCallback(async () => {
-    if (!workspaceId || !canManageMembers) return;
+    if (!workspaceId || !canManageWorkspaceMembers) return;
     setInviteLoading(true);
     try {
       const response = await workspaceApi.resetPublicInviteLink(workspaceId);
@@ -142,7 +141,7 @@ const MemberManagementPanel = () => {
 
   return (
     <div className="space-y-6">
-      {canManageMembers && (
+      {canManageWorkspaceMembers && (
         <Card>
           <CardHeader>
             <CardTitle>{t("Public invitation link")}</CardTitle>
@@ -195,7 +194,7 @@ const MemberManagementPanel = () => {
                 </Button>
               )}
             </div>
-            <Button variant="default" onClick={handleAddMembers} disabled={!canManageMembers}>
+            <Button variant="default" onClick={handleAddMembers} disabled={!canManageWorkspaceMembers}>
               <UserPlus className="h-4 w-4 mr-2" />
               {t("Add member")}
             </Button>
@@ -225,12 +224,12 @@ const MemberManagementPanel = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {member.role === "OWNER" || !canManageMembers ? (
+                        {member.role === "OWNER" || !canManageWorkspaceMembers ? (
                           <div className="px-3 py-2 text-sm font-medium text-muted-foreground">{t("Owner")}</div>
                         ) : (
                           <Select
                             value={member.role}
-                            disabled={roleChanging[member.userId] || !canManageMembers}
+                            disabled={roleChanging[member.userId] || !canManageWorkspaceMembers}
                             onValueChange={(v) => handleChangeRole(member.userId, v as WorkspaceMember["role"])}
                           >
                             <SelectTrigger className="w-28">
@@ -251,7 +250,7 @@ const MemberManagementPanel = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0"
-                                disabled={member.role === "OWNER" || roleChanging[member.userId] || !canManageMembers}
+                                disabled={member.role === "OWNER" || roleChanging[member.userId] || !canManageWorkspaceMembers}
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>

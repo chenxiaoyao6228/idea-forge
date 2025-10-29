@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
-import { Button } from '@idea/ui/shadcn/ui/button';
-import { Input } from '@idea/ui/shadcn/ui/input';
-import { Textarea } from '@idea/ui/shadcn/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@idea/ui/shadcn/ui/card";
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Input } from "@idea/ui/shadcn/ui/input";
+import { Textarea } from "@idea/ui/shadcn/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@idea/ui/shadcn/ui/avatar";
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Home, Check, Archive, Trash2, ArrowLeft } from "lucide-react";
 import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin, useUpdateSubspaceSettings } from "@/stores/subspace-store";
-import { useAbilityCan, Action } from "@/hooks/use-ability";
+import { useSubspacePermissions } from "@/hooks/permissions";
 
 interface BasicInfoTabProps {
   subspaceId: string;
@@ -24,10 +24,7 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
   const isLastAdmin = useIsLastSubspaceAdmin(subspaceId);
 
   // Permission checks
-  const subspaceSubject = { id: subspaceId };
-  const { can: canUpdateSubspace } = useAbilityCan("Subspace", Action.Update, subspaceSubject);
-  const { can: canDeleteSubspace } = useAbilityCan("Subspace", Action.Delete, subspaceSubject);
-  const { can: canManageSubspaceSettings } = useAbilityCan("Subspace", Action.ManageSettings, subspaceSubject);
+  const { canUpdateSubspace, canDeleteSubspace, canManageSubspaceSettings } = useSubspacePermissions(subspaceId);
 
   const [isSaving, setIsSaving] = useState(false);
   const [localSettings, setLocalSettings] = useState({

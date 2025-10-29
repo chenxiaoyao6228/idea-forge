@@ -1,24 +1,24 @@
 import { useTranslation } from "react-i18next";
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
-import { Button } from '@idea/ui/shadcn/ui/button';
-import { Input } from '@idea/ui/shadcn/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@idea/ui/shadcn/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@idea/ui/shadcn/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from "@idea/ui/shadcn/ui/card";
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Input } from "@idea/ui/shadcn/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@idea/ui/shadcn/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@idea/ui/shadcn/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@idea/ui/shadcn/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@idea/ui/shadcn/ui/table";
 import { Search, UserPlus, Users, MoreHorizontal, UserMinus, X } from "lucide-react";
 import { SubspaceSettingsResponse, PermissionLevel, SubspaceRole } from "@idea/contracts";
 import { SubspaceTypeSelector } from "../subspace-type-selector";
-import { PermissionLevelSelector } from '@/components/ui/permission-level-selector';
+import { PermissionLevelSelector } from "@/components/ui/permission-level-selector";
 import { displayUserName } from "@/lib/auth";
-import { Avatar, AvatarFallback, AvatarImage } from '@idea/ui/shadcn/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from "@idea/ui/shadcn/ui/avatar";
 import { subspaceApi } from "@/apis/subspace";
 import { toast } from "sonner";
 import useUserStore from "@/stores/user-store";
 import { showAddSubspaceMemberModal } from "../add-subspace-member-modal";
 import { useRefCallback } from "@/hooks/use-ref-callback";
-import { useAbilityCan, Action } from "@/hooks/use-ability";
+import { useSubspacePermissions } from "@/hooks/permissions";
 
 interface MembersPermissionsTabProps {
   settings: SubspaceSettingsResponse;
@@ -28,9 +28,7 @@ interface MembersPermissionsTabProps {
 export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPermissionsTabProps) {
   const { t } = useTranslation();
   const userInfo = useUserStore((state) => state.userInfo);
-  const subspaceSubject = { id: settings.subspace.id };
-  const { can: canManageMembers } = useAbilityCan("Subspace", Action.ManageMembers, subspaceSubject);
-  const { can: canManageSubspaceSettings } = useAbilityCan("Subspace", Action.ManageSettings, subspaceSubject);
+  const { canManageSubspaceMembers, canManageSubspaceSettings } = useSubspacePermissions(settings.subspace.id);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter members based on search query
@@ -229,12 +227,12 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={handleAddMember} disabled={!canManageMembers || settings.subspace.type === "WORKSPACE_WIDE"}>
+                  <Button onClick={handleAddMember} disabled={!canManageSubspaceMembers || settings.subspace.type === "WORKSPACE_WIDE"}>
                     <UserPlus className="h-4 w-4 mr-2" />
                     {t("Add Member")}
                   </Button>
                 </TooltipTrigger>
-                {!canManageMembers && (
+                {!canManageSubspaceMembers && (
                   <TooltipContent>
                     <p>{t("Only subspace admins can add members")}</p>
                   </TooltipContent>
@@ -283,7 +281,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
                             <Select
                               value={member.role}
                               onValueChange={(value: SubspaceRole) => handleMemberRoleChange(member.id, value)}
-                              disabled={isCurrentUser || !canManageMembers}
+                              disabled={isCurrentUser || !canManageSubspaceMembers}
                             >
                               <SelectTrigger className="w-40 h-8 text-sm">
                                 <SelectValue />
@@ -299,7 +297,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
                           <div className="flex justify-center">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isCurrentUser || !canManageMembers}>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isCurrentUser || !canManageSubspaceMembers}>
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -307,7 +305,7 @@ export function MembersPermissionsTab({ settings, onSettingsChange }: MembersPer
                                 <DropdownMenuItem
                                   onClick={() => handleRemoveMember(member.id)}
                                   className="text-destructive focus:text-destructive"
-                                  disabled={!canManageMembers}
+                                  disabled={!canManageSubspaceMembers}
                                 >
                                   <UserMinus className="h-4 w-4 mr-2" />
                                   {t("Remove user from subspace")}

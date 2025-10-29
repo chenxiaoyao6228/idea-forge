@@ -1,4 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@idea/ui/shadcn/ui/tabs";
 import { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { User, Users, Building2, Layers } from "lucide-react";
@@ -6,9 +6,9 @@ import { Account } from "@/pages/main/settings/account";
 import { Members } from "@/pages/main/settings/members";
 import { Subspace } from "@/pages/main/settings/subspace";
 import { Workspace } from "@/pages/main/settings/workspace";
-import { Dialog, DialogContent } from '@idea/ui/shadcn/ui/dialog';
+import { Dialog, DialogContent } from "@idea/ui/shadcn/ui/dialog";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
-import { useAbilityCan, Action } from "@/hooks/use-ability";
+import { useWorkspacePermissions } from "@/hooks/permissions";
 import useWorkspaceStore from "@/stores/workspace-store";
 import { General } from "./general";
 
@@ -30,9 +30,7 @@ export interface SettingModalProps {
 const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, content }: ConfirmDialogProps<SettingModalProps, boolean>) => {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const workspaceSubject = currentWorkspace ? { id: currentWorkspace.id } : undefined;
-  const { can: canManageSubspaces } = useAbilityCan("Workspace", Action.ManageSubspaces, workspaceSubject);
-  const { can: canManageWorkspace } = useAbilityCan("Workspace", Action.Manage, workspaceSubject);
+  const { canManageWorkspaceSubspaces, canManageWorkspace } = useWorkspacePermissions(currentWorkspace?.id);
 
   const [activeTab, setActiveTab] = useState(tab);
   const [activeSubspaceId, setActiveSubspaceId] = useState<string | undefined>(subspaceId);
@@ -73,7 +71,7 @@ const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, cont
     ];
 
     // Filter out subspaces tab for users without ManageSubspaces permission
-    if (!canManageSubspaces) {
+    if (!canManageWorkspaceSubspaces) {
       baseTabs = baseTabs.filter((tab) => tab.key !== "subspaces");
     }
     // TODO: more fine-grained permission check for workspace tab
@@ -82,7 +80,7 @@ const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, cont
     }
 
     return baseTabs;
-  }, [t, canManageSubspaces, canManageWorkspace]);
+  }, [t, canManageWorkspaceSubspaces, canManageWorkspace]);
 
   const handleClose = () => {
     proceed?.(null);
@@ -111,7 +109,7 @@ const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, cont
                 <Members />
               </TabsContent>
             )}
-            {canManageSubspaces && (
+            {canManageWorkspaceSubspaces && (
               <TabsContent tabIndex={-1} value="subspaces" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
                 <Subspace activeSubspaceId={activeSubspaceId} />
               </TabsContent>

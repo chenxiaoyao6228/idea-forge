@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@idea/ui/shadcn/ui/select';
-import { Switch } from '@idea/ui/shadcn/ui/switch';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@idea/ui/shadcn/ui/tooltip';
+import { Card, CardContent, CardHeader, CardTitle } from "@idea/ui/shadcn/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@idea/ui/shadcn/ui/select";
+import { Switch } from "@idea/ui/shadcn/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@idea/ui/shadcn/ui/tooltip";
 import { SubspaceSettingsResponse } from "@idea/contracts";
-import { useAbilityCan, Action } from "@/hooks/use-ability";
+import { useSubspacePermissions } from "@/hooks/permissions";
 
 interface SecurityTabProps {
   settings: SubspaceSettingsResponse;
@@ -15,8 +15,7 @@ export function SecurityTab({ settings, onSettingsChange }: SecurityTabProps) {
   const { t } = useTranslation();
 
   // Permission checks
-  const subspaceSubject = { id: settings.subspace.id };
-  const { can: canManageSubspaceSettings } = useAbilityCan("Subspace", Action.ManageSettings, subspaceSubject);
+  const { canManageSubspaceSettings } = useSubspacePermissions(settings.subspace.id);
 
   const handleBooleanSettingChange = (key: keyof SubspaceSettingsResponse["subspace"], value: boolean) => {
     onSettingsChange({ [key]: value });

@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useEffect } from "react";
 import DocHome from "./home";
 import Loading from "@idea/ui/base/loading";
 import Cover from "./cover";
@@ -11,11 +11,10 @@ import { getEnvVariable } from "@/lib/env";
 import { Toolbar } from "./toolbar";
 import TiptapEditor from "@/editor";
 import { TableOfContent } from "./components/table-of-content";
-import { Action, useAbilityCan } from "@/hooks/use-ability";
+import { useDocumentPermissions } from "@/hooks/permissions";
 import { useCurrentDocumentFromStore, useCurrentDocumentId } from "@/stores/document-store";
 import { useEditorStore } from "@/stores/editor-store";
 import useUIStore from "@/stores/ui-store";
-import { cn } from "@idea/ui/shadcn/utils";
 import { CommentsSidebar } from "@/components/comments";
 import { useSearchParams } from "react-router-dom";
 
@@ -41,18 +40,8 @@ export default function Doc() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   useTitle(`Idea Forge ${isDocumentLoaded && currentDocument?.title ? `- ${currentDocument.title}` : ""}`);
 
-  // Move these up, use optional chaining to avoid errors
-  const docAbilitySubject = useMemo(() => {
-    if (!isDocumentLoaded || !currentDocument) return undefined;
-    return {
-      id: currentDocument.id,
-      authorId: currentDocument.createdById,
-    };
-  }, [isDocumentLoaded, currentDocument?.id, currentDocument?.createdById]);
-
-  const { can: canReadDoc } = useAbilityCan("Doc", Action.Read, docAbilitySubject);
-  const { can: canUpdateDoc } = useAbilityCan("Doc", Action.Update, docAbilitySubject);
-  const { can: canManageDoc } = useAbilityCan("Doc", Action.Manage, docAbilitySubject);
+  // Check document permissions
+  const { canReadDocument, canUpdateDocument } = useDocumentPermissions(isDocumentLoaded ? currentDocument : null);
 
   // Handle commentId URL parameter (from notification clicks)
   useEffect(() => {
@@ -93,7 +82,7 @@ export default function Doc() {
     return null;
   }
 
-  if (!canReadDoc) {
+  if (!canReadDocument) {
     return <div className="text-center h-screen flex items-center justify-center text-lg">{t("You have no permission to view this document")}</div>;
   }
 
@@ -104,13 +93,13 @@ export default function Doc() {
         {/* Article section */}
         <div className="flex-1 relative h-[calc(100vh-48px)] border border-red">
           <div id="WORK_CONTENT_SCROLL_CONTAINER" className="absolute inset-0 overflow-y-auto">
-            {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={canUpdateDoc} />}
+            {currentDocument?.coverImage && <Cover cover={currentDocument.coverImage} editable={canUpdateDocument} />}
             <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative">
-              <Toolbar doc={currentDocument} editable={canUpdateDoc} />
+              <Toolbar doc={currentDocument} editable={canUpdateDocument} />
               <TiptapEditor
                 key={currentDocument.id}
                 id={currentDocument.id!}
-                editable={canUpdateDoc}
+                editable={canUpdateDocument}
                 collabToken={collabToken}
                 collabWsUrl={getEnvVariable("CLIENT_COLLAB_WS_URL")}
               />
