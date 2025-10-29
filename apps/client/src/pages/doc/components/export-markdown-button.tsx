@@ -6,12 +6,14 @@ import { useEditorStore } from "../../../stores/editor-store";
 
 import { useTranslation } from "react-i18next";
 import { useCurrentDocumentFromStore } from "@/stores/document-store";
+import { useWorkspacePermissions } from "@/hooks/permissions";
 export default function ExportMarkdownButton() {
   const { t } = useTranslation();
   const editor = useEditorStore((state) => state.editor);
   const currentDocument = useCurrentDocumentFromStore();
+  const { canExportWorkspace } = useWorkspacePermissions(currentDocument?.workspaceId);
 
-  if (!editor) return null;
+  if (!editor || !canExportWorkspace) return null;
 
   const handleExportMarkdown = async () => {
     const markdown = editor.storage.markdown.get();

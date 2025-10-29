@@ -19,6 +19,12 @@ interface WorkspacePermissions {
   canManageWorkspaceSubspaces: boolean;
   /** User can transfer ownership of the workspace */
   canTransferWorkspaceOwnership: boolean;
+  /** User can manage workspace default permissions */
+  canManageWorkspacePermissions: boolean;
+  /** User can export documents from the workspace */
+  canExportWorkspace: boolean;
+  /** User can import documents into the workspace */
+  canImportWorkspace: boolean;
 
   // Computed convenience flags
   /** User can edit workspace - computed as canManageWorkspaceSettings OR canManageWorkspace */
@@ -54,6 +60,9 @@ export function useWorkspacePermissions(workspaceId: string | null | undefined):
   const { can: canManageWorkspaceMembers } = useAbilityCan("Workspace", Action.ManageMembers, subject);
   const { can: canManageWorkspaceSubspaces } = useAbilityCan("Workspace", Action.ManageSubspaces, subject);
   const { can: canTransferWorkspaceOwnership } = useAbilityCan("Workspace", Action.TransferOwnership, subject);
+  const { can: canManageWorkspacePermissions } = useAbilityCan("Workspace", Action.ManagePermissions, subject);
+  const { can: canExportWorkspace } = useAbilityCan("Workspace", Action.Export, subject);
+  const { can: canImportWorkspace } = useAbilityCan("Workspace", Action.Import, subject);
 
   return {
     // Raw permissions
@@ -65,6 +74,9 @@ export function useWorkspacePermissions(workspaceId: string | null | undefined):
     canManageWorkspaceMembers,
     canManageWorkspaceSubspaces,
     canTransferWorkspaceOwnership,
+    canManageWorkspacePermissions,
+    canExportWorkspace,
+    canImportWorkspace,
 
     // Computed convenience flags
     canEditWorkspace: canManageWorkspaceSettings || canManageWorkspace,

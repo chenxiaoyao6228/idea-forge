@@ -18,6 +18,12 @@ export enum AbilityAction {
   Export = "export",
   Import = "import",
 
+  // Document lifecycle operations
+  Archive = "archive",
+  Restore = "restore",
+  Publish = "publish",
+  Unpublish = "unpublish",
+
   // Membership & permission management
   ManageMembers = "manageMembers",
   ViewMembers = "viewMembers",

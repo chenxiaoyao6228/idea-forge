@@ -69,21 +69,36 @@ export class DocumentAbility extends BaseAbility {
     // TODO:
     // Author always has full permissions on their own docs when building global ability
     can([Action.Read, Action.Update, Action.Delete, Action.Share], "Doc", { authorId: user.id });
+    // Authors can archive, restore, publish, and unpublish their own documents
+    can([Action.Archive, Action.Restore, Action.Publish, Action.Unpublish], "Doc", { authorId: user.id });
+    // Authors can permanently delete and duplicate their own documents
+    can([Action.PermanentDelete, Action.Duplicate], "Doc", { authorId: user.id });
   }
 
   private defineContentPermissionsByLevel(can: any, docId: string, level: PermissionLevel) {
     switch (level) {
       case PermissionLevel.MANAGE:
         can([Action.Read, Action.Comment, Action.Update, Action.Delete, Action.Manage], "Doc", { id: docId });
+        // MANAGE level can archive, restore, publish, and unpublish documents
+        can([Action.Archive, Action.Restore, Action.Publish, Action.Unpublish], "Doc", { id: docId });
+        // MANAGE level can permanently delete documents (destructive action)
+        can(Action.PermanentDelete, "Doc", { id: docId });
+        // All levels READ and above can duplicate documents
+        can(Action.Duplicate, "Doc", { id: docId });
         break;
       case PermissionLevel.EDIT:
         can([Action.Read, Action.Comment, Action.Update], "Doc", { id: docId });
+        // EDIT level can publish documents (for publishing drafts)
+        can(Action.Publish, "Doc", { id: docId });
+        // EDIT level can duplicate documents
+        can(Action.Duplicate, "Doc", { id: docId });
         break;
       case PermissionLevel.COMMENT:
         can([Action.Read, Action.Comment], "Doc", { id: docId });
         break;
       case PermissionLevel.READ:
         can(Action.Read, "Doc", { id: docId });
+
         break;
     }
   }

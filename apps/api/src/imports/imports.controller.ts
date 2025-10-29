@@ -1,7 +1,10 @@
-import { Body, Controller, Post, Get, Param, Logger } from "@nestjs/common";
+import { Body, Controller, Post, Get, Param, Logger, UseGuards } from "@nestjs/common";
 import { ImportsService } from "./imports.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PrepareImportDto, StartImportDto } from "./imports.dto";
+import { PolicyGuard } from "@/_shared/casl/policy.guard";
+import { CheckPolicy } from "@/_shared/casl/policy.decorator";
+import { Action } from "@/_shared/casl/ability.class";
 
 @Controller("api/imports")
 export class ImportsController {
@@ -14,11 +17,10 @@ export class ImportsController {
    * POST /api/imports/prepare
    */
   @Post("prepare")
+  @UseGuards(PolicyGuard)
+  @CheckPolicy(Action.Import, "Workspace")
   async prepareImport(@GetUser("id") userId: string, @Body() dto: PrepareImportDto) {
     this.logger.log(`Preparing import: ${dto.title} (${dto.fileName})`);
-
-    // TODO: Check admin permission
-    // TODO: Validate workspace/subspace access
 
     return this.importsService.prepareImport(userId, dto);
   }

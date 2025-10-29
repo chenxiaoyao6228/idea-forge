@@ -852,4 +852,39 @@ export class DocumentService {
       message: isFirstPublish ? "Document published" : "Update published",
     };
   }
+
+  /**
+   * Unpublish document - reverts to draft status
+   */
+  async unpublishDocument(userId: string, documentId: string) {
+    // Get document
+    const doc = await this.prismaService.doc.findUnique({
+      where: { id: documentId },
+      select: {
+        id: true,
+        publishedAt: true,
+        authorId: true,
+        workspaceId: true,
+        subspaceId: true,
+      },
+    });
+
+    if (!doc) {
+      throw new NotFoundException("Document not found");
+    }
+
+    // Update document to unpublish (set publishedAt to null)
+    await this.prismaService.doc.update({
+      where: { id: documentId },
+      data: {
+        publishedAt: null,
+        lastModifiedById: userId,
+      },
+    });
+
+    return {
+      success: true,
+      message: "Document unpublished",
+    };
+  }
 }

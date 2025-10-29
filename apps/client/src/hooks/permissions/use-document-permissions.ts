@@ -16,12 +16,18 @@ interface DocumentPermissions {
   canShareDocument: boolean;
   /** User can add comments to the document */
   canCommentDocument: boolean;
+  /** User can archive (soft delete) the document */
+  canArchiveDocument: boolean;
+  /** User can restore archived documents */
+  canRestoreDocument: boolean;
+  /** User can publish documents */
+  canPublishDocument: boolean;
+  /** User can unpublish documents (revert to draft) */
+  canUnpublishDocument: boolean;
 
   // Computed convenience flags
   /** User can edit document - computed as canUpdateDocument OR canManageDocument */
   canEditDocument: boolean;
-  /** User can publish document - computed as canUpdateDocument OR canManageDocument */
-  canPublishDocument: boolean;
 
   // Loading state
   /** Document permissions are still loading (documentId not available) */
@@ -98,6 +104,10 @@ export function useDocumentPermissions(input: DocumentObject | DocumentConfig | 
   const { can: canManageDocument } = useAbilityCan("Doc", Action.Manage, subject);
   const { can: canShareDocument } = useAbilityCan("Doc", Action.Share, subject);
   const { can: canCommentDocument } = useAbilityCan("Doc", Action.Comment, subject);
+  const { can: canArchiveDocument } = useAbilityCan("Doc", Action.Archive, subject);
+  const { can: canRestoreDocument } = useAbilityCan("Doc", Action.Restore, subject);
+  const { can: canPublishDocument } = useAbilityCan("Doc", Action.Publish, subject);
+  const { can: canUnpublishDocument } = useAbilityCan("Doc", Action.Unpublish, subject);
 
   return {
     // Raw permissions
@@ -107,10 +117,13 @@ export function useDocumentPermissions(input: DocumentObject | DocumentConfig | 
     canManageDocument,
     canShareDocument,
     canCommentDocument,
+    canArchiveDocument,
+    canRestoreDocument,
+    canPublishDocument,
+    canUnpublishDocument,
 
     // Computed convenience flags
     canEditDocument: canUpdateDocument || canManageDocument,
-    canPublishDocument: canUpdateDocument || canManageDocument,
 
     // Loading state
     isLoadingDocumentPermissions: !subject,

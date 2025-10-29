@@ -125,6 +125,8 @@ export class WorkspaceAbility extends BaseAbility {
         can([Action.Read, Action.Update, Action.Delete, Action.Manage], "Workspace", { id: workspaceId });
         can([Action.ManageMembers, Action.TransferOwnership], "WorkspaceMember", { workspaceId });
         can(Action.ManageSettings, "Workspace", { id: workspaceId });
+        can(Action.ManagePermissions, "Workspace", { id: workspaceId });
+        can([Action.Export, Action.Import], "Workspace", { id: workspaceId });
 
         // Only grant ManageSubspaces permission for team workspaces
         if (workspaceType === "TEAM") {
@@ -137,6 +139,8 @@ export class WorkspaceAbility extends BaseAbility {
         can([Action.Read, Action.Update, Action.Manage], "Workspace", { id: workspaceId });
         can(Action.ManageMembers, "WorkspaceMember", { workspaceId });
         can(Action.ManageSettings, "Workspace", { id: workspaceId });
+        can(Action.ManagePermissions, "Workspace", { id: workspaceId });
+        can([Action.Export, Action.Import], "Workspace", { id: workspaceId });
 
         // Only grant ManageSubspaces permission for team workspaces
         if (workspaceType === "TEAM") {
@@ -148,6 +152,7 @@ export class WorkspaceAbility extends BaseAbility {
         // MEMBER: Can create documents/join subspaces/create member groups (if allowed)
         can([Action.Read, Action.Update], "Workspace", { id: workspaceId });
         can([Action.ViewMembers], "WorkspaceMember", { workspaceId });
+        can([Action.Export, Action.Import], "Workspace", { id: workspaceId });
         break;
 
       default:

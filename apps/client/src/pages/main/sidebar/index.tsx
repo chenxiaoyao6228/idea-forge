@@ -24,6 +24,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@idea/ui/shadcn/ui/button";
 import { Alert, AlertDescription } from "@idea/ui/shadcn/ui/alert";
 import { NotificationButton } from "@/pages/main/sidebar/notification";
+import { useCurrentWorkspace } from "@/stores/workspace-store";
+import { useWorkspacePermissions } from "@/hooks/permissions";
 
 const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   const { sensors, handleDragStart, handleDragEnd, handleDragMove, handleDragOver } = useDragAndDropContext();
@@ -31,6 +33,8 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
   const { isPersonalWorkspace } = useWorkspaceType();
   const isGuestCollaborator = useIsGuestCollaborator();
   const navigate = useNavigate();
+  const currentWorkspace = useCurrentWorkspace();
+  const { canImportWorkspace } = useWorkspacePermissions(currentWorkspace?.id);
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragMove={handleDragMove} onDragOver={handleDragOver}>
@@ -65,23 +69,25 @@ const SidebarContainer = ({ content }: { content: React.ReactNode }) => {
                       </TooltipProvider>
                     </div>
                     {/* Import Files */}
-                    <div className="flex items-center justify-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <SidebarMenuButton
-                              onClick={() => showImportFilesModal()}
-                              className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors h-10 w-10"
-                            >
-                              <Upload className="h-5 w-5" />
-                            </SidebarMenuButton>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t("Import files")}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                    {canImportWorkspace && (
+                      <div className="flex items-center justify-center">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SidebarMenuButton
+                                onClick={() => showImportFilesModal()}
+                                className="flex items-center justify-center hover:bg-accent/50 dark:hover:bg-accent/25 transition-colors h-10 w-10"
+                              >
+                                <Upload className="h-5 w-5" />
+                              </SidebarMenuButton>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t("Import files")}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    )}
 
                     {/* Workspace Settings */}
                     <div className="flex items-center justify-center">

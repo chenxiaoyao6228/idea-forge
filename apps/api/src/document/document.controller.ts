@@ -111,12 +111,14 @@ export class DocumentController {
   }
 
   @Delete(":id")
-  @CheckPolicy(Action.Delete, "Doc")
+  @CheckPolicy(Action.Archive, "Doc")
   remove(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.remove(id, userId);
   }
 
   @Post(":id/duplicate")
+  @UseGuards(PolicyGuard)
+  @CheckPolicy(Action.Duplicate, "Doc")
   duplicate(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.duplicate(userId, id);
   }
@@ -154,7 +156,30 @@ export class DocumentController {
   }
 
   @Post(":id/publish")
+  @UseGuards(PolicyGuard)
+  @CheckPolicy(Action.Publish, "Doc")
   async publishDocument(@GetUser("id") userId: string, @Param("id") id: string) {
     return this.documentService.publishDocument(userId, id);
+  }
+
+  @Post(":id/restore")
+  @UseGuards(PolicyGuard)
+  @CheckPolicy(Action.Restore, "Doc")
+  async restoreDocument(@GetUser("id") userId: string, @Param("id") id: string) {
+    return this.documentTrashService.restore(id, userId);
+  }
+
+  @Post(":id/unpublish")
+  @UseGuards(PolicyGuard)
+  @CheckPolicy(Action.Unpublish, "Doc")
+  async unpublishDocument(@GetUser("id") userId: string, @Param("id") id: string) {
+    return this.documentService.unpublishDocument(userId, id);
+  }
+
+  @Delete(":id/permanent")
+  @UseGuards(PolicyGuard)
+  @CheckPolicy(Action.PermanentDelete, "Doc")
+  async permanentDeleteDocument(@GetUser("id") userId: string, @Param("id") id: string) {
+    return this.documentTrashService.permanentDelete(id, userId);
   }
 }

@@ -6,6 +6,7 @@ import { useArchiveDocument, useDeleteDocument, useFindNextNavigationTarget, use
 import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { useDocumentPermissions } from "@/hooks/permissions";
 
 interface DocumentMenuProps {
   documentId: string;
@@ -21,6 +22,8 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
   const { run: deleteDocument, loading: isDeleting } = useDeleteDocument();
   const findNextNavigationTarget = useFindNextNavigationTarget();
   const getDocument = useGetDocument();
+  const document = getDocument(documentId);
+  const { canArchiveDocument, canDeleteDocument } = useDocumentPermissions(document);
   const [isOpen, setIsOpen] = useState(false);
   const [shouldPreventAutoFocus, setShouldPreventAutoFocus] = useState(false);
 
@@ -72,7 +75,9 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
 
     const confirmed = await showConfirmModal({
       title: t("Delete Document"),
-      description: t('Are you sure you want to delete "{{title}}"?\n\nThis document will be moved to trash and can be restored later.', { title: documentTitle }),
+      description: t('Are you sure you want to delete "{{title}}"?\n\nThis document will be moved to trash and can be restored later.', {
+        title: documentTitle,
+      }),
       confirmText: t("Delete"),
       cancelText: t("Cancel"),
       confirmVariant: "destructive",
@@ -126,12 +131,12 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={handleArchive} disabled={isArchiving}>
+        <DropdownMenuItem onClick={handleArchive} disabled={!canArchiveDocument || isArchiving}>
           <Archive className="mr-2 h-4 w-4" />
           {isArchiving ? t("Archiving...") : t("Archive")}
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={handleDelete} disabled={isDeleting} className="text-destructive focus:text-destructive">
+        <DropdownMenuItem onClick={handleDelete} disabled={!canDeleteDocument || isDeleting} className="text-destructive focus:text-destructive">
           <Trash2 className="mr-2 h-4 w-4" />
           {isDeleting ? t("Deleting...") : t("Delete")}
         </DropdownMenuItem>
