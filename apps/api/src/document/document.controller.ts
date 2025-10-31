@@ -111,9 +111,10 @@ export class DocumentController {
   }
 
   @Delete(":id")
-  @CheckPolicy(Action.Archive, "Doc")
+  @UseGuards(PolicyGuard)
+  @CheckPolicy(Action.Delete, "Doc")
   remove(@GetUser("id") userId: string, @Param("id") id: string) {
-    return this.documentService.remove(id, userId);
+    return this.documentTrashService.deleteDocument(id, userId);
   }
 
   @Post(":id/duplicate")

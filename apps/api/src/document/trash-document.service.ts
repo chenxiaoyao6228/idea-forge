@@ -3,11 +3,44 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { Injectable } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import { WorkspaceRole } from "@idea/contracts";
 
 @Injectable()
 export class DocumentTrashService {
   constructor(private readonly prismaService: PrismaService) {}
   private static isCleanupRunning = false;
+
+  /**
+   * Soft delete a document (set deletedAt timestamp)
+   * Permission check is done by @CheckPolicy decorator in controller
+   */
+  async deleteDocument(documentId: string, userId: string) {
+    const doc = await this.prismaService.doc.findUnique({
+      where: { id: documentId },
+      select: {
+        id: true,
+        deletedAt: true,
+        subspaceId: true,
+      },
+    });
+
+    if (!doc) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    if (doc.deletedAt) {
+      throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Soft delete: set deletedAt and deletedById
+    return await this.prismaService.doc.update({
+      where: { id: documentId },
+      data: {
+        deletedAt: new Date(),
+        deletedById: userId,
+      },
+    });
+  }
 
   async emptyTrash(userId: string) {
     // Get all soft-deleted documents
@@ -30,11 +63,11 @@ export class DocumentTrashService {
   }
 
   async permanentDelete(id: string, userId: string) {
-    // Verify document exists and belongs to user
+    // Verify document exists and is deleted
+    // Don't check authorId - permission check is done by @CheckPolicy in controller
     const doc = await this.prismaService.doc.findFirst({
       where: {
         id,
-        authorId: userId,
         deletedAt: { not: null },
       },
       include: {
@@ -78,7 +111,6 @@ export class DocumentTrashService {
     const children = await this.prismaService.doc.findMany({
       where: {
         parentId,
-        authorId: userId,
       },
       include: {
         coverImage: true,
@@ -103,11 +135,118 @@ export class DocumentTrashService {
     }
   }
 
+  /**
+   * Get trash documents visible to the user based on their role
+   *
+   * Permission rules:
+   * - Normal member: Can only see deleted docs they created (author)
+   * - Subspace admin: Can see all deleted docs in their subspace(s)
+   * - Workspace admin: Can see all deleted docs in the entire workspace
+   */
   async getTrash(userId: string) {
+    // Get user's current workspace
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { currentWorkspaceId: true },
+    });
+
+    if (!user?.currentWorkspaceId) {
+      return [];
+    }
+
+    // Check user's workspace role
+    const workspaceMember = await this.prismaService.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: user.currentWorkspaceId,
+          userId,
+        },
+      },
+      select: { role: true },
+    });
+
+    const isWorkspaceAdmin = workspaceMember?.role === WorkspaceRole.ADMIN || workspaceMember?.role === WorkspaceRole.OWNER;
+
+    // If workspace admin, show all deleted docs in workspace
+    if (isWorkspaceAdmin) {
+      return await this.prismaService.doc.findMany({
+        where: {
+          workspaceId: user.currentWorkspaceId,
+          deletedAt: { not: null },
+        },
+        orderBy: {
+          deletedAt: "desc",
+        },
+        select: {
+          id: true,
+          title: true,
+          deletedAt: true,
+          updatedAt: true,
+          icon: true,
+          parentId: true,
+          authorId: true,
+          subspaceId: true,
+          author: {
+            select: {
+              id: true,
+              displayName: true,
+              email: true,
+            },
+          },
+          deletedBy: {
+            select: {
+              id: true,
+              displayName: true,
+              email: true,
+            },
+          },
+          coverImage: {
+            select: {
+              url: true,
+              scrollY: true,
+            },
+          },
+        },
+      });
+    }
+
+    // Get subspaces where user is admin
+    const subspaceAdminMemberships = await this.prismaService.subspaceMember.findMany({
+      where: {
+        userId,
+        role: "ADMIN",
+      },
+      select: {
+        subspaceId: true,
+      },
+    });
+
+    const adminSubspaceIds = subspaceAdminMemberships.map((m) => m.subspaceId);
+
+    // Build filter conditions
+    // Normal member: only their own deleted docs
+    // Subspace admin: their own docs + all docs in subspaces they admin
+    const whereConditions: any[] = [
+      // User's own deleted documents
+      {
+        authorId: userId,
+        workspaceId: user.currentWorkspaceId,
+        deletedAt: { not: null },
+      },
+    ];
+
+    // If user is admin of any subspace, add those subspace docs
+    if (adminSubspaceIds.length > 0) {
+      whereConditions.push({
+        subspaceId: { in: adminSubspaceIds },
+        workspaceId: user.currentWorkspaceId,
+        deletedAt: { not: null },
+      });
+    }
+
     return await this.prismaService.doc.findMany({
       where: {
-        authorId: userId,
-        deletedAt: { not: null },
+        OR: whereConditions,
       },
       orderBy: {
         deletedAt: "desc",
@@ -119,6 +258,15 @@ export class DocumentTrashService {
         updatedAt: true,
         icon: true,
         parentId: true,
+        authorId: true,
+        subspaceId: true,
+        author: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+          },
+        },
         deletedBy: {
           select: {
             id: true,
@@ -126,16 +274,22 @@ export class DocumentTrashService {
             email: true,
           },
         },
+        coverImage: {
+          select: {
+            url: true,
+            scrollY: true,
+          },
+        },
       },
     });
   }
 
   async restore(id: string, userId: string) {
-    // Verify document exists and belongs to user
+    // Verify document exists and is deleted
+    // Don't check authorId - permission check is done by @CheckPolicy in controller
     const doc = await this.prismaService.doc.findFirst({
       where: {
         id,
-        authorId: userId,
         deletedAt: { not: null },
       },
       include: {
@@ -170,7 +324,6 @@ export class DocumentTrashService {
     const children = await this.prismaService.doc.findMany({
       where: {
         parentId,
-        authorId: userId,
         deletedAt: { not: null },
       },
     });

@@ -324,7 +324,7 @@ if (confirmed) { /* do action */ }
 - **Type Checking**: Always run after changes:
   - `pnpm -F @idea/client typecheck`
   - `pnpm -F @idea/api typecheck`
-- **Contract Updates**: Run `pnpm build:contracts` after Prisma schema changes
+- **Contract Updates**: Contracts are automatically bundled by Vite (client) and Webpack (API). No build step needed.
 
 ## Domain Context
 

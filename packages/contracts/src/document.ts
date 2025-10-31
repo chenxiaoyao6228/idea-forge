@@ -325,6 +325,18 @@ export interface TrashDocumentResponse {
   deletedAt: Date | null;
   parentId: string | null;
   icon: string | null;
+  authorId: string;
+  subspaceId: string | null;
+  author: {
+    id: string;
+    displayName: string;
+    email: string;
+  } | null;
+  deletedBy: {
+    id: string;
+    displayName: string;
+    email: string;
+  } | null;
   coverImage: {
     url: string;
     scrollY: number;

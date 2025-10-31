@@ -42,35 +42,36 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
     }, 100);
   };
 
-  const handleArchive = async () => {
-    setIsOpen(false);
+  // TODO: revert this and complete a archivable section when have time
+  // const handleArchive = async () => {
+  //   setIsOpen(false);
 
-    const confirmed = await showConfirmModal({
-      title: t("Archive Document"),
-      description: t('Are you sure you want to archive "{{title}}"?\n\nArchived documents can be found in the trash.', { title: documentTitle }),
-      confirmText: t("Archive"),
-      cancelText: t("Cancel"),
-      confirmVariant: "default",
-      type: "alert",
-    });
+  //   const confirmed = await showConfirmModal({
+  //     title: t("Archive Document"),
+  //     description: t('Are you sure you want to archive "{{title}}"?\n\nArchived documents can be found in the trash.', { title: documentTitle }),
+  //     confirmText: t("Archive"),
+  //     cancelText: t("Cancel"),
+  //     confirmVariant: "default",
+  //     type: "alert",
+  //   });
 
-    if (!confirmed) {
-      return;
-    }
+  //   if (!confirmed) {
+  //     return;
+  //   }
 
-    try {
-      // Navigate away first if this is the current document
-      if (isCurrentDocument) {
-        const doc = getDocument(documentId);
-        const nextTarget = findNextNavigationTarget(documentId, doc?.subspaceId || null);
-        navigate(nextTarget);
-      }
+  //   try {
+  //     // Navigate away first if this is the current document
+  //     if (isCurrentDocument) {
+  //       const doc = getDocument(documentId);
+  //       const nextTarget = findNextNavigationTarget(documentId, doc?.subspaceId || null);
+  //       navigate(nextTarget);
+  //     }
 
-      await archiveDocument(documentId);
-    } catch (error) {
-      console.error("Failed to archive document:", error);
-    }
-  };
+  //     await archiveDocument(documentId);
+  //   } catch (error) {
+  //     console.error("Failed to archive document:", error);
+  //   }
+  // };
 
   const handleDelete = async () => {
     setIsOpen(false);
@@ -108,7 +109,7 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
             {t("View trash")}
           </button>
         </div>,
-        { duration: 5000 }
+        { duration: 5000 },
       );
     } catch (error) {
       console.error("Failed to delete document:", error);
@@ -145,10 +146,10 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={handleArchive} disabled={!canArchiveDocument || isArchiving}>
+        {/* <DropdownMenuItem onClick={handleArchive} disabled={!canArchiveDocument || isArchiving}>
           <Archive className="mr-2 h-4 w-4" />
           {isArchiving ? t("Archiving...") : t("Archive")}
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
 
         <DropdownMenuItem onClick={handleDelete} disabled={!canDeleteDocument || isDeleting} className="text-destructive focus:text-destructive">
           <Trash2 className="mr-2 h-4 w-4" />

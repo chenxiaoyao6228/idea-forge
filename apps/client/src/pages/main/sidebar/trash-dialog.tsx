@@ -33,7 +33,10 @@ const TrashDocumentRow: React.FC<TrashDocumentRowProps> = ({ doc, onRestore, onP
 
   return (
     <TableRow key={doc.id}>
-      <TableCell className="font-medium">{doc.title || t("Untitled")}</TableCell>
+      <TableCell className="font-medium">
+        <div>{doc.title || t("Untitled")}</div>
+        {doc.author && <div className="text-xs text-muted-foreground">by {doc.author.displayName || doc.author.email}</div>}
+      </TableCell>
       <TableCell>{doc.deletedAt ? formatDistanceToNow(new Date(doc.deletedAt), { addSuffix: true }) : "-"}</TableCell>
       <TableCell className="text-right space-x-2">
         <Button variant="outline" size="sm" onClick={() => onRestore(doc.id)} disabled={!canRestoreDocument}>
