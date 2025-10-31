@@ -7,6 +7,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
 import { useDocumentPermissions } from "@/hooks/permissions";
+import { toast } from "sonner";
+import { showTrashModal } from "../trash-dialog";
 
 interface DocumentMenuProps {
   documentId: string;
@@ -97,8 +99,20 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
       }
 
       await deleteDocument(documentId, { permanent: false });
+
+      // Show success toast with link to trash
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <div>{t('Moved "{{title}}" to trash', { title: documentTitle })}</div>
+          <button onClick={() => showTrashModal()} className="text-xs underline text-left hover:no-underline">
+            {t("View trash")}
+          </button>
+        </div>,
+        { duration: 5000 }
+      );
     } catch (error) {
       console.error("Failed to delete document:", error);
+      toast.error(t("Failed to delete document"));
     }
   };
 

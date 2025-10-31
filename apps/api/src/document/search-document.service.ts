@@ -20,6 +20,7 @@ export class SearchDocumentService {
         where: {
           authorId,
           title: { contains: keyword, mode: "insensitive" },
+          deletedAt: null, // Exclude soft-deleted documents
         },
         select: {
           id: true,
@@ -44,7 +45,7 @@ export class SearchDocumentService {
             END as content
           FROM "Doc" d
           WHERE d."authorId" = ${authorId}
-            AND NOT d."isArchived"
+            AND d."deletedAt" IS NULL
         ),
         Blocks AS (
           SELECT 

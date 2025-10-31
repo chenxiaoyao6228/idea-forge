@@ -126,7 +126,10 @@ export class DocumentService {
     const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
 
     const { data: items, pagination } = await (this.prismaService.doc as any).paginateWithApiFormat({
-      where: { parentId },
+      where: {
+        parentId,
+        deletedAt: null, // Exclude soft-deleted documents
+      },
       page,
       limit,
       orderBy: { [sortField]: sortOrder || "desc" },
@@ -207,10 +210,12 @@ export class DocumentService {
       await this.updateSubspaceNavigationTree(doc.subspaceId, "remove", doc);
     }
 
+    // Soft delete: move to trash
     await this.prismaService.doc.update({
       where: { id },
       data: {
-        archivedAt: new Date(),
+        deletedAt: new Date(),
+        deletedById: userId,
         lastModifiedById: userId,
       },
     });

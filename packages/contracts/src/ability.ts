@@ -23,6 +23,8 @@ export enum AbilityAction {
   Restore = "restore",
   Publish = "publish",
   Unpublish = "unpublish",
+  PermanentDelete = "permanentDelete",
+  Duplicate = "duplicate",
 
   // Membership & permission management
   ManageMembers = "manageMembers",

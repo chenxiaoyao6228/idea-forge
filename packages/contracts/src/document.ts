@@ -322,6 +322,7 @@ export interface TrashDocumentResponse {
   id: string;
   title: string;
   updatedAt: Date;
+  deletedAt: Date | null;
   parentId: string | null;
   icon: string | null;
   coverImage: {

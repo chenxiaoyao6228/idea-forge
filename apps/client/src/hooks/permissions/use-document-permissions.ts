@@ -24,6 +24,10 @@ interface DocumentPermissions {
   canPublishDocument: boolean;
   /** User can unpublish documents (revert to draft) */
   canUnpublishDocument: boolean;
+  /** User can permanently delete documents (destructive action) */
+  canPermanentDeleteDocument: boolean;
+  /** User can duplicate documents */
+  canDuplicateDocument: boolean;
 
   // Computed convenience flags
   /** User can edit document - computed as canUpdateDocument OR canManageDocument */
@@ -108,6 +112,8 @@ export function useDocumentPermissions(input: DocumentObject | DocumentConfig | 
   const { can: canRestoreDocument } = useAbilityCan("Doc", Action.Restore, subject);
   const { can: canPublishDocument } = useAbilityCan("Doc", Action.Publish, subject);
   const { can: canUnpublishDocument } = useAbilityCan("Doc", Action.Unpublish, subject);
+  const { can: canPermanentDeleteDocument } = useAbilityCan("Doc", Action.PermanentDelete, subject);
+  const { can: canDuplicateDocument } = useAbilityCan("Doc", Action.Duplicate, subject);
 
   return {
     // Raw permissions
@@ -121,6 +127,8 @@ export function useDocumentPermissions(input: DocumentObject | DocumentConfig | 
     canRestoreDocument,
     canPublishDocument,
     canUnpublishDocument,
+    canPermanentDeleteDocument,
+    canDuplicateDocument,
 
     // Computed convenience flags
     canEditDocument: canUpdateDocument || canManageDocument,

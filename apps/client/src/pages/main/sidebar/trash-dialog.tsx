@@ -13,12 +13,39 @@ import { showConfirmModal } from '@/components/ui/confirm-modal';
 import { useTranslation } from "react-i18next";
 import Loading from '@idea/ui/base/loading';
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
+import { useDocumentPermissions } from "@/hooks/permissions";
 
 interface TrashDialogProps {
   // react-confirm props
   show?: boolean;
   proceed?: (value: any) => void;
 }
+
+interface TrashDocumentRowProps {
+  doc: TrashDocumentResponse;
+  onRestore: (id: string) => void;
+  onPermanentDelete: (id: string) => void;
+}
+
+const TrashDocumentRow: React.FC<TrashDocumentRowProps> = ({ doc, onRestore, onPermanentDelete }) => {
+  const { t } = useTranslation();
+  const { canRestoreDocument, canPermanentDeleteDocument } = useDocumentPermissions(doc);
+
+  return (
+    <TableRow key={doc.id}>
+      <TableCell className="font-medium">{doc.title || t("Untitled")}</TableCell>
+      <TableCell>{doc.deletedAt ? formatDistanceToNow(new Date(doc.deletedAt), { addSuffix: true }) : "-"}</TableCell>
+      <TableCell className="text-right space-x-2">
+        <Button variant="outline" size="sm" onClick={() => onRestore(doc.id)} disabled={!canRestoreDocument}>
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+        <Button variant="destructive" size="sm" onClick={() => onPermanentDelete(doc.id)} disabled={!canPermanentDeleteDocument}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+};
 
 const TrashDialog: React.FC<ConfirmDialogProps<TrashDialogProps, any>> = ({ show = false, proceed }) => {
   const { t } = useTranslation();
@@ -123,18 +150,7 @@ const TrashDialog: React.FC<ConfirmDialogProps<TrashDialogProps, any>> = ({ show
                 </TableHeader>
                 <TableBody>
                   {filteredDocuments.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell className="font-medium">{doc.title || t("Untitled")}</TableCell>
-                      <TableCell>{formatDistanceToNow(new Date(doc.updatedAt), { addSuffix: true })}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleRestore(doc.id)}>
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handlePermanentDelete(doc.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                    <TrashDocumentRow key={doc.id} doc={doc} onRestore={handleRestore} onPermanentDelete={handlePermanentDelete} />
                   ))}
                 </TableBody>
               </Table>

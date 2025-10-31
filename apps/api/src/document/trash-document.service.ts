@@ -10,19 +10,19 @@ export class DocumentTrashService {
   private static isCleanupRunning = false;
 
   async emptyTrash(userId: string) {
-    // Get all archived documents
-    const archivedDocs = await this.prismaService.doc.findMany({
+    // Get all soft-deleted documents
+    const deletedDocs = await this.prismaService.doc.findMany({
       where: {
         authorId: userId,
-        archivedAt: { not: null },
+        deletedAt: { not: null },
       },
       include: {
         coverImage: true,
       },
     });
 
-    // Delete all archived documents and their related data
-    for (const doc of archivedDocs) {
+    // Permanently delete all soft-deleted documents
+    for (const doc of deletedDocs) {
       await this.permanentDelete(doc.id, userId);
     }
 
@@ -35,7 +35,7 @@ export class DocumentTrashService {
       where: {
         id,
         authorId: userId,
-        archivedAt: { not: null },
+        deletedAt: { not: null },
       },
       include: {
         coverImage: true,
@@ -44,7 +44,7 @@ export class DocumentTrashService {
 
     if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
 
-    // Delete all children recursively
+    // Hard delete all children recursively
     await this.permanentDeleteChildren(id, userId);
 
     // Delete document's cover image if exists
@@ -54,10 +54,21 @@ export class DocumentTrashService {
       });
     }
 
-    // Delete document's permissions and public shares (handled by Prisma cascade)
-    // No need to explicitly delete - Prisma will handle it via onDelete: Cascade
+    // Clear parent references to avoid orphaned children
+    await this.prismaService.doc.updateMany({
+      where: { parentId: id },
+      data: { parentId: null },
+    });
 
-    // Finally delete the document
+    // Hard delete the document (actually remove from database)
+    // Cascade deletes will handle:
+    // - DocumentPermissions
+    // - PublicShare
+    // - DocRevisions
+    // - Stars
+    // - Comments
+    // - Subscriptions
+    // - DocumentViews
     return await this.prismaService.doc.delete({
       where: { id },
     });
@@ -75,6 +86,7 @@ export class DocumentTrashService {
     });
 
     for (const child of children) {
+      // Recursively delete grandchildren first
       await this.permanentDeleteChildren(child.id, userId);
 
       // Delete child's cover image if exists
@@ -84,10 +96,7 @@ export class DocumentTrashService {
         });
       }
 
-      // Delete child's permissions and public shares (handled by Prisma cascade)
-      // No need to explicitly delete - Prisma will handle it via onDelete: Cascade
-
-      // Delete the child document
+      // Hard delete the child document
       await this.prismaService.doc.delete({
         where: { id: child.id },
       });
@@ -98,16 +107,25 @@ export class DocumentTrashService {
     return await this.prismaService.doc.findMany({
       where: {
         authorId: userId,
-        archivedAt: { not: null },
+        deletedAt: { not: null },
       },
       orderBy: {
-        updatedAt: "desc",
+        deletedAt: "desc",
       },
       select: {
         id: true,
         title: true,
+        deletedAt: true,
         updatedAt: true,
         icon: true,
+        parentId: true,
+        deletedBy: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+          },
+        },
       },
     });
   }
@@ -118,7 +136,7 @@ export class DocumentTrashService {
       where: {
         id,
         authorId: userId,
-        archivedAt: { not: null },
+        deletedAt: { not: null },
       },
       include: {
         parent: true, // Include parent document info
@@ -127,8 +145,8 @@ export class DocumentTrashService {
 
     if (!doc) throw new ApiException(ErrorCodeEnum.DocumentNotFound);
 
-    // Check if parent is archived
-    const shouldMoveToRoot = doc.parent?.archivedAt;
+    // Check if parent is deleted (if parent is hard-deleted, it won't exist)
+    const shouldMoveToRoot = !doc.parent || doc.parent?.deletedAt;
 
     // Restore document and all its children
     await this.restoreChildren(id, userId);
@@ -136,8 +154,9 @@ export class DocumentTrashService {
     return await this.prismaService.doc.update({
       where: { id },
       data: {
-        archivedAt: null,
-        // If parent is archived, move document to root
+        deletedAt: null,
+        deletedById: null,
+        // If parent is deleted or doesn't exist, move document to root (subspace or workspace level)
         parentId: shouldMoveToRoot ? null : doc.parentId,
         // If moving to root, append to end of root documents
         ...(shouldMoveToRoot && {
@@ -152,7 +171,7 @@ export class DocumentTrashService {
       where: {
         parentId,
         authorId: userId,
-        archivedAt: { not: null },
+        deletedAt: { not: null },
       },
     });
 
@@ -160,7 +179,10 @@ export class DocumentTrashService {
       await this.restoreChildren(child.id, userId);
       await this.prismaService.doc.update({
         where: { id: child.id },
-        data: { archivedAt: null },
+        data: {
+          deletedAt: null,
+          deletedById: null,
+        },
       });
     }
   }
@@ -182,18 +204,15 @@ export class DocumentTrashService {
       await this.prismaService.$transaction(async (tx) => {
         const expiredDocs = await tx.doc.findMany({
           where: {
-            archivedAt: { not: null },
-            updatedAt: {
-              lt: thirtyDaysAgo,
-            },
+            deletedAt: { not: null, lt: thirtyDaysAgo },
           },
           include: {
             coverImage: true,
           },
           orderBy: {
-            updatedAt: "asc",
+            deletedAt: "asc",
           },
-          take: 10,
+          take: 10, // Process in batches to avoid overwhelming the DB
         });
 
         console.log(`[Cleanup] Found ${expiredDocs.length} expired documents`);
@@ -210,15 +229,20 @@ export class DocumentTrashService {
               continue;
             }
 
+            // Delete cover image if exists
             if (existingDoc.coverImage) {
               await tx.coverImage.delete({
                 where: { docId: doc.id },
               });
             }
 
-            // Delete permissions and public shares (handled by Prisma cascade)
-            // No explicit delete needed - Prisma will handle it via onDelete: Cascade
+            // Clear parent references
+            await tx.doc.updateMany({
+              where: { parentId: doc.id },
+              data: { parentId: null },
+            });
 
+            // Hard delete the document (cascade deletes handle relations)
             await tx.doc.delete({
               where: { id: doc.id },
             });

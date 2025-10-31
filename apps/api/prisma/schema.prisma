@@ -115,6 +115,7 @@ model User {
   createdDocs       Doc[] @relation("DocCreator") // Documents created by user
   lastModifiedDocs  Doc[] @relation("DocLastModifier") // Documents last modified by user
   lastPublishedDocs Doc[] @relation("DocLastPublisher") // Documents last published by user
+  deletedDocs       Doc[] @relation("DocDeleter") // Documents deleted by user
 
   // Public shares
   publicSharesCreated PublicShare[] @relation("PublicShareAuthor")
@@ -270,6 +271,7 @@ model Doc {
   archivedAt  DateTime?
   publishedAt DateTime?
   deletedAt   DateTime?
+  deletedById String?
 
   // position
   parentId String?
@@ -300,6 +302,9 @@ model Doc {
   lastPublishedAt   DateTime?
   lastPublishedBy   User?     @relation("DocLastPublisher", fields: [lastPublishedById], references: [id])
   lastPublishedById String?
+
+  // Deletion tracking
+  deletedBy User? @relation("DocDeleter", fields: [deletedById], references: [id])
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId String
