@@ -1,6 +1,5 @@
 import {
   Doc,
-  DocVisibility,
   PrismaClient,
   SubspaceRole,
   WorkspaceRole,

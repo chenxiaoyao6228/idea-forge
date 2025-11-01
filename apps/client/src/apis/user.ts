@@ -44,4 +44,20 @@ export const userApi = {
    */
   suggestMentionUsers: async (body: SuggestMentionUsersRequest) =>
     request.post<SuggestMentionUsersRequest, SuggestMentionUsersResponse>("/api/users/suggest-mentions", body),
+
+  /**
+   * Get last visited document for a workspace
+   * @param workspaceId - Workspace ID
+   * @returns Last visited document info or null
+   */
+  getLastVisitedDoc: async (workspaceId: string) =>
+    request.get<void, { documentId: string; visitedAt: string } | null>(`/api/users/last-visited-doc/${workspaceId}`),
+
+  /**
+   * Update last visited document for a workspace
+   * @param body - Workspace ID and document ID
+   * @returns Success response
+   */
+  updateLastVisitedDoc: async (body: { workspaceId: string; documentId: string }) =>
+    request.post<{ workspaceId: string; documentId: string }, { success: boolean }>("/api/users/last-visited-doc", body),
 };

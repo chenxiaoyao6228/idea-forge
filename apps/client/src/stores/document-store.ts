@@ -102,7 +102,6 @@ export interface DocumentEntity {
   subspaceId?: string | null;
   parentId?: string | null;
   type: string;
-  visibility: string;
   coverImage?: CoverImage;
   publishedAt?: string | null;
   archivedAt?: string | null;

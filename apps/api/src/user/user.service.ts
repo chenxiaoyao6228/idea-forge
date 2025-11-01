@@ -268,4 +268,54 @@ export class UserService {
 
     return users;
   }
+
+  /**
+   * Get last visited document for a specific workspace
+   * @param userId - User ID
+   * @param workspaceId - Workspace ID
+   * @returns Last visited document info or null
+   */
+  async getLastVisitedDoc(userId: string, workspaceId: string) {
+    const lastVisited = await this.prismaService.workspaceLastVisitedDoc.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId,
+          workspaceId,
+        },
+      },
+      select: {
+        documentId: true,
+        visitedAt: true,
+      },
+    });
+
+    return lastVisited;
+  }
+
+  /**
+   * Update last visited document for a workspace
+   * Uses upsert to create or update the record
+   * @param userId - User ID
+   * @param workspaceId - Workspace ID
+   * @param documentId - Document ID
+   */
+  async updateLastVisitedDoc(userId: string, workspaceId: string, documentId: string) {
+    await this.prismaService.workspaceLastVisitedDoc.upsert({
+      where: {
+        userId_workspaceId: {
+          userId,
+          workspaceId,
+        },
+      },
+      create: {
+        userId,
+        workspaceId,
+        documentId,
+      },
+      update: {
+        documentId,
+        visitedAt: new Date(),
+      },
+    });
+  }
 }

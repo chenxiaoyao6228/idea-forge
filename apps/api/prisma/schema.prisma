@@ -177,6 +177,9 @@ model User {
 
   // Document view tracking
   documentViews DocumentView[]
+
+  // Last visited document per workspace
+  lastVisitedDocs WorkspaceLastVisitedDoc[]
 }
 
 enum UserStatus {
@@ -239,6 +242,9 @@ model Workspace {
 
   // Import relationships
   temporaryImports TemporaryImport[] // Temporary import records
+
+  // Last visited documents
+  lastVisitedDocs WorkspaceLastVisitedDoc[]
 }
 
 model WorkspacePublicInvite {
@@ -331,6 +337,9 @@ model Doc {
 
   // Document view tracking
   documentViews DocumentView[]
+
+  // Last visited tracking
+  lastVisitedBy WorkspaceLastVisitedDoc[]
 
   // Indexes for performance
   @@index([parentId])
@@ -857,4 +866,28 @@ model DocumentView {
   // Indexes for query performance
   @@index([userId, documentId, updatedAt])
   @@index([documentId, updatedAt])
+}
+
+// Track last visited document per user per workspace for better UX
+model WorkspaceLastVisitedDoc {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  documentId  String
+
+  // Timestamp
+  visitedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  document  Doc       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Unique constraint: one last-visited per user per workspace
+  @@unique([userId, workspaceId])
+
+  // Indexes for query performance
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([documentId])
 }

@@ -64,6 +64,13 @@ export const documentApi = {
     return request.post<CreateDocumentDto, CommonDocumentResponse>("/api/documents", data);
   },
 
+  createWelcomeDocument: async (workspaceId: string, subspaceId: string) => {
+    return request.post<{ workspaceId: string; subspaceId: string }, CommonDocumentResponse>("/api/documents/create-welcome", {
+      workspaceId,
+      subspaceId,
+    });
+  },
+
   delete: async (id: string) => {
     return request.delete<void>(`/api/documents/${id}`);
   },

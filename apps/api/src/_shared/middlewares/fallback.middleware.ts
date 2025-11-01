@@ -26,7 +26,7 @@ interface Manifest {
 export class FallbackMiddleware implements NestMiddleware {
   // Routes that don't require authentication (public routes)
   private static readonly SKIP_AUTH_PATHS = ["/marketing", "/login", "/register", "/verify", "/reset-password", "/forgot-password", "/auth-callback", "/share"];
-  private static readonly STATIC_ASSETS_REGEX = /\.(jpg|jpeg|png|gif|ico|css|js|json|svg|mp3|mp4|wav|ogg|ttf|woff|woff2|eot|html|txt)$/;
+  private static readonly STATIC_ASSETS_REGEX = /\.(jpg|jpeg|png|gif|ico|css|js|json|svg|mp3|mp4|wav|ogg|ttf|woff|woff2|eot|html|txt|md)$/;
   private static readonly API_PATH = "/api";
   private static readonly STACK_FRAME_PATH = "/__open-stack-frame-in-editor";
   private manifestCache: Manifest | null = null;

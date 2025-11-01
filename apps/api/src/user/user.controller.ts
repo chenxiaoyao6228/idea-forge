@@ -42,4 +42,24 @@ export class UserController {
     const user = await this.userService.regenerateAvatar(id, body.seed);
     return user;
   }
+
+  /**
+   * Get last visited document for a workspace
+   * GET /api/users/last-visited-doc/:workspaceId
+   */
+  @Get("last-visited-doc/:workspaceId")
+  async getLastVisitedDoc(@GetUser("id") userId: string, @Param("workspaceId") workspaceId: string) {
+    const lastVisited = await this.userService.getLastVisitedDoc(userId, workspaceId);
+    return lastVisited;
+  }
+
+  /**
+   * Update last visited document for a workspace
+   * POST /api/users/last-visited-doc
+   */
+  @Post("last-visited-doc")
+  async updateLastVisitedDoc(@GetUser("id") userId: string, @Body() body: { workspaceId: string; documentId: string }) {
+    await this.userService.updateLastVisitedDoc(userId, body.workspaceId, body.documentId);
+    return { success: true };
+  }
 }

@@ -895,4 +895,98 @@ export class DocumentService {
       message: "Document unpublished",
     };
   }
+
+  /**
+   * Create a welcome document with markdown content
+   * Converts markdown to Yjs binary format for collaborative editing
+   */
+  async createWelcomeDocument(authorId: string, workspaceId: string, subspaceId: string) {
+    const { unified } = await import("unified");
+    const remarkParse = (await import("remark-parse")).default;
+    const remarkGfm = (await import("remark-gfm")).default;
+    const remarkRehype = (await import("remark-rehype")).default;
+    const rehypeStringify = (await import("rehype-stringify")).default;
+    const { readFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const { generateJSON } = await import("@tiptap/html");
+    const { coreExtensions } = await import("@idea/editor");
+    const { tiptapTransformer } = await import("@/collaboration/extensions/transformer");
+    const Y = await import("yjs");
+
+    try {
+      // 1. Load markdown template
+      const templatePath = join(process.cwd(), "public", "templates", "welcome-document.md");
+      const markdownContent = await readFile(templatePath, "utf-8");
+
+      // 2. Convert markdown to HTML
+      const htmlContent = await unified().use(remarkParse).use(remarkGfm).use(remarkRehype).use(rehypeStringify).process(markdownContent);
+
+      const html = String(htmlContent);
+
+      // 3. Convert HTML to TipTap JSON
+      const tiptapJson = generateJSON(html, coreExtensions);
+
+      // 4. Convert TipTap JSON to Yjs binary
+      const ydoc = tiptapTransformer.toYdoc(tiptapJson, "default");
+      const yjsState = Y.encodeStateAsUpdate(ydoc);
+
+      // 5. Create document with Yjs binary
+      const doc = await this.prismaService.doc.create({
+        data: {
+          title: "✏️ 快速开始 IdeaForge",
+          workspaceId,
+          subspaceId,
+          authorId,
+          createdById: authorId,
+          lastModifiedById: authorId,
+          type: "NOTE",
+          content: JSON.stringify(tiptapJson), // Store JSON for search
+          contentBinary: Buffer.from(yjsState), // Store Yjs for collaboration
+          publishedAt: null, // Personal subspace docs start as drafts
+        },
+      });
+
+      // 6. Create OWNER permission for the author
+      await this.prismaService.documentPermission.create({
+        data: {
+          userId: authorId,
+          docId: doc.id,
+          permission: "MANAGE",
+          inheritedFromType: "DIRECT",
+          priority: 1,
+          createdById: authorId,
+        },
+      });
+
+      // 7. Update navigation tree
+      if (doc.subspaceId) {
+        await this.updateSubspaceNavigationTree(doc.subspaceId, "add", doc);
+      }
+
+      // 8. Publish WebSocket event
+      this.eventPublisher.publishWebsocketEvent({
+        name: BusinessEvents.DOCUMENT_CREATE,
+        workspaceId: doc.workspaceId,
+        actorId: doc.createdById.toString(),
+        data: {
+          docId: doc.id,
+          subspaceId: doc.subspaceId,
+        },
+        timestamp: new Date().toISOString(),
+      });
+
+      return presentDocument(doc);
+    } catch (error) {
+      console.error("Failed to create welcome document:", error);
+      // Fallback: create empty document if template processing fails
+      return this.create(authorId, {
+        title: "快速开始",
+        workspaceId,
+        subspaceId,
+        parentId: null,
+        type: "NOTE",
+        content: "",
+      });
+    }
+  }
 }

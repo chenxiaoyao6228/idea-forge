@@ -1,4 +1,4 @@
-import Loading from '@idea/ui/base/loading';
+import Loading from "@idea/ui/base/loading";
 import Doc from "../doc";
 import { useAllWorkspaces, useFetchWorkspaces, useCurrentWorkspace } from "@/stores/workspace-store";
 import { useFetchGuests, useIsGuestCollaborator } from "@/stores/guest-collaborators-store";
@@ -8,6 +8,7 @@ import { BatchImportStatusBar } from "@/components/batch-import-status-bar";
 import { useLayoutEffect } from "react";
 import { useFetchCurrentDocument } from "@/hooks/use-current-document";
 import { useSyncOnReconnect } from "@/hooks/use-sync-on-reconnect";
+import { useTrackLastVisitedDocument, useRedirectToLastVisited } from "@/hooks/use-last-visited-document";
 
 export default function Main() {
   const { run: fetchWorkspaces } = useFetchWorkspaces();
@@ -16,6 +17,10 @@ export default function Main() {
   const workspaces = useAllWorkspaces();
   const currentWorkspace = useCurrentWorkspace();
   const isGuestCollaborator = useIsGuestCollaborator();
+
+  // Track last visited document and handle redirect on root path
+  useTrackLastVisitedDocument();
+  const { isRedirecting } = useRedirectToLastVisited();
 
   // Auto-refetch workspaces on WebSocket recovery (page visible, reconnect)
   useSyncOnReconnect(() => {
@@ -38,7 +43,12 @@ export default function Main() {
     return <Loading fullScreen size="lg" />;
   }
 
-  // TODO: handle when user is first login, no active docs
+  // Show loading while redirecting to last visited or creating welcome doc
+  if (isRedirecting) {
+    return <Loading fullScreen size="lg" />;
+  }
+
+  // Show document content when available
   let content = <Loading />;
   if (currentDocument) {
     content = <Doc />;

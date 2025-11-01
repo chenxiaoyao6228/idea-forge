@@ -36,6 +36,15 @@ export class DocumentController {
     return this.documentService.create(userId, dto);
   }
 
+  /**
+   * POST /api/documents/create-welcome
+   * Create a welcome document with pre-populated markdown content
+   */
+  @Post("create-welcome")
+  async createWelcomeDocument(@GetUser("id") userId: string, @Body() body: { workspaceId: string; subspaceId: string }) {
+    return this.documentService.createWelcomeDocument(userId, body.workspaceId, body.subspaceId);
+  }
+
   @Get("shared-with-me")
   async getSharedWithMe(@GetUser("id") userId: string, @Query() query: PermissionListRequestDto) {
     return this.shareDocumentService.getSharedWithMeDocuments(userId, query);
