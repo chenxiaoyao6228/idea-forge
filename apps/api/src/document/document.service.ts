@@ -326,9 +326,6 @@ export class DocumentService {
       children: accessibleChildren,
     };
 
-    // Check basic visibility (simplified, no complex permissions yet)
-    const isPublic = document.visibility === "PUBLIC";
-
     // Present document data (similar to presentDocument)
     const doc = presentDocument(documentWithFilteredChildren);
 

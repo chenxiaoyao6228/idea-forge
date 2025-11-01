@@ -669,7 +669,7 @@ export class WebsocketEventProcessor extends WorkerHost {
     });
   }
 
-  // Determine target channels for document events based on visibility and permissions
+  // Determine target channels for document events based on subspace type and permissions
   private async getDocumentEventChannels(event: WebsocketEvent<any>, document: any): Promise<string[]> {
     const channels: string[] = [];
 
@@ -677,14 +677,24 @@ export class WebsocketEventProcessor extends WorkerHost {
       channels.push(`user:${event.actorId}`);
     }
 
-    // Determine rooms based on document visibility
-    if (document.visibility === "PRIVATE") {
-      // Private documents only sent to specific rooms
-      if (document.subspaceId) {
+    // Determine rooms based on subspace type (if document is in a subspace)
+    let isPersonalSubspace = false;
+    if (document.subspaceId) {
+      const subspace = await this.prismaService.subspace.findUnique({
+        where: { id: document.subspaceId },
+        select: { type: true },
+      });
+      isPersonalSubspace = subspace?.type === "PERSONAL";
+
+      if (isPersonalSubspace) {
+        // Personal subspace documents only sent to subspace room
         channels.push(`subspace:${document.subspaceId}`);
+      } else {
+        // Non-personal subspace documents sent to workspace room
+        channels.push(`workspace:${event.workspaceId}`);
       }
     } else {
-      // Public documents sent to workspace room
+      // Documents without subspace sent to workspace room
       channels.push(`workspace:${event.workspaceId}`);
     }
 

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { useMemo } from "react";
 import useRequest from "@ahooksjs/use-request";
-import { CoverImage, DocTypeSchema, DocVisibilitySchema, PermissionLevel, SubspaceTypeSchema, SerializedAbilityMap } from "@idea/contracts";
+import { CoverImage, DocTypeSchema, PermissionLevel, SerializedAbilityMap } from "@idea/contracts";
 import { NavigationNode, NavigationNodeType } from "@idea/contracts";
 import { documentApi } from "@/apis/document";
 import useSubSpaceStore, { usePersonalSubspace } from "./subspace-store";
@@ -261,12 +261,9 @@ export const useCreateDocument = () => {
         const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
         if (!workspaceId) throw new Error("No active workspace");
 
-        const isPrivateSubspace = subspaceId ? useSubSpaceStore.getState().subspaces[subspaceId]?.type === SubspaceTypeSchema.enum.PERSONAL : false;
-
         const response = (await documentApi.create({
           workspaceId,
           subspaceId: subspaceId || null,
-          visibility: isPrivateSubspace ? DocVisibilitySchema.enum.PRIVATE : DocVisibilitySchema.enum.WORKSPACE,
           parentId: parentId || null,
           type: DocTypeSchema.enum.NOTE,
           title,

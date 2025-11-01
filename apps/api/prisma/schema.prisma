@@ -253,13 +253,6 @@ model WorkspacePublicInvite {
   revokedAt   DateTime?
 }
 
-enum DocVisibility {
-  PUBLIC // visible to everyone, (eg: product user guide, etc.)
-  SHARED // visible to specific members, need further permission control check
-  PRIVATE // visible to author
-  WORKSPACE // visible to workspace, need further permission control check
-}
-
 model Doc {
   id            String  @id @default(cuid())
   type          DocType @default(NOTE)
@@ -284,9 +277,6 @@ model Doc {
   icon         String?
   coverImage   CoverImage?
   coverImageId String?
-
-  // visibility
-  visibility DocVisibility @default(WORKSPACE)
 
   // relations
   author   User   @relation("DocAuthor", fields: [authorId], references: [id])

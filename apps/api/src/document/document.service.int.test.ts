@@ -56,7 +56,7 @@ describe("DocumentService - Permission Creation on Document Create", () => {
     const rootDoc = await documentService.create(author.id, {
       type: "NOTE",
       content: "",
-      visibility: "PRIVATE",
+      
       title: "Root Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -107,7 +107,7 @@ describe("DocumentService - Permission Creation on Document Create", () => {
     const childDoc = await documentService.create(author.id, {
       type: "NOTE",
       content: "",
-      visibility: "PRIVATE",
+      
       title: "Child Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -168,7 +168,7 @@ describe("DocumentService - Permission Creation on Document Create", () => {
     const parentDoc = await documentService.create(author.id, {
       type: "NOTE",
       content: "",
-      visibility: "PRIVATE",
+      
       title: "Parent Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -179,7 +179,7 @@ describe("DocumentService - Permission Creation on Document Create", () => {
     const grandchildDoc = await documentService.create(author.id, {
       type: "NOTE",
       content: "",
-      visibility: "PRIVATE",
+      
       title: "Grandchild Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -262,7 +262,7 @@ describe("DocumentService - Permission Creation on Document Create", () => {
     const childDoc = await documentService.create(author.id, {
       type: "NOTE",
       content: "",
-      visibility: "PRIVATE",
+      
       title: "Child Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,
@@ -326,7 +326,7 @@ describe("DocumentService - Permission Creation on Document Create", () => {
     const childDoc = await documentService.create(author.id, {
       type: "NOTE",
       content: "",
-      visibility: "PRIVATE",
+      
       title: "Child Document",
       workspaceId: workspace.id,
       subspaceId: subspace.id,

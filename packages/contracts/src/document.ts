@@ -54,7 +54,6 @@ export const createDocumentSchema = DocSchema.pick({
   workspaceId: true,
   subspaceId: true,
   type: true,
-  visibility: true,
   contentBinary: true,
 }).partial({
   parentId: true, // parentId is optional - not all documents have a parent

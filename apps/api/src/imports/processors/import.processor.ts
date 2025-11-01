@@ -58,7 +58,6 @@ export class ImportProcessor extends WorkerHost {
         content: JSON.stringify(processedJSON),
         contentBinary: Buffer.from(contentBinary),
         type: "NOTE",
-        visibility: "PRIVATE",
       });
 
       // Step 6: Clean up temporary file

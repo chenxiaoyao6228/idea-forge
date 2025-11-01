@@ -110,6 +110,7 @@ function getSubspacePermissionTooltip(subspaceName: string, hasOverride: boolean
 export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const { t } = useTranslation();
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
+  const workspaceMembers = useWorkspaceStore((s) => s.workspaceMembers);
 
   const currentUserId = useUserStore((s) => s.userInfo?.id);
   const currentUser = useUserStore((s) => s.userInfo);
@@ -276,6 +277,11 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const hasSubspaceAdminDocumentPermissionOverrides = currentDocument?.subspaceAdminPermission !== null;
   const hasSubspaceMemberDocumentPermissionOverrides = currentDocument?.subspaceMemberPermission !== null;
   const hasNonSubspaceMemberPermissionDocumentPermissionOverrides = currentDocument?.nonSubspaceMemberPermission !== null;
+
+  // Calculate non-subspace member count (workspace members not in this subspace)
+  const nonSubspaceMemberCount = subspaceSettings?.subspace
+    ? workspaceMembers.length - subspaceSettings.subspace.memberCount
+    : 0;
 
   const handleAddMembers = () => {
     showAddMembersModal({
@@ -502,7 +508,9 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-gray-600" />
                           <span className="text-sm font-medium">{t("Other Members")}</span>
-                          <span className="text-xs text-muted-foreground">({t("-- members")})</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({nonSubspaceMemberCount} {t("members")})
+                          </span>
                         </div>
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <PermissionLevelSelector
