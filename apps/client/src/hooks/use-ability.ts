@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import type { PureAbility } from "@casl/ability";
+import type { MongoAbility } from "@casl/ability";
 import { subject as buildSubject } from "@casl/ability";
 import { Action } from "@idea/contracts";
 import { useSubjectAbility } from "@/stores/ability-store";
 
 export { Action } from "@idea/contracts";
 
-export function useAbility(subject: string): PureAbility {
+export function useAbility(subject: string): MongoAbility {
   return useSubjectAbility(subject);
 }
 
@@ -20,7 +20,7 @@ export function useAbilityCheck(subject: string, action: Action, object?: Record
   return ability.can(action, resolveSubject(subject, object));
 }
 
-export function useAbilityCan(subject: string, action: Action, object?: Record<string, unknown>): { can: boolean; ability: PureAbility } {
+export function useAbilityCan(subject: string, action: Action, object?: Record<string, unknown>): { can: boolean; ability: MongoAbility } {
   const ability = useSubjectAbility(subject);
   const can = useMemo(() => ability.can(action, resolveSubject(subject, object)), [ability, action, subject, object]);
   return { can, ability };

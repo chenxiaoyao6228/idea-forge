@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, BadRequestException, NotFoundException, Inject, forwardRef } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
+import { packRules } from "@casl/ability/extra";
 import { CreateDocumentDto, DocumentPagerDto, UpdateDocumentDto, ShareDocumentDto } from "./document.dto";
 import {
   NavigationNode,
@@ -21,6 +22,7 @@ import { AbilityService } from "@/_shared/casl/casl.service";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { SubscriptionService } from "@/subscription/subscription.service";
 import { DocumentViewService } from "./document-view.service";
+import { DocumentAbility } from "./document.ability";
 
 @Injectable()
 export class DocumentService {
@@ -32,6 +34,7 @@ export class DocumentService {
     @InjectQueue("notifications") private readonly notificationQueue: Queue,
     @Inject(forwardRef(() => SubscriptionService)) private readonly subscriptionService: SubscriptionService,
     private readonly documentViewService: DocumentViewService,
+    private readonly documentAbility: DocumentAbility,
   ) {}
 
   async create(authorId: string, dto: CreateDocumentDto) {
@@ -329,24 +332,24 @@ export class DocumentService {
     // Present document data (similar to presentDocument)
     const doc = presentDocument(documentWithFilteredChildren);
 
-    // Get and serialize document abilities for the user scoped to this document
-    const serializedAbility = await this.abilityService.serializeAbilityForUser(
-      "Doc",
-      { id: userId },
-      {
-        doc: {
-          id: document.id,
-          workspaceId: document.workspaceId,
-          parentId: document.parentId,
-          subspaceId: document.subspaceId,
-          authorId: document.authorId,
-          publishedAt: document.publishedAt,
-        },
-      },
-    );
+    // Build content-specific abilities (READ, UPDATE, COMMENT, MANAGE) for this document
+    // These change frequently based on permission inheritance, so they're fetched per-document
+    // Structural permissions (DELETE, RESTORE, etc.) use global abilities from login
+    const contentAbilityRaw = await this.documentAbility.buildContentAbilityForDocument(userId, {
+      id: document.id,
+      workspaceId: document.workspaceId,
+      parentId: document.parentId,
+      subspaceId: document.subspaceId,
+      authorId: document.authorId,
+    });
 
-    // FIXME:  we have already called the resolveUserPermissionForDocument in serializeAbilityForUser-> document.ability.ts, need optimization
-    // Get permission source metadata for the user
+    // Serialize the ability for transmission to frontend
+    const contentAbility = {
+      subject: "DocContent",
+      rules: packRules(contentAbilityRaw.rules),
+    };
+
+    // Get permission source metadata for the user (for UI display purposes)
     const permissionSource = await this.docPermissionResolveService.resolveUserPermissionForDocument(userId, {
       id: document.id,
       workspaceId: document.workspaceId,
@@ -364,9 +367,10 @@ export class DocumentService {
     return {
       doc,
       permissions: {
-        Doc: serializedAbility,
+        DocContent: contentAbility, // Content permissions (READ, UPDATE, COMMENT, MANAGE)
+        // Doc global abilities (DELETE, RESTORE, etc.) already loaded at login
       },
-      permissionSource, // NEW: Include permission source metadata
+      permissionSource,
     };
   }
 
@@ -378,6 +382,8 @@ export class DocumentService {
       icon: doc.icon,
       children: [],
       subspaceId: doc.subspaceId,
+      workspaceId: doc.workspaceId,
+      authorId: doc.authorId,
       type: NavigationNodeType.Document,
       parent: null,
     };

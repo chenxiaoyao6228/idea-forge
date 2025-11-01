@@ -326,6 +326,7 @@ export interface TrashDocumentResponse {
   parentId: string | null;
   icon: string | null;
   authorId: string;
+  workspaceId: string;
   subspaceId: string | null;
   author: {
     id: string;
@@ -340,6 +341,11 @@ export interface TrashDocumentResponse {
   coverImage: {
     url: string;
     scrollY: number;
+  } | null;
+  subspace: {
+    id: string;
+    name: string;
+    type: string;
   } | null;
 }
 

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { PureAbility } from "@casl/ability";
+import type { MongoAbility } from "@casl/ability";
 import { Action } from "@idea/contracts";
 import { useAbilityCan } from "@/hooks/use-ability";
 
@@ -39,18 +39,22 @@ interface DocumentPermissions {
 
   // Raw ability object for advanced usage
   /** CASL ability object for advanced permission checks */
-  documentAbility: PureAbility;
+  documentAbility: MongoAbility;
 }
 
 type DocumentObject = {
   id: string;
   createdById?: string;
   authorId?: string;
+  workspaceId?: string;
+  subspaceId?: string | null;
 };
 
 type DocumentConfig = {
   documentId?: string;
   authorId?: string;
+  workspaceId?: string;
+  subspaceId?: string | null;
 };
 
 /**
@@ -81,6 +85,8 @@ export function useDocumentPermissions(input: DocumentObject | DocumentConfig | 
       return {
         documentId: input.id,
         authorId: input.createdById || input.authorId,
+        workspaceId: input.workspaceId,
+        subspaceId: input.subspaceId,
       };
     }
 
@@ -88,32 +94,47 @@ export function useDocumentPermissions(input: DocumentObject | DocumentConfig | 
     return {
       documentId: input.documentId,
       authorId: input.authorId,
+      workspaceId: input.workspaceId,
+      subspaceId: input.subspaceId,
     };
   }, [input]);
 
-  // Build CASL subject for ability checks
-  const subject = useMemo(() => {
+  // Build CASL subjects for ability checks
+  // Note: We need separate subject objects for "Doc" and "DocContent" because CASL's subject()
+  // function caches the subject type on the object, and we can't use the same object for both
+  const contentSubject = useMemo(() => {
+    if (!config?.documentId) return undefined;
+    return { id: config.documentId };
+  }, [config]);
+
+  const docSubject = useMemo(() => {
     if (!config?.documentId) return undefined;
 
     return {
       id: config.documentId,
       ...(config.authorId && { authorId: config.authorId }),
+      ...(config.workspaceId && { workspaceId: config.workspaceId }),
+      ...(config.subspaceId !== undefined && { subspaceId: config.subspaceId }),
     };
   }, [config]);
 
-  // Check all document permissions
-  const { can: canReadDocument, ability: documentAbility } = useAbilityCan("Doc", Action.Read, subject);
-  const { can: canUpdateDocument } = useAbilityCan("Doc", Action.Update, subject);
-  const { can: canDeleteDocument } = useAbilityCan("Doc", Action.Delete, subject);
-  const { can: canManageDocument } = useAbilityCan("Doc", Action.Manage, subject);
-  const { can: canShareDocument } = useAbilityCan("Doc", Action.Share, subject);
-  const { can: canCommentDocument } = useAbilityCan("Doc", Action.Comment, subject);
-  const { can: canArchiveDocument } = useAbilityCan("Doc", Action.Archive, subject);
-  const { can: canRestoreDocument } = useAbilityCan("Doc", Action.Restore, subject);
-  const { can: canPublishDocument } = useAbilityCan("Doc", Action.Publish, subject);
-  const { can: canUnpublishDocument } = useAbilityCan("Doc", Action.Unpublish, subject);
-  const { can: canPermanentDeleteDocument } = useAbilityCan("Doc", Action.PermanentDelete, subject);
-  const { can: canDuplicateDocument } = useAbilityCan("Doc", Action.Duplicate, subject);
+  // Content permissions: Check against "DocContent" (fetched per-document due to inheritance)
+  // These permissions change frequently based on parent permissions and direct grants
+  const { can: canReadDocument, ability: documentAbility } = useAbilityCan("DocContent", Action.Read, contentSubject);
+  const { can: canUpdateDocument } = useAbilityCan("DocContent", Action.Update, contentSubject);
+  const { can: canCommentDocument } = useAbilityCan("DocContent", Action.Comment, contentSubject);
+  const { can: canManageDocument } = useAbilityCan("DocContent", Action.Manage, contentSubject);
+
+  // Structural permissions: Check against "Doc" (global role-based rules from login)
+  // These are stable and determined by workspace/subspace roles
+  const { can: canDeleteDocument } = useAbilityCan("Doc", Action.Delete, docSubject);
+  const { can: canRestoreDocument } = useAbilityCan("Doc", Action.Restore, docSubject);
+  const { can: canArchiveDocument } = useAbilityCan("Doc", Action.Archive, docSubject);
+  const { can: canPermanentDeleteDocument } = useAbilityCan("Doc", Action.PermanentDelete, docSubject);
+  const { can: canPublishDocument } = useAbilityCan("Doc", Action.Publish, docSubject);
+  const { can: canUnpublishDocument } = useAbilityCan("Doc", Action.Unpublish, docSubject);
+  const { can: canShareDocument } = useAbilityCan("Doc", Action.Share, docSubject);
+  const { can: canDuplicateDocument } = useAbilityCan("Doc", Action.Duplicate, docSubject);
 
   return {
     // Raw permissions
@@ -134,7 +155,7 @@ export function useDocumentPermissions(input: DocumentObject | DocumentConfig | 
     canEditDocument: canUpdateDocument || canManageDocument,
 
     // Loading state
-    isLoadingDocumentPermissions: !subject,
+    isLoadingDocumentPermissions: !docSubject,
 
     // Raw ability for advanced usage
     documentAbility,

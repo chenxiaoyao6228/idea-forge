@@ -1190,12 +1190,14 @@ export class WorkspaceService {
       select: { currentWorkspaceId: true },
     });
 
+    // Include Doc abilities when workspace role changes, as it affects document permissions
+    // (e.g., becoming workspace admin grants delete rights on all workspace documents)
     const abilities = await this.abilityService.serializeAbilitiesForUser(
       {
         id: userId,
         currentWorkspaceId: user?.currentWorkspaceId ?? null,
       },
-      ["Workspace" as ModelName],
+      ["Workspace" as ModelName, "Doc" as ModelName],
     );
 
     await this.eventPublisher.publishWebsocketEvent({

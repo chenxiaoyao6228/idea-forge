@@ -33,14 +33,18 @@ export class PolicyGuard implements CanActivate {
     const id = getRequestItemId(request);
 
     try {
-      const ability = await this.abilityService.createAbilityForUser(model, user);
-
       if (id) {
         const item = await this.prismaService[model].findUniqueOrThrow({ where: { id } });
+
+        // For Doc model, build context with document details for proper permission checks
+        const abilityContext = model === "Doc" ? { doc: item } : undefined;
+        const ability = await this.abilityService.createAbilityForUser(model, user, abilityContext);
 
         return ability.can(action, subject(model, item));
       }
 
+      // For non-ID checks, create ability without context
+      const ability = await this.abilityService.createAbilityForUser(model, user);
       return ability.can(action, model);
     } catch (error) {
       if (error instanceof ApiException) throw error;

@@ -6,128 +6,81 @@ import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { PrismaClient } from "@prisma/client";
 import { ConfigsModule } from "@/_shared/config/config.module";
-import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { ClsModule } from "@/_shared/utils/cls.module";
+import { buildUser, buildWorkspace, buildSubspace, buildDocument } from "@test/factories/prisma";
+import { getTestPrisma } from "@test/setup/test-container-setup";
+import { vi } from "vitest";
 
 async function createComplexMockData(tx: PrismaClient) {
-  // Generate UUIDs for all entities
-  const workspaceId = uuidv4();
-  const userId = uuidv4();
-  const subspace1Id = uuidv4();
-  const subspace2Id = uuidv4();
-  const myDocsRoot1Id = uuidv4();
-  const myDocsRoot2Id = uuidv4();
-  const myDocsChild1Id = uuidv4();
-  const myDocsChild2Id = uuidv4();
-  const subspace1RootId = uuidv4();
-  const subspace2RootId = uuidv4();
-
   // Create workspace and user
-  const workspace = await tx.workspace.create({
-    data: { id: workspaceId, name: "Test Workspace" },
-  });
-  const user = await tx.user.create({
-    data: { id: userId, displayName: "Test User", email: `${userId}@test.com` },
+  const workspace = await buildWorkspace({ name: "Test Workspace" });
+  const user = await buildUser({
+    displayName: "Test User",
+    currentWorkspaceId: workspace.id,
   });
 
   // Create subspaces
-  const subspace1 = await tx.subspace.create({
-    data: {
-      id: subspace1Id,
-      name: "Engineering",
-      workspaceId: workspace.id,
-      navigationTree: [],
-    },
+  const subspace1 = await buildSubspace({
+    name: "Engineering",
+    workspaceId: workspace.id,
+    navigationTree: [],
   });
-  const subspace2 = await tx.subspace.create({
-    data: {
-      id: subspace2Id,
-      name: "Marketing",
-      workspaceId: workspace.id,
-      navigationTree: [],
-    },
+  const subspace2 = await buildSubspace({
+    name: "Marketing",
+    workspaceId: workspace.id,
+    navigationTree: [],
   });
   const subspaces = [subspace1, subspace2];
 
   // MyDocs: 2 roots, each with 1 child
-  const myDocsRoot1 = await tx.doc.create({
-    data: {
-      id: myDocsRoot1Id,
-      title: "Root 1",
-      workspaceId: workspace.id,
-      authorId: user.id,
-      createdById: user.id,
-      lastModifiedById: user.id,
-      subspaceId: null,
-      parentId: null,
-    },
+  const myDocsRoot1 = await buildDocument({
+    title: "Root 1",
+    workspaceId: workspace.id,
+    authorId: user.id,
+    subspaceId: null,
+    parentId: null,
   });
-  const myDocsRoot2 = await tx.doc.create({
-    data: {
-      id: myDocsRoot2Id,
-      title: "Root 2",
-      workspaceId: workspace.id,
-      authorId: user.id,
-      createdById: user.id,
-      lastModifiedById: user.id,
-      subspaceId: null,
-      parentId: null,
-    },
+  const myDocsRoot2 = await buildDocument({
+    title: "Root 2",
+    workspaceId: workspace.id,
+    authorId: user.id,
+    subspaceId: null,
+    parentId: null,
   });
-  const myDocsChild1 = await tx.doc.create({
-    data: {
-      id: myDocsChild1Id,
-      title: "Child 1",
-      workspaceId: workspace.id,
-      authorId: user.id,
-      createdById: user.id,
-      lastModifiedById: user.id,
-      subspaceId: null,
-      parentId: myDocsRoot1.id,
-    },
+  const myDocsChild1 = await buildDocument({
+    title: "Child 1",
+    workspaceId: workspace.id,
+    authorId: user.id,
+    subspaceId: null,
+    parentId: myDocsRoot1.id,
   });
-  const myDocsChild2 = await tx.doc.create({
-    data: {
-      id: myDocsChild2Id,
-      title: "Child 2",
-      workspaceId: workspace.id,
-      authorId: user.id,
-      createdById: user.id,
-      lastModifiedById: user.id,
-      subspaceId: null,
-      parentId: myDocsRoot2.id,
-    },
+  const myDocsChild2 = await buildDocument({
+    title: "Child 2",
+    workspaceId: workspace.id,
+    authorId: user.id,
+    subspaceId: null,
+    parentId: myDocsRoot2.id,
   });
   const myDocsDocuments = [myDocsRoot1, myDocsRoot2, myDocsChild1, myDocsChild2];
 
   // Subspace docs: 1 root per subspace
-  const subspace1Root = await tx.doc.create({
-    data: {
-      id: subspace1RootId,
-      title: "S1 Root",
-      workspaceId: workspace.id,
-      authorId: user.id,
-      createdById: user.id,
-      lastModifiedById: user.id,
-      subspaceId: subspace1.id,
-      parentId: null,
-    },
+  const subspace1Root = await buildDocument({
+    title: "S1 Root",
+    workspaceId: workspace.id,
+    authorId: user.id,
+    subspaceId: subspace1.id,
+    parentId: null,
   });
-  const subspace2Root = await tx.doc.create({
-    data: {
-      id: subspace2RootId,
-      title: "S2 Root",
-      workspaceId: workspace.id,
-      authorId: user.id,
-      createdById: user.id,
-      lastModifiedById: user.id,
-      subspaceId: subspace2.id,
-      parentId: null,
-    },
+  const subspace2Root = await buildDocument({
+    title: "S2 Root",
+    workspaceId: workspace.id,
+    authorId: user.id,
+    subspaceId: subspace2.id,
+    parentId: null,
   });
   const subspaceDocuments = {
-    [subspace1Id]: [subspace1Root],
-    [subspace2Id]: [subspace2Root],
+    [subspace1.id]: [subspace1Root],
+    [subspace2.id]: [subspace2Root],
   };
   const allDocuments = {
     "mydocs-root-1": myDocsRoot1,
@@ -145,16 +98,16 @@ async function createComplexMockData(tx: PrismaClient) {
     subspaceDocuments,
     allDocuments,
     ids: {
-      workspaceId,
-      userId,
-      subspace1Id,
-      subspace2Id,
-      myDocsRoot1Id,
-      myDocsRoot2Id,
-      myDocsChild1Id,
-      myDocsChild2Id,
-      subspace1RootId,
-      subspace2RootId,
+      workspaceId: workspace.id,
+      userId: user.id,
+      subspace1Id: subspace1.id,
+      subspace2Id: subspace2.id,
+      myDocsRoot1Id: myDocsRoot1.id,
+      myDocsRoot2Id: myDocsRoot2.id,
+      myDocsChild1Id: myDocsChild1.id,
+      myDocsChild2Id: myDocsChild2.id,
+      subspace1RootId: subspace1Root.id,
+      subspace2RootId: subspace2Root.id,
     },
   };
 }
@@ -168,16 +121,20 @@ describe("MoveDocumentService (integration)", () => {
   let permissionMock: {};
   let realtimeGatewayMock: { sendToUser: any };
 
-  beforeEach(async () => {
-    console.log("beforeEach in move-document.service.int.test.ts");
+  beforeAll(async () => {
+    console.log("beforeAll in move-document.service.int.test.ts");
     eventPublisherMock = { publishWebsocketEvent: vi.fn().mockResolvedValue(undefined) };
     permissionMock = {};
     realtimeGatewayMock = { sendToUser: vi.fn() };
 
+    // Use the same Prisma instance as factory methods
+    const testPrisma = getTestPrisma();
+
     module = await Test.createTestingModule({
-      imports: [ConfigsModule, ClsModule, PrismaModule],
+      imports: [ConfigsModule, ClsModule],
       providers: [
         MoveDocumentService,
+        { provide: PrismaService, useValue: testPrisma }, // Use test Prisma instance
         { provide: EventPublisherService, useValue: eventPublisherMock },
         { provide: DocPermissionResolveService, useValue: permissionMock },
       ],
@@ -185,13 +142,12 @@ describe("MoveDocumentService (integration)", () => {
 
     service = module.get(MoveDocumentService);
     prisma = module.get(PrismaService);
-
-    mockData = await createComplexMockData(prisma);
   });
 
-  afterEach(async () => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    // No need to disconnect prisma here as it's handled globally
+    // Create fresh mock data for each test
+    mockData = await createComplexMockData(prisma);
   });
 
   it("should handle deep nesting reparenting in mydocs", async () => {
@@ -258,17 +214,12 @@ describe("MoveDocumentService (integration)", () => {
     const sourceDoc = mockData.subspaceDocuments[subspace.id][0];
 
     // Add a child to the sourceDoc for recursion check
-    const childDoc = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Subspace Child 1",
-        workspaceId: subspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: subspace.id,
-        parentId: sourceDoc.id,
-      },
+    const childDoc = await buildDocument({
+      title: "Subspace Child 1",
+      workspaceId: subspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: subspace.id,
+      parentId: sourceDoc.id,
     });
 
     // Move to my-docs
@@ -304,17 +255,12 @@ describe("MoveDocumentService (integration)", () => {
     const sourceDoc = mockData.myDocsDocuments[0];
 
     // Add a child to the sourceDoc for recursion check
-    const childDoc = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "MyDocs Child 3",
-        workspaceId: targetSubspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: null,
-        parentId: sourceDoc.id,
-      },
+    const childDoc = await buildDocument({
+      title: "MyDocs Child 3",
+      workspaceId: targetSubspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: null,
+      parentId: sourceDoc.id,
     });
 
     // Move to subspace
@@ -351,17 +297,13 @@ describe("MoveDocumentService (integration)", () => {
     const sourceDoc = mockData.subspaceDocuments[sourceSubspace.id][0];
 
     // Add a child to the sourceDoc for recursion check
-    const childDoc = await prisma.doc.create({
-      data: {
-        id: "subspace-move-child-1",
-        title: "Subspace Move Child 1",
-        workspaceId: sourceSubspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: sourceSubspace.id,
-        parentId: sourceDoc.id,
-      },
+    const childDoc = await buildDocument({
+      id: "subspace-move-child-1",
+      title: "Subspace Move Child 1",
+      workspaceId: sourceSubspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: sourceSubspace.id,
+      parentId: sourceDoc.id,
     });
 
     // Move to another subspace
@@ -448,17 +390,12 @@ describe("MoveDocumentService (integration)", () => {
   it("should move a leaf document from subspace to my-docs", async () => {
     const subspace = mockData.subspaces[0];
     // Pick a leaf doc (no children)
-    const leafDoc = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Leaf Doc 1",
-        workspaceId: subspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: subspace.id,
-        parentId: null,
-      },
+    const leafDoc = await buildDocument({
+      title: "Leaf Doc 1",
+      workspaceId: subspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: subspace.id,
+      parentId: null,
     });
 
     const result = await service.moveDocs(mockData.user.id, {
@@ -503,17 +440,12 @@ describe("MoveDocumentService (integration)", () => {
     let parent = mockData.subspaceDocuments[sourceSubspace.id][0];
     const descendants: any[] = [];
     for (let i = 0; i < 5; i++) {
-      const child = await prisma.doc.create({
-        data: {
-          id: uuidv4(),
-          title: `Descendant Doc ${i + 1}`,
-          workspaceId: sourceSubspace.workspaceId,
-          authorId: mockData.user.id,
-          createdById: mockData.user.id,
-          lastModifiedById: mockData.user.id,
-          subspaceId: sourceSubspace.id,
-          parentId: parent.id,
-        },
+      const child = await buildDocument({
+        title: `Descendant Doc ${i + 1}`,
+        workspaceId: sourceSubspace.workspaceId,
+        authorId: mockData.user.id,
+        subspaceId: sourceSubspace.id,
+        parentId: parent.id,
       });
       descendants.push(child);
       parent = child;
@@ -537,43 +469,28 @@ describe("MoveDocumentService (integration)", () => {
   it("should move a document to the end of a parent's children", async () => {
     const parent = mockData.myDocsDocuments[0];
     // Add two children
-    const child1 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Child 1 for Position",
-        workspaceId: parent.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: null,
-        parentId: parent.id,
-      },
+    const child1 = await buildDocument({
+      title: "Child 1 for Position",
+      workspaceId: parent.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: null,
+      parentId: parent.id,
     });
-    const child2 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Child 2 for Position",
-        workspaceId: parent.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: null,
-        parentId: parent.id,
-      },
+    const child2 = await buildDocument({
+      title: "Child 2 for Position",
+      workspaceId: parent.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: null,
+      parentId: parent.id,
     });
 
     // Move a new doc to the end
-    const newDoc = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "New Doc for Position",
-        workspaceId: parent.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: null,
-        parentId: null,
-      },
+    const newDoc = await buildDocument({
+      title: "New Doc for Position",
+      workspaceId: parent.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: null,
+      parentId: null,
     });
 
     const result = await service.moveDocs(mockData.user.id, {
@@ -592,43 +509,28 @@ describe("MoveDocumentService (integration)", () => {
     const subspace = mockData.subspaces[0];
 
     // Create multiple documents in the subspace
-    const doc1 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Doc 1",
-        workspaceId: subspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: subspace.id,
-        parentId: null,
-      },
+    const doc1 = await buildDocument({
+      title: "Doc 1",
+      workspaceId: subspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: subspace.id,
+      parentId: null,
     });
 
-    const doc2 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Doc 2",
-        workspaceId: subspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: subspace.id,
-        parentId: null,
-      },
+    const doc2 = await buildDocument({
+      title: "Doc 2",
+      workspaceId: subspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: subspace.id,
+      parentId: null,
     });
 
-    const doc3 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Doc 3",
-        workspaceId: subspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: subspace.id,
-        parentId: null,
-      },
+    const doc3 = await buildDocument({
+      title: "Doc 3",
+      workspaceId: subspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: subspace.id,
+      parentId: null,
     });
 
     // Initialize the navigation tree with the documents
@@ -703,43 +605,28 @@ describe("MoveDocumentService (integration)", () => {
     const subspace = mockData.subspaces[0];
 
     // Create multiple documents in the subspace
-    const doc1 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Doc A",
-        workspaceId: subspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: subspace.id,
-        parentId: null,
-      },
+    const doc1 = await buildDocument({
+      title: "Doc A",
+      workspaceId: subspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: subspace.id,
+      parentId: null,
     });
 
-    const doc2 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Doc B",
-        workspaceId: subspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: subspace.id,
-        parentId: null,
-      },
+    const doc2 = await buildDocument({
+      title: "Doc B",
+      workspaceId: subspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: subspace.id,
+      parentId: null,
     });
 
-    const doc3 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Doc C",
-        workspaceId: subspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: subspace.id,
-        parentId: null,
-      },
+    const doc3 = await buildDocument({
+      title: "Doc C",
+      workspaceId: subspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: subspace.id,
+      parentId: null,
     });
 
     // Initialize the navigation tree with the documents
@@ -805,41 +692,26 @@ describe("MoveDocumentService (integration)", () => {
     const sourceSubspace = mockData.subspaces[0];
     const targetSubspace = mockData.subspaces[1];
     // Create a folder (parent doc) and two children in sourceSubspace
-    const folder = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Folder Doc",
-        workspaceId: sourceSubspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: sourceSubspace.id,
-        parentId: null,
-      },
+    const folder = await buildDocument({
+      title: "Folder Doc",
+      workspaceId: sourceSubspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: sourceSubspace.id,
+      parentId: null,
     });
-    const child1 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Child 1",
-        workspaceId: sourceSubspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: sourceSubspace.id,
-        parentId: folder.id,
-      },
+    const child1 = await buildDocument({
+      title: "Child 1",
+      workspaceId: sourceSubspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: sourceSubspace.id,
+      parentId: folder.id,
     });
-    const child2 = await prisma.doc.create({
-      data: {
-        id: uuidv4(),
-        title: "Child 2",
-        workspaceId: sourceSubspace.workspaceId,
-        authorId: mockData.user.id,
-        createdById: mockData.user.id,
-        lastModifiedById: mockData.user.id,
-        subspaceId: sourceSubspace.id,
-        parentId: folder.id,
-      },
+    const child2 = await buildDocument({
+      title: "Child 2",
+      workspaceId: sourceSubspace.workspaceId,
+      authorId: mockData.user.id,
+      subspaceId: sourceSubspace.id,
+      parentId: folder.id,
     });
     // Move the folder to the target subspace
     await service.moveDocs(mockData.user.id, {
@@ -890,43 +762,28 @@ describe("MoveDocumentService (integration)", () => {
       const subspace = mockData.subspaces[0];
 
       // Create multiple documents in the subspace
-      const doc1 = await prisma.doc.create({
-        data: {
-          id: uuidv4(),
-          title: "Concurrent Doc 1",
-          workspaceId: subspace.workspaceId,
-          authorId: mockData.user.id,
-          createdById: mockData.user.id,
-          lastModifiedById: mockData.user.id,
-          subspaceId: subspace.id,
-          parentId: null,
-        },
+      const doc1 = await buildDocument({
+        title: "Concurrent Doc 1",
+        workspaceId: subspace.workspaceId,
+        authorId: mockData.user.id,
+        subspaceId: subspace.id,
+        parentId: null,
       });
 
-      const doc2 = await prisma.doc.create({
-        data: {
-          id: uuidv4(),
-          title: "Concurrent Doc 2",
-          workspaceId: subspace.workspaceId,
-          authorId: mockData.user.id,
-          createdById: mockData.user.id,
-          lastModifiedById: mockData.user.id,
-          subspaceId: subspace.id,
-          parentId: null,
-        },
+      const doc2 = await buildDocument({
+        title: "Concurrent Doc 2",
+        workspaceId: subspace.workspaceId,
+        authorId: mockData.user.id,
+        subspaceId: subspace.id,
+        parentId: null,
       });
 
-      const doc3 = await prisma.doc.create({
-        data: {
-          id: uuidv4(),
-          title: "Concurrent Doc 3",
-          workspaceId: subspace.workspaceId,
-          authorId: mockData.user.id,
-          createdById: mockData.user.id,
-          lastModifiedById: mockData.user.id,
-          subspaceId: subspace.id,
-          parentId: null,
-        },
+      const doc3 = await buildDocument({
+        title: "Concurrent Doc 3",
+        workspaceId: subspace.workspaceId,
+        authorId: mockData.user.id,
+        subspaceId: subspace.id,
+        parentId: null,
       });
 
       // Initialize the navigation tree
@@ -1027,9 +884,17 @@ describe("MoveDocumentService (integration)", () => {
     let mockData: Awaited<ReturnType<typeof createComplexMockData>>;
 
     beforeEach(async () => {
+      // Use the same Prisma instance as factory methods
+      const testPrisma = getTestPrisma();
+
       const module = await Test.createTestingModule({
-        imports: [ConfigsModule, ClsModule, PrismaModule],
-        providers: [MoveDocumentService, { provide: EventPublisherService, useValue: { publishWebsocketEvent: vi.fn() } }],
+        imports: [ConfigsModule, ClsModule],
+        providers: [
+          MoveDocumentService,
+          { provide: PrismaService, useValue: testPrisma }, // Use test Prisma instance
+          { provide: EventPublisherService, useValue: { publishWebsocketEvent: vi.fn() } },
+          { provide: DocPermissionResolveService, useValue: {} }, // Mock permission service
+        ],
       }).compile();
       service = module.get(MoveDocumentService);
       prisma = module.get(PrismaService);
@@ -1039,17 +904,12 @@ describe("MoveDocumentService (integration)", () => {
     it("should handle navigation tree with missing nodes (corrupted tree)", async () => {
       // Create a doc and add to subspace, but not in navigation tree
       const subspace = mockData.subspaces[0];
-      const orphanDoc = await prisma.doc.create({
-        data: {
-          id: uuidv4(),
-          title: "Orphan Doc",
-          workspaceId: subspace.workspaceId,
-          authorId: mockData.user.id,
-          createdById: mockData.user.id,
-          lastModifiedById: mockData.user.id,
-          subspaceId: subspace.id,
-          parentId: null,
-        },
+      const orphanDoc = await buildDocument({
+        title: "Orphan Doc",
+        workspaceId: subspace.workspaceId,
+        authorId: mockData.user.id,
+        subspaceId: subspace.id,
+        parentId: null,
       });
       // Remove all nodes from navigation tree (simulate corruption)
       await prisma.subspace.update({
@@ -1073,17 +933,12 @@ describe("MoveDocumentService (integration)", () => {
 
     it("should not create duplicate nodes in navigation tree after repeated moves", async () => {
       const subspace = mockData.subspaces[0];
-      const doc = await prisma.doc.create({
-        data: {
-          id: uuidv4(),
-          title: "Dup Doc",
-          workspaceId: subspace.workspaceId,
-          authorId: mockData.user.id,
-          createdById: mockData.user.id,
-          lastModifiedById: mockData.user.id,
-          subspaceId: subspace.id,
-          parentId: null,
-        },
+      const doc = await buildDocument({
+        title: "Dup Doc",
+        workspaceId: subspace.workspaceId,
+        authorId: mockData.user.id,
+        subspaceId: subspace.id,
+        parentId: null,
       });
       // Add to navigation tree
       await prisma.subspace.update({
@@ -1109,17 +964,12 @@ describe("MoveDocumentService (integration)", () => {
 
     it("should handle orphan documents (no parent, not in navigation tree)", async () => {
       const subspace = mockData.subspaces[0];
-      const orphanDoc = await prisma.doc.create({
-        data: {
-          id: uuidv4(),
-          title: "Orphan Doc 2",
-          workspaceId: subspace.workspaceId,
-          authorId: mockData.user.id,
-          createdById: mockData.user.id,
-          lastModifiedById: mockData.user.id,
-          subspaceId: subspace.id,
-          parentId: null,
-        },
+      const orphanDoc = await buildDocument({
+        title: "Orphan Doc 2",
+        workspaceId: subspace.workspaceId,
+        authorId: mockData.user.id,
+        subspaceId: subspace.id,
+        parentId: null,
       });
       // Not in navigation tree
       // Try to move it under a valid parent

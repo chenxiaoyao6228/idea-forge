@@ -28,7 +28,22 @@ export class DocumentAbility extends BaseAbility {
   ) {
     super();
   }
-  // Will be called on each request that triggers a policy check
+  /**
+   * Creates document abilities for a user
+   *
+   * Two types of abilities are created:
+   *
+   * 1. Global abilities (no context): Role-based rules that apply to all documents
+   *    - Used at login time and sent to frontend
+   *    - Examples: "workspace admins can delete any doc in workspace X"
+   *              "authors can delete their own docs"
+   *    - Needed for operations on documents not yet opened (e.g., trash dialog)
+   *
+   * 2. Context-specific abilities (with doc context): Rules for a specific document
+   *    - Fetched when opening a document via document detail API
+   *    - Examples: "user can READ doc Y", "user can UPDATE doc Y"
+   *    - Based on direct permissions, inherited permissions, and role
+   */
   async createForUser(user: User, context?: Record<string, unknown>): Promise<AppAbility> {
     return this.createAbilityAsync(async (builder) => {
       const { can } = builder;
@@ -109,6 +124,10 @@ export class DocumentAbility extends BaseAbility {
     }
   }
 
+  /**
+   * Define content permissions (READ, UPDATE, COMMENT, MANAGE) based on permission level
+   * These are the frequently-changing permissions sent per-document
+   */
   private defineContentPermissionsByLevel(can: any, docId: string, level: PermissionLevel) {
     switch (level) {
       case PermissionLevel.MANAGE:
@@ -132,9 +151,53 @@ export class DocumentAbility extends BaseAbility {
         break;
       case PermissionLevel.READ:
         can(Action.Read, "Doc", { id: docId });
-
         break;
     }
+  }
+
+  /**
+   * Build content-only permissions for a specific document
+   * Used by document detail endpoint to send dynamic content permissions
+   */
+  async buildContentAbilityForDocument(
+    userId: string,
+    doc: { id: string; workspaceId: string; parentId: string | null; subspaceId: string | null; authorId: string },
+  ) {
+    return this.createAbilityAsync(async (builder) => {
+      const { can } = builder;
+
+      // Resolve permission level for this document
+      const permissionResult = await this.docPermissionResolveService.resolveUserPermissionForDocument(userId, {
+        id: doc.id,
+        workspaceId: doc.workspaceId,
+        parentId: doc.parentId,
+        subspaceId: doc.subspaceId,
+      });
+
+      let level = permissionResult.level;
+
+      // Author always has MANAGE level permissions on their own documents
+      if (doc.authorId === userId && level !== PermissionLevel.MANAGE) {
+        level = PermissionLevel.MANAGE;
+      }
+
+      // Define ONLY content permissions (READ, UPDATE, COMMENT, MANAGE)
+      // Note: We use "DocContent" as subject to keep these separate from global Doc abilities
+      switch (level) {
+        case PermissionLevel.MANAGE:
+          can([Action.Read, Action.Comment, Action.Update, Action.Manage], "DocContent", { id: doc.id });
+          break;
+        case PermissionLevel.EDIT:
+          can([Action.Read, Action.Comment, Action.Update], "DocContent", { id: doc.id });
+          break;
+        case PermissionLevel.COMMENT:
+          can([Action.Read, Action.Comment], "DocContent", { id: doc.id });
+          break;
+        case PermissionLevel.READ:
+          can(Action.Read, "DocContent", { id: doc.id });
+          break;
+      }
+    });
   }
 
   /**

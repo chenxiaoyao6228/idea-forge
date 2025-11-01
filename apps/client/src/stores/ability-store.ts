@@ -1,19 +1,19 @@
 import { create } from "zustand";
 import { useRefCallback } from "@/hooks/use-ref-callback";
-import { createPrismaAbility } from "@casl/prisma";
+import { createMongoAbility, type MongoAbility } from "@casl/ability";
 import { unpackRules } from "@casl/ability/extra";
-import type { PureAbility } from "@casl/ability";
 import type { SerializedAbility, SerializedAbilityMap } from "@idea/contracts";
 
 interface SubjectAbilityEntry {
-  ability: PureAbility;
+  ability: MongoAbility;
   serialized: SerializedAbility;
 }
 
-const emptyAbility = createPrismaAbility([]);
+// Use createMongoAbility instead of createPrismaAbility to support $in operator
+const emptyAbility = createMongoAbility([]);
 
-const deserializeAbility = (serialized: SerializedAbility): PureAbility => {
-  return createPrismaAbility(unpackRules(serialized.rules));
+const deserializeAbility = (serialized: SerializedAbility): MongoAbility => {
+  return createMongoAbility(unpackRules(serialized.rules));
 };
 
 interface AbilityStoreState {
@@ -72,7 +72,7 @@ export const useSetSubjectAbility = () => {
   });
 };
 
-export const useSubjectAbility = (subject: string): PureAbility => {
+export const useSubjectAbility = (subject: string): MongoAbility => {
   return useAbilityStore((state) => state.subjectAbilities[subject]?.ability ?? emptyAbility);
 };
 

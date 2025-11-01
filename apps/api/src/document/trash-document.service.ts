@@ -1,13 +1,17 @@
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { WorkspaceRole } from "@idea/contracts";
+import { SubspaceService } from "@/subspace/subspace.service";
 
 @Injectable()
 export class DocumentTrashService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    @Inject(forwardRef(() => SubspaceService)) private readonly subspaceService: SubspaceService,
+  ) {}
   private static isCleanupRunning = false;
 
   /**
@@ -30,6 +34,11 @@ export class DocumentTrashService {
 
     if (doc.deletedAt) {
       throw new ApiException(ErrorCodeEnum.DocumentNotFound);
+    }
+
+    // Remove from navigation tree if in a subspace
+    if (doc.subspaceId) {
+      await this.subspaceService.removeDocumentFromNavigationTree(doc.subspaceId, documentId);
     }
 
     // Soft delete: set deletedAt and deletedById
@@ -140,8 +149,8 @@ export class DocumentTrashService {
    *
    * Permission rules:
    * - Normal member: Can only see deleted docs they created (author)
-   * - Subspace admin: Can see all deleted docs in their subspace(s)
-   * - Workspace admin: Can see all deleted docs in the entire workspace
+   * - Subspace admin: Can see all deleted docs in their subspace(s), excluding other users' personal subspaces
+   * - Workspace admin: Can see all deleted docs in non-personal subspaces + their own personal subspace docs
    */
   async getTrash(userId: string) {
     // Get user's current workspace
@@ -167,12 +176,34 @@ export class DocumentTrashService {
 
     const isWorkspaceAdmin = workspaceMember?.role === WorkspaceRole.ADMIN || workspaceMember?.role === WorkspaceRole.OWNER;
 
-    // If workspace admin, show all deleted docs in workspace
+    // If workspace admin, show all deleted docs except other users' personal subspace docs
     if (isWorkspaceAdmin) {
       return await this.prismaService.doc.findMany({
         where: {
           workspaceId: user.currentWorkspaceId,
           deletedAt: { not: null },
+          OR: [
+            // Include docs in non-personal subspaces
+            {
+              subspace: {
+                type: {
+                  not: "PERSONAL",
+                },
+              },
+            },
+            // Include docs in user's own personal subspace
+            {
+              subspace: {
+                type: "PERSONAL",
+              },
+              authorId: userId,
+            },
+            // Include docs without subspace (My Docs)
+            {
+              subspaceId: null,
+              authorId: userId,
+            },
+          ],
         },
         orderBy: {
           deletedAt: "desc",
@@ -185,6 +216,7 @@ export class DocumentTrashService {
           icon: true,
           parentId: true,
           authorId: true,
+          workspaceId: true,
           subspaceId: true,
           author: {
             select: {
@@ -206,11 +238,18 @@ export class DocumentTrashService {
               scrollY: true,
             },
           },
+          subspace: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
         },
       });
     }
 
-    // Get subspaces where user is admin
+    // Get subspaces where user is admin (excluding personal subspaces of other users)
     const subspaceAdminMemberships = await this.prismaService.subspaceMember.findMany({
       where: {
         userId,
@@ -218,14 +257,20 @@ export class DocumentTrashService {
       },
       select: {
         subspaceId: true,
+        subspace: {
+          select: {
+            type: true,
+          },
+        },
       },
     });
 
-    const adminSubspaceIds = subspaceAdminMemberships.map((m) => m.subspaceId);
+    // Filter out personal subspaces (they shouldn't be able to be admin of others' personal subspaces anyway)
+    const adminSubspaceIds = subspaceAdminMemberships.filter((m) => m.subspace.type !== "PERSONAL").map((m) => m.subspaceId);
 
     // Build filter conditions
     // Normal member: only their own deleted docs
-    // Subspace admin: their own docs + all docs in subspaces they admin
+    // Subspace admin: their own docs + all docs in non-personal subspaces they admin
     const whereConditions: any[] = [
       // User's own deleted documents
       {
@@ -235,7 +280,7 @@ export class DocumentTrashService {
       },
     ];
 
-    // If user is admin of any subspace, add those subspace docs
+    // If user is admin of any non-personal subspace, add those subspace docs
     if (adminSubspaceIds.length > 0) {
       whereConditions.push({
         subspaceId: { in: adminSubspaceIds },
@@ -259,6 +304,7 @@ export class DocumentTrashService {
         icon: true,
         parentId: true,
         authorId: true,
+        workspaceId: true,
         subspaceId: true,
         author: {
           select: {
@@ -278,6 +324,13 @@ export class DocumentTrashService {
           select: {
             url: true,
             scrollY: true,
+          },
+        },
+        subspace: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
           },
         },
       },
@@ -305,19 +358,32 @@ export class DocumentTrashService {
     // Restore document and all its children
     await this.restoreChildren(id, userId);
 
-    return await this.prismaService.doc.update({
+    const restoredDoc = await this.prismaService.doc.update({
       where: { id },
       data: {
         deletedAt: null,
-        deletedById: null,
+        deletedBy: {
+          disconnect: true,
+        },
         // If parent is deleted or doesn't exist, move document to root (subspace or workspace level)
-        parentId: shouldMoveToRoot ? null : doc.parentId,
-        // If moving to root, append to end of root documents
-        ...(shouldMoveToRoot && {
-          index: "z",
-        }),
+        ...(shouldMoveToRoot
+          ? {
+              parent: { disconnect: true },
+            }
+          : {}),
       },
     });
+
+    // Add back to navigation tree if in a subspace
+    if (restoredDoc.subspaceId) {
+      await this.subspaceService.addDocumentToNavigationTree(
+        restoredDoc.subspaceId,
+        restoredDoc,
+        shouldMoveToRoot ? undefined : (restoredDoc.parentId ?? undefined),
+      );
+    }
+
+    return restoredDoc;
   }
 
   private async restoreChildren(parentId: string, userId: string) {
@@ -334,7 +400,9 @@ export class DocumentTrashService {
         where: { id: child.id },
         data: {
           deletedAt: null,
-          deletedById: null,
+          deletedBy: {
+            disconnect: true,
+          },
         },
       });
     }

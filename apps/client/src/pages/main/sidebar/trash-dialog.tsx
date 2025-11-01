@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { Trash2, RotateCcw } from "lucide-react";
-import { Button } from '@idea/ui/shadcn/ui/button';
-import { Input } from '@idea/ui/shadcn/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@idea/ui/shadcn/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@idea/ui/shadcn/ui/table';
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Input } from "@idea/ui/shadcn/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@idea/ui/shadcn/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@idea/ui/shadcn/ui/table";
 import { documentApi } from "@/apis/document";
 import { type TrashDocumentResponse } from "@idea/contracts";
 import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { showConfirmModal } from '@/components/ui/confirm-modal';
+import { showConfirmModal } from "@/components/ui/confirm-modal";
 import { useTranslation } from "react-i18next";
-import Loading from '@idea/ui/base/loading';
+import Loading from "@idea/ui/base/loading";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { useDocumentPermissions } from "@/hooks/permissions";
 
@@ -31,12 +31,27 @@ const TrashDocumentRow: React.FC<TrashDocumentRowProps> = ({ doc, onRestore, onP
   const { t } = useTranslation();
   const { canRestoreDocument, canPermanentDeleteDocument } = useDocumentPermissions(doc);
 
+  const getSubspaceDisplay = () => {
+    if (!doc.subspace) {
+      return <span className="text-muted-foreground">{t("My Docs")}</span>;
+    }
+
+    const typeLabel = doc.subspace.type === "PERSONAL" ? t("Personal") : "";
+    return (
+      <div>
+        <div>{doc.subspace.name}</div>
+        {typeLabel && <div className="text-xs text-muted-foreground">{typeLabel}</div>}
+      </div>
+    );
+  };
+
   return (
     <TableRow key={doc.id}>
       <TableCell className="font-medium">
         <div>{doc.title || t("Untitled")}</div>
         {doc.author && <div className="text-xs text-muted-foreground">by {doc.author.displayName || doc.author.email}</div>}
       </TableCell>
+      <TableCell>{getSubspaceDisplay()}</TableCell>
       <TableCell>{doc.deletedAt ? formatDistanceToNow(new Date(doc.deletedAt), { addSuffix: true }) : "-"}</TableCell>
       <TableCell className="text-right space-x-2">
         <Button variant="outline" size="sm" onClick={() => onRestore(doc.id)} disabled={!canRestoreDocument}>
@@ -146,7 +161,8 @@ const TrashDialog: React.FC<ConfirmDialogProps<TrashDialogProps, any>> = ({ show
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[300px]">{t("Title")}</TableHead>
+                    <TableHead className="w-[250px]">{t("Title")}</TableHead>
+                    <TableHead className="w-[150px]">{t("Subspace")}</TableHead>
                     <TableHead>{t("Deleted At")}</TableHead>
                     <TableHead className="text-right">{t("Actions")}</TableHead>
                   </TableRow>

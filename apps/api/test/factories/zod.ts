@@ -15,11 +15,14 @@ export const generateMockDocument = (overrides = {}) => {
   const base = createFixture(DocSchema);
   // Patch contentBinary to be null or a valid Buffer/base64 string
   // Ensure nullable foreign keys are null by default to avoid FK constraint violations
+  // Set deletedAt to null to avoid documents being created in deleted state
   return {
     ...base,
     contentBinary: null, // or Buffer.from(''), or Buffer.from('test').toString('base64')
     parentId: null, // Set to null by default to avoid FK constraint violations
     subspaceId: null, // Set to null by default to avoid FK constraint violations
+    deletedAt: null, // Set to null to avoid creating already-deleted documents
+    deletedById: null, // Set to null as well
     ...overrides,
   };
 };

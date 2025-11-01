@@ -15,4 +15,7 @@ export type NavigationNode = {
   parentId?: string | null;
   parent?: NavigationNode | null;
   depth?: number;
+  // Permission-related fields for ability checks
+  workspaceId?: string;
+  authorId?: string;
 };

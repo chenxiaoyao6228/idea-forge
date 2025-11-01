@@ -5,7 +5,7 @@ import { ModelName } from "../database/prisma/prisma.extension";
 
 export { Action } from "@idea/contracts";
 
-export type Subjects = ModelName | "all";
+export type Subjects = ModelName | "DocContent" | "all";
 export type AppAbility = PureAbility<[Action, Subjects]>;
 export const AppAbility = PureAbility as AbilityClass<AppAbility>;
 export type AbilityFactory = (user: any) => AppAbility;

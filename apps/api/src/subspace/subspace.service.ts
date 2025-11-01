@@ -725,6 +725,8 @@ export class SubspaceService {
     return {
       type: NavigationNodeType.Document,
       subspaceId: doc.subspaceId,
+      workspaceId: doc.workspaceId,
+      authorId: doc.authorId,
       id: doc.id,
       title: doc.title,
       url: `/${doc.id}`,

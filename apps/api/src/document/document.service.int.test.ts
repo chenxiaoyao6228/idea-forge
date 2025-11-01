@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DocumentService } from "./document.service";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
@@ -6,14 +6,7 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { AbilityService } from "@/_shared/casl/casl.service";
 import { getTestPrisma, clearDatabase, startContainersAndWriteEnv, stopContainers } from "@test/setup/test-container-setup";
-import {
-  buildDocument,
-  buildUser,
-  buildWorkspace,
-  buildWorkspaceMember,
-  buildSubspace,
-  buildDocumentPermission,
-} from "@test/factories/prisma";
+import { buildDocument, buildUser, buildWorkspace, buildWorkspaceMember, buildSubspace, buildDocumentPermission } from "@test/factories/prisma";
 import { PermissionLevel, PermissionInheritanceType } from "@idea/contracts";
 
 describe("DocumentService - Permission Creation on Document Create", () => {

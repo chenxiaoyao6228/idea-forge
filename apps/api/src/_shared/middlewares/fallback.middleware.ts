@@ -289,12 +289,14 @@ export class FallbackMiddleware implements NestMiddleware {
         return null;
       }
 
+      // Include Workspace, Subspace, and Doc global abilities for initial page load
+      // Doc abilities contain role-based rules needed for trash operations and other bulk actions
       const abilities = await this.abilityService.serializeAbilitiesForUser(
         {
           id: user.id,
           currentWorkspaceId: user.currentWorkspaceId,
         },
-        [workspaceModel, subspaceModel],
+        [workspaceModel, subspaceModel, "Doc" as ModelName],
       );
 
       return {
@@ -321,12 +323,13 @@ export class FallbackMiddleware implements NestMiddleware {
 
             setAuthCookies(res, newAccessToken, newRefreshToken);
 
+            // Include Doc abilities during token refresh to maintain global permission rules
             const abilities = await this.abilityService.serializeAbilitiesForUser(
               {
                 id: user.id,
                 currentWorkspaceId: user.currentWorkspaceId,
               },
-              [workspaceModel, "Subspace" as ModelName],
+              [workspaceModel, "Subspace" as ModelName, "Doc" as ModelName],
             );
 
             return {

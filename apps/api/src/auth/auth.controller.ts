@@ -114,12 +114,18 @@ export class AuthController {
       }
 
       const workspaceModel = "Workspace" as ModelName;
+      const docModel = "Doc" as ModelName;
+      // Include both Workspace and Doc global abilities at login
+      // - Workspace: for workspace-level permissions
+      // - Doc: for role-based document permissions (e.g., "workspace admins can delete any doc")
+      //   These global rules are needed for operations on documents that haven't been opened yet
+      //   (e.g., trash dialog). Context-specific doc abilities are fetched when opening a document.
       const abilities = await this.abilityService.serializeAbilitiesForUser(
         {
           id: user.id,
           currentWorkspaceId: user.currentWorkspaceId,
         },
-        [workspaceModel],
+        [workspaceModel, docModel],
       );
 
       return {
