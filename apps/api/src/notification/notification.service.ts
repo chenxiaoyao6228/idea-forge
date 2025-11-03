@@ -3,9 +3,10 @@ import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { ApiException } from "@/_shared/exceptions/api.exception";
 import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
-import { DocumentService } from "@/document/document.service";
-import { WorkspaceService } from "@/workspace/workspace.service";
+import type { DocumentService } from "@/document/document.service";
+import type { WorkspaceService } from "@/workspace/workspace.service";
 import { NotificationSettingService } from "./notification-setting.service";
+import type { SubspaceService } from "@/subspace/subspace.service";
 import {
   NotificationEventType,
   type ListNotificationsRequest,
@@ -29,10 +30,12 @@ export class NotificationService {
     private readonly prisma: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly notificationSettingService: NotificationSettingService,
-    @Inject(forwardRef(() => DocumentService))
+    @Inject(forwardRef(() => require("@/document/document.service").DocumentService))
     private readonly documentService: DocumentService,
-    @Inject(forwardRef(() => WorkspaceService))
+    @Inject(forwardRef(() => require("@/workspace/workspace.service").WorkspaceService))
     private readonly workspaceService: WorkspaceService,
+    @Inject(forwardRef(() => require("@/subspace/subspace.service").SubspaceService))
+    private readonly subspaceService: SubspaceService,
   ) {}
 
   /**
@@ -300,38 +303,76 @@ export class NotificationService {
     // Execute actual business logic if approved
     if (newStatus === "APPROVED") {
       await this.executeApprovedAction(notification);
-    } else if (newStatus === "REJECTED" && notification.actionType === "PERMISSION_REQUEST") {
-      // Send rejection notification to the requester
-      const { documentId, permission, requesterId } = notification.actionPayload as any;
+    } else if (newStatus === "REJECTED") {
+      // Handle rejection notifications based on action type
+      if (notification.actionType === "PERMISSION_REQUEST") {
+        // Send rejection notification to the requester
+        const { documentId, permission, requesterId } = notification.actionPayload as any;
 
-      if (documentId && requesterId) {
-        const [document, admin] = await Promise.all([
-          this.prisma.doc.findUnique({
-            where: { id: documentId },
-            select: { title: true },
-          }),
-          this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { displayName: true, email: true },
-          }),
-        ]);
+        if (documentId && requesterId) {
+          const [document, admin] = await Promise.all([
+            this.prisma.doc.findUnique({
+              where: { id: documentId },
+              select: { title: true },
+            }),
+            this.prisma.user.findUnique({
+              where: { id: userId },
+              select: { displayName: true, email: true },
+            }),
+          ]);
 
-        if (document && admin) {
-          await this.createNotification({
-            userId: requesterId, // Send to the requester
-            event: NotificationEventType.PERMISSION_REJECT,
-            workspaceId: notification.workspaceId,
-            actorId: userId, // The admin who rejected
-            documentId: documentId,
-            metadata: {
-              requestedPermission: permission,
-              documentTitle: document.title,
+          if (document && admin) {
+            await this.createNotification({
+              userId: requesterId, // Send to the requester
+              event: NotificationEventType.PERMISSION_REJECT,
+              workspaceId: notification.workspaceId,
+              actorId: userId, // The admin who rejected
               documentId: documentId,
-              actorName: admin.displayName || admin.email,
-              reason: reason,
-            },
-            actionRequired: false,
-          });
+              metadata: {
+                requestedPermission: permission,
+                documentTitle: document.title,
+                documentId: documentId,
+                actorName: admin.displayName || admin.email,
+                reason: reason,
+              },
+              actionRequired: false,
+            });
+          }
+        }
+      } else if (notification.actionType === "SUBSPACE_JOIN_REQUEST") {
+        // Send rejection notification to the requester
+        const { subspaceId, userId: requesterId } = notification.actionPayload as any;
+
+        if (subspaceId && requesterId) {
+          const [subspace, admin] = await Promise.all([
+            this.prisma.subspace.findUnique({
+              where: { id: subspaceId },
+              select: { name: true, workspaceId: true, workspace: { select: { name: true } } },
+            }),
+            this.prisma.user.findUnique({
+              where: { id: userId },
+              select: { displayName: true, email: true },
+            }),
+          ]);
+
+          if (subspace && admin) {
+            await this.createNotification({
+              userId: requesterId, // Send to the requester
+              event: NotificationEventType.SUBSPACE_JOIN_REQUEST_REJECTED,
+              workspaceId: subspace.workspaceId,
+              subspaceId: subspaceId,
+              actorId: userId, // The admin who rejected
+              metadata: {
+                subspaceName: subspace.name,
+                subspaceId: subspaceId,
+                workspaceName: subspace.workspace.name,
+                workspaceId: subspace.workspaceId,
+                adminName: admin.displayName || admin.email,
+                reason: reason,
+              },
+              actionRequired: false,
+            });
+          }
         }
       }
     }
@@ -372,6 +413,12 @@ export class NotificationService {
           break;
         case "WORKSPACE_INVITATION":
           await this.handleWorkspaceInvitation(actionPayload, userId, actorId || userId);
+          break;
+        case "SUBSPACE_INVITATION":
+          await this.handleSubspaceInvitation(actionPayload, userId, actorId || userId);
+          break;
+        case "SUBSPACE_JOIN_REQUEST":
+          await this.handleSubspaceJoinRequest(actionPayload, userId);
           break;
         default:
           throw new Error(`Unknown action type: ${actionType}`);
@@ -462,11 +509,12 @@ export class NotificationService {
     userId: string;
     event: NotificationEventType;
     workspaceId: string;
+    subspaceId?: string;
     actorId?: string;
     documentId?: string;
     metadata?: Record<string, any>;
     actionRequired?: boolean;
-    actionType?: "PERMISSION_REQUEST" | "WORKSPACE_INVITATION" | "SUBSPACE_INVITATION";
+    actionType?: "PERMISSION_REQUEST" | "WORKSPACE_INVITATION" | "SUBSPACE_INVITATION" | "SUBSPACE_JOIN_REQUEST";
     actionPayload?: Record<string, any>;
   }) {
     this.logger.log(`[NOTIFICATION] Creating notification: event=${data.event}, userId=${data.userId}, actorId=${data.actorId}, documentId=${data.documentId}`);
@@ -488,6 +536,7 @@ export class NotificationService {
           userId: data.userId,
           event: data.event,
           workspaceId: data.workspaceId,
+          subspaceId: data.subspaceId || null,
           actorId: data.actorId || null,
           documentId: data.documentId || null,
           metadata: data.metadata as any, // Prisma JSON type
@@ -621,6 +670,117 @@ export class NotificationService {
             userName: user.displayName || user.email,
             workspaceName: workspace.name,
             workspaceId: workspaceId,
+          },
+          actionRequired: false,
+        });
+      }
+    }
+  }
+
+  /**
+   * Handle subspace join request approval
+   * Adds the user to the subspace when an admin approves their request
+   */
+  private async handleSubspaceJoinRequest(payload: any, adminId: string): Promise<void> {
+    const { subspaceId, userId } = payload;
+
+    if (!subspaceId || !userId) {
+      throw new Error("Missing required fields: subspaceId or userId");
+    }
+
+    // Add user to subspace as a MEMBER (use the existing addSubspaceMember method)
+    const dto = {
+      userId: userId,
+      role: "MEMBER" as const,
+    };
+
+    await (this.subspaceService as any).addSubspaceMember(subspaceId, dto, adminId);
+
+    // Send confirmation notification to the requester
+    const [user, subspace] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { displayName: true, email: true },
+      }),
+      this.prisma.subspace.findUnique({
+        where: { id: subspaceId },
+        select: { name: true, workspaceId: true, workspace: { select: { name: true } } },
+      }),
+    ]);
+
+    if (!user || !subspace) {
+      throw new Error("User or subspace not found");
+    }
+
+    // Get admin info for the notification
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+      select: { displayName: true, email: true },
+    });
+
+    if (admin) {
+      await this.createNotification({
+        userId: userId, // Send to the requester
+        event: NotificationEventType.SUBSPACE_JOIN_REQUEST_APPROVED,
+        workspaceId: subspace.workspaceId,
+        subspaceId: subspaceId,
+        actorId: adminId, // The admin who approved
+        metadata: {
+          subspaceName: subspace.name,
+          subspaceId: subspaceId,
+          workspaceName: subspace.workspace.name,
+          workspaceId: subspace.workspaceId,
+          adminName: admin.displayName || admin.email,
+        },
+        actionRequired: false,
+      });
+    }
+  }
+
+  /**
+   * Handle subspace invitation acceptance
+   * Adds the user to the subspace when they accept an invitation
+   */
+  private async handleSubspaceInvitation(payload: any, userId: string, adminId: string): Promise<void> {
+    const { subspaceId, role = "MEMBER" } = payload;
+
+    if (!subspaceId) {
+      throw new Error("Missing required field: subspaceId");
+    }
+
+    // Add user to subspace
+    const dto = {
+      userId: userId,
+      role: role as "ADMIN" | "MEMBER",
+    };
+
+    await (this.subspaceService as any).addSubspaceMember(subspaceId, dto, userId);
+
+    // Send confirmation notification to the inviter
+    if (adminId && adminId !== userId) {
+      const [user, subspace] = await Promise.all([
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { displayName: true, email: true },
+        }),
+        this.prisma.subspace.findUnique({
+          where: { id: subspaceId },
+          select: { name: true, workspaceId: true, workspace: { select: { name: true } } },
+        }),
+      ]);
+
+      if (user && subspace) {
+        // Note: Reusing WORKSPACE_INVITATION_ACCEPTED for now, or create a new SUBSPACE_INVITATION_ACCEPTED event type
+        await this.createNotification({
+          userId: adminId, // Send to the inviter
+          event: NotificationEventType.WORKSPACE_INVITATION_ACCEPTED, // Could create SUBSPACE_INVITATION_ACCEPTED
+          workspaceId: subspace.workspaceId,
+          subspaceId: subspaceId,
+          actorId: userId, // The user who accepted
+          metadata: {
+            userName: user.displayName || user.email,
+            workspaceName: `${subspace.workspace.name} - ${subspace.name}`, // Include subspace name
+            workspaceId: subspace.workspaceId,
           },
           actionRequired: false,
         });

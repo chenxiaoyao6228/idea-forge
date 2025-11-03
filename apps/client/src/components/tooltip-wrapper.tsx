@@ -12,6 +12,10 @@ export function TooltipWrapper({ children, disabled, tooltip }: TooltipWrapperPr
     return <>{children}</>;
   }
 
+  if (!tooltip) {
+    return <>{children}</>;
+  }
+
   return (
     <TooltipProvider>
       <Tooltip>

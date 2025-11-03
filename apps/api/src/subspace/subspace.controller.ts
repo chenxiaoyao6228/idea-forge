@@ -70,6 +70,11 @@ export class SubspaceController {
     return this.subspaceService.joinSubspace(id, userId);
   }
 
+  @Post(":id/request-to-join")
+  async requestToJoinSubspace(@Param("id") id: string, @GetUser("id") userId: string, @Body() body: { message?: string }) {
+    return this.subspaceService.requestToJoinSubspace(id, userId, body.message);
+  }
+
   @Patch(":id/archive")
   @CheckPolicy(Action.Update, "Subspace")
   async archiveSubspace(@Param("id") id: string, @GetUser("id") userId: string) {

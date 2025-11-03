@@ -9,7 +9,6 @@ import { cn } from "@idea/ui/shadcn/utils";
 import { ViewportTracker } from "./viewport-tracker";
 import { useViewportBatch } from "./viewport-batch-context";
 import { useSwitchWorkspace, useCurrentWorkspace } from "@/stores/workspace-store";
-import { documentApi } from "@/apis/document";
 
 interface NotificationItemProps {
   notification: NotificationEntity;
@@ -39,6 +38,12 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
       case "WORKSPACE_INVITATION_ACCEPTED":
       case "SUBSPACE_INVITATION":
         return <UserPlus className="h-4 w-4 text-green-500" />;
+      case "SUBSPACE_JOIN_REQUEST":
+        return <UserPlus className="h-4 w-4 text-orange-500" />;
+      case "SUBSPACE_JOIN_REQUEST_APPROVED":
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case "SUBSPACE_JOIN_REQUEST_REJECTED":
+        return <XCircle className="h-4 w-4 text-red-500" />;
       case "COMMENT_MENTION":
         return <AtSign className="h-4 w-4 text-blue-500" />;
       case "COMMENT_CREATED":
@@ -92,6 +97,21 @@ export function NotificationItem({ notification, onMarkAsRead, onResolveAction }
         return {
           title: "Subspace invitation",
           description: `${metadata?.inviterName || actorName} invited you to join ${metadata?.subspaceName || "a subspace"}`,
+        };
+      case "SUBSPACE_JOIN_REQUEST":
+        return {
+          title: "Subspace join request",
+          description: `${metadata?.requesterName || actorName} requested to join "${metadata?.subspaceName || "a subspace"}"`,
+        };
+      case "SUBSPACE_JOIN_REQUEST_APPROVED":
+        return {
+          title: "Join request approved",
+          description: `${metadata?.adminName || actorName} approved your request to join "${metadata?.subspaceName || "a subspace"}"`,
+        };
+      case "SUBSPACE_JOIN_REQUEST_REJECTED":
+        return {
+          title: "Join request rejected",
+          description: `${metadata?.adminName || actorName} rejected your request to join "${metadata?.subspaceName || "a subspace"}"${metadata?.reason ? `: ${metadata.reason}` : ""}`,
         };
       case "COMMENT_MENTION":
         return {

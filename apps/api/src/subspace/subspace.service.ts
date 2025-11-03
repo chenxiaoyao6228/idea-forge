@@ -10,6 +10,7 @@ import { BusinessEvents } from "@/_shared/socket/business-event.constant";
 import { SubspaceType, PermissionLevel } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { AbilityService } from "@/_shared/casl/casl.service";
+import { NotificationService } from "@/notification/notification.service";
 
 @Injectable()
 export class SubspaceService {
@@ -17,6 +18,7 @@ export class SubspaceService {
     private readonly prismaService: PrismaService,
     private readonly eventPublisher: EventPublisherService,
     private readonly abilityService: AbilityService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async joinSubspace(subspaceId: string, userId: string) {
@@ -470,14 +472,23 @@ export class SubspaceService {
   }
 
   async getUserJoinedSubspacesIncludingPersonal(userId: string, workspaceId: string) {
-    // Fetch all subspaces in the workspace, but filter personal subspaces to only include those owned by the user
+    // Fetch all subspaces the user has joined (including their personal subspace)
     const subspaces = await this.prismaService.subspace.findMany({
       where: {
         workspaceId,
         archivedAt: null, // Only include non-archived subspaces
         OR: [
-          // Include all non-personal subspaces
-          { type: { not: SubspaceType.PERSONAL } },
+          // Include non-private/non-personal subspaces (PUBLIC, WORKSPACE_WIDE, INVITE_ONLY)
+          { type: { notIn: [SubspaceType.PRIVATE, SubspaceType.PERSONAL] } },
+          // Include private subspaces only if the user is a member
+          {
+            type: SubspaceType.PRIVATE,
+            members: {
+              some: {
+                userId: userId,
+              },
+            },
+          },
           // Include personal subspaces only if the user is a member
           {
             type: SubspaceType.PERSONAL,
@@ -1918,5 +1929,244 @@ export class SubspaceService {
       default:
         return {};
     }
+  }
+
+  /**
+   * Request to join an INVITE_ONLY subspace
+   * Creates a notification to subspace admins who can approve/reject the request
+   */
+  async requestToJoinSubspace(subspaceId: string, userId: string, message?: string) {
+    // Validate subspace
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        workspaceId: true,
+        workspace: {
+          select: { name: true },
+        },
+        members: {
+          where: { userId },
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // Can only request to join INVITE_ONLY subspaces
+    if (subspace.type !== SubspaceType.INVITE_ONLY) {
+      throw new ApiException(ErrorCodeEnum.InvalidSubspaceType);
+    }
+
+    // User must be a workspace member
+    const workspaceMember = await this.prismaService.workspaceMember.findFirst({
+      where: { workspaceId: subspace.workspaceId, userId },
+      select: { id: true },
+    });
+    if (!workspaceMember) {
+      throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
+    }
+
+    // Already a member
+    if (subspace.members.length > 0) {
+      throw new ApiException(ErrorCodeEnum.AlreadySubspaceMember);
+    }
+
+    // Check if there's already a pending request
+    const existingRequest = await this.prismaService.notification.findFirst({
+      where: {
+        subspaceId: subspaceId,
+        event: "SUBSPACE_JOIN_REQUEST",
+        actionStatus: "PENDING",
+        metadata: {
+          path: ["requesterId"],
+          equals: userId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (existingRequest) {
+      throw new ApiException(ErrorCodeEnum.JoinRequestAlreadyExists);
+    }
+
+    // Get user info for metadata
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { displayName: true, email: true },
+    });
+
+    if (!user) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    // Get all subspace admins to send notifications
+    const subspaceAdmins = await this.prismaService.subspaceMember.findMany({
+      where: {
+        subspaceId,
+        role: "ADMIN",
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    if (subspaceAdmins.length === 0) {
+      throw new ApiException(ErrorCodeEnum.NoSubspaceAdmins);
+    }
+
+    // Create notification for each admin
+    const requestId = `subspace-join-${subspaceId}-${userId}-${Date.now()}`;
+
+    for (const admin of subspaceAdmins) {
+      await (this.notificationService as any).createNotification({
+        userId: admin.userId,
+        event: "SUBSPACE_JOIN_REQUEST",
+        workspaceId: subspace.workspaceId,
+        subspaceId: subspace.id,
+        actorId: userId,
+        metadata: {
+          subspaceName: subspace.name,
+          subspaceId: subspace.id,
+          workspaceName: subspace.workspace.name,
+          workspaceId: subspace.workspaceId,
+          requesterName: user.displayName || user.email,
+          requesterId: userId,
+          message,
+        },
+        actionRequired: true,
+        actionType: "SUBSPACE_JOIN_REQUEST",
+        actionPayload: {
+          subspaceId: subspace.id,
+          userId: userId,
+          requestId,
+        },
+      });
+    }
+
+    return { success: true, message: "Join request sent to subspace admins" };
+  }
+
+  /**
+   * Invite a user to a subspace (PRIVATE or INVITE_ONLY)
+   * Creates a notification that the user can accept/decline
+   */
+  async inviteUserToSubspace(subspaceId: string, inviteeEmail: string, role: "ADMIN" | "MEMBER", adminId: string, message?: string) {
+    // Validate subspace
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id: subspaceId },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        workspaceId: true,
+        workspace: {
+          select: { name: true },
+        },
+        members: {
+          where: { userId: adminId },
+          select: { id: true, role: true },
+        },
+      },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // Verify the inviter is an admin of the subspace
+    const adminMember = subspace.members.find((m) => m.role === "ADMIN");
+    if (!adminMember) {
+      throw new ApiException(ErrorCodeEnum.SubspacePermissionDenied);
+    }
+
+    // Find the user to invite by email
+    const inviteeUser = await this.prismaService.user.findUnique({
+      where: { email: inviteeEmail },
+      select: { id: true, email: true, displayName: true },
+    });
+
+    if (!inviteeUser) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    // Check if user is a workspace member
+    const workspaceMember = await this.prismaService.workspaceMember.findFirst({
+      where: { workspaceId: subspace.workspaceId, userId: inviteeUser.id },
+      select: { id: true },
+    });
+
+    if (!workspaceMember) {
+      throw new ApiException(ErrorCodeEnum.UserNotInWorkspace);
+    }
+
+    // Check if already a member
+    const existingMember = await this.prismaService.subspaceMember.findFirst({
+      where: {
+        subspaceId,
+        userId: inviteeUser.id,
+      },
+      select: { id: true },
+    });
+
+    if (existingMember) {
+      throw new ApiException(ErrorCodeEnum.AlreadySubspaceMember);
+    }
+
+    // Check for existing pending invitation
+    const existingInvitation = await this.prismaService.notification.findFirst({
+      where: {
+        userId: inviteeUser.id,
+        subspaceId: subspaceId,
+        event: "SUBSPACE_INVITATION",
+        actionStatus: "PENDING",
+      },
+      select: { id: true },
+    });
+
+    if (existingInvitation) {
+      throw new ApiException(ErrorCodeEnum.InvitationAlreadyExists);
+    }
+
+    // Get admin info for metadata
+    const admin = await this.prismaService.user.findUnique({
+      where: { id: adminId },
+      select: { displayName: true, email: true },
+    });
+
+    if (!admin) {
+      throw new ApiException(ErrorCodeEnum.UserNotFound);
+    }
+
+    // Create notification for the invitee
+    await (this.notificationService as any).createNotification({
+      userId: inviteeUser.id,
+      event: "SUBSPACE_INVITATION",
+      workspaceId: subspace.workspaceId,
+      subspaceId: subspace.id,
+      actorId: adminId,
+      metadata: {
+        subspaceName: subspace.name,
+        subspaceId: subspace.id,
+        workspaceName: subspace.workspace.name,
+        workspaceId: subspace.workspaceId,
+        role,
+        inviterName: admin.displayName || admin.email,
+        message,
+      },
+      actionRequired: true,
+      actionType: "SUBSPACE_INVITATION",
+      actionPayload: {
+        subspaceId: subspace.id,
+        role,
+      },
+    });
+
+    return { success: true, message: `Invitation sent to ${inviteeEmail}` };
   }
 }

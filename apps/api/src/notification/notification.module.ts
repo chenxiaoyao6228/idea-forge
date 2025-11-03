@@ -7,10 +7,6 @@ import { NotificationProcessor } from "./processors/notification.processor";
 import { PrismaModule } from "@/_shared/database/prisma/prisma.module";
 import { EventsModule } from "@/_shared/events/events.module";
 import { EventDeduplicator } from "@/_shared/queues/helpers/event-deduplicator";
-import { DocumentModule } from "@/document/document.module";
-import { WorkspaceModule } from "@/workspace/workspace.module";
-import { SubspaceModule } from "@/subspace/subspace.module";
-import { SubscriptionModule } from "@/subscription/subscription.module";
 
 @Module({
   imports: [
@@ -19,10 +15,11 @@ import { SubscriptionModule } from "@/subscription/subscription.module";
     BullModule.registerQueue({
       name: "notifications",
     }),
-    forwardRef(() => DocumentModule),
-    forwardRef(() => WorkspaceModule),
-    forwardRef(() => SubspaceModule),
-    forwardRef(() => SubscriptionModule),
+    // Use forwardRef with dynamic import to break circular dependency at module level
+    forwardRef(() => require("@/document/document.module").DocumentModule),
+    forwardRef(() => require("@/workspace/workspace.module").WorkspaceModule),
+    forwardRef(() => require("@/subspace/subspace.module").SubspaceModule),
+    forwardRef(() => require("@/subscription/subscription.module").SubscriptionModule),
   ],
   providers: [NotificationService, NotificationSettingService, EventDeduplicator, NotificationProcessor],
   controllers: [NotificationController],

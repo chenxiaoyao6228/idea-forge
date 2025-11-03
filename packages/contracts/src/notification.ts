@@ -19,6 +19,9 @@ export enum NotificationEventType {
   WORKSPACE_INVITATION = "WORKSPACE_INVITATION", // User invited to workspace (action-required)
   WORKSPACE_INVITATION_ACCEPTED = "WORKSPACE_INVITATION_ACCEPTED", // User accepted workspace invitation (informational)
   SUBSPACE_INVITATION = "SUBSPACE_INVITATION", // User invited to private subspace (action-required)
+  SUBSPACE_JOIN_REQUEST = "SUBSPACE_JOIN_REQUEST", // User requests to join invite-only subspace (action-required)
+  SUBSPACE_JOIN_REQUEST_APPROVED = "SUBSPACE_JOIN_REQUEST_APPROVED", // Admin approved join request (informational)
+  SUBSPACE_JOIN_REQUEST_REJECTED = "SUBSPACE_JOIN_REQUEST_REJECTED", // Admin rejected join request (informational)
   WORKSPACE_REMOVED = "WORKSPACE_REMOVED", // User removed from workspace (informational)
 
   // Comment events (→ Mentions/Subscribe tab)
@@ -37,6 +40,7 @@ export enum ActionType {
   PERMISSION_REQUEST = "PERMISSION_REQUEST", // Request access to document
   WORKSPACE_INVITATION = "WORKSPACE_INVITATION", // Invite to join workspace (accept/decline)
   SUBSPACE_INVITATION = "SUBSPACE_INVITATION", // Invite to join private subspace
+  SUBSPACE_JOIN_REQUEST = "SUBSPACE_JOIN_REQUEST", // Request to join invite-only subspace (approve/reject)
 }
 
 /**
@@ -142,6 +146,31 @@ export const SubspaceInvitationMetadataSchema = z.object({
 });
 
 export type SubspaceInvitationMetadata = z.infer<typeof SubspaceInvitationMetadataSchema>;
+
+// Subspace join request metadata (user requests to join)
+export const SubspaceJoinRequestMetadataSchema = z.object({
+  subspaceName: z.string(),
+  subspaceId: z.string(),
+  workspaceName: z.string(),
+  workspaceId: z.string(),
+  requesterName: z.string(),
+  requesterId: z.string(),
+  message: z.string().optional(),
+});
+
+export type SubspaceJoinRequestMetadata = z.infer<typeof SubspaceJoinRequestMetadataSchema>;
+
+// Subspace join request approved/rejected metadata
+export const SubspaceJoinRequestResolvedMetadataSchema = z.object({
+  subspaceName: z.string(),
+  subspaceId: z.string(),
+  workspaceName: z.string(),
+  workspaceId: z.string(),
+  adminName: z.string(),
+  reason: z.string().optional(),
+});
+
+export type SubspaceJoinRequestResolvedMetadata = z.infer<typeof SubspaceJoinRequestResolvedMetadataSchema>;
 
 // ============================================
 // API Notification Schema (with transformations)
@@ -311,7 +340,15 @@ export function getCategoryEventTypes(category: NotificationCategory): Notificat
     case "SHARING":
       return [NotificationEventType.PERMISSION_REQUEST, NotificationEventType.PERMISSION_GRANT, NotificationEventType.PERMISSION_REJECT];
     case "INBOX":
-      return [NotificationEventType.WORKSPACE_INVITATION, NotificationEventType.WORKSPACE_INVITATION_ACCEPTED, NotificationEventType.SUBSPACE_INVITATION, NotificationEventType.WORKSPACE_REMOVED];
+      return [
+        NotificationEventType.WORKSPACE_INVITATION,
+        NotificationEventType.WORKSPACE_INVITATION_ACCEPTED,
+        NotificationEventType.SUBSPACE_INVITATION,
+        NotificationEventType.SUBSPACE_JOIN_REQUEST,
+        NotificationEventType.SUBSPACE_JOIN_REQUEST_APPROVED,
+        NotificationEventType.SUBSPACE_JOIN_REQUEST_REJECTED,
+        NotificationEventType.WORKSPACE_REMOVED,
+      ];
     case "MENTIONS":
       return [NotificationEventType.COMMENT_MENTION];
     case "SUBSCRIBE":
@@ -323,7 +360,12 @@ export function getCategoryEventTypes(category: NotificationCategory): Notificat
  * Determine if a notification is action-required based on event type
  */
 export function isActionRequiredEvent(eventType: NotificationEventType): boolean {
-  return [NotificationEventType.PERMISSION_REQUEST, NotificationEventType.WORKSPACE_INVITATION, NotificationEventType.SUBSPACE_INVITATION].includes(eventType);
+  return [
+    NotificationEventType.PERMISSION_REQUEST,
+    NotificationEventType.WORKSPACE_INVITATION,
+    NotificationEventType.SUBSPACE_INVITATION,
+    NotificationEventType.SUBSPACE_JOIN_REQUEST,
+  ].includes(eventType);
 }
 
 /**
@@ -333,6 +375,9 @@ export function isInformationalEvent(eventType: NotificationEventType): boolean 
   return [
     NotificationEventType.PERMISSION_GRANT,
     NotificationEventType.PERMISSION_REJECT,
+    NotificationEventType.SUBSPACE_JOIN_REQUEST_APPROVED,
+    NotificationEventType.SUBSPACE_JOIN_REQUEST_REJECTED,
+    NotificationEventType.WORKSPACE_INVITATION_ACCEPTED,
     NotificationEventType.COMMENT_MENTION,
     NotificationEventType.COMMENT_CREATED,
     NotificationEventType.COMMENT_RESOLVED,

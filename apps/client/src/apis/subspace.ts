@@ -44,6 +44,10 @@ export const subspaceApi = {
   // Join a subspace (for PUBLIC/WORKSPACE_WIDE types)
   joinSubspace: async (id: string) => request.post<void, { success: boolean }>(`/api/subspaces/${id}/join`),
 
+  // Request to join a subspace (for INVITE_ONLY types)
+  requestToJoinSubspace: async (id: string, data?: { message?: string }) =>
+    request.post<{ message?: string }, { success: boolean; message: string }>(`/api/subspaces/${id}/request-to-join`, data || {}),
+
   // Batch operations
   batchSetWorkspaceWide: async (data: BatchSetWorkspaceWideRequest) =>
     request.post<BatchSetWorkspaceWideRequest, BatchSetWorkspaceWideResponse>("/api/subspaces/batch-set-workspace-wide", data),

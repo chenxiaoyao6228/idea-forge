@@ -459,6 +459,7 @@ model Subspace {
   workspaceId String
   docs        Doc[]
   members     SubspaceMember[]
+  notifications Notification[] // Subspace-related notifications
 
   // Import relationships
   temporaryImports TemporaryImport[] // Temporary import records
@@ -760,6 +761,7 @@ model Notification {
 
   // Context (what this notification is about)
   documentId  String?
+  subspaceId  String?
   workspaceId String
 
   // Metadata
@@ -785,6 +787,7 @@ model Notification {
   user      User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
   actor     User?     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
   document  Doc?      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  subspace  Subspace? @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   resolver  User?     @relation("NotificationResolver", fields: [actionResolvedBy], references: [id], onDelete: SetNull)
 
@@ -794,6 +797,7 @@ model Notification {
   @@index([userId, createdAt]) // Chronological listing
   @@index([userId, actionRequired, actionStatus]) // Filter action-required notifications
   @@index([workspaceId, userId]) // Workspace-scoped queries
+  @@index([subspaceId, userId]) // Subspace-scoped queries
 }
 
 // NotificationSetting (Stubbed for Phase 2)

@@ -68,11 +68,17 @@ export enum ErrorCodeEnum {
   SubspaceNotFound = "subspace_not_found",
   SubspaceAdminRoleRequired = "subspace_admin_role_required",
   SubspaceAccessDenied = "subspace_access_denied",
+  SubspacePermissionDenied = "subspace_permission_denied",
   UserAlreadyInSubspace = "user_already_in_subspace",
   UserNotInSubspace = "user_not_in_subspace",
   CannotLeavePersonalSubspace = "cannot_leave_personal_subspace",
   CannotLeaveWorkspaceWideSubspace = "cannot_leave_workspace_wide_subspace",
   CannotLeaveAsLastAdmin = "cannot_leave_as_last_admin",
+  InvalidSubspaceType = "invalid_subspace_type",
+  AlreadySubspaceMember = "already_subspace_member",
+  JoinRequestAlreadyExists = "join_request_already_exists",
+  NoSubspaceAdmins = "no_subspace_admins",
+  InvitationAlreadyExists = "invitation_already_exists",
 
   // Group related errors
   GroupNotFound = "group_not_found",

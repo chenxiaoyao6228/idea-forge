@@ -6,7 +6,6 @@ import { SubspaceService } from "@/subspace/subspace.service";
 import fractionalIndex from "fractional-index";
 import { DocPermissionResolveService } from "@/permission/document-permission.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
-import type { NotificationService } from "@/notification/notification.service";
 import {
   WorkspaceRole,
   WorkspaceMember,
@@ -27,6 +26,7 @@ import { ConfigService } from "@nestjs/config";
 import { randomBytes } from "node:crypto";
 import { createAvatar } from "@dicebear/core";
 import { initials } from "@dicebear/collection";
+import { NotificationService } from "@/notification/notification.service";
 
 @Injectable()
 export class WorkspaceService {
@@ -52,11 +52,10 @@ export class WorkspaceService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly subspaceService: SubspaceService,
-    private readonly docPermissionResolveService: DocPermissionResolveService,
     private readonly eventPublisher: EventPublisherService,
     private readonly abilityService: AbilityService,
     private readonly configService: ConfigService,
-    @Inject(forwardRef(() => require("@/notification/notification.service").NotificationService))
+    @Inject(forwardRef(() => NotificationService))
     private readonly notificationService: NotificationService,
   ) {}
 

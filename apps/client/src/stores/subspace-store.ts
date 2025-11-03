@@ -593,6 +593,24 @@ export const useJoinSubspace = () => {
   );
 };
 
+export const useRequestToJoinSubspace = () => {
+  const { t } = useTranslation();
+
+  return useRequest(
+    async (params: { subspaceId: string; message?: string }) => {
+      try {
+        const response = await subspaceApi.requestToJoinSubspace(params.subspaceId, { message: params.message });
+        toast.success(response.message || t("Join request sent to subspace admins"));
+      } catch (error) {
+        console.error("Failed to send join request:", error);
+        toast.error(t("Failed to send join request"));
+        throw error;
+      }
+    },
+    { manual: true },
+  );
+};
+
 export const useLeaveSubspace = () => {
   const { t } = useTranslation();
 
