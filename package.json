@@ -50,9 +50,9 @@
     "i18n:extract": "cd apps/client && npm run i18n:extract",
     "i18n:translate": "node scripts/i18n/update-translation.js",
     "i18n:process": "pnpm i18n:extract && pnpm i18n:translate",
-    "bump:patch": "node scripts/bump-version.js patch",
-    "bump:minor": "node scripts/bump-version.js minor",
-    "bump:major": "node scripts/bump-version.js major"
+    "changeset": "changeset",
+    "changeset:version": "changeset version && pnpm install --no-frozen-lockfile",
+    "changeset:publish": "changeset publish"
   },
   "dependencies": {
     "utility-types": "^3.11.0",
@@ -60,6 +60,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.2",
+    "@changesets/cli": "^2.29.7",
     "@commitlint/cli": "^17.8.1",
     "@commitlint/config-conventional": "^17.8.1",
     "@playwright/test": "^1.55.0",
@@ -70,7 +71,6 @@
     "@vitest/ui": "^3.2.3",
     "argon2": "^0.31.2",
     "concurrently": "^8.2.2",
-    "conventional-changelog-cli": "^5.0.0",
     "dotenv": "^16.4.5",
     "dotenv-flow-cli": "1.1.1",
     "faker": "^6.6.6",
