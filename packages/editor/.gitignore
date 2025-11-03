@@ -1,0 +1,15 @@
+# Build outputs
+dist/
+
+# Dependencies
+node_modules/
+
+# Test coverage
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Editor
+.vscode/
+.idea/

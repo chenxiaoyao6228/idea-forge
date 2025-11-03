@@ -6,6 +6,9 @@ node_modules
 # Testing
 coverage
 .nyc_output
+.cache
+playwright-report
+test-results
 
 # Production
 dist
@@ -41,10 +44,11 @@ lerna-debug.log*
 # Temp directories
 .temp
 .tmp
+**/.vite/**
 
 # Runtime data
 .turbo
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 pids
 *.pid
 *.seed
@@ -54,27 +58,34 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Client
-client/node_modules
-client/dist
+apps/client/node_modules
+apps/client/dist
 
 # Api
-api/node_modules
+apps/api/node_modules
 # app build
-api/view
+apps/api/view
 # upload
-api/uploads
+apps/api/uploads
+# prisma type generated
+apps/api/prisma-type-generated
 
 
-## npmrc
-.npmrc
 
 .env*
 .flaskenv*
 !.env.project
 !.env.vault
 !.env.example
+!.env.test
 
 # deploy
 scripts/builder/build-job.env
 scripts/deploy/run.env
 scripts/i18n/trans.env
+
+# design
+_design
+
+## claude
+.claude/settings.local.json

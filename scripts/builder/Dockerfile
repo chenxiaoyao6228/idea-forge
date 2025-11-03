@@ -14,8 +14,8 @@ COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 COPY package.json ./
 COPY shared/package.json ./shared/
-COPY api/package.json ./api/
-COPY client/package.json ./client/
+COPY apps/api/package.json ./apps/api/
+COPY apps/client/package.json ./apps/client/
 
 # List all files to verify copies
 RUN ls -la
@@ -40,12 +40,12 @@ ENV DATABASE_URL=$DATABASE_URL
 
 RUN cd shared && pnpm build
 
-RUN cd api && pnpm build
+RUN cd apps/api && pnpm build
 
 # set sentry auth token for react because sentry does not custom key for token
 ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN_REACT
 
-RUN cd client && pnpm build
+RUN cd apps/client && pnpm build
 
 
 ## production stage
@@ -68,22 +68,22 @@ COPY --from=builder /app/shared/dist ./shared/dist
 
 
 # api
-COPY --from=builder /app/api/dist ./api/dist
-COPY --from=builder /app/api/package.json ./api/package.json
-COPY --from=builder /app/api/public ./api/public
-COPY --from=builder /app/api/prisma ./api/prisma
-COPY --from=builder /app/api/ecosystem.config.js ./api/ecosystem.config.js
-COPY --from=builder /app/api/.env.vault ./api/.env.vault
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /app/apps/api/public ./apps/api/public
+COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
+COPY --from=builder /app/apps/api/ecosystem.config.js ./apps/api/ecosystem.config.js
+COPY --from=builder /app/apps/api/.env.vault ./apps/api/.env.vault
 
-RUN cat ./api/.env.vault
+RUN cat ./apps/api/.env.vault
 
 # client build
-COPY --from=builder /app/api/view ./api/view 
+COPY --from=builder /app/apps/api/view ./apps/api/view 
 
 RUN pnpm install --prod --frozen-lockfile
 
 # Make sure prisma schema is up to date
-RUN cd api && pnpm prisma generate
+RUN cd apps/api && pnpm prisma generate
 
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
@@ -93,4 +93,4 @@ EXPOSE 5000 5001
 
 RUN npm install pm2 -g
 
-CMD cd api && npm run start:pm2
+CMD cd apps/api && npm run start:pm2

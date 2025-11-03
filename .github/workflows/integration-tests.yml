@@ -1,0 +1,44 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [master, develop, feature/workspace]
+  pull_request:
+    branches: [master, develop, feature/workspace]
+    paths:
+      - "apps/client/**"
+      - "apps/api/**"
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup .npmrc for Tiptap Pro private registry
+        run: |
+          echo "link-workspace-packages=true" > .npmrc
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @idea/api prisma:generate
+
+      - name: Run API Integration Tests
+        run: pnpm --filter @idea/api test:integration
+
+      # if mock client integration tests, add this step
+      # - name: Run Client Integration Tests
+      #   run: pnpm --filter @idea/client test:run

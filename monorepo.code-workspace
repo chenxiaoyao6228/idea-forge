@@ -1,0 +1,76 @@
+{
+  "folders": [
+    {
+      "name": "api",
+      "path": "apps/api"
+    },
+    {
+      "name": "client",
+      "path": "apps/client"
+    },
+    {
+      "name": "contracts",
+      "path": "packages/contracts"
+    },
+    {
+      "name": "root",
+      "path": "."
+    }
+  ],
+  "extensions": {
+    "recommendations": [
+      "biomejs.biome",
+      "bradlc.vscode-tailwindcss",
+      "prisma.prisma",
+      "yoavbls.pretty-ts-errors",
+      "streetsidesoftware.code-spell-checker",
+      "d-koppenhagen.vscode-code-review",
+      "vitest.explorer",
+      "peterschmalfeldt.explorer-exclude"
+    ]
+  },
+  "settings": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "biomejs.biome",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports.biome": "explicit",
+      "source.fixAll.biome": "explicit"
+    },
+    "eslint.alwaysShowStatus": true,
+    "eslint.workingDirectories": [
+      "./apps/api",
+      "./apps/client",
+      "./packages/contracts"
+    ],
+    "cSpell.words": [
+      "combobox",
+      "zustand"
+    ],
+    // Optional: Tailwind CSS class detection for cva/cx patterns
+    "tailwindCSS.experimental.classRegex": [
+      ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+      ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+    ],
+    "editor.quickSuggestions": {
+      "strings": "on"
+    },
+    "files.associations": {
+      "*.css": "tailwindcss"
+    },
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.preferences.autoImportFileExcludePatterns": [
+      "express",
+      "@radix-ui/**",
+      "@react-email/**",
+      "react-router-dom",
+      "react-router",
+      "node:stream/consumers",
+      "node:test",
+      "node:console"
+    ],
+    "[javascript][javascriptreact][typescript][typescriptreact][less][sass][scss][css][json][jsonc][html]": {
+      "editor.defaultFormatter": "biomejs.biome"
+    }
+  }
+}

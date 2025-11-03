@@ -1,0 +1,194 @@
+import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@idea/ui/shadcn/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { Home, Users, Shield, Loader2 } from "lucide-react";
+import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
+import { SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
+import useSubspaceStore, { useFetchSubspaceSettings, useUpdateSubspaceSettings, useFetchSubspaces } from "@/stores/subspace-store";
+import useUserStore from "@/stores/user-store";
+import useWorkspaceStore from "@/stores/workspace-store";
+import { BasicInfoTab } from "./basic-info-tab";
+import { MembersPermissionsTab } from "./members-permissions-tab";
+import { SecurityTab } from "./security-tab";
+import { SubspaceJoinButton } from "@/pages/main/settings/subspace/subspace-join-button";
+import { useRefCallback } from "@/hooks/use-ref-callback";
+
+export interface SubspaceSettingsModalProps {
+  // basic info
+  title?: string;
+  description?: string;
+  content?: React.ReactNode;
+
+  // setting specific
+  subspaceId: string;
+  workspaceId: string;
+
+  // react-confirm
+  show?: boolean;
+  proceed?: (value: any) => void;
+}
+
+const SubspaceSettingsModal = ({
+  show = false,
+  proceed,
+  title = "Subspace Settings",
+  description,
+  subspaceId,
+  workspaceId,
+  content,
+}: ConfirmDialogProps<SubspaceSettingsModalProps, boolean>) => {
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState("basic");
+
+  const { subspaceSettings } = useSubspaceStore();
+  const { run: fetchSubspaceSettings, loading: isSettingsLoading } = useFetchSubspaceSettings(subspaceId);
+  const { run: updateSubspaceSettings } = useUpdateSubspaceSettings(subspaceId);
+  const { run: fetchList } = useFetchSubspaces();
+
+  const clearSubspaceSettings = useRefCallback(() => {
+    useSubspaceStore.setState({ subspaceSettings: null });
+  });
+
+  const { userInfo } = useUserStore();
+  const { currentWorkspace } = useWorkspaceStore();
+
+  // Get subspace name from store
+  const subspaceName = useSubspaceStore((state) => state.subspaces[subspaceId]?.name) || "Subspace";
+
+  // Check if current user is already a member of the subspace
+  const isUserMember = useMemo(() => {
+    if (!subspaceSettings || !userInfo) return false;
+    return subspaceSettings.subspace.members?.some((member) => member.userId === userInfo.id) || false;
+  }, [subspaceSettings, userInfo]);
+
+  // Load settings when modal opens
+  useEffect(() => {
+    if (show && subspaceId) {
+      fetchSubspaceSettings();
+    }
+  }, [show, subspaceId]);
+
+  // Clear settings when modal closes
+  useEffect(() => {
+    if (!show) {
+      clearSubspaceSettings();
+    }
+  }, [show]);
+
+  const handleSettingsChange = async (changes: Partial<SubspaceSettingsResponse["subspace"]>) => {
+    if (!subspaceSettings) return;
+
+    try {
+      await updateSubspaceSettings({
+        settings: changes as UpdateSubspaceSettingsRequest,
+      });
+    } catch (error) {
+      console.error("Failed to sync settings to backend:", error);
+    }
+  };
+
+  const handleClose = () => {
+    proceed?.(null);
+  };
+
+  if (isSettingsLoading) {
+    return (
+      <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">{t("Loading settings...")}</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!subspaceSettings) {
+    return (
+      <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <p className="text-destructive">{t("Failed to load settings")}</p>
+              <Button onClick={handleClose} className="mt-4">
+                {t("Close")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="h-5/6 max-h-[800px] max-w-6xl pb-0 [&>button]:hidden">
+        {content || (
+          <>
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Home className="h-5 w-5" />
+                  <DialogTitle>{subspaceName}</DialogTitle>
+                </div>
+                <div className="flex items-center gap-2">
+                  <SubspaceJoinButton
+                    subspaceId={subspaceId}
+                    subspaceType={subspaceSettings.subspace.type}
+                    isUserMember={isUserMember}
+                    onJoinSuccess={async () => {
+                      // Refresh the settings to update member status
+                      await fetchSubspaceSettings();
+                      // Also refresh the full subspace list
+                      if (currentWorkspace?.id) {
+                        await fetchList(currentWorkspace.id);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </DialogHeader>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full gap-4 overflow-hidden">
+              <TabsList className="grid gap-2 bg-inherit text-left">
+                <TabsTrigger value="basic" className="justify-start gap-2 font-normal data-[state=active]:bg-muted data-[state=active]:font-medium">
+                  <Home className="size-5 shrink-0 sm:size-4" />
+                  <span className="hidden sm:inline">{t("Basic Info")}</span>
+                </TabsTrigger>
+                <TabsTrigger value="members" className="justify-start gap-2 font-normal data-[state=active]:bg-muted data-[state=active]:font-medium">
+                  <Users className="size-5 shrink-0 sm:size-4" />
+                  <span className="hidden sm:inline">
+                    {t("Members & Permissions")} ({subspaceSettings.subspace.memberCount})
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger value="security" className="justify-start gap-2 font-normal data-[state=active]:bg-muted data-[state=active]:font-medium">
+                  <Shield className="size-5 shrink-0 sm:size-4" />
+                  <span className="hidden sm:inline">{t("Security")}</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent tabIndex={-1} value="basic" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
+                <BasicInfoTab subspaceId={subspaceId} onTabChange={setActiveTab} onLeaveSubspace={handleClose} />
+              </TabsContent>
+
+              <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
+                <MembersPermissionsTab settings={subspaceSettings} onSettingsChange={handleSettingsChange} />
+              </TabsContent>
+
+              <TabsContent tabIndex={-1} value="security" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
+                <SecurityTab settings={subspaceSettings} onSettingsChange={handleSettingsChange} />
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export const showSubspaceSettingsModal = ContextAwareConfirmation.createConfirmation<SubspaceSettingsModalProps, boolean>(confirmable(SubspaceSettingsModal));

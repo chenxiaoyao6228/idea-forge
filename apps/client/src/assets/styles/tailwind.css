@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* color comment with hsl(hue, saturation, lightness) is to help with editor extension to visualize the color */
+    /* Base colors */
+    --background: 0 0% 100%; /* hsl(0 0% 100%) */
+    --foreground: 222.2 84% 4.9%; /* hsl(222.2 84% 4.9%) */
+
+    /* prefixed with foreground because it should look good on the background */
+    --foreground-destructive: 345 82.7% 40.8%; /* hsl(345 82.7% 40.8%) */
+
+    --muted: 210 40% 93%; /* hsl(210 40% 93%) */
+    --muted-foreground: 215.4 16.3% 30%; /* hsl(215.4 16.3% 30%) */
+
+    --primary: 222.2 47.4% 11.2%; /* hsl(222.2 47.4% 11.2%) */
+    --primary-foreground: 210 40% 98%; /* hsl(210 40% 98%) */
+
+    --secondary: 210 20% 83%; /* hsl(210 20% 83%) */
+    --secondary-foreground: 222.2 47.4% 11.2%; /* hsl(222.2 47.4% 11.2%) */
+
+    --accent: 210 40% 90%; /* hsl(210 40% 90%) */
+    --accent-foreground: 222.2 47.4% 11.2%; /* hsl(222.2 47.4% 11.2%) */
+
+    --destructive: 0 70% 50%; /* hsl(0 70% 50%) */
+    --destructive-foreground: 210 40% 98%; /* hsl(210 40% 98%) */
+
+    --ring: 215 20.2% 65.1%; /* hsl(215 20.2% 65.1%) */
+    --border: 214.3 31.8% 91.4%; /* hsl(214.3 31.8% 91.4%) */
+
+    /* --------- components --------- */
+
+    /* input */
+    --input: 214.3 31.8% 91.4%; /* hsl(214.3 31.8% 91.4%) */
+    --input-invalid: 0 84.2% 60.2%; /* hsl(0 84.2% 60.2%) */
+
+    /* popover */
+    --popover: 0 0% 100%; /* hsl(0 0% 100%) */
+    --popover-foreground: 222.2 84% 4.9%; /* hsl(222.2 84% 4.9%) */
+
+    /* card */
+    --card: 0 0% 100%; /* hsl(0 0% 100%) */
+    --card-foreground: 222.2 84% 4.9%; /* hsl(222.2 84% 4.9%) */
+
+    /* sidebar */
+    --sidebar-background: 0 0% 98%; /* hsl(0 0% 98%) */
+    --sidebar-foreground: 240 5.3% 26.1%; /* hsl(240 5.3% 26.1%) */
+    --sidebar-primary: 240 5.9% 10%; /* hsl(240 5.9% 10%) */
+    --sidebar-primary-foreground: 0 0% 98%; /* hsl(0 0% 98%) */
+    --sidebar-accent: 240 4.8% 95.9%; /* hsl(240 4.8% 95.9%) */
+    --sidebar-accent-foreground: 240 5.9% 10%; /* hsl(240 5.9% 10%) */
+    --sidebar-border: 220 13% 91%; /* hsl(220 13% 91%) */
+    --sidebar-ring: 217.2 91.2% 59.8%; /* hsl(217.2 91.2% 59.8%) */
+
+    /* other */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%; /* hsl(222.2 84% 4.9%) */
+    --foreground: 210 40% 98%; /* hsl(210 40% 98%) */
+
+    /* prefixed with foreground because it should look good on the background */
+    --foreground-destructive: -4 84% 60%; /* hsl(-4 84% 60%) */
+
+    --muted: 217.2 32.6% 12%; /* hsl(217.2 32.6% 12%) */
+    --muted-foreground: 215 20.2% 65.1%; /* hsl(215 20.2% 65.1%) */
+
+    --primary: 210 40% 98%; /* hsl(210 40% 98%) */
+    --primary-foreground: 222.2 47.4% 11.2%; /* hsl(222.2 47.4% 11.2%) */
+
+    --secondary: 217.2 20% 24%; /* hsl(217.2 20% 24%) */
+    --secondary-foreground: 210 40% 98%; /* hsl(210 40% 98%) */
+
+    --accent: 217.2 32.6% 10%; /* hsl(217.2 32.6% 10%) */
+    --accent-foreground: 210 40% 98%; /* hsl(210 40% 98%) */
+
+    --destructive: 0 60% 40%; /* hsl(0 60% 40%) */
+    --destructive-foreground: 0 85.7% 97.3%; /* hsl(0 85.7% 97.3%) */
+
+    --ring: 217.2 32.6% 60%; /* hsl(217.2 32.6% 60%) */
+    --border: 217.2 32.6% 17.5%; /* hsl(217.2 32.6% 17.5%) */
+
+    /* --------- components --------- */
+
+    /* input */
+    --input: 217.2 32.6% 17.5%; /* hsl(217.2 32.6% 17.5%) */
+    --input-invalid: 0 62.8% 30.6%; /* hsl(0 62.8% 30.6%) */
+
+    /* popover */
+    --popover: 222.2 84% 4.9%; /* hsl(222.2 84% 4.9%) */
+    --popover-foreground: 210 40% 98%; /* hsl(210 40% 98%) */
+
+    /* card */
+    --card: 222.2 84% 4.9%; /* hsl(222.2 84% 4.9%) */
+    --card-foreground: 210 40% 98%; /* hsl(210 40% 98%) */
+
+    /* sidebar */
+    --sidebar-background: 240 5.9% 10%; /* hsl(240 5.9% 10%) */
+    --sidebar-foreground: 240 4.8% 95.9%; /* hsl(240 4.8% 95.9%) */
+    --sidebar-primary: 224.3 76.3% 48%; /* hsl(224.3 76.3% 48%) */
+    --sidebar-primary-foreground: 0 0% 100%; /* hsl(0 0% 100%) */
+    --sidebar-accent: 240 3.7% 15.9%; /* hsl(240 3.7% 15.9%) */
+    --sidebar-accent-foreground: 240 4.8% 95.9%; /* hsl(240 4.8% 95.9%) */
+    --sidebar-border: 240 3.7% 15.9%; /* hsl(240 3.7% 15.9%) */
+    --sidebar-ring: 217.2 91.2% 59.8%; /* hsl(217.2 91.2% 59.8%) */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

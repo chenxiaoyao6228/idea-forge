@@ -1,0 +1,19 @@
+{
+  "name": "@idea/contracts",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@casl/ability": "^6.7.3",
+    "extra": "link:@casl/ability/extra"
+  }
+}

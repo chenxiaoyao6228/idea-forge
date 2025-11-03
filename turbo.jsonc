@@ -1,0 +1,86 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "**/.env.*local",
+    "**/.env.*",
+    "**/.env"
+  ],
+  "tasks": {
+    "prisma:generate": {
+      "cache": false
+    },
+    "prisma:migrate": {
+      "cache": false,
+      "persistent": true // This is necessary to interact with the CLI and assign names to your database migrations.
+    },
+    "prisma:deploy": {
+      "cache": false
+    },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "dev": {
+      "dependsOn": [
+        "^dev",
+        "^build"
+      ],
+      "cache": false,
+      "persistent": true
+    },
+    "start": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "lint": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "format": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "lint:fix": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "format:fix": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "check-types": {},
+    "clean": {
+      "cache": false
+    },
+    "test": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "test:unit": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": []
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

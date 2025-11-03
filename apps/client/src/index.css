@@ -1,0 +1,66 @@
+@import "./assets/styles/tailwind.css";
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* Prevent scrolling at root level */
+}
+
+/* https://github.com/shadcn-ui/ui/discussions/6908 */
+body {
+  pointer-events: auto !important;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* Prevent scrolling at root level */
+}
+
+#WORK_CONTENT_SCROLL_CONTAINER {
+  @apply custom-scrollbar;
+}
+
+li {
+  list-style: none;
+}
+
+/* utilities */
+
+.custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 8px; /* For vertical scrollbar */
+    height: 8px; /* For horizontal scrollbar */
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+  }
+}
+
+/* custom scrollbar for third party lib */
+/* image picker */
+.epr-body {
+  @apply custom-scrollbar;
+}
+
+.smooth-image {
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -o-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  ms-interpolation-mode: nearest-neighbor;
+}

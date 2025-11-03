@@ -1,0 +1,691 @@
+/* common */
+
+.tiptap > * {
+  @apply mx-10;
+  /* other */
+  :first-child {
+    margin-top: 0;
+  }
+
+  .selection {
+    @apply inline;
+  }
+
+  .selection,
+  *::selection {
+    @apply bg-black/10 dark:bg-white/20;
+  }
+}
+
+/* comment mark */
+.tiptap {
+  .comment-mark {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 2px;
+    padding: 0 2px;
+  }
+  
+  /* Active comment (unresolved) */
+  .comment-mark-active {
+    background-color: rgba(255, 213, 0, 0.3); /* Yellow highlight */
+    border-bottom: 2px solid rgba(255, 213, 0, 0.8);
+  }
+  
+  .comment-mark-active:hover {
+    background-color: rgba(255, 213, 0, 0.5);
+  }
+  
+  /* Resolved comment */
+  .comment-mark-resolved {
+    background-color: rgba(156, 163, 175, 0.2); /* Gray */
+    border-bottom: 1px solid rgba(156, 163, 175, 0.5);
+    opacity: 0.6;
+  }
+  
+  .comment-mark-resolved:hover {
+    background-color: rgba(156, 163, 175, 0.3);
+    opacity: 0.8;
+  }
+  
+  /* Draft comment (not yet saved) */
+  .comment-mark-draft {
+    background-color: rgba(59, 130, 246, 0.2); /* Blue */
+    border-bottom: 2px dashed rgba(59, 130, 246, 0.8);
+  }
+  
+  .comment-mark-draft:hover {
+    background-color: rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .comment-mark-active {
+      background-color: rgba(255, 213, 0, 0.2);
+      border-bottom-color: rgba(255, 213, 0, 0.6);
+    }
+  
+    .comment-mark-active:hover {
+      background-color: rgba(255, 213, 0, 0.3);
+    }
+  
+    .comment-mark-resolved {
+      background-color: rgba(156, 163, 175, 0.15);
+      border-bottom-color: rgba(156, 163, 175, 0.4);
+    }
+  
+    .comment-mark-resolved:hover {
+      background-color: rgba(156, 163, 175, 0.25);
+    }
+  
+    .comment-mark-draft {
+      background-color: rgba(59, 130, 246, 0.15);
+      border-bottom-color: rgba(59, 130, 246, 0.6);
+    }
+  
+    .comment-mark-draft:hover {
+      background-color: rgba(59, 130, 246, 0.25);
+    }
+  }
+  
+}
+
+/* mention */
+.mention {
+  @apply inline-flex items-center;
+  @apply rounded px-1 py-0.5;
+  @apply bg-primary/10 text-primary;
+  @apply font-medium;
+  @apply cursor-pointer;
+  @apply transition-colors;
+  @apply no-underline;
+}
+
+.mention:hover {
+  @apply bg-primary/20;
+}
+
+/* Mention in read-only mode (e.g., displayed comments) */
+.ProseMirror[contenteditable="false"] .mention {
+  @apply cursor-default;
+}
+
+/* Mention suggestion dropdown styling */
+.mention-suggestion {
+  @apply bg-background border border-border rounded-md shadow-lg;
+  @apply overflow-hidden;
+  @apply z-50;
+}
+
+.mention-suggestion-list {
+  @apply max-h-[300px] overflow-y-auto;
+  @apply p-1;
+}
+
+.mention-suggestion-item {
+  @apply flex items-start gap-2;
+  @apply px-3 py-2 rounded-sm;
+  @apply cursor-pointer;
+  @apply transition-colors;
+  @apply w-full text-left;
+}
+
+.mention-suggestion-item:hover,
+.mention-suggestion-item.is-selected {
+  @apply bg-accent;
+}
+
+.mention-suggestion-item-avatar {
+  @apply w-6 h-6 rounded-full;
+  @apply flex-shrink-0;
+}
+
+.mention-suggestion-item-content {
+  @apply flex-1 min-w-0;
+}
+
+.mention-suggestion-item-name {
+  @apply text-sm font-medium;
+  @apply truncate;
+}
+
+.mention-suggestion-item-email {
+  @apply text-xs text-muted-foreground;
+  @apply truncate;
+}
+
+.mention-suggestion-empty {
+  @apply px-3 py-4 text-center text-sm text-muted-foreground;
+}
+
+.mention-suggestion-loading {
+  @apply px-3 py-4 text-center text-sm text-muted-foreground;
+}
+
+
+
+/* list heading */
+.tiptap {
+  /* List styles */
+  ul {
+    padding-left: 1rem;
+
+    li {
+      display: list-item;
+      list-style-type: disc;
+      list-style-position: outside;
+    }
+
+    li p {
+      margin-top: 0.25em;
+      margin-bottom: 0.25em;
+    }
+
+    /* Nested ul styles */
+    ul li {
+      list-style-type: circle;
+    }
+
+    ul ul li {
+      list-style-type: square;
+    }
+  }
+
+  ol {
+    padding-left: 1rem;
+
+    li {
+      display: list-item;
+      list-style-type: decimal;
+      list-style-position: outside;
+    }
+
+    li p {
+      margin-top: 0.25em;
+      margin-bottom: 0.25em;
+    }
+  }
+
+  /* Heading styles */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    line-height: 1.1;
+    margin-top: 1.5rem;
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2 {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-size: 1rem;
+  }
+}
+
+/* placeholder */
+.tiptap {
+  p.is-empty::before {
+    color: #adb5bd;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+}
+
+/* task-list */
+.tiptap ul[data-type="taskList"] {
+  @apply list-none p-0 mt-0;
+
+  p {
+    @apply m-0;
+  }
+
+  li {
+    @apply flex;
+    padding-inline-start: 0;
+
+    > label {
+      @apply grow-0 shrink-0 flex-auto mt-0 mr-2 select-none;
+    }
+
+    > div {
+      @apply flex-auto mb-0;
+    }
+
+    input[type="checkbox"] {
+      @apply cursor-pointer;
+      width: 1rem;
+      height: 1rem;
+      border: 1px solid red;
+    }
+
+    ul[data-type="taskList"] {
+      /* @apply m-0; */
+    }
+  }
+}
+
+/* image block && image uploading */
+.tiptap {
+  /* image uploading */
+  .image-uploading {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+
+    &::before {
+      content: "";
+      box-sizing: border-box;
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 3px solid rgba(104, 206, 248, 0.1);
+      border-top: 3px solid #68cef8;
+      border-right: 3px solid #68cef8;
+      z-index: 1;
+      animation: spinner 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    img {
+      filter: blur(3px);
+      transition: all 0.3s ease;
+    }
+  }
+
+  /* image block */
+  .node-imageBlock {
+    @apply my-2;
+
+    & img {
+      @apply border-2 border-transparent overflow-hidden w-full;
+    }
+
+    &:hover img {
+      outline: 3px solid #68cef8;
+    }
+  }
+
+  .ProseMirror-selectednode {
+    img {
+      outline: 3px solid #68cef8;
+    }
+  }
+}
+
+/* table */
+.tiptap {
+  .tableWrapper {
+    @apply my-3;
+  }
+
+  &.resize-cursor {
+    @apply cursor-col-resize;
+  }
+
+  table {
+    @apply border-collapse border-black/10 rounded box-border w-full;
+    @apply dark:border-white/20;
+
+    td,
+    th {
+      @apply border border-black/10 min-w-[100px] p-2 py-0 relative text-left align-top;
+      @apply dark:border-white/20;
+
+      &:first-of-type:not(a) {
+        @apply mt-0;
+      }
+    }
+
+    th {
+      @apply font-bold;
+    }
+
+    .column-resize-handle {
+      @apply -bottom-[2px] flex pointer-events-none absolute -right-1 top-0 w-2;
+
+      &::before {
+        @apply bg-black/20 h-full w-[1px] ml-2;
+        @apply dark:bg-white/20;
+        content: "";
+      }
+    }
+
+    .selectedCell {
+      @apply bg-black/5 border-black/20 border-double;
+      @apply dark:bg-white/10 dark:border-white/20;
+    }
+
+    .grip-column,
+    .grip-row {
+      @apply items-center bg-black/5 cursor-pointer flex justify-center absolute z-10;
+      @apply dark:bg-white/10;
+    }
+
+    .grip-column {
+      @apply w-[calc(100%+1px)] border-l border-black/20 h-3 left-0 -ml-[1px] -top-3;
+      @apply dark:border-white/20;
+
+      &:hover,
+      &.selected {
+        &::before {
+          content: "";
+          @apply w-2.5;
+        }
+      }
+
+      &:hover {
+        @apply bg-black/10;
+        @apply dark:bg-white/20;
+
+        &::before {
+          @apply border-b-2 border-dotted border-black/60;
+          @apply dark:border-white/60;
+        }
+      }
+
+      &.first {
+        @apply border-transparent rounded-tl-sm;
+      }
+
+      &.last {
+        @apply rounded-tr-sm;
+      }
+
+      &.selected {
+        @apply bg-black/30 border-black/30 shadow-sm;
+        @apply dark:bg-white/30 dark:border-white/30;
+
+        &::before {
+          @apply border-b-2 border-dotted;
+        }
+      }
+    }
+
+    .grip-row {
+      @apply h-[calc(100%+1px)] border-t border-black/20 -left-3 w-3 top-0 -mt-[1px];
+      @apply dark:border-white/20;
+
+      &:hover,
+      &.selected {
+        &::before {
+          @apply h-2.5;
+          content: "";
+        }
+      }
+      &:hover {
+        @apply bg-black/10;
+        @apply dark:bg-white/20;
+
+        &::before {
+          @apply border-l-2 border-dotted border-black/60;
+          @apply dark:border-white/60;
+        }
+      }
+
+      &.first {
+        @apply border-transparent rounded-tl-sm;
+      }
+
+      &.last {
+        @apply rounded-bl-sm;
+      }
+
+      &.selected {
+        @apply bg-black/30 border-black/30 shadow-sm;
+        @apply dark:bg-white/30 dark:border-white/30;
+
+        &::before {
+          @apply border-l-2 border-dotted;
+        }
+      }
+    }
+  }
+}
+
+/* code block */
+.tiptap {
+  code::selection {
+    @apply bg-white/30;
+  }
+
+  pre *::selection {
+    @apply bg-white/20;
+  }
+
+  /* syntax highlight */
+  pre {
+    font-family: "Menlo", "Monaco", "Courier New", monospace;
+    @apply bg-gray-800 text-white rounded-lg my-6 p-4 font-mono text-sm;
+    margin-bottom: 0;
+  }
+
+  pre code {
+    font-family: "Menlo", "Monaco", "Courier New", monospace;
+    padding: 0;
+    margin: 0;
+    @apply bg-transparent p-0 text-inherit;
+  }
+
+  /* add more syntax highlight styles if needed */
+  .hljs-comment,
+  .hljs-quote {
+    @apply text-gray-400;
+  }
+
+  .hljs-variable,
+  .hljs-template-variable,
+  .hljs-attribute,
+  .hljs-tag,
+  .hljs-name,
+  .hljs-regexp,
+  .hljs-link,
+  .hljs-name,
+  .hljs-selector-id,
+  .hljs-selector-class {
+    @apply text-red-400;
+  }
+
+  .hljs-number,
+  .hljs-meta,
+  .hljs-built_in,
+  .hljs-builtin-name,
+  .hljs-literal,
+  .hljs-type,
+  .hljs-params {
+    @apply text-yellow-300;
+  }
+
+  .hljs-string,
+  .hljs-symbol,
+  .hljs-bullet {
+    @apply text-green-400;
+  }
+
+  .hljs-title,
+  .hljs-section {
+    @apply text-yellow-200;
+  }
+
+  .hljs-keyword,
+  .hljs-selector-tag {
+    @apply text-blue-300;
+  }
+
+  .hljs-emphasis {
+    @apply italic;
+  }
+
+  .hljs-strong {
+    @apply font-bold;
+  }
+}
+
+/* horizontal rule */
+.tiptap {
+  [data-type="horizontalRule"] {
+    @apply py-0.5;
+  }
+}
+
+/* Give a remote user a caret */
+.collaboration-cursor__caret {
+  border-left: 1px solid #0d0d0d;
+  border-right: 1px solid #0d0d0d;
+  margin-left: -1px;
+  margin-right: -1px;
+  pointer-events: none;
+  position: relative;
+  word-break: normal;
+}
+
+/* Render the username above the caret */
+.collaboration-cursor__label {
+  border-radius: 3px 3px 3px 0;
+  color: #0d0d0d;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  left: -1px;
+  line-height: normal;
+  padding: 0.1rem 0.3rem;
+  position: absolute;
+  top: -1.4em;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* code-block line number */
+.tiptap {
+  .line-number {
+    display: inline-block;
+    min-width: 2.5em;
+    padding-right: 1em;
+    text-align: right;
+    color: #999;
+    user-select: none;
+    vertical-align: top;
+    flex-shrink: 0;
+  }
+
+  pre {
+    counter-reset: line;
+    white-space: pre !important;
+    overflow-x: auto;
+    word-wrap: normal;
+    overflow-wrap: normal;
+  }
+
+  pre code,
+  pre div {
+    display: block;
+    white-space: pre !important;
+    word-wrap: normal;
+    overflow-wrap: normal;
+  }
+
+  .line-number::before {
+    counter-increment: line;
+    content: counter(line);
+  }
+}
+
+/* drag handle */
+.editor-container {
+  .drag-handle {
+    /* TODO: add drag handle positioning configuration using Floating UI if needed */
+  }
+}
+
+/* table of content */
+.table-of-content {
+  a {
+    @apply flex gap-1 no-underline;
+
+    /* number index of toc, take up to many spaces, so comment it first */
+    /* &::before {
+      content: attr(data-item-index) ".";
+      @apply text-muted-foreground mr-1;
+    } */
+  }
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.highlight-mark {
+  background-color: theme("colors.yellow.100/50");
+  transition: background-color 0.3s ease;
+}
+
+.dark .highlight-mark {
+  background-color: theme("colors.yellow.900/30");
+}
+
+/* Math formula styling */
+.tiptap .tiptap-mathematics-render {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+/* Editable math nodes */
+.tiptap .tiptap-mathematics-render--editable:hover {
+  background-color: theme("colors.accent.DEFAULT");
+  outline: 1px solid theme("colors.ring.DEFAULT");
+}
+
+/* Inline math */
+.tiptap .tiptap-mathematics-render[data-type="inline-math"] {
+  display: inline-block;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+
+/* Block math */
+.tiptap .tiptap-mathematics-render[data-type="block-math"] {
+  @apply mx-10 my-4 block rounded-md p-4 overflow-x-auto;
+  background-color: theme("colors.muted.DEFAULT/50");
+  border-left: 3px solid theme("colors.primary.DEFAULT");
+}
+
+.dark .tiptap .tiptap-mathematics-render[data-type="block-math"] {
+  background-color: theme("colors.muted.DEFAULT/30");
+}
+
+/* KaTeX styling adjustments for theme compatibility */
+.tiptap .katex {
+  font-size: 1.1em;
+}
+
+.tiptap .katex-display {
+  margin: 0;
+}

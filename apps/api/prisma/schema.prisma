@@ -1,0 +1,897 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// old prisma-client generator for runtime, used in the backend
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+generator clientType {
+  provider      = "prisma-client"
+  output        = "../prisma-type-generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+generator zod {
+  provider                         = "zod-prisma-types"
+  prismaClientPath                 = "./_prisma-zod-input"
+  output                           = "../prisma-type-generated/zod"
+  createModelTypes                 = true // default is true
+  writeBarrelFiles                 = true // default is true
+  useDefaultValidators             = true // default is true
+  coerceDate                       = true // default is true
+  createInputTypes                 = false // default is true
+  useMultipleFiles                 = false // default is false
+  createOutputTypes                = false // default is true
+  addInputTypeValidation           = false // default is true
+  addInputTypeSchemas              = false // default is true
+  addIncludeType                   = false // default is true
+  addSelectType                    = false // default is true
+  validateWhereUniqueInput         = false // default is false
+  createOptionalDefaultValuesTypes = false // default is false
+  createRelationValuesTypes        = false // default is false
+  createPartialTypes               = false // default is false
+  writeNullishInModelTypes         = false // default is false
+}
+
+model DocumentPermission {
+  id                  String                    @id @default(cuid())
+  userId              String?
+  guestCollaboratorId String?
+  docId               String
+  doc                 Doc                       @relation(fields: [docId], references: [id], onDelete: Cascade)
+  permission          PermissionLevel
+  inheritedFromId     String? // for inheritance
+  inheritedFromType   PermissionInheritanceType
+  sourceGroupId       String? // ID of the group that granted this GROUP permission (null for DIRECT/GUEST/SUBSPACE)
+  priority            Int
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  createdById         String
+
+  inheritedFrom DocumentPermission?  @relation("DocumentPermissionInheritance", fields: [inheritedFromId], references: [id])
+  children      DocumentPermission[] @relation("DocumentPermissionInheritance")
+
+  user              User?              @relation("UserDocumentPermissions", fields: [userId], references: [id])
+  guestCollaborator GuestCollaborator? @relation(fields: [guestCollaboratorId], references: [id])
+  createdBy         User               @relation("CreatedDocumentPermissions", fields: [createdById], references: [id])
+  sourceGroup       MemberGroup?       @relation("GroupDocumentPermissions", fields: [sourceGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, docId, inheritedFromType, sourceGroupId])
+  @@unique([guestCollaboratorId, docId, inheritedFromType])
+  @@index([userId, docId])
+  @@index([guestCollaboratorId, docId])
+  @@index([docId])
+  @@index([priority])
+  @@index([sourceGroupId])
+}
+
+enum PermissionInheritanceType {
+  DIRECT // directly assigned permission (priority: 1)
+  GROUP // group permission (priority: 2)
+  SUBSPACE_ADMIN // subspace admin (priority: 3)
+  SUBSPACE_MEMBER // subspace member (priority: 4)
+  WORKSPACE_ADMIN // workspace admin (priority: 5)
+  WORKSPACE_MEMBER // workspace member (priority: 6)
+  GUEST // guest permission (priority: 7)
+}
+
+enum PermissionLevel {
+  NONE
+  READ
+  COMMENT
+  EDIT
+  MANAGE
+}
+
+model User {
+  id          String  @id @default(uuid())
+  email       String  @unique
+  displayName String? // Display name (used as primary identifier)
+  imageUrl    String? // Profile image URL
+
+  // Account status
+  emailVerified DateTime? // Email verification timestamp
+  status        UserStatus @default(PENDING) // Account status
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp() // Account creation time
+  updatedAt DateTime @updatedAt // Last update time
+
+  // Security
+  hashedRefreshToken String? // Refresh token for authentication
+  password           Password? // Hashed password
+  connections        Connection[] // OAuth connections
+
+  // Current workspace context
+  currentWorkspaceId String? // Currently active workspace ID
+  currentWorkspace   Workspace? @relation("UserCurrentWorkspace", fields: [currentWorkspaceId], references: [id])
+
+  // Document relationships
+  authoredDocs      Doc[] @relation("DocAuthor") // Documents created by user
+  createdDocs       Doc[] @relation("DocCreator") // Documents created by user
+  lastModifiedDocs  Doc[] @relation("DocLastModifier") // Documents last modified by user
+  lastPublishedDocs Doc[] @relation("DocLastPublisher") // Documents last published by user
+  deletedDocs       Doc[] @relation("DocDeleter") // Documents deleted by user
+
+  // Public shares
+  publicSharesCreated PublicShare[] @relation("PublicShareAuthor")
+  publicSharesRevoked PublicShare[] @relation("PublicShareRevoker")
+
+  // Version history
+  docRevisions DocRevision[] // Document revision history
+
+  // File storage
+  file         File[] // Files uploaded by user
+  aiTokenUsage AITokenUsage? // AI token usage tracking
+
+  // Activity logs
+  userLoginHistory UserLoginHistory[] // User login history records
+
+  // Workspace memberships
+  workspaceMembers WorkspaceMember[] // Workspace memberships
+  subspaceMembers  SubspaceMember[] // Subspace memberships
+
+  // Group memberships
+  memberGroups MemberGroupUser[] // Group memberships
+
+  // Guest invitations
+  guestInvitations GuestCollaborator[] @relation("InvitedBy") // Guest invitations sent
+  guestAccess      GuestCollaborator[] @relation("GuestUser") // Guest access when user is invited as guest
+
+  // Guest access (user as guest in other workspaces)
+  // guestCollaborations GuestCollaborator[] // Workspaces where this user is a guest
+
+  // Public workspace invitations generated by user
+  createdPublicInvites WorkspacePublicInvite[] @relation("WorkspacePublicInviteCreatedBy")
+
+  // Document permissions
+  documentPermissions        DocumentPermission[] @relation("UserDocumentPermissions")
+  createdDocumentPermissions DocumentPermission[] @relation("CreatedDocumentPermissions")
+
+  // Star relationships
+  stars Star[] // User's starred items
+
+  // Notification relationships
+  receivedNotifications  Notification[]        @relation("NotificationRecipient")
+  triggeredNotifications Notification[]        @relation("NotificationActor")
+  resolvedNotifications  Notification[]        @relation("NotificationResolver")
+  notificationSettings   NotificationSetting[]
+
+  // Import relationships
+  temporaryImports TemporaryImport[] // Temporary import records
+
+  // Comment relationships
+  comments         Comment[]  @relation("CommentAuthor")
+  resolvedComments Comment[]  @relation("CommentResolver")
+  reactions        Reaction[]
+
+  // Subscription relationships
+  subscriptions Subscription[]
+
+  // Workspace ordering (per-user)
+  workspaceOrdering UserWorkspaceOrder[]
+
+  // Document view tracking
+  documentViews DocumentView[]
+
+  // Last visited document per workspace
+  lastVisitedDocs WorkspaceLastVisitedDoc[]
+}
+
+enum UserStatus {
+  PENDING // Registration pending verification (email/phone not verified)
+  ACTIVE // Normal active status
+  SUSPENDED // Temporarily suspended (violation of rules, etc.)
+  REVOKED // Permanently banned (serious violation)
+  ARCHIVED // Account archived (long-term inactive)
+}
+
+// Per-user workspace ordering table
+// Stores the display order of workspaces for each user
+// Supports both member workspaces and guest workspaces
+model UserWorkspaceOrder {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  index       String // Fractional index for ordering (e.g., "a0", "a1", "a2")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, workspaceId])
+  @@index([userId, index]) // Query optimization for fetching ordered workspaces
+}
+
+model Workspace {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  type        WorkspaceType @default(TEAM)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  memberSubspaceCreate Boolean @default(false)
+  settings             Json?
+
+  // Public sharing control
+  allowPublicSharing Boolean @default(true)
+
+  // relations
+  subspaces    Subspace[]
+  members      WorkspaceMember[]
+  guests       GuestCollaborator[]
+  memberGroups MemberGroup[]
+  docs         Doc[]
+  publicInvite WorkspacePublicInvite?
+  publicShares PublicShare[]
+
+  // Current workspace users
+  currentUsers User[] @relation("UserCurrentWorkspace")
+
+  // Per-user workspace ordering
+  userOrdering UserWorkspaceOrder[]
+
+  // Notifications
+  notifications Notification[]
+
+  // Import relationships
+  temporaryImports TemporaryImport[] // Temporary import records
+
+  // Last visited documents
+  lastVisitedDocs WorkspaceLastVisitedDoc[]
+}
+
+model WorkspacePublicInvite {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User      @relation("WorkspacePublicInviteCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+}
+
+model Doc {
+  id            String  @id @default(cuid())
+  type          DocType @default(NOTE)
+  title         String
+  content       String  @default("{}") // doc json snapshot
+  contentBinary Bytes? // yjs collaborative document
+
+  // state mark
+  archivedAt  DateTime?
+  publishedAt DateTime?
+  deletedAt   DateTime?
+  deletedById String?
+
+  // position
+  parentId String?
+
+  // timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // appearance
+  icon         String?
+  coverImage   CoverImage?
+  coverImageId String?
+
+  // relations
+  author   User   @relation("DocAuthor", fields: [authorId], references: [id])
+  authorId String
+
+  createdBy   User   @relation("DocCreator", fields: [createdById], references: [id])
+  createdById String
+
+  lastModifiedBy   User   @relation("DocLastModifier", fields: [lastModifiedById], references: [id])
+  lastModifiedById String
+
+  // Publish tracking for subscription notifications
+  lastPublishedAt   DateTime?
+  lastPublishedBy   User?     @relation("DocLastPublisher", fields: [lastPublishedById], references: [id])
+  lastPublishedById String?
+
+  // Deletion tracking
+  deletedBy User? @relation("DocDeleter", fields: [deletedById], references: [id])
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+
+  subspace   Subspace? @relation(fields: [subspaceId], references: [id])
+  subspaceId String?
+
+  parent   Doc?  @relation("DocToDoc", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Doc[] @relation("DocToDoc")
+
+  // sharing and permissions
+  permissions DocumentPermission[]
+  publicShare PublicShare?
+
+  // Subspace permission overrides (null means inherit from subspace)
+  subspaceAdminPermission     PermissionLevel?
+  subspaceMemberPermission    PermissionLevel?
+  nonSubspaceMemberPermission PermissionLevel?
+
+  // versions
+  revisions DocRevision[]
+
+  // star relationships
+  stars Star[] // Stars for this document
+
+  // Notifications
+  notifications Notification[]
+
+  // Comments
+  comments Comment[]
+
+  // Subscriptions
+  subscriptions Subscription[]
+
+  // Document view tracking
+  documentViews DocumentView[]
+
+  // Last visited tracking
+  lastVisitedBy WorkspaceLastVisitedDoc[]
+
+  // Indexes for performance
+  @@index([parentId])
+  @@index([workspaceId])
+  @@index([subspaceId])
+  @@index([lastPublishedAt])
+}
+
+model Comment {
+  id String @id @default(cuid())
+
+  // Content (TipTap JSON)
+  data Json // Rich text content
+
+  // Relationships
+  documentId String
+  document   Doc    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  parentCommentId String?
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[] @relation("CommentReplies")
+
+  // Author
+  createdById String
+  createdBy   User   @relation("CommentAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   User?     @relation("CommentResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  // Array of {emoji: string, userIds: string[]}
+  reactions Json?
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete (paranoid mode)
+
+  // Relations
+  reactionsList Reaction[]
+
+  @@index([documentId, deletedAt])
+  @@index([parentCommentId])
+  @@index([createdAt])
+  @@index([createdById])
+  @@map("comments")
+}
+
+model Reaction {
+  id    String @id @default(cuid())
+  emoji String @db.VarChar(10)
+
+  commentId String
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  // Unique constraint (one reaction per user per emoji per comment)
+  @@unique([commentId, userId, emoji])
+  @@index([commentId])
+  @@index([userId])
+  @@map("reactions")
+}
+
+model WorkspaceMember {
+  id        String        @id @default(cuid())
+  role      WorkspaceRole @default(MEMBER)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  preferences Json? // User preferences
+  index       String? // Fractional index for ordering
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+
+  @@unique([workspaceId, userId])
+  @@index([userId, index])
+}
+
+model Subspace {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  type        SubspaceType @default(PUBLIC)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  archivedAt  DateTime?
+
+  // Security settings
+  allowExport        Boolean @default(true)
+  allowMemberInvites Boolean @default(true)
+  allowTopLevelEdit  Boolean @default(true)
+
+  // Permission management
+  memberInvitePermission String @default("ALL_MEMBERS") // ALL_MEMBERS, ADMINS_ONLY
+  topLevelEditPermission String @default("ADMINS_ONLY") // ALL_MEMBERS, ADMINS_ONLY
+
+  // Role-based permission settings
+  subspaceAdminPermission     PermissionLevel @default(MANAGE)
+  subspaceMemberPermission    PermissionLevel @default(MANAGE)
+  nonSubspaceMemberPermission PermissionLevel @default(COMMENT)
+
+  settings Json?
+
+  navigationTree Json?
+  index          String?
+
+  // relations
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  docs        Doc[]
+  members     SubspaceMember[]
+  notifications Notification[] // Subspace-related notifications
+
+  // Import relationships
+  temporaryImports TemporaryImport[] // Temporary import records
+
+  // Subscription relationships
+  subscriptions Subscription[]
+}
+
+model SubspaceMember {
+  id        String       @id @default(cuid())
+  role      SubspaceRole @default(MEMBER)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @default(now())
+
+  subspace   Subspace @relation(fields: [subspaceId], references: [id])
+  subspaceId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  @@unique([subspaceId, userId])
+}
+
+enum SubspaceType {
+  WORKSPACE_WIDE //  All workspace members are automatically members of this space (cannot leave). 
+  PUBLIC // Any workspace member can join and leave freely. 
+  INVITE_ONLY // Visible to all members but requires invitation to join.
+  PRIVATE //  Only visible to invited members, completely hidden from others.
+  PERSONAL // Only visible to the creator, completely hidden from others.
+}
+
+// Group of users in workspace
+model MemberGroup {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  validUntil  DateTime?
+
+  workspace          Workspace            @relation(fields: [workspaceId], references: [id])
+  workspaceId        String
+  members            MemberGroupUser[]
+  grantedPermissions DocumentPermission[] @relation("GroupDocumentPermissions")
+}
+
+model MemberGroupUser {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  group   MemberGroup @relation(fields: [groupId], references: [id])
+  groupId String
+  user    User        @relation(fields: [userId], references: [id])
+  userId  String
+
+  @@unique([groupId, userId])
+}
+
+// User belongs to other workspace, but come to current workspace as a guest
+// can be upgraded to workspace member
+model GuestCollaborator {
+  id            String      @id @default(cuid())
+  email         String
+  name          String?
+  status        GuestStatus @default(PENDING)
+  expireAt      DateTime
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  lastVisitedAt DateTime? // Track when guest last visited workspace
+
+  // Link to user account (null until they accept invitation or if not registered)
+  user   User?   @relation("GuestUser", fields: [userId], references: [id])
+  userId String?
+
+  invitedBy           User                 @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedById         String
+  workspace           Workspace            @relation(fields: [workspaceId], references: [id])
+  workspaceId         String
+  documentPermissions DocumentPermission[]
+  // @@unique([userId, workspaceId]) // Prevent duplicate guest records for same user
+
+  @@unique([email, workspaceId])
+}
+
+enum GuestStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+model PublicShare {
+  // Primary Key
+  id String @id @default(cuid())
+
+  // Foreign Keys
+  docId       String @unique // One public share per document
+  workspaceId String // Explicit workspace scoping
+  authorId    String // User who created the share
+
+  // Access Token
+  token String @unique @db.VarChar(255) // CUID token for anonymous access
+
+  // Optional URL Features (Phase 2+)
+  urlId  String? @unique @db.VarChar(255) // Custom URL slug
+  domain String? @db.VarChar(255) // Custom domain
+
+  // Publication State
+  published Boolean @default(true) // Reserved for future, always true in Phase 1
+
+  // Permission Level
+  permission PermissionLevel @default(READ) // READ or COMMENT (Phase 1: READ only)
+
+  // Expiration
+  expiresAt DateTime? // Nullable for "never expire"
+
+  // Revocation (Soft Delete)
+  revokedAt   DateTime? // Nullable for active shares
+  revokedById String? // User who revoked
+
+  // Analytics
+  views          Int       @default(0) // Total view count (bot-filtered)
+  lastAccessedAt DateTime? // Last successful access
+
+  // SEO
+  allowIndexing Boolean @default(false) // Phase 1: hardcoded false
+
+  // Audit Trail
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  doc       Doc       @relation(fields: [docId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User      @relation("PublicShareAuthor", fields: [authorId], references: [id])
+  revoker   User?     @relation("PublicShareRevoker", fields: [revokedById], references: [id])
+
+  // Indexes
+  @@index([token, revokedAt]) // Fast validation check
+  @@index([docId, revokedAt]) // Fast share lookup by document
+  @@index([workspaceId]) // Workspace filtering
+  @@index([expiresAt]) // Expiration checks
+  @@map("PublicShare")
+}
+
+model Password {
+  hash String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique
+}
+
+model Connection {
+  id           String @id @default(cuid())
+  providerName String // Provider name: github, google etc.
+  providerId   String // Provider's user ID
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([providerName, providerId])
+}
+
+model CoverImage {
+  id       String  @id @default(cuid())
+  url      String
+  scrollY  Float
+  doc      Doc     @relation(fields: [docId], references: [id])
+  docId    String  @unique
+  isPreset Boolean @default(false)
+}
+
+model DocRevision {
+  id            String   @id @default(cuid())
+  title         String
+  content       String
+  contentBinary Bytes?
+  createdAt     DateTime @default(now())
+
+  doc      Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
+  docId    String
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
+
+  @@index([docId, createdAt])
+}
+
+model TemporaryImport {
+  id          String   @id
+  fileKey     String
+  fileName    String
+  mimeType    String
+  workspaceId String
+  subspaceId  String
+  parentId    String? // Optional parent document ID
+  title       String
+  userId      String
+  status      String   @default("pending") // pending | processing | complete | error
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime // Auto-cleanup after 24 hours
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subspace  Subspace  @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt]) // For cleanup job
+}
+
+model File {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  url         String   @default("")
+  status      String   @default("pending") // pending/active/deleted
+  size        Int      @default(0)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  contentType String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AITokenUsage {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String   @unique
+  tokensUsed    Int      @default(0)
+  lastResetDate DateTime @default(now())
+  monthlyLimit  Int      @default(10000)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, lastResetDate])
+}
+
+model UserLoginHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String?
+  location  String?
+  loginTime DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Star {
+  id        String   @id @default(cuid())
+  index     String?  @db.VarChar(256) // For sorting
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  doc    Doc    @relation(fields: [docId], references: [id], onDelete: Cascade)
+  docId  String
+
+  // Ensure each user can only star a document once
+  @@unique([userId, docId])
+}
+
+enum WorkspaceRole {
+  OWNER // Can delete the workspace/transfer ownership/has all ADMIN permissions
+  ADMIN // Can manage workspace settings, add/remove members, add/remove member groups, manage all documents in the workspace, etc
+  MEMBER // Can create documents/ join subspaces/ create member groups(if allowed in workspace settings) / Cannot see private content unless explicitly shared
+}
+
+enum SubspaceRole {
+  ADMIN // Can manage subspace settings, add/remove members, manage  all documents in the subspace, etc
+  MEMBER
+}
+
+enum DocType {
+  NOTE
+  WHITEBOARD
+  MIND
+}
+
+enum WorkspaceType {
+  PERSONAL
+  TEAM
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  // Event classification
+  event String // NotificationEventType (validated at application layer)
+
+  // Recipients and actors
+  userId  String // Who receives this notification
+  actorId String? // Who triggered this event (optional)
+
+  // Context (what this notification is about)
+  documentId  String?
+  subspaceId  String?
+  workspaceId String
+
+  // Metadata
+  metadata Json? // Flexible storage for event-specific data
+
+  // Read state (Hybrid semantics)
+  viewedAt DateTime? // Set when user clicks notification (action-required)
+  // OR when notification enters viewport for 2s (informational)
+
+  // Action-required fields (for permission requests)
+  actionRequired   Boolean   @default(false)
+  actionType       String? // ActionType (validated at application layer)
+  actionStatus     String    @default("PENDING") // ActionStatus (validated at application layer)
+  actionPayload    Json? // Action-specific data
+  actionResolvedAt DateTime?
+  actionResolvedBy String? // User ID who resolved
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor     User?     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  document  Doc?      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  subspace  Subspace? @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  resolver  User?     @relation("NotificationResolver", fields: [actionResolvedBy], references: [id], onDelete: SetNull)
+
+  // Indexes for query performance
+  @@index([userId, viewedAt]) // List unread notifications
+  @@index([userId, event]) // Filter by event type (for pagination)
+  @@index([userId, createdAt]) // Chronological listing
+  @@index([userId, actionRequired, actionStatus]) // Filter action-required notifications
+  @@index([workspaceId, userId]) // Workspace-scoped queries
+  @@index([subspaceId, userId]) // Subspace-scoped queries
+}
+
+// NotificationSetting (Stubbed for Phase 2)
+model NotificationSetting {
+  id        String @id @default(cuid())
+  userId    String
+  eventType String // NotificationEventType (validated at application layer)
+
+  // Phase 2: Multi-channel preferences
+  webEnabled Boolean @default(true) // Always true in Phase 1
+  // emailEnabled Boolean @default(true)  // Phase 2
+  // chatEnabled  Boolean @default(false) // Phase 2
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventType])
+}
+
+model Subscription {
+  id         String  @id @default(cuid())
+  userId     String
+  documentId String?
+  subspaceId String?
+  event      String // SubscriptionEventType (e.g., "documents.update")
+
+  // Soft delete support
+  deletedAt DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Doc?      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  subspace Subspace? @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
+
+  // Unique constraint: one subscription per user per resource
+  @@unique([userId, documentId, subspaceId])
+  // Indexes
+  @@index([userId])
+  @@index([documentId])
+  @@index([subspaceId])
+  @@index([deletedAt])
+}
+
+// Document view tracking
+// Records when users view documents to prevent redundant notifications
+model DocumentView {
+  id         String   @id @default(cuid())
+  userId     String
+  documentId String
+
+  // Timestamps
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Doc  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Unique constraint: one view record per user per document
+  @@unique([userId, documentId])
+
+  // Indexes for query performance
+  @@index([userId, documentId, updatedAt])
+  @@index([documentId, updatedAt])
+}
+
+// Track last visited document per user per workspace for better UX
+model WorkspaceLastVisitedDoc {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  documentId  String
+
+  // Timestamp
+  visitedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  document  Doc       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Unique constraint: one last-visited per user per workspace
+  @@unique([userId, workspaceId])
+
+  // Indexes for query performance
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([documentId])
+}

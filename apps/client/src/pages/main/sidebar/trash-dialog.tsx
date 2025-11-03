@@ -1,0 +1,190 @@
+import { useEffect, useState } from "react";
+import { Trash2, RotateCcw } from "lucide-react";
+import { Button } from "@idea/ui/shadcn/ui/button";
+import { Input } from "@idea/ui/shadcn/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@idea/ui/shadcn/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@idea/ui/shadcn/ui/table";
+import { documentApi } from "@/apis/document";
+import { type TrashDocumentResponse } from "@idea/contracts";
+import { ErrorCodeEnum } from "@api/_shared/constants/api-response-constant";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
+import { useTranslation } from "react-i18next";
+import Loading from "@idea/ui/base/loading";
+import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
+import { useDocumentPermissions } from "@/hooks/permissions";
+
+interface TrashDialogProps {
+  // react-confirm props
+  show?: boolean;
+  proceed?: (value: any) => void;
+}
+
+interface TrashDocumentRowProps {
+  doc: TrashDocumentResponse;
+  onRestore: (id: string) => void;
+  onPermanentDelete: (id: string) => void;
+}
+
+const TrashDocumentRow: React.FC<TrashDocumentRowProps> = ({ doc, onRestore, onPermanentDelete }) => {
+  const { t } = useTranslation();
+  const { canRestoreDocument, canPermanentDeleteDocument } = useDocumentPermissions(doc);
+
+  const getSubspaceDisplay = () => {
+    if (!doc.subspace) {
+      return <span className="text-muted-foreground">{t("My Docs")}</span>;
+    }
+
+    const typeLabel = doc.subspace.type === "PERSONAL" ? t("Personal") : "";
+    return (
+      <div>
+        <div>{doc.subspace.name}</div>
+        {typeLabel && <div className="text-xs text-muted-foreground">{typeLabel}</div>}
+      </div>
+    );
+  };
+
+  return (
+    <TableRow key={doc.id}>
+      <TableCell className="font-medium">
+        <div>{doc.title || t("Untitled")}</div>
+        {doc.author && <div className="text-xs text-muted-foreground">by {doc.author.displayName || doc.author.email}</div>}
+      </TableCell>
+      <TableCell>{getSubspaceDisplay()}</TableCell>
+      <TableCell>{doc.deletedAt ? formatDistanceToNow(new Date(doc.deletedAt), { addSuffix: true }) : "-"}</TableCell>
+      <TableCell className="text-right space-x-2">
+        <Button variant="outline" size="sm" onClick={() => onRestore(doc.id)} disabled={!canRestoreDocument}>
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+        <Button variant="destructive" size="sm" onClick={() => onPermanentDelete(doc.id)} disabled={!canPermanentDeleteDocument}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+};
+
+const TrashDialog: React.FC<ConfirmDialogProps<TrashDialogProps, any>> = ({ show = false, proceed }) => {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [documents, setDocuments] = useState<TrashDocumentResponse[]>([]);
+  const [keyword, setKeyword] = useState("");
+
+  // Load trash documents when dialog opens
+  useEffect(() => {
+    if (show) {
+      loadTrashDocuments();
+    }
+  }, [show]);
+
+  async function loadTrashDocuments() {
+    try {
+      setLoading(true);
+      const docs = await documentApi.getTrash();
+      setDocuments(docs);
+    } catch (error) {
+      toast.error(t("Failed to load trash documents"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRestore(id: string) {
+    try {
+      await documentApi.restore(id);
+      await loadTrashDocuments();
+      // Refresh both document lists
+      await Promise.all([
+        // FIXME: remove add this after the share feature added
+        // loadSharedDocuments(),
+        // loadNestedTree(null),
+      ]);
+      toast.success(t("Document restored successfully"));
+    } catch (error) {
+      toast.error(t("Failed to restore document"));
+    }
+  }
+
+  async function handlePermanentDelete(id: string) {
+    showConfirmModal({
+      type: "alert",
+      confirmVariant: "destructive",
+      title: t("Permanent Delete"),
+      description: t("Are you sure you want to permanently delete this document? This action cannot be undone."),
+      confirmText: t("Delete"),
+      cancelText: t("Cancel"),
+      onConfirm: async () => {
+        try {
+          await documentApi.permanentDelete(id);
+          await loadTrashDocuments();
+          toast.success(t("Document deleted permanently"));
+          return true;
+        } catch (error: any) {
+          if (error?.code === ErrorCodeEnum.DocumentNotFound) {
+            // refresh trash documents
+            toast.error(t("Document not found in trash"));
+            await loadTrashDocuments();
+            return false;
+          }
+          toast.error(t("Failed to delete document"));
+          return false;
+        }
+      },
+    });
+  }
+
+  const filteredDocuments = documents.filter((doc) => doc.title.toLowerCase().includes(keyword.toLowerCase()));
+
+  const handleClose = () => {
+    proceed?.(null);
+  };
+
+  return (
+    <Dialog open={show} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="sm:max-w-[800px]">
+        <DialogHeader>
+          <DialogTitle>{t("Trash")}</DialogTitle>
+          <DialogDescription>{t("Documents in trash will be automatically deleted after 30 days. You can restore them before then.")}</DialogDescription>
+        </DialogHeader>
+        <>
+          <div>
+            <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder={t("Search documents in trash")} className="max-w" />
+          </div>
+
+          <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+            {loading ? (
+              <Loading />
+            ) : documents.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">{t("No documents in trash")}</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[250px]">{t("Title")}</TableHead>
+                    <TableHead className="w-[150px]">{t("Subspace")}</TableHead>
+                    <TableHead>{t("Deleted At")}</TableHead>
+                    <TableHead className="text-right">{t("Actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDocuments.map((doc) => (
+                    <TrashDocumentRow key={doc.id} doc={doc} onRestore={handleRestore} onPermanentDelete={handlePermanentDelete} />
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Create the confirm modal
+export const trashModal = ContextAwareConfirmation.createConfirmation(confirmable(TrashDialog));
+
+// Helper function to show the trash modal
+export const showTrashModal = () => {
+  return trashModal({});
+};

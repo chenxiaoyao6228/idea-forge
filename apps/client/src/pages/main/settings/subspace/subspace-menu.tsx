@@ -1,0 +1,125 @@
+import { Button } from '@idea/ui/shadcn/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@idea/ui/shadcn/ui/dropdown-menu';
+import { TooltipWrapper } from "@/components/tooltip-wrapper";
+import { MoreHorizontal, UserPlus, Settings, LogOut, Bell, BellOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { showAddSubspaceMemberModal } from "@/pages/main/settings/subspace/add-subspace-member-modal";
+import { showSubspaceSettingsModal } from "@/pages/main/settings/subspace/subspace-setting-modal/subspace-settings-modal";
+import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin, useFetchSubspace } from "@/stores/subspace-store";
+import { useIsSubscribedToSubspace, useToggleSubspaceSubscription } from "@/stores/subscription-store";
+
+interface SubspaceMenuProps {
+  subspaceId: string;
+  subspaceName: string;
+  subspaceType: string;
+  workspaceId: string;
+}
+
+export function SubspaceMenu({ subspaceId, subspaceName, subspaceType, workspaceId }: SubspaceMenuProps) {
+  const { t } = useTranslation();
+  const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
+  const isLastAdmin = useIsLastSubspaceAdmin(subspaceId);
+  const { run: fetchSubspace } = useFetchSubspace();
+  const isSubscribed = useIsSubscribedToSubspace(subspaceId);
+  const toggleSubscription = useToggleSubspaceSubscription(subspaceId);
+
+  const handleAddMembers = async () => {
+    const result = await showAddSubspaceMemberModal({
+      subspaceId,
+      subspaceName,
+      workspaceId,
+    });
+
+    if (result?.success) {
+      console.log("Members added successfully:", result);
+    }
+  };
+
+  const handleSubspaceSettings = async () => {
+    const result = await showSubspaceSettingsModal({
+      subspaceId,
+      workspaceId,
+    });
+
+    if (result) {
+      // Refresh subspace data
+      await fetchSubspace(subspaceId);
+    }
+  };
+
+  const handleLeaveSubspace = async () => {
+    try {
+      await leaveSubspace({
+        subspaceId,
+      });
+    } catch (error) {
+      // Error is already handled by the hook (toast shown)
+      // Component can add additional error handling if needed
+    }
+  };
+
+  const handleArchiveSubspace = () => {
+    // TODO: Implement archive subspace
+    console.log("Archive subspace clicked");
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onClick={toggleSubscription}>
+          {isSubscribed ? (
+            <>
+              <BellOff className="mr-2 h-4 w-4" />
+              {t("Unsubscribe")}
+            </>
+          ) : (
+            <>
+              <Bell className="mr-2 h-4 w-4" />
+              {t("Subscribe")}
+            </>
+          )}
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <TooltipWrapper disabled={subspaceType !== "WORKSPACE_WIDE"} tooltip={t("Workspace-wide subspaces automatically include all workspace members")}>
+          <DropdownMenuItem onClick={handleAddMembers} disabled={subspaceType === "WORKSPACE_WIDE"}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            {t("Add member...")}
+          </DropdownMenuItem>
+        </TooltipWrapper>
+
+        <DropdownMenuItem onClick={handleSubspaceSettings}>
+          <Settings className="mr-2 h-4 w-4" />
+          {t("Subspace settings...")}
+        </DropdownMenuItem>
+        <TooltipWrapper
+          disabled={isLastAdmin || subspaceType === "WORKSPACE_WIDE"}
+          tooltip={isLastAdmin ? t("Cannot leave as the only admin") : subspaceType === "WORKSPACE_WIDE" ? t("Cannot leave workspace-wide subspaces") : ""}
+        >
+          <DropdownMenuItem onClick={handleLeaveSubspace} disabled={isLeavingSubspace || isLastAdmin || subspaceType === "WORKSPACE_WIDE"}>
+            <LogOut className="mr-2 h-4 w-4" />
+            {isLeavingSubspace ? t("Leaving...") : t("Leave subspace")}
+          </DropdownMenuItem>
+        </TooltipWrapper>
+
+        {/* <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem onClick={handleArchiveSubspace}>
+                <Archive className="mr-2 h-4 w-4" />
+                {t("Archive subspace")}
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right">{t("Archive this subspace. Settings and pages will become read-only.")}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider> */}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

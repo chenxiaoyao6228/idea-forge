@@ -2,21 +2,25 @@ English | [简体中文](README-CN.md)
 
 <h1 align="center">Idea Forge</h1>
 
-`Idea Forge` is a powerful document collaboration platform that combines Notion-like functionality with AI capabilities. It offers a seamless environment for real-time collaborative editing, AI-powered writing assistance, and intuitive document management.
+`Idea Forge` is an enterprise-grade document collaboration platform that combines Notion-like functionality with AI capabilities and advanced workspace management. It offers a complete solution for teams with multi-tenant workspaces, sophisticated permission controls, real-time collaborative editing, AI-powered writing assistance, and comprehensive document organization.
 
 ## ✨ Key Features
 
-- 💯 Free and Open Source with self-hosting support
-- 🔧 Rich document elements (text, tables, task lists, images, Mermaid diagrams)
-- 🤖 AI-powered writing assistance
-- 👥 Real-time collaboration
-- 🎨 Customizable themes, cover images, and emojis
-- 🌐 Multilingual support (English, Chinese, and more)
-- 📝 Markdown keyboard shortcuts, import and export markdown
+- 🏢 **Multi-Workspace & Subspaces** - 5 subspace types for flexible organization with drag and drop to move docs
+- 🔐 **Advanced Permissions** - multi-level hierarchy with inheritance and time-limited access
+- ⚡ **Real-Time Collaboration** - Live cursors and conflict-free editing
+- 💬 **Comments & Reactions** - Threaded discussions with emoji reactions
+- 🔔 **Smart Notifications** - Filtered alerts with action-required support
+- 👥 **Groups & Guest Access** - Team organization and external collaboration
+- 🌍 **Public Sharing** - Shareable links with analytics and expiration
+- 🤖 **AI Writing Assistant** - Context-aware content generation
+- 🔧 **Rich Editor** - Tables, tasks, images, diagrams, code blocks
+- 📝 **File import/export Support** - Import/export various format
+- 💯 **Free & Open Source** - MIT license with self-hosting
 
 Try Idea Forge now at [ideaforge.link](https://ideaforge.link/)
 
-> And more features & elements are on the way: Team workspace, Mindmap, Whiteboard, PDF Export, please stay tuned.
+> And more features & elements are on the way: Mindmap, Whiteboard, PDF Export, Custom domains for public sharing, please stay tuned.
 
 ## 📸 Screenshots
 
@@ -44,13 +48,41 @@ Work together with your team in real-time by sharing documents.
 
 ![Real-time Collaboration Demo](./docs/marketing/images/real-time-collab.gif)
 
+### Workspace & Subspace Management(Recent update)
+
+Organize your work across multiple workspaces with 5 subspace types for flexible project organization.
+
+![Workspace and Subspace System](./docs/marketing/images/workspace-subspace-system.png)
+
+> You might not see the workspace system in production depends on the time you view this doc since it still needs final testing and check
+
+### Document Permission & Inheritance (Recent update)
+
+multi-level doc permission hierarchy with cascading inheritance and granular access control. workspace > subspace > group > user
+
+![Document Permission Inheritance](./docs/marketing/images/document-permission-inheritance.png)
+
+
+### Notification & Comment System (Recent update)
+
+Stay informed with smart notifications and have threaded discussions with reactions.
+
+![Notification and Comment System](./docs/marketing/images/notification-comment-system.png)
+
+### File Import (Recent update)
+
+Import files with drag-and-drop, background processing, and job status tracking.
+
+![File Import System](./docs/marketing/images/file-imports.png)
+
+
 ## 🛠️ Tech Stack
 
-Idea Forge is built with modern technologies:
-
-- **Backend**: NestJS, PostgreSQL, Redis, Hocuspocus, Prisma, S3
-- **Frontend**: React, TypeScript, TailwindCSS, Shadcn UI, Tiptap
-- **AI Integration**: OpenAI API
+**Backend:** NestJS • PostgreSQL • Prisma • Redis • Hocuspocus • BullMQ • S3 • JWT OAuth
+**Frontend:** React • TypeScript • TipTap • Shadcn UI • TailwindCSS • Zustand
+**Collaboration:** Yjs CRDT • WebSocket • Socket.io
+**Infrastructure:** Turbo • pnpm • Biome • Vitest • Playwright
+**AI:** OpenAI API with streaming
 
 ## 🚀 Development Setup
 
@@ -58,20 +90,8 @@ Idea Forge is built with modern technologies:
 
 > ⚠️ Note for users in China: Due to Docker being blocked, please use Docker image acceleration or a VPN to pull images
 
-2. Configure Tiptap Pro Extension
 
-   a. Register and login at [tiptap.dev](https://tiptap.dev/)
-   b. Get your token from [cloud.tiptap.dev/pro-extensions](https://cloud.tiptap.dev/pro-extensions)
-   c. Create a `.npmrc` file in the project root with:
-
-```bash
-link-workspace-packages=true
-
-@tiptap-pro:registry=https://registry.tiptap.dev/
-//registry.tiptap.dev/:_authToken={your_token}
-```
-
-3. Start Development Environment
+2. Start Development Environment
 
 ```bash
 # Install dependencies and setup local Docker environment
@@ -80,6 +100,20 @@ pnpm install && pnpm run setup
 # Start the development server
 pnpm run dev
 ```
+
+## 🗺️ Roadmap
+
+We're continuously improving Idea Forge. Here's what's coming next:
+
+### Upcoming Features
+- 🧠 **Mind Maps** - Visual thinking and brainstorming
+- 🎨 **Whiteboard** - Collaborative visual canvas
+- 🎯 **Templates** - Pre-built document templates
+- 📄 **PDF Export** - Export documents to PDF with formatting
+- 🌐 **Custom Domains** - Use your own domain for public sharing
+- 🔌 **API Integrations** - Connect with third-party services
+- 📊 **Analytics Dashboard** - Workspace and document analytics
+
 
 ## 🤝 Contributing
 
@@ -90,6 +124,8 @@ We welcome all contributions! Here's how you can help:
 - 🎨 Improve UI/UX
 - 📚 Enhance documentation
 - 🌍 Add translations
+
+Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
 
 ## 📄 License
 

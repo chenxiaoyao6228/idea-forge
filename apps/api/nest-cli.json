@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "shell": false,
+  "compilerOptions": {
+    "builder": "webpack",
+    "webpackConfigPath": "webpack.config.js",
+    "deleteOutDir": true,
+    "assets": [
+      {
+        "include": "../locales/**/*",
+        "outDir": "dist/locales",
+        "watchAssets": true
+      }
+    ]
+  },
+  "watchOptions": {
+    "watchExclude": [
+      "src/@generated/**/*",
+      "src/@generated/*",
+      "**/@generated/**/*",
+      "**/*.spec.ts"
+    ]
+  }
+}

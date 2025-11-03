@@ -30,7 +30,7 @@
       "complexity": {
         "noForEach": "off",
         "noBannedTypes": "off",
-        "noStaticOnlyClass": "off"
+        "noStaticOnlyClass": "error"
       },
       "security": {
         "noDangerouslySetInnerHtml": "off"
@@ -54,7 +54,7 @@
     }
   },
   "files": {
-    "include": ["client/src/**", "api/src/**", "shared/**"],
-    "ignore": ["node_modules", "dist", "build", "coverage", "client/src/assets/_icons-spritesheet-auto-generated/**", "shared/src/contracts/prisma/**"]
+    "include": ["apps/*/src/**", "packages/*/src/**"],
+    "ignore": ["node_modules", "dist", "build", "coverage", "apps/client/src/assets/_icons-spritesheet-auto-generated/**", "packages/contracts/prisma/**"]
   }
 }

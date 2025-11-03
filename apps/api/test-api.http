@@ -1,0 +1,127 @@
+// This file is for temporary test, with cursor or other ai editors, we can test api easily with the template 
+// vscode extension:  https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+// ============== example ==============
+
+@baseUrl=http://localhost:5000
+
+
+### login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "1@qq.com",
+  "password": "Aa111111"
+}
+
+### get access token from cookie response of login
+// 2@qq.com
+# @accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YTdlYmIwNy1iMmYxLTRhZmMtODg2Zi1jMDFhZDMyZThkYWMiLCJpYXQiOjE3NDk3MjAyOTMsImV4cCI6MTc0OTgwNjY5M30.M5lzKtayfEUTQdK-a2o7mAgSc_qhRzy3Y3Xj37zY0R4
+# @userId = 8a7ebb07-b2f1-4afc-886f-c01ad32e8dac
+// 1@qq.com
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYTFkYjEyMC0xM2RkLTRhMmYtYTZkMS0zNWY1ODMwOTUwYjgiLCJpYXQiOjE3NDk3MjA2MjksImV4cCI6MTc0OTgwNzAyOX0.8x_krRoZuFBArJKBDBkHvTUzQQn9CwdUncxzK85_0do
+@userId = 1a1db120-13dd-4a2f-a6d1-35f5830950b8
+
+// ========== other test ============
+@workspaceId = cmbt6b17l000qzle2qtrq88bf
+@subspaceId = cmbt6c3ym000vzle2blmr1xl7
+
+### create workspace
+POST {{baseUrl}}/api/workspaces
+Content-Type: application/json
+
+{
+  "name": "workspace-test",
+  "description": "test",
+  "avatar": ""
+}
+
+### create subspace
+POST {{baseUrl}}/api/subspaces
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+{
+   "workspaceId": "{{workspaceId}}",
+   "name": "subspace-test",
+   "description": "test",
+   "type": "WORKSPACE_WIDE",
+   "avatar": ""
+}
+
+### invite a user to a workspace
+POST {{baseUrl}}/api/workspaces/{{workspaceId}}/members
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+{
+  "userId": "{{userId}}",
+  "role": "MEMBER"
+}
+
+
+### create doc
+POST {{baseUrl}}/api/documents
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+{
+  "name": "test",
+  "title": "test-1",
+  "content": "test",
+  "type": "NOTE",
+  "visibility": "WORKSPACE",
+  "workspaceId": "{{workspaceId}}",
+  "subspaceId": "{{subspaceId}}",
+  "parentId": null
+}
+
+
+### get subspace detail
+GET {{baseUrl}}/api/subspaces/{{subspaceId}}
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+### get subspaces list
+GET {{baseUrl}}/api/subspaces/list
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+### get docs of subspace
+POST   {{baseUrl}}/api/documents/list
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+X-Request-Id: doc-list-trace-456
+
+{
+  "page": 1,
+  "limit": 2,
+  "workspaceId": "{{workspaceId}}",
+  "subspaceId": "{{subspaceId}}",
+  "parentId": null,
+  "visibility": "WORKSPACE",
+  "type": "NOTE"
+}
+
+### permissions
+
+POST {{baseUrl}}/api/permissions/DOCUMENT/cmbt6clk40011zle2j5kzpdvr
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+{
+  "userId": "{{userId}}",
+  "permission": "READ"
+}
+
+### test pagination
+GET {{baseUrl}}/api/documents/list?page=1&limit=2&workspaceId=cmasgd22l00005aw8w7i31ykz
+Content-Type: application/json
+Cookie: accessToken={{accessToken}}
+
+
+### test ip
+GET {{baseUrl}}/api/test-ip
+Content-Type: application/json
+X-Request-Id: test-trace-123

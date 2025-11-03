@@ -1,0 +1,8 @@
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
+# Log files
+logs/
+*.log

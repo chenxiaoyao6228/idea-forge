@@ -15,9 +15,8 @@ const keysToUpdate = [
 
 // Path to the i18n locale directories
 const localeDirs = [
-  path.join(__dirname, "../../api/locales"),
-  path.join(__dirname, "../../api/public/locales"),
-  path.join(__dirname, "../../shared/src/contracts/locales"),
+  path.join(__dirname, "../../apps/api/locales"),
+  path.join(__dirname, "../../apps/api/public/locales"),
 ];
 
 const config = {
