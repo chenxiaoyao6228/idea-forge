@@ -13,9 +13,9 @@ export class GithubStrategy extends PassportStrategy(Strategy, "github") {
     private readonly githubOAuthConfiguration: ConfigType<typeof githubOAuthConfig>,
   ) {
     super({
-      clientID: githubOAuthConfiguration.clientId,
-      clientSecret: githubOAuthConfiguration.clientSecret,
-      callbackURL: githubOAuthConfiguration.callbackURL,
+      clientID: githubOAuthConfiguration.clientId as string,
+      clientSecret: githubOAuthConfiguration.clientSecret as string,
+      callbackURL: githubOAuthConfiguration.callbackURL as string,
       scope: ["user:email"],
     });
   }

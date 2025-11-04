@@ -3,7 +3,7 @@ import { WebSocketEventBuffer } from "./event-buffer";
 
 describe("WebSocketEventBuffer", () => {
   let buffer: WebSocketEventBuffer;
-  let applyFn: ReturnType<typeof vi.fn>;
+  let applyFn: any;
 
   beforeEach(() => {
     buffer = new WebSocketEventBuffer();
