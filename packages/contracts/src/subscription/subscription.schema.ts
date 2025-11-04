@@ -7,8 +7,8 @@ export const SubscriptionEventType = {
 
 export type SubscriptionEventType = (typeof SubscriptionEventType)[keyof typeof SubscriptionEventType];
 
-// Base Subscription schema
-export const SubscriptionSchema = z.object({
+// Base Subscription schema (renamed to avoid conflict with Prisma-generated types)
+export const SubscriptionDtoSchema = z.object({
   id: z.string(),
   userId: z.string(),
   documentId: z.string().nullable(),
@@ -19,7 +19,7 @@ export const SubscriptionSchema = z.object({
   updatedAt: z.date(),
 });
 
-export type Subscription = z.infer<typeof SubscriptionSchema>;
+export type SubscriptionDto = z.infer<typeof SubscriptionDtoSchema>;
 
 // Create subscription request
 export const CreateSubscriptionRequestSchema = z
@@ -40,7 +40,7 @@ export const CreateSubscriptionRequestSchema = z
 
 export type CreateSubscriptionRequest = z.infer<typeof CreateSubscriptionRequestSchema>;
 
-export const CreateSubscriptionResponseSchema = SubscriptionSchema;
+export const CreateSubscriptionResponseSchema = SubscriptionDtoSchema;
 export type CreateSubscriptionResponse = z.infer<typeof CreateSubscriptionResponseSchema>;
 
 // List subscriptions request
@@ -52,7 +52,7 @@ export const ListSubscriptionsRequestSchema = z.object({
 export type ListSubscriptionsRequest = z.infer<typeof ListSubscriptionsRequestSchema>;
 
 export const ListSubscriptionsResponseSchema = z.object({
-  subscriptions: z.array(SubscriptionSchema),
+  subscriptions: z.array(SubscriptionDtoSchema),
   total: z.number(),
 });
 
@@ -65,7 +65,7 @@ export const GetSubscriptionRequestSchema = z.object({
 
 export type GetSubscriptionRequest = z.infer<typeof GetSubscriptionRequestSchema>;
 
-export const GetSubscriptionResponseSchema = SubscriptionSchema;
+export const GetSubscriptionResponseSchema = SubscriptionDtoSchema;
 export type GetSubscriptionResponse = z.infer<typeof GetSubscriptionResponseSchema>;
 
 // Delete subscription request

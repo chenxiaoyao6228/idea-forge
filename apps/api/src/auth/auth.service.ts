@@ -286,8 +286,8 @@ export class AuthService {
     };
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, this.jwtConfig),
-      this.jwtService.signAsync(payload, this.refreshJwtConfig),
+      this.jwtService.signAsync(payload, this.jwtConfig as any),
+      this.jwtService.signAsync(payload, this.refreshJwtConfig as any),
     ]);
 
     return { accessToken, refreshToken };
