@@ -26,6 +26,9 @@ export class AbilityService implements OnModuleInit {
 
     providers.forEach((provider) => {
       try {
+        if (!provider.metatype) {
+          return;
+        }
         const model = this.reflector.get(ABILITY_FACTORY_KEY, provider.metatype);
 
         if (model && provider.instance) {
