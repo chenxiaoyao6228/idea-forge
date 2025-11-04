@@ -133,12 +133,12 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Apply PublicShareDiscoveryMiddleware first for smart link detection
     consumer.apply(PublicShareDiscoveryMiddleware).forRoutes({
-      path: "**",
+      path: "*",
       method: RequestMethod.GET,
     });
 
     consumer.apply(FallbackMiddleware).forRoutes({
-      path: "**",
+      path: "*",
       method: RequestMethod.GET,
     });
     consumer.apply(RequestLoggerMiddleware).forRoutes("*");
