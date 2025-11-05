@@ -52,12 +52,8 @@ export const envSchema = z.object({
   OSS_ENDPOINT: z.string().url(),
   OSS_CDN_ENDPOINT: z.string().url().optional().nullable(),
 
-  /* AI PROVIDERS */
-  DEEPSEEK_API_KEY_1: z.string().min(1),
-
   /* SENTRY CONFIG */
   SENTRY_DSN: z.string().optional(),
-  // Build-time variables don't need to be validated here
   // SENTRY_AUTH_TOKEN: z.string().optional(),
   // SENTRY_AUTH_TOKEN_REACT: z.string().optional(),
 });

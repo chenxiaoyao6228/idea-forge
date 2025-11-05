@@ -14,6 +14,7 @@
     "./types": "./src/types/index.ts"
   },
   "scripts": {
+    "build": "echo 'Build skipped - consumers build from source'",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"

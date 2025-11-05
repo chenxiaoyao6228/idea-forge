@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "dotenv-flow -p ../../ -- vite",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",

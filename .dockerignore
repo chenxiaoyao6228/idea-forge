@@ -1,6 +1,29 @@
+# Dependencies
 node_modules
 npm-debug.log
-.env*
+
+# Environment files
+# Strategy: Include .env.example for defaults, exclude actual .env files with secrets
+.env
+.env.local
+.env.development
+.env.production
+.env.test
 .flaskenv*
-!.env.project
-!.env.vault
+# NOTE: .env.example is intentionally NOT ignored - it contains safe defaults
+# All secrets are provided at runtime via docker-compose environment variables
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Logs
+logs
+*.log
+
+# Test coverage
+coverage

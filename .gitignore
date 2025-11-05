@@ -41,6 +41,12 @@ lerna-debug.log*
 *.sln
 *.sw?
 
+
+# claude
+.claude
+openspec
+AGENTS.md
+
 # Temp directories
 .temp
 .tmp
@@ -86,6 +92,3 @@ scripts/i18n/trans.env
 
 # design
 _design
-
-## claude
-.claude/settings.local.json

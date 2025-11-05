@@ -84,6 +84,41 @@ Import files with drag-and-drop, background processing, and job status tracking.
 **Infrastructure:** Turbo • pnpm • Biome • Vitest • Playwright
 **AI:** OpenAI API with streaming
 
+## 🐳 Self-Hosting
+
+Want to run Idea Forge on your own server? We've made it super easy!
+
+### Quick Start (No Repository Clone Needed!)
+
+before you get started, make sure you have docker installed on your local machine or server
+
+> ⚠️ Note for users in China: Due to Docker being blocked, please use Docker image acceleration or a VPN to pull images
+
+references:  [docs/development/EN/docker.md](./docs/development/EN/docker.md)
+
+```bash
+# Download deployment scripts and get started in seconds
+# This creates an 'idea-forge-deploy' folder with all necessary files
+curl -fsSL https://raw.githubusercontent.com/chenxiaoyao6228/idea-forge/master/scripts/deploy/deploy-quick-start.sh | bash
+
+# Configure and deploy
+cd idea-forge-deploy  # Created by the script above
+cp env.secrets.example env.secrets
+nano env.secrets      # Fill in your actual secrets (~20 variables)
+./deploy.sh production
+```
+
+### What You Get
+
+- ✅ **Docker-based deployment** - One command to deploy
+- ✅ **Pre-built images** - No build required, pull from Docker Hub
+- ✅ **Automatic migrations** - Database setup handled automatically
+- ✅ **Environment templates** - Easy configuration with examples
+- ✅ **Test & production** - Separate environments with different configs
+
+**📖 Full deployment guide:** [docs/development/EN/deployment.md](./docs/development/EN/deployment.md)
+
+
 ## 🚀 Development Setup
 
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) for your operating system

@@ -94,6 +94,44 @@ pnpm migrate:dev      # Create and run migration
 pnpm migrate:deploy   # Deploy migrations (production)
 ```
 
+### Git Worktree for Parallel Development
+
+**Use git worktrees** to work on multiple features simultaneously without port conflicts or switching branches.
+
+```bash
+# Create a new worktree with isolated Docker services
+./scripts/development/create-worktree.sh feat-auth 100
+# Creates new worktree with unique ports (API:5100, WS:5101, Vite:5273, etc.)
+
+# Work in the new worktree
+cd ../idea-forge-feat-auth
+# Dev servers auto-start with hot-reload
+
+# Clean up when done
+cd ../idea-forge
+./scripts/development/cleanup-worktree.sh feat-auth
+# Removes worktree, Docker containers, and volumes
+```
+
+**Port Allocation Strategy:**
+- **main worktree:** PORT_OFFSET=0 (ports 5000, 5001, 5173, 5432, 6379, 9000, 9001)
+- **worktree-1:** PORT_OFFSET=100 (ports 5100, 5101, 5273, 5532, 6479, 9100, 9101)
+- **worktree-2:** PORT_OFFSET=200 (ports 5200, 5201, 5373, 5632, 6579, 9200, 9201)
+- **worktree-3:** PORT_OFFSET=300 (ports 5300, 5301, 5473, 5732, 6679, 9300, 9301)
+
+**Benefits:**
+- ✅ Work on multiple features in parallel without switching branches
+- ✅ Each worktree has isolated Docker services (PostgreSQL, Redis, MinIO)
+- ✅ No port conflicts - each worktree uses unique ports
+- ✅ Independent databases - test without affecting other worktrees
+- ✅ Normal single-worktree workflow remains unchanged
+
+**Important Notes:**
+- Normal development (single worktree) continues to use default ports with no changes
+- Worktree-specific configuration uses `docker-compose-worktree.yml`
+- Each worktree gets a unique database (e.g., `ideaforge_feat-auth`)
+- OAuth callbacks and all URLs automatically adjusted per worktree
+
 ## Project Architecture
 
 ### Monorepo Structure
@@ -246,6 +284,46 @@ pnpm -F @idea/client add <new-package>  # For client
 pnpm -F @idea/api add <new-package>     # For API
 ```
 
+### Docker Image Security
+
+**IMPORTANT: The Docker image is designed to be safely published to public Docker Hub**
+
+**Security Model:**
+
+**What's IN the image:**
+- ✅ Application code (compiled/built)
+- ✅ Node modules (production dependencies)
+- ✅ Prisma schema and generated client
+- ✅ Static assets and locales
+
+**What's NOT in the image:**
+- ❌ NO `.env` files (enforced by `.dockerignore`)
+- ❌ NO environment variables baked in
+- ❌ NO secrets or credentials
+- ❌ NO API keys or tokens
+
+**Environment Variables:**
+- **All variables are runtime-only**: Passed via `docker-compose` environment flags or `.env` file
+- No build-time arguments required (including Sentry tokens)
+- Code checks for empty values and gracefully skips optional services (e.g., Sentry)
+- See `scripts/deploy/docker-compose.yml` for complete runtime config list
+
+**Local Build & Deploy:**
+```bash
+# Build Docker image
+docker build -t idea-forge:latest .
+
+# Configure deployment
+cp scripts/deploy/env.secrets.example scripts/deploy/.env
+# Edit .env: Set SKIP_PULL=true, IMAGE_NAME=idea-forge:latest, update secrets
+
+# Deploy locally
+cd scripts/deploy
+./deploy.sh
+```
+
+See `docs/development/EN/deployment.md` for detailed documentation.
+
 ### Debugging Real-time Features
 
 - **Yjs State:** Use browser dev tools Yjs extension
@@ -318,6 +396,16 @@ pnpm -F @idea/api add <new-package>     # For API
 
 ### Configuration
 
-- **Environment:** `.env` files for local configuration
-- **Docker:** `apps/api/scripts/start-docker.sh` handles service startup
-- **Ports:** API (3000), Client (5000), Database (5432), Redis (6379)
+**Environment Variables:**
+- All environment variables are centralized at the project root (`.env` file)
+- Copy `.env.example` to `.env` and configure for your local setup
+- The API uses `dotenv-flow -p ../..` to load root-level `.env` files
+- This provides consistent configuration across all apps and packages
+
+**Important:** Environment variables are no longer located in `apps/api/.env`. Use the root `.env` file instead.
+
+**Docker & Ports:**
+- Docker services: `scripts/development/start-docker.sh` handles service startup (uses `docker-compose-dev.yml`)
+- Default ports: API (5000), WS (5001), Client (5173), Database (5432), Redis (6379)
+- Worktree development: Uses `docker-compose-dev.worktree.yml` with PORT_OFFSET environment variable
+- See `.env.example` for port configuration and worktree support

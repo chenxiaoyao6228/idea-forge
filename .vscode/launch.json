@@ -5,19 +5,20 @@
       "name": "React: debug client",
       "request": "launch",
       "type": "chrome",
-      "url": "http://localhost:5000",
+      "url": "http://localhost:${env:VITE_PORT}",
       "webRoot": "${workspaceFolder}/apps/client",
       "skipFiles": [
         "${workspaceFolder}/apps/client/node_modules/**/*.js",
         "<node_internals>/**"
-      ]
+      ],
+      "envFile": "${workspaceFolder}/.env"
     },
-   
+
     {
       "name": "NestJS: debug server",
       "type": "node",
       "request": "attach",
-      "port": 9333,
+      "port": "${env:DEBUG_PORT}",
       "cwd": "${workspaceFolder}/apps/api",
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/apps/api/dist/**/*.js"],
@@ -25,7 +26,8 @@
         "${workspaceFolder}/apps/api/node_modules/**/*.js",
         "<node_internals>/**",
         "**/async_hooks.js"
-      ]
+      ],
+      "envFile": "${workspaceFolder}/.env"
     }
   ],
   "compounds": [

@@ -11,9 +11,9 @@ if ! docker info &> /dev/null; then
 fi
 
 # Check if containers are running, if not start them
-if ! docker compose -f docker-compose-dev.yml -p $DOCKER_CONTAINER_NAME ps --status running | grep -q "postgres\|redis"; then
+if ! docker compose -f ../../docker-compose-dev.yml -p $DOCKER_CONTAINER_NAME ps --status running | grep -q "postgres\|redis"; then
     echo "🚀 Starting Docker services..."
-    docker compose -f docker-compose-dev.yml -p $DOCKER_CONTAINER_NAME up -d || {
+    docker compose -f ../../docker-compose-dev.yml -p $DOCKER_CONTAINER_NAME up -d || {
         echo "❌ Failed to start Docker containers"
         echo "💡 Please check Docker status and try again"
         exit 1
@@ -32,7 +32,7 @@ done
 if [ $ELAPSED -gt $TIMEOUT ]; then
     echo "\n❌ PostgreSQL startup timed out"
     echo "💡 Please check container status:"
-    docker compose -f docker-compose-dev.yml -p $DOCKER_CONTAINER_NAME ps
+    docker compose -f ../../docker-compose-dev.yml -p $DOCKER_CONTAINER_NAME ps
     exit 1
 fi
 
@@ -48,7 +48,7 @@ done
 if [ $ELAPSED -gt $TIMEOUT ]; then
     echo "\n❌ Redis startup timed out"
     echo "💡 Please check container status:"
-    docker compose -f docker-compose-dev.yml -p $DOCKER_CONTAINER_NAME ps
+    docker compose -f ../../docker-compose-dev.yml -p $DOCKER_CONTAINER_NAME ps
     exit 1
 fi
 

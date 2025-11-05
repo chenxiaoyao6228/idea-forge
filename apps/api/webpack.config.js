@@ -50,6 +50,10 @@ module.exports = {
           '@tiptap/core',
           '@tiptap/pm',
           /^@tiptap\/extension-/,
+          '@dicebear/collection',
+          '@dicebear/core',
+          'nestjs-zod',
+          '@faker-js/faker',
           // ESM packages that need to be bundled
           'unified',
           /^remark-/,

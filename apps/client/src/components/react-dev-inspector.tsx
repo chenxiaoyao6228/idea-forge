@@ -3,7 +3,9 @@ import { Inspector } from "react-dev-inspector";
 
 const InspectorWrapper = import.meta.env.MODE === "development" ? Inspector : React.Fragment;
 
-const baseUrl = "http://localhost:5173"; // 保证请求能够到达webpack-dev-server
+// Use VITE_PORT from environment for worktree support
+const vitePort = import.meta.env.VITE_PORT;
+const baseUrl = `http://localhost:${vitePort}`;
 
 function generateSearchParams(params: Object = {}) {
   const searchParams = new URLSearchParams();
