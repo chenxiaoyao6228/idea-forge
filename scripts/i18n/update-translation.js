@@ -1,12 +1,17 @@
 // update translation from en.json to other languages
+//
+// Usage:
+//   1. Set DEEPSEEK_API_KEY_1 in root .env file
+//   2. Run: node scripts/i18n/update-translation.js
 
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
-const dotenv = require("dotenv");
+const dotenvFlow = require("dotenv-flow");
 const OpenAI = require("openai");
 
-dotenv.config({ path: path.join(__dirname, "trans.env") });
+// Load environment variables from root .env file
+dotenvFlow.config({ path: path.join(__dirname, "../..") });
 
 // Keys to update by force
 const keysToUpdate = [
@@ -20,7 +25,7 @@ const localeDirs = [
 ];
 
 const config = {
-  apiKey: process.env.DEEPSEEK_API_KEY,
+  apiKey: process.env.DEEPSEEK_API_KEY_1,
   baseURL: "https://api.siliconflow.cn/v1",
   model: "deepseek-ai/DeepSeek-V3",
 };

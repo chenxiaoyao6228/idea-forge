@@ -1,0 +1,67 @@
+# Docker Compose configuration for Git Worktree development
+# This file is used ONLY for parallel worktree development, NOT for normal single-worktree workflow
+#
+# For normal development, use docker-compose-dev.yml (unchanged, default ports)
+# For worktree development, use this file with environment variables from .env
+#
+# Usage:
+#   docker compose -f docker-compose-dev.worktree.yml up -d
+#
+# Required environment variables (set in .env):
+#   WORKTREE_ID - unique identifier for this worktree (e.g., feat-auth)
+#   POSTGRES_PORT - PostgreSQL external port
+#   REDIS_PORT - Redis external port
+#   MINIO_PORT - MinIO API external port
+#   MINIO_CONSOLE_PORT - MinIO console external port
+#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB - database credentials
+#   MINIO_ROOT_USER, MINIO_ROOT_PASSWORD - MinIO credentials
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: ideaforge-${WORKTREE_ID}-postgres
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      # Worktree-specific volume for data isolation
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: ideaforge-${WORKTREE_ID}-redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      # Worktree-specific volume for data isolation
+      - redis_data:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    container_name: ideaforge-${WORKTREE_ID}-minio
+    ports:
+      - "${MINIO_PORT}:9000" # API port
+      - "${MINIO_CONSOLE_PORT}:9001" # Console port
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      # Worktree-specific volume for data isolation
+      - minio_data:/data
+    command: server --console-address ":9001" /data
+    restart: unless-stopped
+
+# Note: Volume names with env vars must be declared with explicit names
+# Docker Compose requires the volume name to be interpolated differently
+volumes:
+  postgres_data:
+    name: ideaforge-${WORKTREE_ID}-postgres-data
+  redis_data:
+    name: ideaforge-${WORKTREE_ID}-redis-data
+  minio_data:
+    name: ideaforge-${WORKTREE_ID}-minio-data

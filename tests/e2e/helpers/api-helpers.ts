@@ -1,6 +1,6 @@
 import { APIRequestContext } from "@playwright/test";
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_API_URL || "http://localhost:5000";
+const BASE_URL = process.env.API_BASE_URL;
 
 export async function createUser(email?: string, password?: string) {
   const response = await fetch(`${BASE_URL}/api/auth/signup`, {

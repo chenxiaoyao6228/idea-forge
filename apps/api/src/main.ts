@@ -41,24 +41,26 @@ async function bootstrap() {
     // Development: Allow inline scripts and Vite dev server
     const wsPort = configService.get("NEST_API_WS_PORT");
     const apiPort = configService.get("NEST_API_PORT");
+    const vitePort = configService.get("VITE_PORT");
+    const minioPort = configService.get("MINIO_PORT");
 
     app.use(
       helmet({
         contentSecurityPolicy: {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "http://localhost:5173", "http://localhost:3000"],
-            styleSrc: ["'self'", "'unsafe-inline'", "http://localhost:5173"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", `http://localhost:${vitePort}`],
+            styleSrc: ["'self'", "'unsafe-inline'", `http://localhost:${vitePort}`],
             imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
             connectSrc: [
               "'self'",
-              "http://localhost:5173",
-              "ws://localhost:5173",
+              `http://localhost:${vitePort}`,
+              `ws://localhost:${vitePort}`,
               `http://localhost:${apiPort}`,
               `https://localhost:${apiPort}`,
               `ws://localhost:${wsPort}`,
               `http://localhost:${wsPort}`,
-              "http://localhost:9000", // MinIO file storage
+              `http://localhost:${minioPort}`, // MinIO file storage
             ],
             fontSrc: ["'self'", "data:", "http:", "https:"],
             objectSrc: ["'none'"],

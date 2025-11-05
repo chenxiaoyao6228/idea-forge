@@ -1,5 +1,6 @@
 import { Controller, Get } from "@nestjs/common";
 import { HealthCheck, HealthCheckService, HealthCheckResult, HttpHealthIndicator, MemoryHealthIndicator, DiskHealthIndicator } from "@nestjs/terminus";
+import { Public } from "@/auth/decorators/public.decorator";
 
 @Controller("/api/health")
 export class HealthController {
@@ -11,6 +12,7 @@ export class HealthController {
   ) {}
 
   @Get()
+  @Public()
   @HealthCheck()
   check(): Promise<HealthCheckResult> {
     return this.health.check([
@@ -26,12 +28,14 @@ export class HealthController {
   }
 
   @Get("liveness")
+  @Public()
   @HealthCheck()
   liveness(): Promise<HealthCheckResult> {
     return this.health.check([() => this.http.pingCheck("nestjs-docs", "https://docs.nestjs.com")]);
   }
 
   @Get("readiness")
+  @Public()
   @HealthCheck()
   readiness(): Promise<HealthCheckResult> {
     return this.health.check([

@@ -21,8 +21,8 @@ test.describe("Document Import", () => {
   let workspaceId: string;
   let subspaceId: string;
   let socket: Socket;
-  const BASE_URL = "http://localhost:5000";
-  const API_BASE = `${BASE_URL}/api`;
+  const BASE_URL = process.env.CLIENT_APP_URL ;
+  const API_BASE = process.env.API_BASE_URL;
 
   test.beforeAll(async () => {
     // Create test user

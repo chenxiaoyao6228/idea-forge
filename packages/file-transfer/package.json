@@ -11,6 +11,7 @@
     }
   },
   "scripts": {
+    "build": "echo 'Build skipped - consumers build from source'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -17,7 +17,7 @@ export default defineConfig({
   globalTeardown: require.resolve('./tests/e2e/setup/global-teardown'),
   
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5000',
+    baseURL: process.env.CLIENT_APP_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     // Set language to English for consistent test results

@@ -11,7 +11,7 @@ export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
   const isDev = mode === "development";
-  const port = parseInt(env.VITE_PORT || '5173');
+  const vitePort = parseInt(env.VITE_PORT);
 
   console.log('isDev', isDev)
 
@@ -48,8 +48,8 @@ export default ({ mode }) => {
     ].filter(Boolean) as PluginOption[],
 
     server: {
-      port: port,
-      origin: `http://localhost:${port}`,
+      port: vitePort,
+      origin: `http://localhost:${vitePort}`,
       watch: {
         // Enable watching workspace packages by not ignoring node_modules/@idea
         ignored: ['!**/node_modules/@idea/**'],

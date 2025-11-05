@@ -78,7 +78,7 @@ export class FallbackMiddleware implements NestMiddleware {
 
   private async renderApp(req: Request, res: Response) {
     const isDev = this.configService.get("NODE_ENV") === "development";
-    const vitePort = this.configService.get("PORT", 5173);
+    const vitePort = this.configService.get("VITE_PORT");
 
     // Only get user info if not on skipAuthPaths
     const needAuth = !FallbackMiddleware.SKIP_AUTH_PATHS.some((path) => req.url.startsWith(path));

@@ -1,5 +1,6 @@
 import { registerAs } from "@nestjs/config";
 
+// TODO: create api endpoint for adding model and key, just like the cursor
 export const aiProviderConfig = registerAs("aiProviders", () => ({
   providers: [
     // https://docs.siliconflow.cn/

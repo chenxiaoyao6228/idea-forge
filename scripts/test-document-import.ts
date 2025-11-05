@@ -24,7 +24,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-const API_URL = process.env.API_URL || "http://localhost:5000";
+const API_URL = process.env.API_BASE_URL;
 
 // Test fixtures directory
 const FIXTURES_DIR = path.join(process.cwd(), "apps/api/test/fixtures");

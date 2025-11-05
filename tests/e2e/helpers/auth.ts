@@ -18,7 +18,7 @@ export async function createVerifiedTestUser(
 ): Promise<TestUser> {
   try {
     // Try API-first approach: Register user via API
-    const registerResponse = await fetch('http://localhost:5000/api/auth/register', {
+    const registerResponse = await fetch(`${process.env.API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

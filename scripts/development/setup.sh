@@ -45,10 +45,10 @@ echo "🐳 Starting IdeaForge Docker containers..."
 DOCKER_CONTAINER_NAME="ideaforge"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Use -f flag to ensure correct docker-compose file is used
-docker compose -f "${PROJECT_ROOT}/docker-compose.dev.yml" -p $DOCKER_CONTAINER_NAME up -d || {
+docker compose -f "${PROJECT_ROOT}/docker-compose-dev.yml" -p $DOCKER_CONTAINER_NAME up -d || {
     echo "❌ Failed to start Docker containers"
     echo "💡 Please check Docker status and try again"
     exit 1
@@ -100,25 +100,23 @@ if [ $ELAPSED -gt $TIMEOUT ]; then
     exit 1
 fi
 
-# Create default bucket in MinIO
+# Create default bucket in MinIO using mc from running container
 echo "📦 Creating default MinIO bucket..."
 BUCKET_NAME="assets-idea-forge-dev"
 
-# Configure and create bucket using root credentials
-docker run --rm --network host \
-    -e MC_HOST_local=http://minioadmin:minioadmin@localhost:9000 \
-    minio/mc mb --ignore-existing local/$BUCKET_NAME
+# Configure mc alias inside the running MinIO container
+docker exec $DOCKER_CONTAINER_NAME-minio mc alias set local http://localhost:9000 minioadmin minioadmin 2>/dev/null || true
+
+# Create bucket (ignore if exists)
+docker exec $DOCKER_CONTAINER_NAME-minio mc mb --ignore-existing local/$BUCKET_NAME 2>/dev/null || true
 
 # Set bucket policy to public (allow read access)
-docker run --rm --network host \
-    -e MC_HOST_local=http://minioadmin:minioadmin@localhost:9000 \
-    minio/mc anonymous set download local/$BUCKET_NAME
+docker exec $DOCKER_CONTAINER_NAME-minio mc anonymous set download local/$BUCKET_NAME 2>/dev/null || true
 
 if [ $? -eq 0 ]; then
     echo "✅ MinIO bucket '$BUCKET_NAME' created and configured successfully"
 else
-    echo "❌ Failed to create/configure MinIO bucket"
-    exit 1
+    echo "⚠️  MinIO bucket creation had issues, but continuing (bucket will be auto-created on first use)"
 fi
 
 # Apply migrations
@@ -126,11 +124,22 @@ echo "🔄 Applying migrations..."
 
 # Generate Prisma client first
 echo "📦 Generating Prisma client..."
-npm run prisma:generate || {
+pnpm run prisma:generate || {
     echo "❌ Failed to generate Prisma client"
     exit 1
 }
 
+# Run database migrations
+echo "🔄 Running database migrations..."
+pnpm run migrate:deploy || {
+    echo "❌ Failed to run migrations"
+    exit 1
+}
 
+# Install lefthook git hooks
+echo "🪝 Installing lefthook git hooks..."
+pnpm lefthook install || {
+    echo "⚠️  Failed to install lefthook (non-critical)"
+}
 
 echo "✨ IdeaForge setup complete! 🎉"

@@ -1,0 +1,6 @@
+# Secrets file (NEVER commit this!)
+env.secrets
+
+# Deployment logs
+deploy.log
+*.log

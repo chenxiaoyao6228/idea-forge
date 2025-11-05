@@ -1,0 +1,55 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - master
+      - test
+
+jobs:
+  build:
+    name: Build and push to Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Determine Docker tag
+        id: tag
+        run: |
+          # master -> latest, test -> test
+          if [ "${{ github.ref }}" = "refs/heads/master" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            echo "tag=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/idea-forge:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image published
+        run: |
+          echo "✅ Docker image published successfully!"
+          echo ""
+          echo "Image: ${{ secrets.DOCKER_HUB_USERNAME }}/idea-forge:${{ steps.tag.outputs.tag }}"
+          echo ""
+          echo "To deploy, run on your server:"
+          echo "  curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/master/scripts/deploy/deploy-quick-start.sh | bash"
