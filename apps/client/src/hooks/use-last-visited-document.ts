@@ -145,7 +145,7 @@ export const useRedirectToLastVisited = () => {
         // Could show an error state or empty state here
       }
     }
-  }, [docId, workspaceId, personalSubspace?.id, navigate, isRedirecting]);
+  }, [docId, workspaceId, personalSubspace?.id, navigate]);
 
   return { isRedirecting };
 };

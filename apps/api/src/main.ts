@@ -71,8 +71,25 @@ async function bootstrap() {
       }),
     );
   } else {
-    // Production: Use strict CSP
-    app.use(helmet());
+    // Production: Strict CSP but allow inline scripts for SSR
+    app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            // Allow inline scripts for SSR (needed for env injection and user info)
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+            imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
+            connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
+            fontSrc: ["'self'", "data:", "https:"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+          },
+        },
+      }),
+    );
   }
 
   app.use(compression());
