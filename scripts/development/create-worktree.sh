@@ -282,5 +282,5 @@ echo -e "${YELLOW}⚠️  Important: If you see CSP errors in browser console:${
 echo -e "${YELLOW}   The API server may need restart to load new VITE_PORT${NC}"
 echo -e "${YELLOW}   Kill the server and let it auto-restart, or run: pnpm -F @idea/api dev${NC}"
 echo ""
-echo -e "${YELLOW}💡 Tip: Use './scripts/cleanup-worktree.sh ${BRANCH_NAME}' to remove this worktree${NC}"
+echo -e "${YELLOW}💡 Tip: Use './scripts/development/cleanup-worktree.sh ${BRANCH_NAME}' to remove this worktree${NC}"
 echo ""

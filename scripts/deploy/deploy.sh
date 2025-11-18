@@ -56,6 +56,16 @@ if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ]; then
     exit 1
 fi
 
+# Detect Docker Compose command (v1 uses docker-compose, v2 uses docker compose)
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE_CMD="docker-compose"
+elif docker compose version &> /dev/null; then
+    DOCKER_COMPOSE_CMD="docker compose"
+else
+    echo "❌ Error: Docker Compose not found. Please install Docker Compose."
+    exit 1
+fi
+
 DOCKER_COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
 
 # Set compose project name based on environment to isolate resources
@@ -76,14 +86,14 @@ if [ "$SKIP_PULL" != "true" ]; then
     fi
 fi
 
-# Export all environment variables that docker-compose will use
+# Export all environment variables that Docker Compose will use
 export IMAGE_NAME="$IMAGE_NAME"
 export NODE_ENV="${NODE_ENV:-production}"
 export POSTGRES_USER="$POSTGRES_USER"
 export POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
 export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/ideaforge?schema=public"
 
-# Export all other environment variables from .env file to docker-compose
+# Export all other environment variables from .env file to docker compose
 # This allows runtime configuration to override .env.example in the container
 set -a  # automatically export all variables
 source "$SCRIPT_DIR/.env"
@@ -125,7 +135,7 @@ check_port_usage() {
 
 # Stop old containers
 echo "🛑 Stopping and removing old containers..."
-docker-compose -f $DOCKER_COMPOSE_FILE down
+$DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE down
 
 # Check critical ports (only for local deployments)
 if [ "$SKIP_PULL" = "true" ]; then
@@ -138,7 +148,7 @@ fi
 # Pull latest images
 if [ "$SKIP_PULL" != "true" ]; then
     echo "⬇️  Pulling latest images from Docker Hub..."
-    docker-compose -f $DOCKER_COMPOSE_FILE pull
+    $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE pull
 else
     echo "⏭️  Skipping Docker pull (using local image: $IMAGE_NAME)"
 fi
@@ -147,18 +157,18 @@ echo ""
 
 # Start services (PostgreSQL, Redis)
 echo "▶️  Starting database services..."
-docker-compose -f $DOCKER_COMPOSE_FILE up -d postgres redis
+$DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE up -d postgres redis
 
 # Wait for PostgreSQL to be ready
 echo "⏳ Waiting for PostgreSQL to be ready..."
 for i in {1..30}; do
-    if docker-compose -f $DOCKER_COMPOSE_FILE exec -T postgres pg_isready -U "$POSTGRES_USER" > /dev/null 2>&1; then
+    if $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE exec -T postgres pg_isready -U "$POSTGRES_USER" > /dev/null 2>&1; then
         echo "✓ PostgreSQL is ready"
         break
     fi
     if [ $i -eq 30 ]; then
         echo "❌ PostgreSQL failed to start"
-        docker-compose -f $DOCKER_COMPOSE_FILE logs postgres
+        $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE logs postgres
         exit 1
     fi
     sleep 1
@@ -166,16 +176,22 @@ done
 
 # Run migrations
 echo "🔧 Running database migrations..."
-docker-compose -f $DOCKER_COMPOSE_FILE run --rm \
+echo "📋 Debug: Running migration command..."
+echo "   Image: $IMAGE_NAME"
+echo "   Command: sh -c \"cd /app/apps/api && npx prisma migrate deploy\""
+echo ""
+
+$DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE run --rm \
   idea-forge \
-  sh -c "cd /app/apps/api && npm run prisma:migrate:deploy"
+  sh -c "echo '=== Container started ===' && pwd && echo '=== Current directory contents ===' && ls -la && echo '=== Checking /app/apps/api ===' && ls -la /app/apps/api && echo '=== Running migration ===' && cd /app/apps/api && npx prisma migrate deploy"
 
 # Check if migrations were successful
 if [ $? -eq 0 ]; then
     echo "✅ Migrations completed successfully"
 else
     echo "❌ Migration failed, deployment aborted"
-    docker-compose -f $DOCKER_COMPOSE_FILE logs idea-forge
+    echo "📋 Container logs:"
+    $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE logs idea-forge
     exit 1
 fi
 
@@ -183,7 +199,7 @@ echo ""
 
 # Start application services
 echo "▶️  Starting application services..."
-docker-compose -f $DOCKER_COMPOSE_FILE up -d
+$DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE up -d
 
 # Wait for services to start
 echo "⏳ Waiting for services to start..."
@@ -191,13 +207,13 @@ sleep 5
 
 # Check service status
 echo "🔍 Checking service status..."
-docker-compose -f $DOCKER_COMPOSE_FILE ps
+$DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE ps
 
 echo ""
 
 # Show recent logs
 echo "📋 Recent application logs:"
-docker-compose -f $DOCKER_COMPOSE_FILE logs --tail=30 idea-forge
+$DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE logs --tail=30 idea-forge
 
 # Cleanup old images (only for local deployments)
 if [ "$SKIP_PULL" = "true" ]; then
@@ -215,14 +231,14 @@ echo ""
 echo "✅ Deployment completed successfully!"
 echo ""
 echo "📋 Useful commands:"
-echo "  View logs:         docker-compose -f $DOCKER_COMPOSE_FILE logs -f idea-forge"
-echo "  Stop services:     docker-compose -f $DOCKER_COMPOSE_FILE down"
-echo "  Restart services:  docker-compose -f $DOCKER_COMPOSE_FILE restart"
-echo "  Service status:    docker-compose -f $DOCKER_COMPOSE_FILE ps"
+echo "  View logs:         $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE logs -f idea-forge"
+echo "  Stop services:     $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE down"
+echo "  Restart services:  $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE restart"
+echo "  Service status:    $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE ps"
 echo ""
 echo "🌐 Access the application:"
 echo "  Application: http://localhost:5000"
-echo "  Health check: http://localhost:5000/health"
+echo "  Health check: http://localhost:5000/api/health"
 echo "  API: http://localhost:5000/api"
 echo ""
 
