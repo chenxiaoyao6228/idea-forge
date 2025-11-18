@@ -116,9 +116,10 @@ services:
       timeout: 5s
       retries: 5
 
-  # MinIO (S3-compatible storage) - Optional for local testing
-  # Enable by setting ENABLE_MINIO=true in your .env file
-  # Production deployments typically use external S3/OSS providers
+  # MinIO (S3-compatible storage) - For self-hosted file storage
+  # Alternative to cloud OSS providers (Aliyun, Tencent Cloud, AWS S3)
+  # Set OSS_PROVIDER=minio in .env to use MinIO
+  # To disable MinIO, set ENABLE_MINIO_PROFILE=skip in .env
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
@@ -126,7 +127,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
-      - ideaforge_${NODE_ENV:-prod}_minio_data:/data
+      - ideaforge_${NODE_ENV:-production}_minio_data:/data
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
@@ -137,8 +138,9 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    # Optional: Disable MinIO by setting ENABLE_MINIO_PROFILE=skip
     profiles:
-      - local-testing
+      - "${ENABLE_MINIO_PROFILE:-}"
 
 volumes:
   ideaforge_production_postgres_data:

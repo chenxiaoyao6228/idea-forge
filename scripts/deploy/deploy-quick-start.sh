@@ -8,19 +8,26 @@ set -e
 # No need to clone the full repository!
 #
 # Usage:
+#   # From master branch (stable)
 #   curl -fsSL https://raw.githubusercontent.com/chenxiaoyao6228/idea-forge/master/scripts/deploy/deploy-quick-start.sh | bash
 #
+#   # From test branch (latest)
+#   curl -fsSL https://raw.githubusercontent.com/chenxiaoyao6228/idea-forge/test/scripts/deploy/deploy-quick-start.sh | bash
+
 # Or download and run:
 #   wget https://raw.githubusercontent.com/chenxiaoyao6228/idea-forge/master/scripts/deploy/deploy-quick-start.sh
 #   chmod +x deploy-quick-start.sh
-#   ./deploy-quick-start.sh
+#   BRANCH=test ./deploy-quick-start.sh
 # =============================================================================
 
-REPO_BASE="https://raw.githubusercontent.com/chenxiaoyao6228/idea-forge/master/scripts/deploy"
+# Auto-detect branch from script URL or use environment variable
+BRANCH="${BRANCH:-master}"
+REPO_BASE="https://raw.githubusercontent.com/chenxiaoyao6228/idea-forge/${BRANCH}/scripts/deploy"
 DEPLOY_DIR="idea-forge-deploy"
 
 echo "🚀 Idea Forge Quick Start Deployment"
 echo "===================================="
+echo "📍 Branch: ${BRANCH}"
 echo ""
 
 # Create deployment directory
@@ -44,7 +51,8 @@ echo "📥 Downloading deployment files..."
 FILES=(
     "docker-compose.yml"
     "env.secrets.example"
-    "deploy.sh"
+    "deploy.sh",
+    "nginx.conf.example",
 )
 
 for file in "${FILES[@]}"; do

@@ -92,8 +92,6 @@ pnpm -F @idea/api test:int    # API integration tests
 # Build
 pnpm build             # Build all packages
 
-# Production Build Verification (before Docker build)
-./scripts/development/verify-production-build.sh
 ```
 
 ### Typical Workflow
