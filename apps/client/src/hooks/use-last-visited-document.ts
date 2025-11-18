@@ -64,7 +64,7 @@ export const useRedirectToLastVisited = () => {
 
   useEffect(() => {
     // Only redirect if we're on the root path (no docId) and not already redirecting
-    if (!docId && workspaceId && !isRedirecting) {
+    if (!docId && workspaceId && !isRedirecting && personalSubspace?.id) {
       setIsRedirecting(true);
 
       const localKey = `${LAST_VISITED_DOC_KEY}:${workspaceId}`;
@@ -145,7 +145,7 @@ export const useRedirectToLastVisited = () => {
         // Could show an error state or empty state here
       }
     }
-  }, [docId, workspaceId, personalSubspace?.id, navigate]);
+  }, [docId, workspaceId, personalSubspace?.id, navigate, isRedirecting]);
 
   return { isRedirecting };
 };

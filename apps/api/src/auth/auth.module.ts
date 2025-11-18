@@ -21,13 +21,14 @@ import { LoggerModule } from "@/_shared/utils/logger.module";
 import { SystemDocumentService } from "@/document/system-document.service";
 import { WsJwtStrategy } from "./strategies/strategy.ws-jwt";
 import { DocumentModule } from "@/document/document.module";
+import { WorkspaceModule } from "@/workspace/workspace.module";
 
 @Module({
   // JwtModule.registerAsync(jwtConfig.asProvider()) - Asynchronously register JWT module using jwtConfig
   // Contains configuration for secret and signOptions (expiration time etc.)
   // ConfigModule.forFeature(jwtConfig) - Register jwtConfig as a configuration feature
   // Allows jwtConfig values to be injected throughout the module
-  imports: [JwtModule.registerAsync(jwtConfig.asProvider()), FileStoreModule, CollaborationModule, LoggerModule, DocumentModule],
+  imports: [JwtModule.registerAsync(jwtConfig.asProvider()), FileStoreModule, CollaborationModule, LoggerModule, DocumentModule, WorkspaceModule],
   providers: [
     WsJwtStrategy,
     LocalStrategy,

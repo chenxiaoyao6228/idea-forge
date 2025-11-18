@@ -19,9 +19,8 @@ export default function Main() {
   const isGuestCollaborator = useIsGuestCollaborator();
 
   // Track last visited document and handle redirect on root path
-  // FIXME: revert this
-  // useTrackLastVisitedDocument();
-  // const { isRedirecting } = useRedirectToLastVisited();
+  useTrackLastVisitedDocument();
+  const { isRedirecting } = useRedirectToLastVisited();
 
   // Auto-refetch workspaces on WebSocket recovery (page visible, reconnect)
   useSyncOnReconnect(() => {
@@ -41,16 +40,16 @@ export default function Main() {
   }, []);
 
   if (!workspaces.length) {
-    return <Loading fullScreen size="lg" />;
+    return <Loading fullScreen size="lg" id="main-no-workspaces" />;
   }
 
   // Show loading while redirecting to last visited or creating welcome doc
-  // if (isRedirecting) {
-  //   return <Loading fullScreen size="lg" />;
-  // }
+  if (isRedirecting) {
+    return <Loading fullScreen size="lg" id="main-redirecting" />;
+  }
 
   // Show document content when available
-  let content = <Loading />;
+  let content = <Loading id="main-no-document" />;
   if (currentDocument) {
     content = <Doc />;
   }
