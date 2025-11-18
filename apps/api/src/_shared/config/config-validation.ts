@@ -44,7 +44,7 @@ export const envSchema = z.object({
   NOTIFICATION_DEDUPLICATION_WINDOW_SECONDS: z.string().min(1).regex(/^\d+$/),
 
   /* COS CONFIG */
-  OSS_PROVIDER: z.enum(["minio", "cos", "oss"]),
+  OSS_PROVIDER: z.string(),
   OSS_SECRET_ID: z.string().min(1),
   OSS_SECRET_KEY: z.string().min(1),
   OSS_BUCKET: z.string().min(1),
