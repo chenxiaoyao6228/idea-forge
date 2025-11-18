@@ -177,8 +177,31 @@ export class FallbackMiddleware implements NestMiddleware {
       `;
     };
 
+    const createBuildInfoScript = () => {
+      try {
+        const buildInfoPath = join(process.cwd(), "view", "build-info.json");
+        if (!fs.existsSync(buildInfoPath)) {
+          console.warn("build-info.json not found");
+          return "";
+        }
+
+        const buildInfo = JSON.parse(fs.readFileSync(buildInfoPath, "utf-8"));
+
+        return `
+          <script id="buildInfo">
+            window.__BUILD_INFO__ = decodeHtml('${JSON.stringify(buildInfo)}');
+            console.log("buildInfo", window.__BUILD_INFO__);
+          </script>
+        `;
+      } catch (error) {
+        console.error("Failed to load build info:", error);
+        return "";
+      }
+    };
+
     const _html = isDev ? createDevHTML() : createProdHTML();
     const userInfoScript = await createUserInfoScript();
+    const buildInfoScript = createBuildInfoScript();
 
     const html = `
       <!DOCTYPE html>
@@ -251,6 +274,7 @@ export class FallbackMiddleware implements NestMiddleware {
           </div>
           <div id="root"></div>
           ${userInfoScript}
+          ${buildInfoScript}
           ${createEnvScript()}
           ${_html.js}
         </body>

@@ -6,6 +6,7 @@ import { inspectorServer } from "@react-dev-inspector/vite-plugin";
 import tsconfigPaths from "vite-tsconfig-paths";
 import timeReporter from "vite-plugin-time-reporter";
 import checker from 'vite-plugin-checker';
+import { buildInfoPlugin } from "./build/plugins/vite/build-info-plugin";
 
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -27,6 +28,7 @@ export default ({ mode }) => {
       exclude: ['@idea/contracts', '@idea/file-transfer', '@idea/editor', '@idea/icons'],
     },
     plugins: [
+      buildInfoPlugin(),
       isDev && checker({
         typescript: {
           tsconfigPath: './tsconfig.json',
@@ -70,6 +72,7 @@ export default ({ mode }) => {
       emptyOutDir: true,
       manifest: true,
       sourcemap: true, // Enable source maps for debugging production builds
+      minify:false,
 
       rollupOptions: {
         input: "src/index.tsx",

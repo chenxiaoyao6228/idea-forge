@@ -13,7 +13,6 @@ test-results
 # Production
 dist
 dist-ssr
-build
 
 # Misc
 .DS_Store
