@@ -69,7 +69,7 @@ export default ({ mode }) => {
       // clear directory before building
       emptyOutDir: true,
       manifest: true,
-      sourcemap: isDev,
+      sourcemap: true, // Enable source maps for debugging production builds
 
       rollupOptions: {
         input: "src/index.tsx",

@@ -16,6 +16,9 @@ COPY package.json ./
 COPY packages/contracts/package.json ./packages/contracts/
 COPY packages/editor/package.json ./packages/editor/
 COPY packages/utils/package.json ./packages/utils/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/icons/package.json ./packages/icons/
+COPY packages/file-transfer/package.json ./packages/file-transfer/
 COPY apps/api/package.json ./apps/api/
 COPY apps/client/package.json ./apps/client/
 
@@ -34,16 +37,22 @@ RUN cd apps/api && \
     npx prisma generate && \
     node scripts/generate-prisma-types.js
 
+# Build workspace packages that are dependencies for API and client
+# These packages need to be built before API/client can bundle them
+RUN pnpm -F @idea/contracts build && \
+    pnpm -F @idea/editor build && \
+    pnpm -F @idea/ui build
+
 ## API builder stage (runs in parallel with client-builder)
 FROM base AS api-builder
 
-# Build API (webpack bundles all workspace packages from source)
+# Build API (webpack bundles workspace packages from their dist/)
 RUN cd apps/api && pnpm build
 
 ## Client builder stage (runs in parallel with api-builder)
 FROM base AS client-builder
 
-# Build client (vite bundles all workspace packages from source)
+# Build client (vite bundles workspace packages from their dist/)
 RUN cd apps/client && pnpm build
 
 

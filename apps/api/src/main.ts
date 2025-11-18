@@ -34,46 +34,69 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
-  // Security headers with CSP configuration for development
-  const isDev = configService.get("NODE_ENV") === "development";
+  // Security headers with CSP configuration for different environments
+  const nodeEnv = configService.get("NODE_ENV");
+  const isDev = nodeEnv === "development";
 
-  if (isDev) {
-    // Development: Allow inline scripts and Vite dev server
-    const wsPort = configService.get("NEST_API_WS_PORT");
-    const apiPort = configService.get("NEST_API_PORT");
-    const vitePort = configService.get("VITE_PORT");
-    const minioPort = configService.get("MINIO_PORT");
+  // FIXME: add back after fixing the deployment issues
+  // if (isDev) {
+  //   // Development: Allow inline scripts and Vite dev server
+  //   const wsPort = configService.get("NEST_API_WS_PORT");
+  //   const apiPort = configService.get("NEST_API_PORT");
+  //   const vitePort = configService.get("VITE_PORT");
+  //   const minioPort = configService.get("MINIO_PORT");
 
-    app.use(
-      helmet({
-        contentSecurityPolicy: {
-          directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", `http://localhost:${vitePort}`],
-            styleSrc: ["'self'", "'unsafe-inline'", `http://localhost:${vitePort}`],
-            imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
-            connectSrc: [
-              "'self'",
-              `http://localhost:${vitePort}`,
-              `ws://localhost:${vitePort}`,
-              `http://localhost:${apiPort}`,
-              `https://localhost:${apiPort}`,
-              `ws://localhost:${wsPort}`,
-              `http://localhost:${wsPort}`,
-              `http://localhost:${minioPort}`, // MinIO file storage
-            ],
-            fontSrc: ["'self'", "data:", "http:", "https:"],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'"],
-            frameSrc: ["'none'"],
-          },
-        },
-      }),
-    );
-  } else {
-    // Production: Use strict CSP
-    app.use(helmet());
-  }
+  //   app.use(
+  //     helmet({
+  //       contentSecurityPolicy: {
+  //         directives: {
+  //           defaultSrc: ["'self'"],
+  //           scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", `http://localhost:${vitePort}`],
+  //           styleSrc: ["'self'", "'unsafe-inline'", `http://localhost:${vitePort}`],
+  //           imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
+  //           connectSrc: [
+  //             "'self'",
+  //             `http://localhost:${vitePort}`,
+  //             `ws://localhost:${vitePort}`,
+  //             `http://localhost:${apiPort}`,
+  //             `https://localhost:${apiPort}`,
+  //             `ws://localhost:${wsPort}`,
+  //             `http://localhost:${wsPort}`,
+  //             `http://localhost:${minioPort}`, // MinIO file storage
+  //           ],
+  //           fontSrc: ["'self'", "data:", "http:", "https:"],
+  //           objectSrc: ["'none'"],
+  //           mediaSrc: ["'self'"],
+  //           frameSrc: ["'none'"],
+  //         },
+  //       },
+  //     }),
+  //   );
+  // } else {
+  //   // Production/Local Testing: Permissive CSP to avoid customer issues
+  //   // Customers may use MinIO or other self-hosted storage, so allow broad connections
+  //   app.use(
+  //     helmet({
+  //       contentSecurityPolicy: {
+  //         directives: {
+  //           defaultSrc: ["'self'"],
+  //           // Allow inline scripts for SSR (needed for env injection and user info)
+  //           scriptSrc: ["'self'", "'unsafe-inline'"],
+  //           styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+  //           imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
+  //           // Permissive connectSrc to support various deployment scenarios:
+  //           // - ws/wss: WebSocket connections (collaboration)
+  //           // - http/https: API calls, MinIO, external OSS providers
+  //           connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
+  //           fontSrc: ["'self'", "data:", "https:"],
+  //           objectSrc: ["'none'"],
+  //           mediaSrc: ["'self'", "http:", "https:"],
+  //           frameSrc: ["'none'"],
+  //         },
+  //       },
+  //     }),
+  //   );
+  // }
 
   app.use(compression());
 

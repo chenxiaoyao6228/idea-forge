@@ -1,6 +1,12 @@
 services:
   idea-forge:
+    # Supports both pre-built images and local builds
+    # Production: IMAGE_NAME=chenxiaoyao6228/idea-forge:latest (no build section)
+    # Local testing: Set BUILD_CONTEXT=../.. to enable local build
     image: ${IMAGE_NAME}
+    build:
+      context: ${BUILD_CONTEXT:-.}
+      dockerfile: ${DOCKERFILE:-./Dockerfile}
     ports:
       - "${API_PORT:-5000}:5000"
       - "${WS_PORT:-5001}:5001"
@@ -9,7 +15,7 @@ services:
     environment:
       # Core system variables
       - NODE_ENV=${NODE_ENV:-production}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/ideaforge?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ideaforge}?schema=public
       - REDIS_HOST=redis
       - REDIS_PORT=6379
 
@@ -78,7 +84,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ideaforge
+      POSTGRES_DB: ${POSTGRES_DB:-ideaforge}
     volumes:
       # Mount the Docker volume named 'ideaforge_postgres_data' to /var/lib/postgresql/data inside the container
       # This persists PostgreSQL data even if the container is removed
@@ -86,7 +92,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ideaforge"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-ideaforge}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -110,16 +116,52 @@ services:
       timeout: 5s
       retries: 5
 
+  # MinIO (S3-compatible storage) - Optional for local testing
+  # Enable by setting ENABLE_MINIO=true in your .env file
+  # Production deployments typically use external S3/OSS providers
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - ideaforge_${NODE_ENV:-prod}_minio_data:/data
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    profiles:
+      - local-testing
+
 volumes:
   ideaforge_production_postgres_data:
     name: ideaforge_${NODE_ENV:-prod}_postgres_data
   ideaforge_production_redis_data:
     name: ideaforge_${NODE_ENV:-prod}_redis_data
+  ideaforge_production_minio_data:
+    name: ideaforge_${NODE_ENV:-prod}_minio_data
   ideaforge_test_postgres_data:
     name: ideaforge_${NODE_ENV:-prod}_postgres_data
   ideaforge_test_redis_data:
     name: ideaforge_${NODE_ENV:-prod}_redis_data
+  ideaforge_test_minio_data:
+    name: ideaforge_${NODE_ENV:-prod}_minio_data
   ideaforge_prod_postgres_data:
     name: ideaforge_${NODE_ENV:-prod}_postgres_data
   ideaforge_prod_redis_data:
     name: ideaforge_${NODE_ENV:-prod}_redis_data
+  ideaforge_prod_minio_data:
+    name: ideaforge_${NODE_ENV:-prod}_minio_data
+  ideaforge_local_postgres_data:
+    name: ideaforge_${NODE_ENV:-prod}_postgres_data
+  ideaforge_local_redis_data:
+    name: ideaforge_${NODE_ENV:-prod}_redis_data
+  ideaforge_local_minio_data:
+    name: ideaforge_${NODE_ENV:-prod}_minio_data
