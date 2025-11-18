@@ -20,6 +20,7 @@ import { ErrorCodeEnum } from "@/_shared/constants/api-response-constant";
 import { UserService } from "@/user/user.service";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { User, UserStatus } from "@idea/contracts";
+import { WorkspaceService } from "@/workspace/workspace.service";
 
 interface LoginMetadata {
   ip?: string;
@@ -37,6 +38,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly verificationService: VerificationService,
     private readonly collaborationService: CollaborationService,
+    private readonly workspaceService: WorkspaceService,
   ) {}
 
   @Inject(refreshJwtConfig.KEY)
@@ -472,6 +474,9 @@ export class AuthService {
           },
         },
       });
+
+      // Create default workspace for new OAuth user
+      await this.workspaceService.CreateDefaultWorkspace(newUser.id);
 
       const { accessToken, refreshToken } = await this.generateJWTToken(newUser.id);
       const collabToken = await this.collaborationService.generateCollabToken(newUser.id);
