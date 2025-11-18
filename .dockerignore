@@ -14,7 +14,7 @@ npm-debug.log
 # All secrets are provided at runtime via docker-compose environment variables
 
 # Git
-.git
+# .git is included to allow build-info.json generation
 .gitignore
 
 # IDE

@@ -53,6 +53,7 @@ RUN cd apps/api && pnpm build
 FROM base AS client-builder
 
 # Build client (vite bundles workspace packages from their dist/)
+# Git commands will work because .git is included in build context
 RUN cd apps/client && pnpm build
 
 
