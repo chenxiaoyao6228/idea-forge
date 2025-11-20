@@ -43,14 +43,15 @@ export const envSchema = z.object({
 
   NOTIFICATION_DEDUPLICATION_WINDOW_SECONDS: z.string().min(1).regex(/^\d+$/),
 
-  /* COS CONFIG */
+  /* OSS CONFIG */
   OSS_PROVIDER: z.string(),
   OSS_SECRET_ID: z.string().min(1),
   OSS_SECRET_KEY: z.string().min(1),
   OSS_BUCKET: z.string().min(1),
   OSS_REGION: z.string().min(1),
-  OSS_ENDPOINT: z.string().url(),
-  OSS_CDN_ENDPOINT: z.string().url().optional().nullable(),
+  // OSS_ENDPOINT: Optional for MinIO (auto-derived), required for cloud OSS
+  OSS_ENDPOINT: z.string().url().optional().or(z.literal("")),
+  OSS_CDN_ENDPOINT: z.string().url().optional().or(z.literal("")),
 
   /* SENTRY CONFIG */
   SENTRY_DSN: z.string().optional(),

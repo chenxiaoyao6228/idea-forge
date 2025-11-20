@@ -96,28 +96,67 @@ OAUTH_GITHUB_CLIENT_SECRET=your_github_client_secret
 
 ##### Option A: Self-Hosted MinIO (Recommended)
 
-For complete data control without cloud costs:
+For complete data control without cloud costs.
+
+**Configuration in `.env`:**
 
 ```bash
-# Uncomment in .env:
 OSS_PROVIDER=minio
 MINIO_ROOT_USER=minio_admin
 MINIO_ROOT_PASSWORD=your_strong_minio_password
-MINIO_PORT=9000
-MINIO_CONSOLE_PORT=9001
-OSS_SECRET_ID=minio_admin  # Must match MINIO_ROOT_USER
-OSS_SECRET_KEY=your_strong_minio_password  # Must match MINIO_ROOT_PASSWORD
+
+# Port Configuration
+MINIO_PORT=9000              # MinIO API port
+MINIO_CONSOLE_PORT=9001      # MinIO web console port
+
+# Credentials (must match MINIO_ROOT_USER/PASSWORD)
+OSS_SECRET_ID=minio_admin
+OSS_SECRET_KEY=your_strong_minio_password
 OSS_BUCKET=idea-forge-storage
 OSS_REGION=us-east-1
-OSS_ENDPOINT=http://minio:9000
-OSS_CDN_ENDPOINT=https://yourdomain.com/storage
+
+# REQUIRED: Set OSS_ENDPOINT to assets subdomain
+# IMPORTANT: Use subdomain (assets.yourdomain.com), not path (/storage)
+# Subdomain approach ensures S3 signature validation works correctly
+OSS_ENDPOINT=https://assets.yourdomain.com
+
+# Optional: Only needed if you have a separate CDN for global acceleration
+# Most self-hosters should leave this empty
+# OSS_CDN_ENDPOINT=https://cdn.yourdomain.com  # Cloudflare/CloudFront in front of MinIO
+```
+
+**Why subdomain approach is required:**
+
+✅ **With subdomain (assets.yourdomain.com):**
+- S3 presigned URLs work correctly
+- AWS signature validation succeeds
+- No 403 Forbidden errors
+- Clean URL structure
+- No CORS issues
+
+❌ **With path (/storage):**
+- S3 signature mismatch errors
+- 403 Forbidden on uploads
+- Complex nginx configuration
+- Requires path manipulation in URLs
+
+❌ **Without OSS_ENDPOINT:**
+- Presigned URLs use internal Docker hostname `http://minio:9000`
+- Browser cannot access internal Docker network
+- Requires direct MinIO port exposure (security risk)
+
+**DNS Configuration:**
+
+Before deployment, add DNS A record:
+```
+assets.yourdomain.com → your_server_ip
 ```
 
 **After deployment**, create the storage bucket:
-1. Access: `https://yourdomain.com/minio-console/`
+1. Access MinIO Console: `https://yourdomain.com/minio-console/`
 2. Login with `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`
-3. Create bucket named `idea-forge-storage`
-4. Set bucket policy to "public"
+3. Create bucket: `idea-forge-storage` (must match `OSS_BUCKET`)
+4. Set bucket policy to "public" (or configure access policies as needed)
 
 ##### Option B: Cloud OSS (Aliyun/Tencent/AWS)
 
@@ -126,14 +165,30 @@ For cloud storage:
 ```bash
 # In .env:
 ENABLE_MINIO_PROFILE=skip  # Disable MinIO
-OSS_PROVIDER=cos  # or: oss (Aliyun), s3 (AWS)
+OSS_PROVIDER=oss  # or: cos (Tencent), s3 (AWS)
 OSS_SECRET_ID=your_cloud_access_key
 OSS_SECRET_KEY=your_cloud_secret_key
 OSS_BUCKET=your-cloud-bucket
 OSS_REGION=your-region
-OSS_ENDPOINT=https://your-cloud-endpoint
+
+# REQUIRED: Actual OSS endpoint (for S3 client and presigned URLs)
+OSS_ENDPOINT=https://oss-ap-southeast-1.aliyuncs.com
+# Examples:
+#   Aliyun: https://oss-ap-southeast-1.aliyuncs.com
+#   Tencent: https://cos.ap-guangzhou.myqcloud.com
+#   AWS: https://s3.us-east-1.amazonaws.com
+
+# OPTIONAL: CDN endpoint (for faster browser downloads)
 OSS_CDN_ENDPOINT=https://cdn.yourdomain.com
+# eg: OSS_CDN_ENDPOINT=https://assets.ideaforge.link
+# If not set, uses OSS_ENDPOINT for both uploads and downloads
+# If set, uses CDN for downloads but OSS_ENDPOINT for uploads
 ```
+
+**Important**:
+- `OSS_ENDPOINT` must be the actual cloud provider endpoint (not CDN)
+- Presigned upload URLs are generated using `OSS_ENDPOINT`
+- `OSS_CDN_ENDPOINT` is optional and only used for download URLs
 
 ### Nginx Setup
 
@@ -155,8 +210,18 @@ sudo nano /etc/nginx/nginx.conf
 ```
 
 **Update these values in nginx.conf:**
-- Replace `yourdomain.com` with your actual domain (3 places)
+- Replace `yourdomain.com` with your actual domain (appears multiple times)
+- Replace `assets.yourdomain.com` with your actual assets subdomain
 - Update SSL certificate paths (if using custom certificates)
+
+**The nginx.conf.example already includes the MinIO subdomain configuration.**
+
+Key points for MinIO configuration:
+- ✅ Uses subdomain: `assets.yourdomain.com`
+- ✅ No CORS headers in nginx (MinIO handles CORS automatically)
+- ✅ Direct proxy to MinIO port (9000)
+- ✅ Large file upload support (100M)
+- ✅ Proper timeouts for uploads
 
 **Full nginx configuration reference:**
 [scripts/deploy/nginx.conf.example](https://github.com/chenxiaoyao6228/idea-forge/blob/master/scripts/deploy/nginx.conf.example)
@@ -169,12 +234,34 @@ sudo nano /etc/nginx/nginx.conf
 # Install certbot
 sudo apt install certbot python3-certbot-nginx
 
-# Obtain and install certificate
-sudo certbot --nginx -d yourdomain.com
+# Obtain and install certificates for all domains
+sudo certbot --nginx -d yourdomain.com -d assets.yourdomain.com
 
-# Verify auto-renewal
+# Verify auto-renewal (dry run test)
 sudo certbot renew --dry-run
 ```
+
+**Note:** If using MinIO with subdomain (`assets.yourdomain.com`), you must include it in the certificate request.
+
+**Auto-renewal:**
+
+Certbot automatically sets up a systemd timer for certificate renewal. Certificates will be renewed automatically before expiration.
+
+```bash
+# Check auto-renewal timer status
+sudo systemctl status certbot.timer
+
+# Check when the timer will next run
+sudo systemctl list-timers certbot.timer
+
+# Manually trigger renewal (only renews if certificate expires in < 30 days)
+sudo certbot renew
+
+# View renewal logs
+sudo journalctl -u certbot.renew.service
+```
+
+The renewal process runs twice daily and automatically reloads nginx if certificates are renewed.
 
 ##### Option B: Custom SSL Certificate
 
@@ -202,6 +289,8 @@ sudo systemctl restart nginx
 
 # Enable nginx to start on boot
 sudo systemctl enable nginx
+
+# Access you app on the browser and verify
 ```
 
 ### Storage Configuration
@@ -211,7 +300,7 @@ sudo systemctl enable nginx
 MinIO is included in docker-compose.yml and will start automatically.
 
 **Endpoints:**
-- **Storage API**: `http://localhost:9000` (internal), `https://yourdomain.com/storage` (public)
+- **Storage API**: `http://localhost:9000` (internal), `https://assets.yourdomain.com` (public)
 - **Admin Console**: `https://yourdomain.com/minio-console/`
 
 **After first deployment:**

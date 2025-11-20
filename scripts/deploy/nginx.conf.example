@@ -5,46 +5,86 @@ error_log /var/log/nginx/error.log;
 include /etc/nginx/modules-enabled/*.conf;
 
 events {
-	worker_connections 768;
-	# multi_accept on;
+    worker_connections 768;
+    # multi_accept on;
 }
 
 http {
-	# HTTP to HTTPS redirect
-	server {
-    listen 80;
-    server_name yourdomain.com;  # Replace with your actual domain
-    return 301 https://$host$request_uri;
+    # HTTP to HTTPS redirect
+    server {
+        listen 80;
+        server_name yourdomain.com; # Replace with your actual domain
+        return 301 https://$host$request_uri;
     }
 
-# HTTPS server configuration
-server {
-    listen 443 ssl;
-    server_name yourdomain.com;  # Replace with your actual domain
+    # HTTP to HTTPS redirect for assets subdomain
+    server {
+        listen 80;
+        server_name assets.yourdomain.com; # Replace with your actual domain
+        return 301 https://$host$request_uri;
+    }
 
-    # SSL certificate paths (update with your certificate paths)
-    ssl_certificate /etc/nginx/ssl/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/nginx/ssl/yourdomain.com/privkey.pem;
+    # MinIO Storage (assets subdomain)
+    # Only needed if OSS_PROVIDER=minio
+    # Make sure OSS_ENDPOINT is set to https://assets.yourdomain.com
+    server {
+        listen 443 ssl;
+        server_name assets.yourdomain.com; # Replace with your actual domain
+
+        # SSL certificate paths (same cert covers both domains after certbot expansion)
+        ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+        # Direct proxy to MinIO
+        location / {
+            proxy_pass http://localhost:9000;
+            proxy_http_version 1.1;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Large file uploads
+            client_max_body_size 100M;
+
+            # DO NOT add CORS headers here - MinIO handles CORS
+            # Adding CORS headers in nginx causes duplicate header errors
+
+            # Timeouts for large files
+            proxy_connect_timeout 300;
+            proxy_send_timeout 300;
+            proxy_read_timeout 300;
+        }
+    }
+
+    # HTTPS server configuration
+    server {
+        listen 443 ssl;
+        server_name yourdomain.com; # Replace with your actual domain
+
+        # SSL certificate paths (update with your certificate paths)
+        ssl_certificate /etc/nginx/ssl/yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/nginx/ssl/yourdomain.com/privkey.pem;
 
 
-    # Real-time notifications via Socket.io WebSocket
-    location /api/realtime/ {
-          proxy_pass http://localhost:5000;
-          proxy_http_version 1.1;
-          proxy_set_header Upgrade $http_upgrade;
-          proxy_set_header Connection "upgrade";
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
+        # Real-time notifications via Socket.io WebSocket
+        location /api/realtime/ {
+            proxy_pass http://localhost:5000;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
 
-          # Increase timeouts for long-lived WebSocket connections (24 hours)
-          proxy_read_timeout 86400;
-          proxy_send_timeout 86400;
-      }
+            # Increase timeouts for long-lived WebSocket connections (24 hours)
+            proxy_read_timeout 86400;
+            proxy_send_timeout 86400;
+        }
 
-    # AI streaming endpoint (Server-Sent Events)
-    location /api/ai/stream {
+        # AI streaming endpoint (Server-Sent Events)
+        location /api/ai/stream {
             proxy_pass http://localhost:5000;
             proxy_http_version 1.1;
             proxy_set_header Connection '';
@@ -58,89 +98,53 @@ server {
             proxy_read_timeout 100;
             proxy_connect_timeout 100;
             proxy_send_timeout 100;
-      }
-
-    # Collaborative editing WebSocket (Hocuspocus/Yjs)
-    location /collaboration {
-        proxy_pass http://localhost:5001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # MinIO storage proxy (for self-hosted file storage)
-    # Only needed if OSS_PROVIDER=minio
-    # Make sure OSS_CDN_ENDPOINT is set to https://yourdomain.com/storage
-    location /storage/ {
-        proxy_pass http://localhost:9000/;  # Proxies to MinIO
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # Allow large file uploads (adjust as needed)
-        client_max_body_size 50M;
-
-        # CORS headers for direct browser uploads (if needed)
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Access-Control-Allow-Methods "GET, PUT, POST, DELETE, OPTIONS" always;
-        add_header Access-Control-Allow-Headers "Authorization, Content-Type, Content-Length" always;
-        add_header Access-Control-Expose-Headers "ETag" always;
-
-        # Handle OPTIONS preflight requests
-        if ($request_method = OPTIONS) {
-            return 204;
         }
 
-        # Increase timeouts for large file uploads
-        proxy_connect_timeout 300;
-        proxy_send_timeout 300;
-        proxy_read_timeout 300;
+        # Collaborative editing WebSocket (Hocuspocus/Yjs)
+        location /collaboration {
+            proxy_pass http://localhost:5001;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # MinIO console (optional - for admin management)
+        # Access at: https://yourdomain.com/minio-console/
+        # WARNING: Protect this endpoint or disable in production
+        location /minio-console/ {
+            proxy_pass http://localhost:9001/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-NginX-Proxy true;
+
+            # Recommended: Restrict access to admin IPs only
+            # Uncomment and add your admin IP addresses:
+            # allow 1.2.3.4;        # Your admin IP
+            # allow 192.168.1.0/24;  # Your office network
+            # deny all;
+
+            # Or require authentication (recommended)
+            # auth_basic "MinIO Admin";
+            # auth_basic_user_file /etc/nginx/.htpasswd;
+        }
+
+        # Main application (all other routes)
+        location / {
+            proxy_pass http://localhost:5000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
     }
-
-    # MinIO console (optional - for admin management)
-    # Access at: https://yourdomain.com/minio-console/
-    # WARNING: Protect this endpoint or disable in production
-    location /minio-console/ {
-        proxy_pass http://localhost:9001/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-NginX-Proxy true;
-
-        # Recommended: Restrict access to admin IPs only
-        # Uncomment and add your admin IP addresses:
-        # allow 1.2.3.4;        # Your admin IP
-        # allow 192.168.1.0/24;  # Your office network
-        # deny all;
-
-        # Or require authentication (recommended)
-        # auth_basic "MinIO Admin";
-        # auth_basic_user_file /etc/nginx/.htpasswd;
-    }
-
-    # Main application (all other routes)
-    location / {
-        proxy_pass http://localhost:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-
- }
 }
-
-
-
 
