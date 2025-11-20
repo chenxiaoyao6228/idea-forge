@@ -60,7 +60,7 @@ export class MailService {
       return {} as const;
     }
 
-    const fromAddress = `noreply@${this.configService.get("EMAIL_FROM")}`;
+    const fromAddress = this.configService.get("EMAIL_FROM");
 
     try {
       const result = await this.resend.emails.send({
