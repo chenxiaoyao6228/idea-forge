@@ -1,0 +1,154 @@
+name: Docker Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on version tags like v1.2.3
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for release notes
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Remove 'v' prefix from tag (v1.2.3 → 1.2.3)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Releasing version: ${VERSION}"
+
+      - name: Check if tag is on master branch
+        id: branch_check
+        run: |
+          # Check if this tag points to a commit on master branch
+          git fetch origin master
+          if git merge-base --is-ancestor ${{ github.sha }} origin/master; then
+            echo "on_master=true" >> $GITHUB_OUTPUT
+            echo "Tag is on master branch - will update 'latest'"
+          else
+            echo "on_master=false" >> $GITHUB_OUTPUT
+            echo "Tag is NOT on master branch - will NOT update 'latest'"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: chenxiaoyao6228/idea-forge
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ steps.branch_check.outputs.on_master == 'true' }}
+          labels: |
+            org.opencontainers.image.title=Idea Forge
+            org.opencontainers.image.description=Enterprise-grade document collaboration platform
+            org.opencontainers.image.vendor=chenxiaoyao6228
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          # Get the previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            # First release, get all commits
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            # Get commits since previous tag
+            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+
+          # Create release notes
+          cat > release_notes.md << EOF
+          ## Docker Image
+
+          \`\`\`bash
+          docker pull chenxiaoyao6228/idea-forge:${{ steps.version.outputs.version }}
+          EOF
+
+          if [ "${{ steps.branch_check.outputs.on_master }}" == "true" ]; then
+            cat >> release_notes.md << EOF
+          docker pull chenxiaoyao6228/idea-forge:latest
+          EOF
+          fi
+
+          cat >> release_notes.md << EOF
+          \`\`\`
+
+          ## Deployment
+
+          Update your \`.env\` file:
+          \`\`\`bash
+          IMAGE_NAME=chenxiaoyao6228/idea-forge:${{ steps.version.outputs.version }}
+          \`\`\`
+
+          Then run:
+          \`\`\`bash
+          cd scripts/deploy
+          ./deploy.sh
+          \`\`\`
+
+          ## Changes
+
+          ${COMMITS}
+
+          ## Resources
+
+          - [Deployment Guide](https://github.com/chenxiaoyao6228/idea-forge/blob/master/docs/development/EN/deployment.md)
+          - [Docker Hub](https://hub.docker.com/r/chenxiaoyao6228/idea-forge)
+          EOF
+
+          echo "Release notes generated"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Version: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Docker tags pushed:" >> $GITHUB_STEP_SUMMARY
+          echo "  - chenxiaoyao6228/idea-forge:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.branch_check.outputs.on_master }}" == "true" ]; then
+            echo "  - chenxiaoyao6228/idea-forge:latest" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ GitHub Release created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View on Docker Hub](https://hub.docker.com/r/chenxiaoyao6228/idea-forge/tags)" >> $GITHUB_STEP_SUMMARY
