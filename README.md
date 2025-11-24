@@ -149,6 +149,29 @@ We welcome all contributions! Here's how you can help:
 
 Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
 
+### For Maintainers: Creating Releases
+
+To create a new release with automated Docker image builds:
+
+```bash
+# 1. Ensure you're on master with latest changes
+git checkout master
+git pull origin master
+
+# 2. Create and push a version tag
+git tag v1.2.3
+git push origin v1.2.3
+
+# 3. GitHub Actions automatically:
+#    ✅ Builds Docker image
+#    ✅ Pushes to Docker Hub (version tag + latest)
+#    ✅ Creates GitHub Release with changelog
+```
+
+The release will be available at:
+- Docker Hub: `chenxiaoyao6228/idea-forge:1.2.3` and `latest`
+- GitHub Releases: https://github.com/chenxiaoyao6228/idea-forge/releases
+
 ## 📄 License
 
 Idea Forge is licensed under the [MIT License](LICENSE).
