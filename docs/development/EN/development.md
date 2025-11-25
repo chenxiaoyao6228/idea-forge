@@ -43,6 +43,7 @@ This is the standard workflow for working on a single feature at a time.
 
    This will:
    - Install all npm packages
+   - Build shared packages (`@idea/ui`, etc.) automatically via postinstall
    - Copy `.env.example` to `.env`
    - Start Docker services (PostgreSQL, Redis, MinIO)
    - Create MinIO bucket
@@ -91,6 +92,7 @@ pnpm -F @idea/api test:int    # API integration tests
 
 # Build
 pnpm build             # Build all packages
+pnpm build:packages    # Build shared packages only (@idea/ui, etc.)
 
 ```
 
@@ -195,9 +197,10 @@ This will:
 1. Create a new git branch `feat-auth`
 2. Check it out in a new directory: `../idea-forge-feat-auth`
 3. Install all dependencies
-4. Create isolated Docker containers with unique names
-5. Generate `.env` file with offset ports
-6. Run database migrations
+4. Build shared packages (`@idea/ui`, etc.)
+5. Create isolated Docker containers with unique names
+6. Generate `.env` file with offset ports
+7. Run database migrations
 
 ### Working in a Worktree
 
@@ -582,6 +585,18 @@ rm -rf packages/*/node_modules
 pnpm install
 pnpm build:contracts
 ```
+
+### Failed to resolve import "@idea/ui/styles"
+
+**Problem:** Vite fails with `Failed to resolve import "@idea/ui/styles"` error
+
+**Solution:**
+```bash
+# Build the shared packages
+pnpm build:packages
+```
+
+This happens when the `@idea/ui` package hasn't been built yet. The `postinstall` hook should run this automatically, but if you used `--ignore-scripts` or the build failed, run it manually.
 
 ---
 

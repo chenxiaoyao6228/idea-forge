@@ -5,15 +5,13 @@
       "name": "React: debug client",
       "request": "launch",
       "type": "chrome",
-      "url": "http://localhost:${env:VITE_PORT}",
+      "url": "http://localhost:5000",
       "webRoot": "${workspaceFolder}/apps/client",
       "skipFiles": [
         "${workspaceFolder}/apps/client/node_modules/**/*.js",
         "<node_internals>/**"
       ],
-      "envFile": "${workspaceFolder}/.env"
     },
-
     {
       "name": "NestJS: debug server",
       "type": "node",

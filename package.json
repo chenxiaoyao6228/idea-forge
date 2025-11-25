@@ -25,6 +25,8 @@
     "build": "turbo run build",
     "build:client": "pnpm -F @idea/client build",
     "build:api": "pnpm -F @idea/api build",
+    "build:packages": "pnpm -F @idea/ui build",
+    "postinstall": "pnpm build:packages",
     "prisma:push": "pnpm -F @idea/api push",
     "prisma:studio": "pnpm -F @idea/api studio",
     "prisma:generate": "pnpm -F @idea/api prisma:generate",

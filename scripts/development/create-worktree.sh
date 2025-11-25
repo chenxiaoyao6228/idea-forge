@@ -176,6 +176,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Build shared packages (required for client to resolve @idea/ui/styles etc.)
+echo -e "${BLUE}📦 Building shared packages...${NC}"
+pnpm build:packages
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Failed to build shared packages${NC}"
+    exit 1
+fi
+
 # Generate Prisma client (needed for migrations)
 echo -e "${BLUE}📦 Generating Prisma client...${NC}"
 pnpm -F @idea/api prisma:generate
