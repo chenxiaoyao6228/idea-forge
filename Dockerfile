@@ -22,10 +22,10 @@ COPY packages/file-transfer/package.json ./packages/file-transfer/
 COPY apps/api/package.json ./apps/api/
 COPY apps/client/package.json ./apps/client/
 
-# Install dependencies (ignore postinstall to avoid git/lefthook errors during install)
+# Install dependencies (ignore postinstall to avoid errors - source files not copied yet)
 # Use BuildKit cache mount to persist pnpm store across builds
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy the rest of the files
 COPY . .

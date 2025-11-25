@@ -13,7 +13,7 @@ function getEmojiChar(node: { attrs: { emoji?: string; name?: string } }, emojis
   // Look up emoji from shortcode name
   if (node.attrs.name) {
     const emojiItem = shortcodeToEmoji(node.attrs.name, emojis);
-    if (emojiItem) {
+    if (emojiItem?.emoji) {
       return emojiItem.emoji;
     }
   }
