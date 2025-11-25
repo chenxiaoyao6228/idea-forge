@@ -9,6 +9,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import remarkGemoji from "remark-gemoji";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
 import { rehypeTiptapMath } from "./rehype-tiptap-math";
@@ -19,6 +20,7 @@ import { rehypeTiptapMath } from "./rehype-tiptap-math";
  * This converter uses the same plugins as the editor's markdown extension:
  * - remarkGfm: GitHub Flavored Markdown (tables, task lists, strikethrough, etc.)
  * - remarkMath: Math formulas (inline: $...$ and block: $$...$$)
+ * - remarkGemoji: Convert :emoji: shortcodes to Unicode emoji (e.g., :smile: → 😄)
  * - rehypeTiptapMath: Converts math to TipTap-compatible HTML format
  *
  * @param markdown - Markdown string to convert
@@ -29,6 +31,7 @@ export async function markdownToHtml(markdown: string): Promise<string> {
     .use(remarkParse) // Parse markdown to AST
     .use(remarkGfm) // GitHub Flavored Markdown (tables, task lists, etc.)
     .use(remarkMath) // Math formulas (inline: $...$ and block: $$...$$)
+    .use(remarkGemoji) // Convert :emoji: shortcodes to Unicode emoji
     .use(remarkRehype) // Convert markdown AST to HTML AST
     .use(rehypeTiptapMath) // Convert math to TipTap format (data-type, data-latex)
     .use(rehypeStringify) // Convert HTML AST to string

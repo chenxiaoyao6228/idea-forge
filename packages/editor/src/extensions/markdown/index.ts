@@ -4,6 +4,7 @@ import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
 import remarkDirective from "remark-directive";
 import remarkMath from "remark-math";
+import remarkGemoji from "remark-gemoji";
 import type { Node } from "@tiptap/pm/model";
 import { Extension } from "@tiptap/core";
 import { ParserState } from "./parser/state";
@@ -51,7 +52,13 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
   },
   onBeforeCreate() {
     // processor
-    this.storage.processor = unified().use(remarkParse).use(remarkStringify).use(remarkGfm).use(remarkDirective).use(remarkMath) as unknown as Processor;
+    this.storage.processor = unified()
+      .use(remarkParse)
+      .use(remarkStringify)
+      .use(remarkGfm)
+      .use(remarkDirective)
+      .use(remarkMath)
+      .use(remarkGemoji) as unknown as Processor;
     for (const [key, value] of Object.entries(this.editor.storage as unknown as Record<string, NodeMarkdownStorage | MarkMarkdownStorage>)) {
       if (key !== this.name && value?.markdown?.hooks?.beforeInit) {
         this.storage.processor = value.markdown.hooks.beforeInit(this.storage.processor);

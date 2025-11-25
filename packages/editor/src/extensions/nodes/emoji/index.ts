@@ -1,5 +1,25 @@
-import Emoji from "@tiptap/extension-emoji";
+import Emoji, { shortcodeToEmoji, type EmojiItem } from "@tiptap/extension-emoji";
 import type { NodeMarkdownStorage } from "../../markdown/types";
+
+/**
+ * Helper to get emoji character from node attributes
+ * First tries the emoji attribute, then looks up from shortcode name
+ */
+function getEmojiChar(node: { attrs: { emoji?: string; name?: string } }, emojis: EmojiItem[]): string {
+  // If emoji attribute is set, use it directly
+  if (node.attrs.emoji) {
+    return node.attrs.emoji;
+  }
+  // Look up emoji from shortcode name
+  if (node.attrs.name) {
+    const emojiItem = shortcodeToEmoji(node.attrs.name, emojis);
+    if (emojiItem) {
+      return emojiItem.emoji;
+    }
+  }
+  // Fallback to shortcode format
+  return node.attrs.name ? `:${node.attrs.name}:` : "";
+}
 
 /**
  * Emoji extension for inline emoji nodes
@@ -54,8 +74,8 @@ export const EmojiNode = Emoji.extend({
   },
 
   renderHTML({ HTMLAttributes, node }) {
-    // Use the emoji attribute directly instead of looking it up
-    const emoji = node.attrs.emoji;
+    // Look up emoji character from shortcode name if emoji attribute is not set
+    const emoji = getEmojiChar(node, this.options.emojis);
     return [
       "span",
       {
@@ -64,13 +84,13 @@ export const EmojiNode = Emoji.extend({
         "data-name": node.attrs.name,
         "data-emoji": emoji,
       },
-      emoji || `:${node.attrs.name}:`,
+      emoji,
     ];
   },
 
   renderText({ node }) {
     // Render as emoji character in plain text
-    return node.attrs.emoji || `:${node.attrs.name}:`;
+    return getEmojiChar(node, this.options.emojis);
   },
 
   addStorage() {
