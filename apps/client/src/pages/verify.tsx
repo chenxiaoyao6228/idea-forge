@@ -1,10 +1,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { ErrorList, OTPField } from "@/components/forms";
-import { StatusButton } from '@idea/ui/base/status-button';
+import { StatusButton } from "@idea/ui/base/status-button";
 import { useState, useCallback } from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@idea/ui/shadcn/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@idea/ui/shadcn/ui/card";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
@@ -27,12 +27,14 @@ const CodeValidateSchemaFactory = (t) =>
 
 function VerifyPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const type = searchParams.get(typeQueryParam) as CodeValidateRequest["type"];
   const email = searchParams.get(emailQueryParam) as CodeValidateRequest["email"];
   const redirectTo = searchParams.get(redirectToQueryParam) || "";
+  const password = location.state?.password || "";
   const { t } = useTranslation();
 
   // Validate email format
@@ -114,7 +116,7 @@ function VerifyPage() {
       switch (data.type) {
         case "register":
           navigate(`/login?redirectTo=${redirectTo ? encodeURIComponent(redirectTo) : "/"}`, {
-            state: { email: email },
+            state: { email: email, password: password },
           });
           break;
         case "reset-password":

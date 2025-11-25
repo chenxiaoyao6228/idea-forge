@@ -16,7 +16,12 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     switch (type) {
-      case "NEW_USER":
+      case "NEW_USER": {
+        // New OAuth user - navigate to create-workspace page (consistent with email registration)
+        useUserStore.setState({ userInfo: data.user as UserInfo });
+        navigate("/create-workspace");
+        break;
+      }
       case "EXISTING_USER": {
         useUserStore.setState({ userInfo: data.user as UserInfo });
         navigate("/");

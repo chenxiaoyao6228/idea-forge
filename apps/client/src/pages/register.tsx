@@ -4,8 +4,8 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { ErrorList, Field, PasswordField } from "@/components/forms";
 import { StatusButton } from "@/components/status-button";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
-import { Label } from '@idea/ui/shadcn/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@idea/ui/shadcn/ui/card";
+import { Label } from "@idea/ui/shadcn/ui/label";
 import Logo from "@/components/logo";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
@@ -49,7 +49,9 @@ function Register() {
 
       const _redirectTo = redirectTo || "/login";
 
-      navigate(`/verify?email=${encodeURIComponent(data.email)}&type=register&redirectTo=${encodeURIComponent(_redirectTo)}`);
+      navigate(`/verify?email=${encodeURIComponent(data.email)}&type=register&redirectTo=${encodeURIComponent(_redirectTo)}`, {
+        state: { password: data.password },
+      });
     } catch (err: any) {
       const code = err.code;
       if (code === ErrorCodeEnum.UserAlreadyExists) {

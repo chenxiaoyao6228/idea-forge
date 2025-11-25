@@ -16,7 +16,8 @@ import { UpdateUserRequest } from "@idea/contracts";
 import { dataURLtoFile } from "@/lib/file";
 import { toast } from "sonner";
 import { authApi } from "@/apis/auth";
-import { SignOutButton } from "../signout-button";
+import { useLogout } from "@/stores/user-store";
+import { LogOut } from "lucide-react";
 import Loading from "@idea/ui/base/loading";
 
 const AddPasswordDialog: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -104,6 +105,7 @@ export const Account = () => {
   const userInfo = useUserStore((state) => state.userInfo);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+  const { logout, loading: logoutLoading } = useLogout();
 
   // Image cropper states
   const [cropperDialogOpen, setCropperDialogOpen] = useState(false);
@@ -376,7 +378,10 @@ export const Account = () => {
 
         <Separator className="my-2" />
         <div className="flex justify-end">
-          <SignOutButton />
+          <Button variant="destructive" size="sm" onClick={logout} disabled={logoutLoading}>
+            <LogOut className="h-4 w-4" />
+            <span className="ml-2">{t("Sign Out")}</span>
+          </Button>
         </div>
 
         {/* Image Cropper Dialog */}

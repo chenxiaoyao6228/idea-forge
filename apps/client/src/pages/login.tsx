@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@idea/ui/shadcn/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@idea/ui/shadcn/ui/card";
 import { useState, useEffect } from "react";
 import useUserStore from "@/stores/user-store";
 import useWorkspaceStore, { useFetchWorkspaces } from "@/stores/workspace-store";
@@ -10,7 +10,7 @@ import { providerNames } from "@/components/connections";
 import { ProviderConnectionForm } from "@/components/connections";
 import Logo from "@/components/logo";
 import { ErrorList, Field, PasswordField } from "@/components/forms";
-import { Label } from '@idea/ui/shadcn/ui/label';
+import { Label } from "@idea/ui/shadcn/ui/label";
 import { StatusButton } from "@/components/status-button";
 import { authApi } from "@/apis/auth";
 import { useTranslation } from "react-i18next";
@@ -46,12 +46,13 @@ function LoginPage() {
     defaultValues: {
       remember: true,
       email: location.state?.email || "",
-      password: "",
+      password: location.state?.password || "",
     },
   });
   useEffect(() => {
-    if (location.state?.error || location.state?.email) {
-      navigate(location.pathname + location.search);
+    // Clear location state after reading it to prevent password from persisting in history
+    if (location.state?.error || location.state?.email || location.state?.password) {
+      navigate(location.pathname + location.search, { replace: true });
     }
   }, [location, navigate]);
 

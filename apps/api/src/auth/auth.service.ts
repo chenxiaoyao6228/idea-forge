@@ -474,10 +474,6 @@ export class AuthService {
           },
         },
       });
-
-      // Create default workspace for new OAuth user
-      await this.workspaceService.CreateDefaultWorkspace(newUser.id);
-
       const { accessToken, refreshToken } = await this.generateJWTToken(newUser.id);
       const collabToken = await this.collaborationService.generateCollabToken(newUser.id);
 
