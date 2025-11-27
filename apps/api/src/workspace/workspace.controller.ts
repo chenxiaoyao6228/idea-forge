@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { WorkspaceService } from "./workspace.service";
 import { WorkspaceListResponse, BatchAddWorkspaceMemberRequest } from "@idea/contracts";
-import { CreateWorkspaceDto, UpdateWorkspaceDto } from "./workspace.dto";
+import { CreateWorkspaceDto, UpdateWorkspaceDto, ResetPublicInviteLinkDto } from "./workspace.dto";
 import { Action } from "@/_shared/casl/ability.class";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
@@ -78,8 +78,8 @@ export class WorkspaceController {
   @Post(":id/invite/public/reset")
   @UseGuards(PolicyGuard)
   @CheckPolicy(Action.ManageMembers, "Workspace")
-  async resetPublicInviteLink(@Param("id") workspaceId: string, @GetUser("id") adminId: string) {
-    return this.workspaceService.resetPublicInviteLink(workspaceId, adminId);
+  async resetPublicInviteLink(@Param("id") workspaceId: string, @Body() dto: ResetPublicInviteLinkDto, @GetUser("id") adminId: string) {
+    return this.workspaceService.resetPublicInviteLink(workspaceId, adminId, dto.duration);
   }
 
   @Patch(":id/members/:userId/role")

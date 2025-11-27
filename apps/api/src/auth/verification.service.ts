@@ -31,29 +31,24 @@ export class VerificationService {
   ) {}
 
   async generateAndSendCode(email: string, type: VerificationCodeType) {
+    const config = this.CODE_TYPE_CONFIG[type];
+    const cooldownKey = this.getCooldownKey(email, type);
+    const isInCooldown = await this.redis.get(cooldownKey);
+
+    if (isInCooldown) {
+      this.logger.warn(`Rate limit exceeded for email ${email} and type ${type}`, {
+        email,
+        type,
+        cooldownKey,
+      });
+      throw new ApiException(ErrorCodeEnum.RequestTooFrequent);
+    }
+
+    const code = Math.random().toString().slice(2, 8);
+    const codeKey = this.getCodeKey(email, type);
+
     try {
-      const config = this.CODE_TYPE_CONFIG[type];
-      const cooldownKey = this.getCooldownKey(email, type);
-      const isInCooldown = await this.redis.get(cooldownKey);
-
-      if (isInCooldown) {
-        this.logger.warn(`Rate limit exceeded for email ${email} and type ${type}`, {
-          email,
-          type,
-          cooldownKey,
-        });
-        throw new ApiException(ErrorCodeEnum.RequestTooFrequent);
-      }
-
-      const code = Math.random().toString().slice(2, 8);
-      const codeKey = this.getCodeKey(email, type);
-
       await this.sendVerificationEmail(email, code, type);
-
-      await this.redis.setex(codeKey, config.codeExpiry, code);
-      await this.redis.setex(cooldownKey, config.cooldown, "1");
-
-      return code;
     } catch (error) {
       this.logger.error(`Failed to send verification code`, {
         email,
@@ -64,6 +59,11 @@ export class VerificationService {
 
       throw new ApiException(ErrorCodeEnum.SendEmailError);
     }
+
+    await this.redis.setex(codeKey, config.codeExpiry, code);
+    await this.redis.setex(cooldownKey, config.cooldown, "1");
+
+    return code;
   }
 
   async validateCode(email: string, code: string, type: VerificationCodeType) {

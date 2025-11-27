@@ -17,6 +17,8 @@ import {
   SPECIAL_WORKSPACE_ID,
   NotificationEventType,
   ActionType,
+  InvitationExpirationDuration,
+  calculateInvitationExpirationDate,
 } from "@idea/contracts";
 import { EventPublisherService } from "@/_shared/events/event-publisher.service";
 import { BusinessEvents } from "@/_shared/socket/business-event.constant";
@@ -59,16 +61,15 @@ export class WorkspaceService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  private readonly PUBLIC_INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-
   private buildPublicInviteUrl(token: string) {
     const baseUrl = this.configService.get<string>("CLIENT_APP_URL") ?? "";
     const normalized = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
     return `${normalized}/public-invitation/${token}`;
   }
 
-  private isInviteActive(invite: { revokedAt: Date | null; expiresAt: Date }) {
+  private isInviteActive(invite: { revokedAt: Date | null; expiresAt: Date | null }) {
     if (invite.revokedAt) return false;
+    if (!invite.expiresAt) return true; // PERMANENT invitation - always active
     return invite.expiresAt.getTime() > Date.now();
   }
 
@@ -88,8 +89,8 @@ export class WorkspaceService {
     return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
   }
 
-  private async upsertWorkspaceInvite(workspaceId: string, adminId: string) {
-    const expiresAt = new Date(Date.now() + this.PUBLIC_INVITE_TTL_MS);
+  private async upsertWorkspaceInvite(workspaceId: string, adminId: string, duration: InvitationExpirationDuration = "ONE_MONTH") {
+    const expiresAt = calculateInvitationExpirationDate(duration);
     const token = this.generateInviteToken();
 
     return this.prismaService.workspacePublicInvite.upsert({
@@ -1236,12 +1237,12 @@ export class WorkspaceService {
     return {
       workspaceId,
       token: invite.token,
-      expiresAt: invite.expiresAt.toISOString(),
+      expiresAt: invite.expiresAt?.toISOString() ?? null,
       url: this.buildPublicInviteUrl(invite.token),
     };
   }
 
-  async resetPublicInviteLink(workspaceId: string, adminId: string) {
+  async resetPublicInviteLink(workspaceId: string, adminId: string, duration: InvitationExpirationDuration = "ONE_MONTH") {
     const workspace = await this.prismaService.workspace.findUnique({
       where: { id: workspaceId },
     });
@@ -1250,12 +1251,12 @@ export class WorkspaceService {
       throw new ApiException(ErrorCodeEnum.WorkspaceNotFoundOrNotInWorkspace);
     }
 
-    const invite = await this.upsertWorkspaceInvite(workspaceId, adminId);
+    const invite = await this.upsertWorkspaceInvite(workspaceId, adminId, duration);
 
     return {
       workspaceId,
       token: invite.token,
-      expiresAt: invite.expiresAt.toISOString(),
+      expiresAt: invite.expiresAt?.toISOString() ?? null,
       url: this.buildPublicInviteUrl(invite.token),
     };
   }
@@ -1286,7 +1287,7 @@ export class WorkspaceService {
         workspaceId: invite.workspace.id,
         workspaceName: invite.workspace.name,
         workspaceAvatar: invite.workspace.avatar,
-        expiresAt: invite.expiresAt.toISOString(),
+        expiresAt: invite.expiresAt?.toISOString() ?? null,
       };
     }
 
@@ -1308,7 +1309,7 @@ export class WorkspaceService {
       workspaceId: invite.workspace.id,
       workspaceName: invite.workspace.name,
       workspaceAvatar: invite.workspace.avatar,
-      expiresAt: invite.expiresAt.toISOString(),
+      expiresAt: invite.expiresAt?.toISOString() ?? null,
       alreadyMember,
       token,
     };

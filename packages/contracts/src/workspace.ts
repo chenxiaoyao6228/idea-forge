@@ -132,11 +132,36 @@ export const WorkspaceMemberListResponseSchema = z.array(
 );
 export type WorkspaceMemberListResponse = z.infer<typeof WorkspaceMemberListResponseSchema>;
 
+// Invitation-specific expiration durations
+export const InvitationExpirationDurationSchema = z.enum(["ONE_WEEK", "ONE_MONTH", "SIX_MONTHS", "ONE_YEAR", "PERMANENT"]);
+export type InvitationExpirationDuration = z.infer<typeof InvitationExpirationDurationSchema>;
+
+/**
+ * Calculate expiration date from invitation duration
+ */
+export function calculateInvitationExpirationDate(duration: InvitationExpirationDuration): Date | null {
+  if (duration === "PERMANENT") return null;
+  const now = new Date();
+  const ms: Record<Exclude<InvitationExpirationDuration, "PERMANENT">, number> = {
+    ONE_WEEK: 7 * 24 * 60 * 60 * 1000,
+    ONE_MONTH: 30 * 24 * 60 * 60 * 1000,
+    SIX_MONTHS: 180 * 24 * 60 * 60 * 1000,
+    ONE_YEAR: 365 * 24 * 60 * 60 * 1000,
+  };
+  return new Date(now.getTime() + ms[duration]);
+}
+
+// Request schema for reset public invite link endpoint
+export const ResetPublicInviteLinkRequestSchema = z.object({
+  duration: InvitationExpirationDurationSchema.optional().default("ONE_MONTH"),
+});
+export type ResetPublicInviteLinkRequest = z.infer<typeof ResetPublicInviteLinkRequestSchema>;
+
 export const WorkspacePublicInviteLinkSchema = z.object({
   workspaceId: z.string(),
   token: z.string(),
   url: z.string(),
-  expiresAt: z.string(),
+  expiresAt: z.string().nullable(), // nullable for PERMANENT invitations
 });
 export type WorkspacePublicInviteLink = z.infer<typeof WorkspacePublicInviteLinkSchema>;
 
@@ -145,7 +170,7 @@ export const WorkspacePublicInvitationStatusSchema = z.object({
   workspaceId: z.string().optional(),
   workspaceName: z.string().optional(),
   workspaceAvatar: z.string().nullable().optional(),
-  expiresAt: z.string().optional(),
+  expiresAt: z.string().nullable().optional(), // nullable for PERMANENT invitations
   alreadyMember: z.boolean().optional(),
   token: z.string().optional(),
 });

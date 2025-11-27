@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { displayUserName } from "@/lib/auth";
 import { useRefCallback } from "@/hooks/use-ref-callback";
 import { showAddWorkspaceMemberModal } from "./add-workspace-member-modal";
+import { showResetInviteLinkModal } from "./reset-invite-link-modal";
 import { useWorkspacePermissions } from "@/hooks/permissions";
 import { toast } from "sonner";
 
@@ -126,9 +127,13 @@ const MemberManagementPanel = () => {
 
   const handleResetInvite = useRefCallback(async () => {
     if (!workspaceId || !canManageWorkspaceMembers) return;
+
+    const selectedDuration = await showResetInviteLinkModal({});
+    if (!selectedDuration) return; // User cancelled
+
     setInviteLoading(true);
     try {
-      const response = await workspaceApi.resetPublicInviteLink(workspaceId);
+      const response = await workspaceApi.resetPublicInviteLink(workspaceId, selectedDuration);
       setInvite(response);
       toast.success(t("Invitation link reset"));
     } catch (error) {
@@ -153,17 +158,17 @@ const MemberManagementPanel = () => {
                 <Input value={invitationUrl} readOnly placeholder={t("Invitation link will appear here") as string} disabled={inviteLoading} />
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleResetInvite} disabled={inviteLoading}>
-                  {t("Reset link")}
-                </Button>
                 <Button onClick={handleCopyInvite} disabled={!invitationUrl || inviteLoading}>
                   {t("Copy link")}
                 </Button>
+                <Button variant="outline" onClick={handleResetInvite} disabled={inviteLoading}>
+                  {t("Reset link")}
+                </Button>
               </div>
             </div>
-            {invite?.expiresAt && (
+            {invite && (
               <div className="text-xs text-muted-foreground">
-                {t("Link expires at")}: {new Date(invite.expiresAt).toLocaleString()}
+                {invite.expiresAt ? `${t("Link expires at")}: ${new Date(invite.expiresAt).toLocaleString()}` : t("Link never expires")}
               </div>
             )}
             {inviteLoading && <Spinner text={t("Loading...")} />}

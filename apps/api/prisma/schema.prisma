@@ -255,7 +255,7 @@ model WorkspacePublicInvite {
   createdById String
   createdBy   User      @relation("WorkspacePublicInviteCreatedBy", fields: [createdById], references: [id])
   createdAt   DateTime  @default(now())
-  expiresAt   DateTime
+  expiresAt   DateTime? // nullable for PERMANENT invitations
   revokedAt   DateTime?
 }
 

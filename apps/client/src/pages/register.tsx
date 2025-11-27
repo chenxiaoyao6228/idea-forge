@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { ErrorList, Field, PasswordField } from "@/components/forms";
 import { StatusButton } from "@/components/status-button";
 import { useState } from "react";
@@ -20,6 +20,7 @@ const RegisterRequestSchemaFactory = (t) =>
 
 function Register() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
@@ -36,7 +37,7 @@ function Register() {
     resolver: zodResolver(RegisterRequestSchema),
     mode: "onBlur", // Validate on blur for better UX
     defaultValues: {
-      email: "",
+      email: location.state?.email || "",
       password: "",
     },
   });
