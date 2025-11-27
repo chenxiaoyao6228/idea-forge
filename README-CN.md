@@ -18,7 +18,7 @@
 - 📝 **文件导入/导出** - 支持多种格式的导入和导出
 - 💯 **免费开源** - MIT 许可证，支持自托管
 
-立即体验 Idea Forge：[ideaforge.link](https://ideaforge.link/)
+立即体验 Idea Forge：[ideaforge.link](https://ideaforge.link/public-invitation/XbwoWc9AC3Vdi9z7jgy4EY8q)
 
 > 更多功能正在路上：思维导图、白板、PDF 导出、公开分享自定义域名，敬请期待。
 
