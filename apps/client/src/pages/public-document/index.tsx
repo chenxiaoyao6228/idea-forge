@@ -154,9 +154,9 @@ export default function PublicDocument() {
       )}
 
       {/* Main Content Area */}
-      <SidebarInset id="PUBLIC_DOC_SCROLL_CONTAINER" className="relative">
+      <SidebarInset className="relative h-svh">
         {/* Header */}
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-14">
           <div className="flex h-14 items-center justify-between px-6">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="-ml-1" />
@@ -173,43 +173,45 @@ export default function PublicDocument() {
         </header>
 
         {/* Scrollable Content Container - Match authenticated view layout */}
-        <div className="flex-auto overflow-y-auto flex flex-col">
-          {/* Cover Image - Reuse Cover component in read-only mode */}
-          {doc.coverImage && <Cover cover={doc.coverImage} editable={false} />}
+        <div className="relative h-[calc(100svh-56px)]">
+          <div id="PUBLIC_DOC_SCROLL_CONTAINER" className="absolute inset-0 overflow-y-auto flex flex-col">
+            {/* Cover Image - Reuse Cover component in read-only mode */}
+            {doc.coverImage && <Cover cover={doc.coverImage} editable={false} />}
 
-          {/* Main content container - Match exact classes from /pages/doc/index.tsx */}
-          <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative flex-1 flex flex-col">
-            {/* Icon and Title - Toolbar component in read-only mode */}
+            {/* Main content container - Match exact classes from /pages/doc/index.tsx */}
+            <div className="md:max-w-3xl lg:max-w-4xl mx-auto px-10 relative flex-1 flex flex-col">
+              {/* Icon and Title - Toolbar component in read-only mode */}
 
-            <div className={`${doc.coverImage ? "-mt-6" : "mt-6"} inline-flex items-center gap-x-2 group/icon `}>
-              {doc.icon && <Emoji unified={doc.icon} size={64} />}
+              <div className={`${doc.coverImage ? "-mt-6" : "mt-6"} inline-flex items-center gap-x-2 group/icon `}>
+                {doc.icon && <Emoji unified={doc.icon} size={64} />}
+              </div>
+
+              <div className={`text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF] pb-[11.5px]`} id={DOCUMENT_TITLE_ID}>
+                {doc.title || t("Untitled")}
+              </div>
+
+              {/* Document Content - ReadOnlyEditor with same styling as TiptapEditor */}
+              <ReadOnlyEditor
+                content={doc.content}
+                className="prose prose-neutral dark:prose-invert max-w-none"
+                onTocUpdate={setTocItems}
+                onEditorReady={setEditor}
+              />
+
+              {/* Table of Contents - Same as authenticated view */}
+              <TableOfContent editor={editor} items={tocItems} />
+
+              {/* Footer - Sticks to bottom */}
+              <footer className="border-t mt-auto p-4 text-center align-middle text-sm text-muted-foreground">
+                <p>
+                  {t("Powered by")}{" "}
+                  <Link to="/" className="font-medium hover:underline">
+                    Idea Forge
+                  </Link>
+                  {" - " + t("Work less, Create more")}
+                </p>
+              </footer>
             </div>
-
-            <div className={`text-4xl font-bold break-words outline-none text-[#2D2D2D] dark:text-[#CFCFCF] pb-[11.5px]`} id={DOCUMENT_TITLE_ID}>
-              {doc.title || t("Untitled")}
-            </div>
-
-            {/* Document Content - ReadOnlyEditor with same styling as TiptapEditor */}
-            <ReadOnlyEditor
-              content={doc.content}
-              className="prose prose-neutral dark:prose-invert max-w-none"
-              onTocUpdate={setTocItems}
-              onEditorReady={setEditor}
-            />
-
-            {/* Table of Contents - Same as authenticated view */}
-            <TableOfContent editor={editor} items={tocItems} />
-
-            {/* Footer - Sticks to bottom */}
-            <footer className="border-t mt-auto p-4 text-center align-middle text-sm text-muted-foreground">
-              <p>
-                {t("Powered by")}{" "}
-                <Link to="/" className="font-medium hover:underline">
-                  Idea Forge
-                </Link>
-                {" - " + t("Work less, Create more")}
-              </p>
-            </footer>
           </div>
         </div>
 
