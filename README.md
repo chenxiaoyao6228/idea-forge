@@ -18,7 +18,7 @@ English | [简体中文](README-CN.md)
 - 📝 **File import/export Support** - Import/export various format
 - 💯 **Free & Open Source** - MIT license with self-hosting
 
-Try Idea Forge now at [ideaforge.link](https://ideaforge.link/)
+Try Idea Forge now at [ideaforge.link](https://ideaforge.link/public-invitation/XbwoWc9AC3Vdi9z7jgy4EY8q)
 
 > And more features & elements are on the way: Mindmap, Whiteboard, PDF Export, Custom domains for public sharing, please stay tuned.
 
