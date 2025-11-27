@@ -14,13 +14,16 @@ export default function BackToTop() {
   const commentsSidebarOpen = useUIStore((state) => state.commentsSidebarOpen);
 
   useEffect(() => {
-    setScrollContainer(document.getElementById("WORK_CONTENT_SCROLL_CONTAINER"));
+    // Try authenticated scroll container first, then public document container
+    const container = document.getElementById("WORK_CONTENT_SCROLL_CONTAINER") || document.getElementById("PUBLIC_DOC_SCROLL_CONTAINER");
+    setScrollContainer(container);
   }, []);
 
   const scrolled = useScrollTop(10, scrollContainer || undefined);
 
   const scrollToTop = () => {
-    const container = document.getElementById("WORK_CONTENT_SCROLL_CONTAINER");
+    // Try authenticated scroll container first, then public document container
+    const container = document.getElementById("WORK_CONTENT_SCROLL_CONTAINER") || document.getElementById("PUBLIC_DOC_SCROLL_CONTAINER");
     if (container) {
       container.scrollTo({
         top: 0,
