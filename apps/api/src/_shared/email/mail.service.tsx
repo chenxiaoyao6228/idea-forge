@@ -1,12 +1,14 @@
 // Remember to keep this line at the top of the file
 import React from "react";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { Resend } from "resend";
 import { Template as RegisterEmail } from "./templates/RegisterEmail";
 import { Template as ResetPasswordEmail } from "./templates/ResetPasswordEmail";
 import { render } from "jsx-email";
 import { I18nContextManager } from "../i18next/i18n.context";
 import { ConfigService } from "@nestjs/config";
+import { WINSTON_MODULE_PROVIDER } from "nest-winston";
+import { Logger } from "winston";
 
 // jsx-email: https://jsx.email/docs/email-providers#resend
 @Injectable()
@@ -14,7 +16,10 @@ export class MailService {
   private resend: Resend | null = null;
   private shouldSendEmails = false;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+  ) {
     this.initializeResend();
   }
 
@@ -50,13 +55,15 @@ export class MailService {
     html: string;
     text: string;
   }) {
-    // Always log the email text content
+    // Always log the email text content (using both console.log for dev and logger for log files)
     console.log("Email content (text):", text);
     console.log("Email details:", { to, subject });
+    this.logger.info("Email content", { to, subject, text });
 
     // If Resend is not configured or API key is default, skip sending
     if (!this.shouldSendEmails || !this.resend) {
       console.log("Email sending skipped - Resend not properly configured");
+      this.logger.info("Email sending skipped - Resend not properly configured");
       return {} as const;
     }
 

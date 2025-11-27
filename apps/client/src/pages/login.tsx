@@ -40,6 +40,7 @@ function LoginPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(LoginFormSchema),
@@ -49,6 +50,8 @@ function LoginPage() {
       password: location.state?.password || "",
     },
   });
+
+  const watchedEmail = watch("email");
   useEffect(() => {
     // Clear location state after reading it to prevent password from persisting in history
     if (location.state?.error || location.state?.email || location.state?.password) {
@@ -188,7 +191,11 @@ function LoginPage() {
 
               <div className="text-center text-sm">
                 {t("New here?")}{" "}
-                <Link to={redirectTo ? `/register?${encodeURIComponent(redirectTo)}` : "/register"} className="underline underline-offset-4">
+                <Link
+                  to={redirectTo ? `/register?redirectTo=${encodeURIComponent(redirectTo)}` : "/register"}
+                  state={{ email: watchedEmail }}
+                  className="underline underline-offset-4"
+                >
                   {t("Create an account")}
                 </Link>
               </div>

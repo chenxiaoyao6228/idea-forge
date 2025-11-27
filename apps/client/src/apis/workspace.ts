@@ -13,6 +13,8 @@ import {
   WorkspacePublicInviteLink,
   WorkspacePublicInvitationStatus,
   AcceptWorkspaceInvitationResponse,
+  InvitationExpirationDuration,
+  ResetPublicInviteLinkRequest,
 } from "@idea/contracts";
 
 export const workspaceApi = {
@@ -48,7 +50,8 @@ export const workspaceApi = {
 
   getPublicInviteLink: async (workspaceId: string) => request.get<void, WorkspacePublicInviteLink>(`/api/workspaces/${workspaceId}/invite/public`),
 
-  resetPublicInviteLink: async (workspaceId: string) => request.post<void, WorkspacePublicInviteLink>(`/api/workspaces/${workspaceId}/invite/public/reset`, {}),
+  resetPublicInviteLink: async (workspaceId: string, duration?: InvitationExpirationDuration) =>
+    request.post<ResetPublicInviteLinkRequest, WorkspacePublicInviteLink>(`/api/workspaces/${workspaceId}/invite/public/reset`, { duration }),
 
   getPublicInvitationStatus: async (token: string) => request.get<void, WorkspacePublicInvitationStatus>(`/api/public-invitations/${token}`),
 
