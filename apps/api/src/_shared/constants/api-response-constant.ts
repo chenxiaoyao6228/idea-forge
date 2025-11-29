@@ -72,6 +72,7 @@ export enum ErrorCodeEnum {
   UserAlreadyInSubspace = "user_already_in_subspace",
   UserNotInSubspace = "user_not_in_subspace",
   CannotLeavePersonalSubspace = "cannot_leave_personal_subspace",
+  SubspaceCannotDeletePersonal = "subspace_cannot_delete_personal",
   CannotLeaveWorkspaceWideSubspace = "cannot_leave_workspace_wide_subspace",
   CannotLeaveAsLastAdmin = "cannot_leave_as_last_admin",
   InvalidSubspaceType = "invalid_subspace_type",

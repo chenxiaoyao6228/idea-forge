@@ -673,7 +673,16 @@ export class SubspaceService {
   }
 
   async deleteSubspace(id: string, userId: string) {
-    // Check if user is an admin of the subspace
+    // Get subspace info first
+    const subspace = await this.prismaService.subspace.findUnique({
+      where: { id },
+    });
+
+    if (!subspace) {
+      throw new ApiException(ErrorCodeEnum.SubspaceNotFound);
+    }
+
+    // Check if user is a subspace admin
     const subspaceMember = await this.prismaService.subspaceMember.findFirst({
       where: {
         subspaceId: id,
@@ -682,11 +691,48 @@ export class SubspaceService {
       },
     });
 
-    if (!subspaceMember) {
+    // Check if user is a workspace admin/owner
+    const workspaceMember = await this.prismaService.workspaceMember.findFirst({
+      where: {
+        workspaceId: subspace.workspaceId,
+        userId,
+        role: { in: ["OWNER", "ADMIN"] },
+      },
+    });
+
+    // User must be either subspace admin OR workspace admin/owner
+    if (!subspaceMember && !workspaceMember) {
       throw new ApiException(ErrorCodeEnum.SubspaceAdminRoleRequired);
     }
 
+    // Cannot delete personal subspaces
+    if (subspace.type === SubspaceType.PERSONAL) {
+      throw new ApiException(ErrorCodeEnum.SubspaceCannotDeletePersonal);
+    }
+
+    // Soft-delete all documents in the subspace (move to trash)
+    await this.prismaService.doc.updateMany({
+      where: { subspaceId: id, deletedAt: null },
+      data: { deletedAt: new Date(), deletedById: userId },
+    });
+
+    // Delete subspace members first (no cascade defined in schema)
+    await this.prismaService.subspaceMember.deleteMany({
+      where: { subspaceId: id },
+    });
+
+    // Delete the subspace (cascades Notification, Subscription, TemporaryImport)
     await this.prismaService.subspace.delete({ where: { id } });
+
+    // Emit delete event
+    await this.eventPublisher.publishWebsocketEvent({
+      name: BusinessEvents.SUBSPACE_DELETE,
+      workspaceId: subspace.workspaceId,
+      actorId: userId,
+      data: { subspaceId: id, workspaceId: subspace.workspaceId },
+      timestamp: new Date().toISOString(),
+    });
+
     return { success: true };
   }
 

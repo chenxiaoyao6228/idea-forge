@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@idea/ui/shadcn/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@idea/ui/shadcn/ui/tabs';
-import { Button } from '@idea/ui/shadcn/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@idea/ui/shadcn/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@idea/ui/shadcn/ui/tabs";
+import { Button } from "@idea/ui/shadcn/ui/button";
 import { Home, Users, Shield, Loader2 } from "lucide-react";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { SubspaceSettingsResponse, UpdateSubspaceSettingsRequest } from "@idea/contracts";
@@ -173,7 +173,18 @@ const SubspaceSettingsModal = ({
               </TabsList>
 
               <TabsContent tabIndex={-1} value="basic" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
-                <BasicInfoTab subspaceId={subspaceId} onTabChange={setActiveTab} onLeaveSubspace={handleClose} />
+                <BasicInfoTab
+                  subspaceId={subspaceId}
+                  onTabChange={setActiveTab}
+                  onLeaveSubspace={handleClose}
+                  onDeleteSubspace={async () => {
+                    // Refresh the subspace list to remove the deleted one
+                    if (currentWorkspace?.id) {
+                      await fetchList(currentWorkspace.id);
+                    }
+                    handleClose();
+                  }}
+                />
               </TabsContent>
 
               <TabsContent tabIndex={-1} value="members" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
