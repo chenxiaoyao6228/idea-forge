@@ -7,20 +7,23 @@ import { Textarea } from "@idea/ui/shadcn/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@idea/ui/shadcn/ui/avatar";
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Home, Check, Archive, Trash2, ArrowLeft } from "lucide-react";
-import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin, useUpdateSubspaceSettings } from "@/stores/subspace-store";
+import useSubspaceStore, { useLeaveSubspace, useIsLastSubspaceAdmin, useUpdateSubspaceSettings, useDeleteSubspace } from "@/stores/subspace-store";
 import { useSubspacePermissions } from "@/hooks/permissions";
+import { showConfirmModal } from "@/components/ui/confirm-modal";
 
 interface BasicInfoTabProps {
   subspaceId: string;
   onTabChange?: (tab: string) => void;
   onLeaveSubspace?: () => void;
+  onDeleteSubspace?: () => void;
 }
 
-export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: BasicInfoTabProps) {
+export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace, onDeleteSubspace }: BasicInfoTabProps) {
   const { t } = useTranslation();
   const { subspaceSettings } = useSubspaceStore();
   const { run: updateSubspaceSettings } = useUpdateSubspaceSettings(subspaceId);
   const { run: leaveSubspace, loading: isLeavingSubspace } = useLeaveSubspace();
+  const { run: deleteSubspace, loading: isDeletingSubspace } = useDeleteSubspace();
   const isLastAdmin = useIsLastSubspaceAdmin(subspaceId);
 
   // Permission checks
@@ -85,9 +88,32 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
     console.log("Archive subspace placeholder");
   };
 
-  const handleDeleteSubspace = () => {
-    // TODO: Implement delete subspace functionality
-    console.log("Delete subspace placeholder");
+  const handleDeleteSubspace = async () => {
+    const confirmed = await showConfirmModal({
+      title: t("Delete Subspace"),
+      description: t("Are you sure you want to delete this subspace? This action cannot be undone."),
+      content: (
+        <div className="text-sm text-muted-foreground space-y-2 py-2">
+          <p>{t("Deleting this subspace will:")}</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>{t("Move all pages in this subspace to trash")}</li>
+            <li>{t("Remove all member permissions")}</li>
+            <li>{t("Delete all subspace settings")}</li>
+          </ul>
+        </div>
+      ),
+      confirmText: t("Delete"),
+      confirmVariant: "destructive",
+    });
+
+    if (confirmed) {
+      try {
+        await deleteSubspace({ subspaceId, options: { permanent: true } });
+        onDeleteSubspace?.();
+      } catch (error) {
+        // Error is already handled by the hook (toast shown)
+      }
+    }
   };
 
   const handleSetPermissions = () => {
@@ -263,10 +289,10 @@ export function BasicInfoTab({ subspaceId, onTabChange, onLeaveSubspace }: Basic
               variant="outline"
               size="sm"
               className="text-destructive border-destructive/20 hover:bg-destructive/10"
-              disabled={!canDeleteSubspace}
+              disabled={!canDeleteSubspace || isDeletingSubspace || subspaceSettings?.subspace.type === "PERSONAL"}
               onClick={handleDeleteSubspace}
             >
-              {t("Delete")}
+              {isDeletingSubspace ? t("Deleting...") : t("Delete")}
             </Button>
           </div>
         </CardContent>

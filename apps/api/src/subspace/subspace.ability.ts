@@ -116,9 +116,11 @@ export class SubspaceAbility extends BaseAbility {
   }
 
   private defineWorkspaceBasedSubspacePermissions(can: any, workspaceId: string, role: any) {
-    // Only workspace OWNER and ADMIN can create subspaces
+    // Workspace OWNER and ADMIN can create and delete subspaces
     if (role === "OWNER" || role === "ADMIN") {
       can(Action.Create, "Subspace", { workspaceId });
+      // Workspace admins can delete any subspace in their workspace
+      can(Action.Delete, "Subspace", { workspaceId });
     }
   }
 }

@@ -197,6 +197,24 @@ export function useSubspaceWebsocketEvents(socket: Socket | null) {
       }));
     };
 
+    const onSubspaceDelete = (message: any) => {
+      console.log(`[websocket]: Received event ${SocketEvents.SUBSPACE_DELETE}:`, message);
+      const { subspaceId } = message;
+      if (!subspaceId) return;
+
+      // Remove subspace from store
+      useSubSpaceStore.setState((state) => {
+        const newSubspaces = { ...state.subspaces };
+        delete newSubspaces[subspaceId];
+        return { subspaces: newSubspaces };
+      });
+
+      // Leave the WebSocket room
+      if (socket) {
+        socket.emit("leave", `subspace:${subspaceId}`);
+      }
+    };
+
     // Register listeners
     socket.on(SocketEvents.SUBSPACE_CREATE, onSubspaceCreate);
     socket.on(SocketEvents.SUBSPACE_MOVE, onSubspaceMove);
@@ -204,6 +222,7 @@ export function useSubspaceWebsocketEvents(socket: Socket | null) {
     socket.on(SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED, onSubspaceMembersBatchAdded);
     socket.on(SocketEvents.SUBSPACE_MEMBER_LEFT, onSubspaceMemberLeft);
     socket.on(SocketEvents.SUBSPACE_UPDATE, onSubspaceUpdate);
+    socket.on(SocketEvents.SUBSPACE_DELETE, onSubspaceDelete);
 
     // Return cleanup function
     return () => {
@@ -213,6 +232,7 @@ export function useSubspaceWebsocketEvents(socket: Socket | null) {
       socket.off(SocketEvents.SUBSPACE_MEMBERS_BATCH_ADDED, onSubspaceMembersBatchAdded);
       socket.off(SocketEvents.SUBSPACE_MEMBER_LEFT, onSubspaceMemberLeft);
       socket.off(SocketEvents.SUBSPACE_UPDATE, onSubspaceUpdate);
+      socket.off(SocketEvents.SUBSPACE_DELETE, onSubspaceDelete);
     };
   }, [socket, fetchSubspace]);
 }

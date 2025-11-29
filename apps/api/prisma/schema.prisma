@@ -474,10 +474,10 @@ model SubspaceMember {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @default(now())
 
-  subspace   Subspace @relation(fields: [subspaceId], references: [id])
+  subspace   Subspace @relation(fields: [subspaceId], references: [id], onDelete: Cascade)
   subspaceId String
 
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   @@unique([subspaceId, userId])

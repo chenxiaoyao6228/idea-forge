@@ -60,23 +60,23 @@ export function NotificationList({
   return (
     <ViewportBatchProvider batchInterval={1000}>
       <ScrollArea className={cn("h-full", className)}>
-        <div className="space-y-2 p-4">
-          {notifications.map((notification) => (
-            <NotificationItem key={notification.id} notification={notification} onMarkAsRead={onMarkAsRead} onResolveAction={onResolveAction} />
-          ))}
-
-          {/* Load more trigger */}
-          {!noMore && (
-            <div ref={loadMoreRef} className="flex justify-center py-4">
-              {loadingMore && <Spinner className="h-6 w-6" />}
-            </div>
-          )}
-        </div>
-
         {/* Loading state for initial load */}
-        {loading && notifications.length === 0 && (
+        {loading && notifications.length === 0 ? (
           <div className="flex justify-center items-center h-32">
             <Spinner className="h-8 w-8" />
+          </div>
+        ) : (
+          <div className="space-y-2 p-4">
+            {notifications.map((notification) => (
+              <NotificationItem key={notification.id} notification={notification} onMarkAsRead={onMarkAsRead} onResolveAction={onResolveAction} />
+            ))}
+
+            {/* Load more trigger - only show after initial load */}
+            {!noMore && (
+              <div ref={loadMoreRef} className="flex justify-center py-4">
+                {loadingMore && <Spinner className="h-6 w-6" />}
+              </div>
+            )}
           </div>
         )}
       </ScrollArea>
