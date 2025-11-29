@@ -680,7 +680,6 @@ docker inspect ideaforge-test-idea-forge-1
 **可选变量:**
 - `OAUTH_*` - OAuth 提供商凭证
 - `RESEND_API_KEY` - 邮件服务 API 密钥
-- `DEEPSEEK_API_KEY_*` - AI 提供商 API 密钥
 - `SENTRY_DSN` - 错误跟踪 DSN
 
 ## 数据持久化

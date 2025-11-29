@@ -680,7 +680,6 @@ See `scripts/deploy/env.secrets.example` for complete list of configuration opti
 **Optional variables:**
 - `OAUTH_*` - OAuth provider credentials
 - `RESEND_API_KEY` - Email service API key
-- `DEEPSEEK_API_KEY_*` - AI provider API keys
 - `SENTRY_DSN` - Error tracking DSN
 
 ## Data Persistence

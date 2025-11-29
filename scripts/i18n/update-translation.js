@@ -1,17 +1,39 @@
 // update translation from en.json to other languages
 //
 // Usage:
-//   1. Set DEEPSEEK_API_KEY_1 in root .env file
-//   2. Run: node scripts/i18n/update-translation.js
+//   1. Copy scripts/i18n/trans.env.example to scripts/i18n/trans.env
+//   2. Set DEEPSEEK_API_KEY in trans.env
+//   3. Run: node scripts/i18n/update-translation.js
+//
+// NOTE: This file is optional for local development.
+// If trans.env is not found, translation will be skipped.
+// GitHub CI will run translation using secrets.
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
-const dotenvFlow = require("dotenv-flow");
+const dotenv = require("dotenv");
 const OpenAI = require("openai");
 
-// Load environment variables from root .env file
-dotenvFlow.config({ path: path.join(__dirname, "../..") });
+// Load environment variables from trans.env
+const transEnvPath = path.join(__dirname, "trans.env");
+const transEnvExamplePath = path.join(__dirname, "trans.env.example");
+
+// Check if trans.env exists
+if (!fs.existsSync(transEnvPath)) {
+  // Check if running in CI (GitHub Actions sets CI=true)
+  if (process.env.CI) {
+    console.log("🔧 Running in CI environment, using environment variables from secrets...");
+    // In CI, environment variables are already set via secrets
+  } else {
+    console.log("⏭️  Skipping translation: trans.env not found.");
+    console.log(`   To enable local translation, copy ${transEnvExamplePath} to ${transEnvPath}`);
+    console.log("   and fill in your API key.");
+    process.exit(0);
+  }
+} else {
+  // Load from trans.env file
+  dotenv.config({ path: transEnvPath });
+}
 
 // Keys to update by force
 const keysToUpdate = [
@@ -24,10 +46,19 @@ const localeDirs = [
   path.join(__dirname, "../../apps/api/public/locales"),
 ];
 
+// Get API key from environment (works for both local trans.env and CI secrets)
+const apiKey = process.env.DEEPSEEK_API_KEY;
+if (!apiKey) {
+  console.error("❌ Error: DEEPSEEK_API_KEY is not set.");
+  console.error("   For local development: Set it in scripts/i18n/trans.env");
+  console.error("   For CI: Set DEEPSEEK_API_KEY secret in GitHub repository settings");
+  process.exit(1);
+}
+
 const config = {
-  apiKey: process.env.DEEPSEEK_API_KEY_1,
-  baseURL: "https://api.siliconflow.cn/v1",
-  model: "deepseek-ai/DeepSeek-V3",
+  apiKey,
+  baseURL: process.env.AI_BASE_URL || "https://api.siliconflow.cn/v1",
+  model: process.env.AI_MODEL || "deepseek-ai/DeepSeek-V3",
 };
 
 const openai = new OpenAI(config);
