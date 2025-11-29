@@ -56,9 +56,6 @@ services:
       - OSS_ENDPOINT=${OSS_ENDPOINT}
       - OSS_CDN_ENDPOINT=${OSS_CDN_ENDPOINT}
 
-      # AI Providers
-      - DEEPSEEK_API_KEY_1=${DEEPSEEK_API_KEY_1}
-
       # Monitoring
       - SENTRY_DSN=${SENTRY_DSN}
 
