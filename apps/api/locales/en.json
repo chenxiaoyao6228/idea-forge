@@ -48,5 +48,6 @@
   "You have requested to reset your password. Your verification code is:": "You have requested to reset your password. Your verification code is:",
   "Your password reset verification code is: ": "Your password reset verification code is: ",
   "Your registration verification code is:": "Your registration verification code is:",
-  "success": "success"
+  "success": "success",
+  "test_i18n_ci_workflow": "This is a test key for i18n CI workflow"
 }
