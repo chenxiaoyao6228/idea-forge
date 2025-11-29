@@ -164,6 +164,14 @@ fi
 # Copy root .env to apps/api/.env
 cp .env apps/api/.env
 
+# Copy Claude Code settings if they exist
+MAIN_CLAUDE_SETTINGS="${PROJECT_ROOT}/.claude/settings.local.json"
+if [ -f "$MAIN_CLAUDE_SETTINGS" ]; then
+    echo "  📋 Copying Claude Code settings..."
+    mkdir -p .claude
+    cp "$MAIN_CLAUDE_SETTINGS" .claude/settings.local.json
+fi
+
 echo -e "${GREEN}✅ Configuration files created${NC}"
 echo ""
 echo -e "${BLUE}📦 Installing dependencies...${NC}"

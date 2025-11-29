@@ -35,3 +35,10 @@ commit-msg:
   commands:
     commitlint:
       run: pnpm commitlint --edit {1}
+
+pre-push:
+  commands:
+    check-prisma-migrations:
+      run: |
+        echo "Checking for pending Prisma migrations..."
+        ./scripts/development/check-prisma-migrations.sh
