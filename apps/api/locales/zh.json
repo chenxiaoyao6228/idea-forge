@@ -48,5 +48,6 @@
   "You have requested to reset your password. Your verification code is:": "您已请求重置密码。您的验证码是：",
   "Your password reset verification code is: ": "您的密码重置验证码是：",
   "Your registration verification code is:": "您的注册验证码是：",
-  "success": "成功"
+  "success": "成功",
+  "test_i18n_ci_workflow": "这是用于国际化持续集成工作流的测试密钥"
 }
