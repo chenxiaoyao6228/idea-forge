@@ -16,7 +16,8 @@ import { createTogetherAI } from "@ai-sdk/togetherai";
 import { createOllama } from "ollama-ai-provider";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createQwen } from "qwen-ai-provider-v5";
-import { LLMProviderType, PROVIDER_REGISTRY, type WorkspaceAIProvider } from "@idea/contracts";
+import { LLMProviderType, PROVIDER_REGISTRY } from "@idea/contracts";
+import type { WorkspaceAIProvider } from "@prisma/client";
 
 // Type for provider creator functions
 type ProviderCreator = typeof createOpenAI;

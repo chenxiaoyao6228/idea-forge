@@ -1,7 +1,8 @@
 import { Injectable, forwardRef, Inject as NestInject } from "@nestjs/common";
 import { streamText } from "ai";
 import { Subject, Observable } from "rxjs";
-import { AIStreamResponse, AIStreamRequest, PROVIDER_REGISTRY, type WorkspaceAIProvider, parseModelsString } from "@idea/contracts";
+import { AIStreamResponse, AIStreamRequest, PROVIDER_REGISTRY, parseModelsString } from "@idea/contracts";
+import type { WorkspaceAIProvider } from "@prisma/client";
 import { TokenUsageService } from "./token-usage.service";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";

@@ -57,6 +57,9 @@ export const envSchema = z.object({
   SENTRY_DSN: z.string().optional(),
   // SENTRY_AUTH_TOKEN: z.string().optional(),
   // SENTRY_AUTH_TOKEN_REACT: z.string().optional(),
+
+  /* AI CONFIG */
+  AI_ENCRYPTION_KEY: z.string().min(32, "AI_ENCRYPTION_KEY must be at least 32 characters"),
 });
 
 const clientEnvSchema = z.object({
