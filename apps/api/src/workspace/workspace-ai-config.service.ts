@@ -1,15 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
-import type {
-  CreateWorkspaceAIProviderDto,
-  PublicWorkspaceAIProvider,
-  UpdateWorkspaceAIProviderDto,
-  WorkspaceAIProvider,
-  LLMProviderType,
-} from "@idea/contracts";
+import type { CreateWorkspaceAIProviderDto, PublicWorkspaceAIProvider, UpdateWorkspaceAIProviderDto, LLMProviderType } from "@idea/contracts";
 import { PROVIDER_REGISTRY, getAllModelsFromProviders } from "@idea/contracts";
 import { PrismaService } from "@/_shared/database/prisma/prisma.service";
 import { EncryptionService } from "@/_shared/utils/encryption.service";
-import type { WorkspaceAIProvider as PrismaWorkspaceAIProvider } from "@prisma/client";
+import type { WorkspaceAIProvider as PrismaWorkspaceAIProvider, WorkspaceAIProvider } from "@prisma/client";
 
 // ============================================================
 // Type Converters
