@@ -30,7 +30,7 @@ export class PolicyGuard implements CanActivate {
     if (!policy) return true;
 
     const { action, model } = policy;
-    const id = getRequestItemId(request);
+    const id = getRequestItemId(request, model);
 
     try {
       if (id) {

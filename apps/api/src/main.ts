@@ -98,7 +98,19 @@ async function bootstrap() {
   //   );
   // }
 
-  app.use(compression());
+  // Use compression but skip SSE endpoints to enable real-time streaming
+  app.use(
+    compression({
+      filter: (req, res) => {
+        // Skip compression for SSE endpoints
+        if (req.url?.includes("/api/ai/stream")) {
+          return false;
+        }
+        // Use default filter for other requests
+        return compression.filter(req, res);
+      },
+    }),
+  );
 
   // Get Real IP address
   app.use(requestIpMw({ attributeName: "ip" }));
