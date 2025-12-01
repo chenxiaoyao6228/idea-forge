@@ -16,6 +16,13 @@ import {
   InvitationExpirationDuration,
   ResetPublicInviteLinkRequest,
 } from "@idea/contracts";
+import type { WorkspaceAIProvider, PublicWorkspaceAIProvider, CreateWorkspaceAIProviderDto, UpdateWorkspaceAIProviderDto } from "@idea/contracts";
+
+// Response type for AI config summary
+interface AIConfigSummary {
+  providers: PublicWorkspaceAIProvider[];
+  availableModels: string[];
+}
 
 export const workspaceApi = {
   // Workspace operations
@@ -67,4 +74,40 @@ export const workspaceApi = {
   leaveWorkspace: async (workspaceId: string) => request.delete<void, { success: boolean }>(`/api/workspaces/${workspaceId}/leave`),
 
   getCurrentWorkspace: async () => request.get<void, Workspace>("/api/workspaces/current"),
+
+  // ==============================================================
+  // AI Configuration - Summary
+  // ==============================================================
+
+  getAIConfigSummary: async (workspaceId: string) => request.get<void, AIConfigSummary>(`/api/workspaces/${workspaceId}/ai-config/summary`),
+
+  // ==============================================================
+  // AI Configuration - Providers
+  // ==============================================================
+
+  getAIProviders: async (workspaceId: string) => request.get<void, WorkspaceAIProvider[]>(`/api/workspaces/${workspaceId}/ai-config/providers`),
+
+  getPublicAIProviders: async (workspaceId: string) =>
+    request.get<void, PublicWorkspaceAIProvider[]>(`/api/workspaces/${workspaceId}/ai-config/providers/public`),
+
+  getAIProviderById: async (workspaceId: string, providerId: string) =>
+    request.get<void, WorkspaceAIProvider>(`/api/workspaces/${workspaceId}/ai-config/providers/${providerId}`),
+
+  createAIProvider: async (workspaceId: string, data: Omit<CreateWorkspaceAIProviderDto, "workspaceId">) =>
+    request.post<Omit<CreateWorkspaceAIProviderDto, "workspaceId">, WorkspaceAIProvider>(`/api/workspaces/${workspaceId}/ai-config/providers`, data),
+
+  updateAIProvider: async (workspaceId: string, providerId: string, data: UpdateWorkspaceAIProviderDto) =>
+    request.patch<UpdateWorkspaceAIProviderDto, WorkspaceAIProvider>(`/api/workspaces/${workspaceId}/ai-config/providers/${providerId}`, data),
+
+  updateAIProviderPriorities: async (workspaceId: string, priorities: Array<{ id: string; priority: number }>) =>
+    request.put<Array<{ id: string; priority: number }>, { success: boolean }>(`/api/workspaces/${workspaceId}/ai-config/providers/priorities`, priorities),
+
+  deleteAIProvider: async (workspaceId: string, providerId: string) =>
+    request.delete<void, { success: boolean }>(`/api/workspaces/${workspaceId}/ai-config/providers/${providerId}`),
+
+  // ==============================================================
+  // AI Configuration - Available Models
+  // ==============================================================
+
+  getAvailableAIModels: async (workspaceId: string) => request.get<void, string[]>(`/api/workspaces/${workspaceId}/ai-config/models/available`),
 };

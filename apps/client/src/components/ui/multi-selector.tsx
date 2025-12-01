@@ -5,9 +5,9 @@ import { X, ChevronDownIcon } from "lucide-react";
 import * as React from "react";
 import { forwardRef, useEffect } from "react";
 
-import { Badge } from '@idea/ui/shadcn/ui/badge';
-import { Command, CommandGroup, CommandItem, CommandList } from '@idea/ui/shadcn/ui/command';
-import { cn } from '@idea/ui/shadcn/utils';
+import { Badge } from "@idea/ui/shadcn/ui/badge";
+import { Command, CommandGroup, CommandItem, CommandList } from "@idea/ui/shadcn/ui/command";
+import { cn } from "@idea/ui/shadcn/utils";
 
 export interface Option {
   value: string;
@@ -311,10 +311,15 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
 
     useEffect(() => {
       /** If `onSearch` is provided, do not trigger options updated. */
-      if (!arrayOptions || onSearch) {
+      if (onSearch) {
         return;
       }
-      const newOption = transToGroupOption(arrayOptions || [], groupBy);
+      // Use arrayOptions if provided, otherwise use arrayDefaultOptions
+      const optionsToUse = arrayOptions || arrayDefaultOptions;
+      if (!optionsToUse || optionsToUse.length === 0) {
+        return;
+      }
+      const newOption = transToGroupOption(optionsToUse, groupBy);
       if (!compareOptions(newOption, options)) {
         setOptions(newOption);
       }

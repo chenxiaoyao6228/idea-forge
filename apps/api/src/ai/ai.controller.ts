@@ -21,7 +21,7 @@ export class AIController {
   ) {}
 
   @Post("stream")
-  async streamCompletion(@Body() request: AIStreamRequest, @GetUser() user: User, @Res() response: Response) {
+  async streamCompletion(@Body() request: AIStreamRequest & { workspaceId?: string }, @GetUser() user: User, @Res() response: Response) {
     try {
       if (!request.messages?.length) {
         response.status(HttpStatus.BAD_REQUEST).send({ error: "Messages are required" });
@@ -31,6 +31,10 @@ export class AIController {
       response.setHeader("Content-Type", "text/event-stream");
       response.setHeader("Cache-Control", "no-cache");
       response.setHeader("Connection", "keep-alive");
+      // Disable compression for SSE to enable real-time streaming
+      response.setHeader("X-Accel-Buffering", "no");
+      // Flush headers immediately to start the SSE connection
+      response.flushHeaders();
 
       const isTokenUsageExceeded = await this.tokenUsageService.isTokenUsageExceeded(user.id);
 
@@ -45,7 +49,7 @@ export class AIController {
         return;
       }
 
-      const stream = await this.aiProviderService.streamCompletion(request, user.id);
+      const stream = await this.aiProviderService.streamCompletion(request, user.id, request.workspaceId);
 
       const subscription = stream.subscribe({
         next: (data) => {

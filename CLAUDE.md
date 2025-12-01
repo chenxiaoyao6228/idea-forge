@@ -199,6 +199,26 @@ Follow patterns from `.cursor/rules/react-client.mdc`:
 - **Forms:** React Hook Form with Zod validation
 - **Testing:** Vitest with React Testing Library
 
+### Internationalization (i18n)
+
+**IMPORTANT: Use English text as i18n keys, NOT nested key paths**
+
+```tsx
+// ✅ CORRECT - Use English text as key
+t("Login")
+t("Enter your email below to login")
+t("Are you sure you want to delete \"{{name}}\"?", { name: item.name })
+
+// ❌ WRONG - Don't use nested key paths
+t("auth.login.title")
+t("settings.ai.providerName")
+```
+
+- Locale files are in `apps/api/public/locales/{lang}.json`
+- Keys are the English text itself (e.g., `"Cancel": "Cancel"`)
+- Use interpolation for dynamic values: `t("Hello {{name}}", { name })`
+- The i18n system uses `i18next` with `i18next-http-backend`
+
 ### Code Quality Standards
 
 - **Linter:** Biome (configured in `biome.json`) - NOT ESLint

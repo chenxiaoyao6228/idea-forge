@@ -245,6 +245,9 @@ model Workspace {
 
   // Last visited documents
   lastVisitedDocs WorkspaceLastVisitedDoc[]
+
+  // AI configuration
+  aiProviders WorkspaceAIProvider[]
 }
 
 model WorkspacePublicInvite {
@@ -894,4 +897,34 @@ model WorkspaceLastVisitedDoc {
   @@index([userId])
   @@index([workspaceId])
   @@index([documentId])
+}
+
+// Workspace AI Provider Pool
+// Stores API credentials for each provider with priority for failover
+// Models are stored as comma-separated string on each provider
+model WorkspaceAIProvider {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Provider configuration
+  provider String  // LLM provider type (openai, anthropic, deepseek, openrouter, custom, etc.)
+  name     String? // Optional display name (required for custom providers, e.g., "Silicon Flow")
+  apiKey   String  // Encrypted API key
+  baseURL  String? // Optional custom API endpoint (overrides default, required for custom providers)
+  models   String? // Comma-separated model IDs this provider can serve (e.g., "gpt-4o,gpt-4o-mini")
+
+  // Provider status and ordering
+  isActive Boolean @default(true) // Enable/disable this provider
+  priority Int     @default(0)    // Failover priority (lower number = higher priority, try first)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // For standard providers: one per workspace (e.g., one OpenAI config per workspace)
+  // For custom providers: unique by (workspaceId, provider, name) to allow multiple custom providers
+  @@unique([workspaceId, provider, name])
+  @@index([workspaceId, isActive, priority])
+  @@index([workspaceId])
 }
