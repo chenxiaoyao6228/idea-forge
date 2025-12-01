@@ -410,6 +410,8 @@ export class AuthService {
 
       if (connection) {
         const { accessToken, refreshToken } = await this.generateJWTToken(connection.user.id);
+        const hashedRefreshToken = await hash(refreshToken);
+        await this.userService.updateHashedRefreshToken(connection.user.id, hashedRefreshToken);
         const collabToken = await this.collaborationService.generateCollabToken(connection.user.id);
         return {
           type: "EXISTING_USER",
@@ -475,6 +477,8 @@ export class AuthService {
         },
       });
       const { accessToken, refreshToken } = await this.generateJWTToken(newUser.id);
+      const hashedRefreshToken = await hash(refreshToken);
+      await this.userService.updateHashedRefreshToken(newUser.id, hashedRefreshToken);
       const collabToken = await this.collaborationService.generateCollabToken(newUser.id);
 
       return {
