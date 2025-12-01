@@ -36,6 +36,7 @@ jobs:
           fi
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -49,7 +50,14 @@ jobs:
         run: |
           echo "✅ Docker image published successfully!"
           echo ""
-          echo "Image: ${{ secrets.DOCKER_HUB_USERNAME }}/idea-forge:${{ steps.tag.outputs.tag }}"
+          echo "📦 Image Tag:"
+          echo "  ${{ secrets.DOCKER_HUB_USERNAME }}/idea-forge:${{ steps.tag.outputs.tag }}"
+          echo ""
+          echo "🔒 Image Digest (SHA):"
+          echo "  ${{ secrets.DOCKER_HUB_USERNAME }}/idea-forge@${{ steps.build.outputs.digest }}"
+          echo ""
+          echo "To deploy with specific SHA, use in your .env:"
+          echo "  IMAGE_NAME=${{ secrets.DOCKER_HUB_USERNAME }}/idea-forge@${{ steps.build.outputs.digest }}"
           echo ""
           echo "To deploy, run on your server:"
           echo "  curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/master/scripts/deploy/deploy-quick-start.sh | bash"
