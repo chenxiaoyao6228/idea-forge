@@ -1,11 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@idea/ui/shadcn/ui/tabs";
 import { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { User, Users, Building2, Layers } from "lucide-react";
+import { User, Users, Building2, Layers, Bot } from "lucide-react";
 import { Account } from "@/pages/main/settings/account";
 import { Members } from "@/pages/main/settings/members";
 import { Subspace } from "@/pages/main/settings/subspace";
 import { Workspace } from "@/pages/main/settings/workspace";
+import { AIConfigSettings } from "@/pages/main/settings/workspace/ai-config";
 import { Dialog, DialogContent } from "@idea/ui/shadcn/ui/dialog";
 import { confirmable, ContextAwareConfirmation, type ConfirmDialogProps } from "react-confirm";
 import { useWorkspacePermissions } from "@/hooks/permissions";
@@ -59,6 +60,11 @@ const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, cont
         Icon: Building2,
       },
       {
+        key: "ai-config",
+        name: t("AI Configuration"),
+        Icon: Bot,
+      },
+      {
         key: "subspaces",
         name: t("Subspaces"),
         Icon: Layers,
@@ -77,6 +83,7 @@ const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, cont
     // TODO: more fine-grained permission check for workspace tab
     if (!canManageWorkspace) {
       baseTabs = baseTabs.filter((tab) => tab.key !== "members");
+      baseTabs = baseTabs.filter((tab) => tab.key !== "ai-config");
     }
 
     return baseTabs;
@@ -117,6 +124,11 @@ const SettingModal = ({ show = false, proceed, tab = "profile", subspaceId, cont
             <TabsContent tabIndex={-1} value="workspace" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
               <Workspace />
             </TabsContent>
+            {canManageWorkspace && (
+              <TabsContent tabIndex={-1} value="ai-config" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
+                <AIConfigSettings />
+              </TabsContent>
+            )}
             <TabsContent tabIndex={-1} value="general" className="mt-0 size-full overflow-y-auto overflow-x-hidden">
               <General />
             </TabsContent>

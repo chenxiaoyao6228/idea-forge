@@ -1,226 +1,178 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import OpenAI from "openai";
+import { Injectable, forwardRef, Inject as NestInject } from "@nestjs/common";
+import { streamText } from "ai";
 import { Subject, Observable } from "rxjs";
-import { AIStreamResponse, AIStreamRequest, ChatMessage } from "@idea/contracts";
-import { faker } from "@faker-js/faker";
+import { AIStreamResponse, AIStreamRequest, PROVIDER_REGISTRY, type WorkspaceAIProvider, parseModelsString } from "@idea/contracts";
 import { TokenUsageService } from "./token-usage.service";
-import { ApiException } from "@/_shared/exceptions/api.exception";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 import { Inject } from "@nestjs/common";
-import { AIProviderConfig } from "./ai.type";
+import { WorkspaceAIConfigService } from "@/workspace/workspace-ai-config.service";
+import { createModelInstance } from "./ai-provider.factory";
 
 @Injectable()
-export class AIProviderService implements OnModuleInit {
+export class AIProviderService {
   @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger;
-  private providers: Map<string, { config: AIProviderConfig; client: OpenAI }> = new Map();
-  private activeProviders: AIProviderConfig[] = [];
 
   constructor(
-    private configService: ConfigService,
     private tokenUsageService: TokenUsageService,
+    @NestInject(forwardRef(() => WorkspaceAIConfigService))
+    private workspaceAIConfigService: WorkspaceAIConfigService,
   ) {}
 
-  onModuleInit() {
-    this.initializeProviders();
+  /**
+   * Check if a provider can serve a specific model
+   */
+  private providerCanServeModel(provider: WorkspaceAIProvider, modelId: string): boolean {
+    // If no models specified, provider can serve any model
+    if (!provider.models) return true;
+
+    const providerModels = parseModelsString(provider.models);
+    return providerModels.includes(modelId);
   }
 
-  private initializeProviders() {
-    const configs = this.configService.get<{ providers: AIProviderConfig[] }>("aiProviders");
+  /**
+   * Get eligible providers for a specific model
+   * Returns providers sorted by priority (lower = try first)
+   */
+  private async getEligibleProviders(workspaceId: string, modelId: string): Promise<WorkspaceAIProvider[]> {
+    const activeProviders = await this.workspaceAIConfigService.getActiveProviders(workspaceId);
+    return activeProviders.filter((p) => this.providerCanServeModel(p, modelId));
+  }
 
-    if (!configs) {
-      this.logger.error("AI providers configuration not found");
-      return;
+  /**
+   * Get default model from workspace providers
+   * Returns the first model from the highest priority provider
+   */
+  private async getDefaultModel(workspaceId: string): Promise<string | undefined> {
+    const providers = await this.workspaceAIConfigService.getActiveProviders(workspaceId);
+
+    for (const provider of providers) {
+      if (provider.models) {
+        const models = parseModelsString(provider.models);
+        if (models.length > 0) {
+          return models[0];
+        }
+      }
     }
 
-    configs.providers.forEach((config) => {
-      try {
-        const client = new OpenAI({
-          apiKey: config.apiKey,
-          baseURL: config.baseURL || "https://api.openai.com/v1",
-        });
-
-        this.providers.set(config.id, { config, client });
-        if (config.isActive) {
-          this.activeProviders.push(config);
-        }
-      } catch (error) {
-        this.logger.error(`Failed to initialize provider ${config.id}:`, error);
-      }
-    });
-
-    console.log("=========this.activeProviders===========", this.activeProviders);
-
-    this.activeProviders.sort((a, b) => a.priority - b.priority);
+    return undefined;
   }
 
-  async streamCompletion(request: AIStreamRequest, userId: string): Promise<Observable<AIStreamResponse>> {
+  /**
+   * Stream completion with model-based provider failover using Vercel AI SDK
+   *
+   * Flow:
+   * 1. Member selects a model (e.g., "gpt-4o") or system uses default
+   * 2. System finds all providers that can serve this model
+   * 3. Providers are sorted by priority (lower number = higher priority)
+   * 4. Try each provider in order until one succeeds
+   */
+  async streamCompletion(request: AIStreamRequest, userId: string, workspaceId?: string): Promise<Observable<AIStreamResponse>> {
     const subject = new Subject<AIStreamResponse>();
 
     try {
+      if (!workspaceId) {
+        subject.error(new Error("Workspace ID is required. Please ensure you are in a workspace context."));
+        subject.complete();
+        return subject.asObservable();
+      }
+
+      // Get the model ID from request or use first available model from workspace
+      let modelId = request.modelId;
+      if (!modelId) {
+        modelId = await this.getDefaultModel(workspaceId);
+        if (!modelId) {
+          subject.error(new Error("No models configured for this workspace. Please add models to your AI providers in workspace settings."));
+          subject.complete();
+          return subject.asObservable();
+        }
+        this.logger.info(`No model specified, using default model: ${modelId}`);
+      }
+
+      // Get providers that can serve this model
+      const providers = await this.getEligibleProviders(workspaceId, modelId);
+
+      if (providers.length === 0) {
+        subject.error(
+          new Error(`No providers configured for model "${modelId}". Please ask the admin to configure a provider with this model in workspace settings.`),
+        );
+        subject.complete();
+        return subject.asObservable();
+      }
+
+      this.logger.info(
+        `Found ${providers.length} provider(s) for model "${modelId}" in workspace ${workspaceId}: ${providers.map((p) => p.provider).join(", ")}`,
+      );
+
+      // Try providers with failover
       const tryProvider = async (providerIndex: number) => {
-        if (providerIndex >= this.activeProviders.length) {
-          subject.error(new Error("All providers failed"));
+        if (providerIndex >= providers.length) {
+          subject.error(new Error(`All providers failed for model "${modelId}". Please check your provider configurations.`));
           subject.complete();
           return;
         }
 
-        const provider = this.activeProviders[providerIndex];
-        const { client } = this.providers.get(provider.id) as { config: AIProviderConfig; client: OpenAI };
+        const provider = providers[providerIndex];
+        const providerName = PROVIDER_REGISTRY[provider.provider]?.name || provider.provider;
+
+        this.logger.info(`Trying provider ${providerName} (priority: ${provider.priority}) for model ${modelId}`);
 
         try {
-          const stream = await client.chat.completions.create({
-            model: provider.model,
-            messages: request.messages,
-            stream: true,
+          // Create model instance using Vercel AI SDK
+          const model = createModelInstance(provider, modelId!);
+
+          // Stream using Vercel AI SDK
+          const { textStream, usage } = streamText({
+            model,
+            messages: request.messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
             temperature: request.options?.temperature ?? 0.7,
-            max_tokens: request.options?.max_tokens ?? 1000,
+            maxOutputTokens: request.options?.max_tokens ?? 1000,
           });
 
-          let finalUsage: OpenAI.Completions.CompletionUsage | null = null;
-
-          for await (const chunk of stream) {
-            const content = chunk.choices[0]?.delta?.content || "";
-            if (content) {
+          // Stream chunks to subject
+          for await (const chunk of textStream) {
+            if (chunk) {
               subject.next({
-                id: provider.id,
-                content,
-                provider: provider.name,
+                id: provider.id!,
+                content: chunk,
+                provider: providerName,
               });
             }
-            if (chunk.usage) {
-              finalUsage = chunk.usage;
-            }
           }
 
-          if (finalUsage) {
-            this.logger.info(`Final token usage for provider ${provider.id}:`, finalUsage);
-            await this.tokenUsageService.updateTokenUsage(userId, finalUsage.total_tokens);
+          // Handle token usage after stream completes
+          const finalUsage = await usage;
+          if (finalUsage?.totalTokens) {
+            this.logger.info(`Token usage for provider ${providerName}: ${finalUsage.totalTokens} tokens`);
+            await this.tokenUsageService.updateTokenUsage(userId, finalUsage.totalTokens);
           }
 
+          this.logger.info(`Successfully completed request with provider ${providerName}`);
           subject.complete();
         } catch (error: any) {
-          this.logger.error(`Provider ${provider.id} failed:`, error);
+          this.logger.error(`Provider ${providerName} failed for model ${modelId}:`, {
+            error: error.message,
+            status: error.status,
+            code: error.code,
+          });
+
+          // Try next provider
+          if (providerIndex + 1 < providers.length) {
+            this.logger.info(`Failing over to next provider...`);
+          }
           await tryProvider(providerIndex + 1);
         }
       };
 
       tryProvider(0);
       return subject.asObservable();
-    } catch (error) {
-      if (error instanceof ApiException) {
-        subject.error(error);
-        return subject.asObservable();
-      }
-      throw error;
-    }
-  }
-
-  // FIXME: remove this after the AI feature is stable
-  async streamCompletionMock(request: AIStreamRequest): Promise<Observable<AIStreamResponse>> {
-    if (process.env.NODE_ENV === "production") {
-      return this.streamCompletion(request, "0");
-    }
-
-    const subject = new Subject<AIStreamResponse>();
-
-    function generateMockResponse(messages: ChatMessage[]): string {
-      const systemMessage = messages.find((msg) => msg.role === "system")?.content || "";
-      const userMessage = messages.find((msg) => msg.role === "user")?.content || "";
-
-      // Generate different types of markdown content based on the context
-      if (systemMessage.includes("translator")) {
-        return [`> Original Text\n`, `${faker.lorem.paragraph()}\n\n`, `### Translated Version\n`, faker.lorem.paragraphs(2, "\n\n")].join("\n");
-      }
-
-      if (systemMessage.includes("summarizer")) {
-        return [
-          `## Summary\n`,
-          faker.lorem.paragraph(3),
-          `\n### Key Points\n`,
-          `- ${faker.lorem.sentence()}`,
-          `- ${faker.lorem.sentence()}`,
-          `- ${faker.lorem.sentence()}\n`,
-        ].join("\n");
-      }
-
-      if (systemMessage.includes("outline")) {
-        return [
-          `# Document Outline\n`,
-          `## 1. ${faker.lorem.sentence()}`,
-          `   - ${faker.lorem.sentence()}`,
-          `   - ${faker.lorem.sentence()}`,
-          `## 2. ${faker.lorem.sentence()}`,
-          `   ### 2.1. ${faker.lorem.sentence()}`,
-          `   - ${faker.lorem.sentence()}`,
-          `## 3. ${faker.lorem.sentence()}`,
-        ].join("\n");
-      }
-
-      if (systemMessage.includes("idea generator")) {
-        return [
-          `# Generated Ideas\n`,
-          `## Main Concepts\n`,
-          `1. **${faker.lorem.sentence()}**`,
-          `   - ${faker.lorem.sentence()}`,
-          `   - ${faker.lorem.sentence()}\n`,
-          `2. **${faker.lorem.sentence()}**`,
-          `   - ${faker.lorem.sentence()}`,
-          `   - \`${faker.lorem.words(3)}\`\n`,
-          `## Additional Suggestions\n`,
-          `> ${faker.lorem.paragraph()}`,
-        ].join("\n");
-      }
-
-      // Default response with rich markdown formatting
-      return [
-        `# ${faker.lorem.sentence()}\n`,
-        `## Overview\n`,
-        faker.lorem.paragraph(),
-        `\n### Key Features\n`,
-        `- **${faker.lorem.words(3)}**: ${faker.lorem.sentence()}`,
-        `- **${faker.lorem.words(2)}**: ${faker.lorem.sentence()}`,
-        `- **${faker.lorem.words(4)}**: ${faker.lorem.sentence()}\n`,
-        `### Code Example\n`,
-        "```typescript",
-        `function ${faker.lorem.word()}() {`,
-        `  // ${faker.lorem.words(4)}`,
-        `  return ${faker.lorem.words(2)};`,
-        "```\n",
-        `> ${faker.lorem.paragraph()}`,
-      ].join("\n");
-    }
-
-    // Generate mock response
-    const responseText = generateMockResponse(request.messages);
-
-    // Calculate streaming parameters
-    const numberOfChunks = 20;
-    const chunkSize = Math.ceil(responseText.length / numberOfChunks);
-    const delayBetweenChunks = 1000 / numberOfChunks;
-
-    // Simulate streaming with chunks
-    (async () => {
-      const mockProvider = this.activeProviders[0] || {
-        id: "mock-provider",
-        name: "Mock Provider",
-      };
-
-      for (let i = 0; i < responseText.length; i += chunkSize) {
-        const chunk = responseText.slice(i, i + chunkSize);
-        await new Promise((resolve) => setTimeout(resolve, delayBetweenChunks));
-
-        subject.next({
-          id: mockProvider.id,
-          content: chunk,
-          provider: mockProvider.name,
-        });
-      }
-
+    } catch (error: any) {
+      subject.error(error);
       subject.complete();
-    })();
-
-    return subject.asObservable();
+      return subject.asObservable();
+    }
   }
 }

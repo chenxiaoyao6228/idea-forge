@@ -5,7 +5,12 @@ import { PresetType, getStreamOptions, buildUserPromptMessage, buildPresetPrompt
 import { AIStreamRequest } from "@idea/contracts";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { createSelectorFunctions } from "auto-zustand-selectors-hook";
+import useWorkspaceStore from "@/stores/workspace-store";
+import { workspaceApi } from "@/apis/workspace";
 // import i18next from "i18next";
+
+// localStorage key for persisting selected model per workspace
+const getSelectedModelKey = (workspaceId: string) => `ai-selected-model-${workspaceId}`;
 
 interface AIPanelState {
   // Services
@@ -37,12 +42,22 @@ interface AIPanelState {
   editor: Editor | null;
   currentRequest: AIStreamRequest | null;
 
+  // Model Selection States
+  availableModels: string[];
+  selectedModel: string | null;
+  isLoadingModels: boolean;
+  hasLoadedModels: boolean; // Track if models have been loaded (to show "no models" message)
+
   // Basic Actions
   setVisible: (visible: boolean) => void;
   setHasSelection: (hasSelection: boolean) => void;
   setInputFocused: (focused: boolean) => void;
   setPrompt: (prompt: string) => void;
   setEditor: (editor: Editor) => void;
+
+  // Model Selection Actions
+  loadAvailableModels: () => Promise<void>;
+  setSelectedModel: (model: string | null) => void;
 
   // Complex Actions
   handleError: (message: string) => void;
@@ -73,12 +88,57 @@ export const store = create<AIPanelState>((set, get) => ({
   editor: null,
   currentRequest: null,
 
+  // Model Selection States
+  availableModels: [],
+  selectedModel: null,
+  isLoadingModels: false,
+  hasLoadedModels: false,
+
   // Basic State Actions
   setVisible: (visible) => set({ isVisible: visible }),
   setHasSelection: (hasSelection) => set({ hasSelection }),
   setInputFocused: (focused) => set({ isInputFocused: focused }),
   setPrompt: (prompt) => set({ prompt }),
   setEditor: (editor) => set({ editor }),
+
+  // Model Selection Actions
+  loadAvailableModels: async () => {
+    const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
+    if (!workspaceId) return;
+
+    set({ isLoadingModels: true });
+    try {
+      const models = await workspaceApi.getAvailableAIModels(workspaceId);
+      set({ availableModels: models, hasLoadedModels: true });
+
+      // Load persisted model selection from localStorage
+      const savedModel = localStorage.getItem(getSelectedModelKey(workspaceId));
+      if (savedModel && models.includes(savedModel)) {
+        set({ selectedModel: savedModel });
+      } else if (models.length > 0) {
+        // Default to first available model
+        set({ selectedModel: models[0] });
+        localStorage.setItem(getSelectedModelKey(workspaceId), models[0]);
+      }
+    } catch (error) {
+      console.error("Failed to load available models:", error);
+      set({ hasLoadedModels: true }); // Mark as loaded even on error
+    } finally {
+      set({ isLoadingModels: false });
+    }
+  },
+
+  setSelectedModel: (model: string | null) => {
+    const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
+    set({ selectedModel: model });
+
+    // Persist to localStorage
+    if (workspaceId && model) {
+      localStorage.setItem(getSelectedModelKey(workspaceId), model);
+    } else if (workspaceId) {
+      localStorage.removeItem(getSelectedModelKey(workspaceId));
+    }
+  },
 
   // Error Handler
   handleError: (message) => {
@@ -174,10 +234,19 @@ export const store = create<AIPanelState>((set, get) => ({
       result: "",
     });
 
+    // Get current workspace ID from workspace store
+    const workspaceId = useWorkspaceStore.getState().currentWorkspace?.id;
+    // Get selected model from store
+    const selectedModel = get().selectedModel;
+
     await get().eventSourceService.start(
       {
         url: "/api/ai/stream",
-        body: request,
+        body: {
+          ...request,
+          workspaceId, // Include workspaceId in request
+          modelId: selectedModel, // Include selected model in request
+        },
       },
       {
         onMessage: (data) => {
