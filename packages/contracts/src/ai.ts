@@ -142,9 +142,10 @@ export const PROVIDER_REGISTRY: Record<LLMProviderType, ProviderMetadata> = {
 
 // ==============================================================
 // Workspace AI Provider Schema (with models as comma-separated string)
+// Note: Named with "Input" suffix to avoid conflict with Prisma-generated types
 // ==============================================================
 
-export const WorkspaceAIProviderSchema = z.object({
+export const WorkspaceAIProviderInputSchema = z.object({
   id: z.string().cuid().optional(),
   workspaceId: z.string().cuid(),
   provider: z.nativeEnum(LLMProviderType),
@@ -158,10 +159,11 @@ export const WorkspaceAIProviderSchema = z.object({
   updatedAt: z.date().optional(),
 });
 
-export type WorkspaceAIProvider = z.infer<typeof WorkspaceAIProviderSchema>;
+// Re-export type for backward compatibility (uses LLMProviderType enum)
+export type WorkspaceAIProvider = z.infer<typeof WorkspaceAIProviderInputSchema>;
 
 // Create DTO (full, includes workspaceId)
-export const CreateWorkspaceAIProviderSchema = WorkspaceAIProviderSchema.omit({
+export const CreateWorkspaceAIProviderSchema = WorkspaceAIProviderInputSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -170,7 +172,7 @@ export const CreateWorkspaceAIProviderSchema = WorkspaceAIProviderSchema.omit({
 export type CreateWorkspaceAIProviderDto = z.infer<typeof CreateWorkspaceAIProviderSchema>;
 
 // Create DTO for request body (without workspaceId - it comes from URL path)
-export const CreateWorkspaceAIProviderBodySchema = WorkspaceAIProviderSchema.omit({
+export const CreateWorkspaceAIProviderBodySchema = WorkspaceAIProviderInputSchema.omit({
   id: true,
   workspaceId: true,
   createdAt: true,
@@ -180,7 +182,7 @@ export const CreateWorkspaceAIProviderBodySchema = WorkspaceAIProviderSchema.omi
 export type CreateWorkspaceAIProviderBody = z.infer<typeof CreateWorkspaceAIProviderBodySchema>;
 
 // Update DTO
-export const UpdateWorkspaceAIProviderSchema = WorkspaceAIProviderSchema.omit({
+export const UpdateWorkspaceAIProviderSchema = WorkspaceAIProviderInputSchema.omit({
   id: true,
   workspaceId: true,
   provider: true, // Provider type cannot be changed
@@ -191,7 +193,7 @@ export const UpdateWorkspaceAIProviderSchema = WorkspaceAIProviderSchema.omit({
 export type UpdateWorkspaceAIProviderDto = z.infer<typeof UpdateWorkspaceAIProviderSchema>;
 
 // Public provider (without sensitive data)
-export const PublicWorkspaceAIProviderSchema = WorkspaceAIProviderSchema.omit({
+export const PublicWorkspaceAIProviderSchema = WorkspaceAIProviderInputSchema.omit({
   apiKey: true,
 });
 
