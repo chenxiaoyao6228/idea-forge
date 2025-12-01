@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from "@nestjs/common";
 import { WorkspaceAIConfigService } from "./workspace-ai-config.service";
-import type { PublicWorkspaceAIProvider, UpdateWorkspaceAIProviderDto, WorkspaceAIProvider, CreateWorkspaceAIProviderBody } from "@idea/contracts";
+import type { PublicWorkspaceAIProvider, UpdateWorkspaceAIProviderDto, CreateWorkspaceAIProviderBody } from "@idea/contracts";
+import type { WorkspaceAIProvider } from "@prisma/client";
 import { Action } from "@/_shared/casl/ability.class";
 import { PolicyGuard } from "@/_shared/casl/policy.guard";
 import { CheckPolicy } from "@/_shared/casl/policy.decorator";

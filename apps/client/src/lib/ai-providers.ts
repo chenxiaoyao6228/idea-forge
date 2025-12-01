@@ -24,27 +24,27 @@ export const LLM_PROVIDERS: LLMProviderMetadata[] = (Object.keys(PROVIDER_REGIST
 /**
  * Get provider metadata by type
  */
-export function getProviderMetadata(providerType: LLMProviderType): LLMProviderMetadata | undefined {
+export function getProviderMetadata(providerType: LLMProviderType | string): LLMProviderMetadata | undefined {
   return LLM_PROVIDERS.find((p) => p.value === providerType);
 }
 
 /**
  * Get provider label by type
  */
-export function getProviderLabel(providerType: LLMProviderType): string {
-  return PROVIDER_REGISTRY[providerType]?.name || providerType;
+export function getProviderLabel(providerType: LLMProviderType | string): string {
+  return PROVIDER_REGISTRY[providerType as LLMProviderType]?.name || providerType;
 }
 
 /**
  * Get default base URL for a provider
  */
-export function getProviderDefaultBaseURL(providerType: LLMProviderType): string {
-  return PROVIDER_REGISTRY[providerType]?.defaultBaseURL || "";
+export function getProviderDefaultBaseURL(providerType: LLMProviderType | string): string {
+  return PROVIDER_REGISTRY[providerType as LLMProviderType]?.defaultBaseURL || "";
 }
 
 /**
  * Check if provider requires API key
  */
-export function providerRequiresApiKey(providerType: LLMProviderType): boolean {
-  return PROVIDER_REGISTRY[providerType]?.requiresApiKey ?? true;
+export function providerRequiresApiKey(providerType: LLMProviderType | string): boolean {
+  return PROVIDER_REGISTRY[providerType as LLMProviderType]?.requiresApiKey ?? true;
 }
