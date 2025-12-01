@@ -33,7 +33,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:${NEST_API_PORT:-5000}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -46,11 +46,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-ideaforge}
     volumes:
-      # Mount the Docker volume named 'ideaforge_postgres_data' to /var/lib/postgresql/data inside the container
+      # Mount the Docker volume to /var/lib/postgresql/data inside the container
       # This persists PostgreSQL data even if the container is removed
-      - ideaforge_${NODE_ENV:-prod}_postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}"
+      # External port is configurable, internal port is always 5432
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-ideaforge}"]
       interval: 10s
@@ -67,9 +68,10 @@ services:
   redis:
     image: redis:alpine
     ports:
-      - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
+      # External port is configurable, internal port is always 6379
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - ideaforge_${NODE_ENV:-prod}_redis_data:/data
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -87,7 +89,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
-      - ideaforge_${NODE_ENV:-production}_minio_data:/data
+      - minio_data:/data
     ports:
       - "${MINIO_PORT:-9000}:${MINIO_PORT:-9000}"
       - "${MINIO_CONSOLE_PORT:-9001}:${MINIO_CONSOLE_PORT:-9001}"
@@ -102,28 +104,12 @@ services:
     profiles:
       - "${ENABLE_MINIO_PROFILE:-}"
 
+# Named volumes for data persistence
+# Volume names include NODE_ENV to isolate data between environments (production, test, etc.)
 volumes:
-  ideaforge_production_postgres_data:
-    name: ideaforge_${NODE_ENV:-prod}_postgres_data
-  ideaforge_production_redis_data:
-    name: ideaforge_${NODE_ENV:-prod}_redis_data
-  ideaforge_production_minio_data:
-    name: ideaforge_${NODE_ENV:-prod}_minio_data
-  ideaforge_test_postgres_data:
-    name: ideaforge_${NODE_ENV:-prod}_postgres_data
-  ideaforge_test_redis_data:
-    name: ideaforge_${NODE_ENV:-prod}_redis_data
-  ideaforge_test_minio_data:
-    name: ideaforge_${NODE_ENV:-prod}_minio_data
-  ideaforge_prod_postgres_data:
-    name: ideaforge_${NODE_ENV:-prod}_postgres_data
-  ideaforge_prod_redis_data:
-    name: ideaforge_${NODE_ENV:-prod}_redis_data
-  ideaforge_prod_minio_data:
-    name: ideaforge_${NODE_ENV:-prod}_minio_data
-  ideaforge_local_postgres_data:
-    name: ideaforge_${NODE_ENV:-prod}_postgres_data
-  ideaforge_local_redis_data:
-    name: ideaforge_${NODE_ENV:-prod}_redis_data
-  ideaforge_local_minio_data:
-    name: ideaforge_${NODE_ENV:-prod}_minio_data
+  postgres_data:
+    name: ideaforge_${NODE_ENV:-production}_postgres_data
+  redis_data:
+    name: ideaforge_${NODE_ENV:-production}_redis_data
+  minio_data:
+    name: ideaforge_${NODE_ENV:-production}_minio_data
