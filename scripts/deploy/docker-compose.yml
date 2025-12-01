@@ -10,62 +10,21 @@ services:
     ports:
       - "${NEST_API_PORT:-5000}:${NEST_API_PORT:-5000}"
       - "${NEST_API_WS_PORT:-5001}:${NEST_API_WS_PORT:-5001}"
-    # Environment variables override .env file values in the container
-    # Container startup: .env.example → .env (base) → environment vars (overrides)
+    # ==========================================================================
+    # ENVIRONMENT CONFIGURATION
+    # ==========================================================================
+    # All variables from .env file are automatically passed to the container.
+    # Only override specific values that need Docker-specific settings below.
+    #
+    # To add a new env var: Just add it to your .env file - NO changes needed here!
+    # ==========================================================================
+    env_file:
+      - .env
     environment:
-      # Core system variables
-      - NODE_ENV=${NODE_ENV:-production}
+      # Docker-specific overrides (internal network hostnames)
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ideaforge}?schema=public
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-
-      # API ports (internal)
-      - NEST_API_PORT=${NEST_API_PORT:-5000}
-      - NEST_API_WS_PORT=${NEST_API_WS_PORT:-5001}
-
-      # Authentication & Security
-      - SESSION_SECRET=${SESSION_SECRET}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1h}
-      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
-      - REFRESH_TOKEN_EXPIRES_IN=${REFRESH_TOKEN_EXPIRES_IN:-7d}
-      - COLLAB_SECRET_KEY=${COLLAB_SECRET_KEY}
-
-      # OAuth
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL}
-
-      # Email
-      - RESEND_API_KEY=${RESEND_API_KEY}
-      - EMAIL_FROM=${EMAIL_FROM}
-      - SUPER_ADMIN_EMAIL=${SUPER_ADMIN_EMAIL}
-
-      # Notifications
-      - NOTIFICATION_DEDUPLICATION_WINDOW_SECONDS=${NOTIFICATION_DEDUPLICATION_WINDOW_SECONDS:-21600}
-
-      # OSS/Storage
-      - OSS_PROVIDER=${OSS_PROVIDER}
-      - OSS_SECRET_ID=${OSS_SECRET_ID}
-      - OSS_SECRET_KEY=${OSS_SECRET_KEY}
-      - OSS_BUCKET=${OSS_BUCKET}
-      - OSS_REGION=${OSS_REGION}
-      - OSS_ENDPOINT=${OSS_ENDPOINT}
-      - OSS_CDN_ENDPOINT=${OSS_CDN_ENDPOINT}
-
-      # AI Configuration
-      - AI_ENCRYPTION_KEY=${AI_ENCRYPTION_KEY}
-
-      # Monitoring
-      - SENTRY_DSN=${SENTRY_DSN}
-
-      # Client Configuration (injected to window.ENV)
-      - CLIENT_APP_URL=${CLIENT_APP_URL}
-      - CLIENT_COLLAB_WS_URL=${CLIENT_COLLAB_WS_URL}
-      - CLIENT_SENTRY_DSN=${CLIENT_SENTRY_DSN}
     depends_on:
       postgres:
         condition: service_healthy
