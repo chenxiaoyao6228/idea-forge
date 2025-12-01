@@ -109,8 +109,8 @@ EXPOSE 5000 5001
 # IMPORTANT: All environment variables MUST be provided at runtime via docker-compose
 # The image contains NO sensitive data and can be safely published to Docker Hub
 
-# Create startup script that copies .env.example to .env and starts the app
-# Docker environment variables will override values in .env
+# Create startup script that loads .env defaults and starts the app
+# Priority: Docker environment variables > .env file defaults
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'set -e' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
@@ -119,6 +119,21 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '  echo "Creating .env from .env.example..."' >> /app/start.sh && \
     echo '  cp .env.example .env' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Load defaults from .env, but preserve Docker environment variables' >> /app/start.sh && \
+    echo '# Docker env vars take precedence over .env defaults' >> /app/start.sh && \
+    echo 'while IFS= read -r line || [ -n "$line" ]; do' >> /app/start.sh && \
+    echo '  # Skip comments and empty lines' >> /app/start.sh && \
+    echo '  case "$line" in' >> /app/start.sh && \
+    echo '    ""|"#"*) continue ;;' >> /app/start.sh && \
+    echo '  esac' >> /app/start.sh && \
+    echo '  # Extract variable name (everything before first =)' >> /app/start.sh && \
+    echo '  name="${line%%=*}"' >> /app/start.sh && \
+    echo '  # Only export if not already set in environment' >> /app/start.sh && \
+    echo '  if [ -z "$(printenv "$name" 2>/dev/null)" ]; then' >> /app/start.sh && \
+    echo '    export "$line"' >> /app/start.sh && \
+    echo '  fi' >> /app/start.sh && \
+    echo 'done < .env' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start the application' >> /app/start.sh && \
     echo 'cd apps/api && pm2 start ecosystem.config.js --env production --no-daemon' >> /app/start.sh && \

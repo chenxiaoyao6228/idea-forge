@@ -13,15 +13,16 @@ services:
     # ==========================================================================
     # ENVIRONMENT CONFIGURATION
     # ==========================================================================
-    # All variables from .env file are automatically passed to the container.
-    # Only override specific values that need Docker-specific settings below.
+    # The container loads defaults from .env.example (baked into image).
+    # Your .env file here only needs SECRETS and Docker-specific overrides.
     #
-    # To add a new env var: Just add it to your .env file - NO changes needed here!
+    # Priority: Docker env vars > .env file > .env.example defaults
     # ==========================================================================
     env_file:
       - .env
     environment:
       # Docker-specific overrides (internal network hostnames)
+      # These MUST be set here because they differ from development defaults
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ideaforge}?schema=public
       - REDIS_HOST=redis
       - REDIS_PORT=6379
