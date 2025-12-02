@@ -12,7 +12,8 @@ export const PRESET_CONFIGS = {
     titleContext: true,
     contextBefore: true,
     contextAfter: false,
-    contextLength: MAX_CONTEXT_LENGTH,
+    contextLength: MAX_CONTEXT_LENGTH, // characters of surrounding context
+    maxOutputTokens: MAX_CONTEXT_LENGTH, // tokens for AI response
     systemPrompt: "You are an expert writer who excels at continuing text in a natural and coherent way. Maintain the original style and tone.",
     instruction: "Continue this text naturally:",
   },
@@ -21,6 +22,7 @@ export const PRESET_CONFIGS = {
     contextBefore: true,
     contextAfter: true,
     contextLength: MAX_CONTEXT_LENGTH,
+    maxOutputTokens: MAX_CONTEXT_LENGTH,
     systemPrompt: "You are an expert at creating well-structured outlines. Focus on main points and logical organization.",
     instruction: "Create an outline for the content provided",
   },
@@ -29,6 +31,7 @@ export const PRESET_CONFIGS = {
     contextBefore: true,
     contextAfter: true,
     contextLength: MAX_CONTEXT_LENGTH,
+    maxOutputTokens: 2000, // summaries are shorter than originals
     systemPrompt: "You are a skilled summarizer. Create concise yet comprehensive summaries while retaining key points.",
     instruction: "Summarize the content provided",
   },
@@ -36,7 +39,8 @@ export const PRESET_CONFIGS = {
     titleContext: true,
     contextBefore: false,
     contextAfter: false,
-    contextLength: 200,
+    contextLength: 200, // minimal context needed
+    maxOutputTokens: MAX_CONTEXT_LENGTH, // ideas can be lengthy
     systemPrompt: "You are a creative idea generator. Think outside the box and provide diverse, innovative suggestions.",
     instruction: "Generate ideas related to the content provided",
   },
@@ -45,7 +49,8 @@ export const PRESET_CONFIGS = {
     titleContext: true,
     contextBefore: true,
     contextAfter: true,
-    contextLength: 200,
+    contextLength: 500, // some context for understanding
+    maxOutputTokens: MAX_CONTEXT_LENGTH, // explanations can be detailed
     systemPrompt: "You are an expert teacher. Explain concepts clearly and thoroughly, using simple language.",
     instruction: "Explain this content clearly:",
   },
@@ -53,7 +58,8 @@ export const PRESET_CONFIGS = {
     titleContext: true,
     contextBefore: true,
     contextAfter: false,
-    contextLength: 200,
+    contextLength: 500,
+    maxOutputTokens: MAX_CONTEXT_LENGTH * 2, // output will be longer than input
     systemPrompt: "You are skilled at expanding content while maintaining quality. Add relevant details and examples.",
     instruction: "Make this content longer while maintaining quality:",
   },
@@ -61,7 +67,8 @@ export const PRESET_CONFIGS = {
     titleContext: true,
     contextBefore: true,
     contextAfter: true,
-    contextLength: 200,
+    contextLength: 500,
+    maxOutputTokens: 2000, // output will be shorter than input
     systemPrompt: "You are an expert at concise writing. Maintain core message while reducing length.",
     instruction: "Make this content more concise:",
   },
@@ -69,7 +76,8 @@ export const PRESET_CONFIGS = {
     titleContext: false,
     contextBefore: true,
     contextAfter: true,
-    contextLength: 100,
+    contextLength: 200, // minimal context for grammar fixes
+    maxOutputTokens: MAX_CONTEXT_LENGTH, // output similar to input length
     systemPrompt: "You are a grammar and syntax expert. Fix errors while preserving the original meaning.",
     instruction: "Fix any grammar or syntax errors in the content provided",
   },
@@ -77,7 +85,8 @@ export const PRESET_CONFIGS = {
     titleContext: false,
     contextBefore: true,
     contextAfter: true,
-    contextLength: 100,
+    contextLength: 200, // minimal context for translation
+    maxOutputTokens: MAX_CONTEXT_LENGTH * 2, // translations can be longer (esp. CJK <-> Latin)
     systemPrompt: "You are a professional translator. Provide accurate translations while maintaining context and nuance.",
     instruction: "Translate the content provided",
   },
@@ -86,6 +95,7 @@ export const PRESET_CONFIGS = {
     contextBefore: true,
     contextAfter: true,
     contextLength: MAX_CONTEXT_LENGTH,
+    maxOutputTokens: MAX_CONTEXT_LENGTH, // similar length to input
     systemPrompt: "You are skilled at adapting writing tone. Maintain content while adjusting style appropriately.",
     instruction: "Adjust the tone of the content provided",
   },
@@ -96,7 +106,7 @@ export type PresetType = keyof typeof PRESET_CONFIGS;
 export function getStreamOptions(preset?: PresetType) {
   return {
     temperature: 0.7,
-    max_tokens: preset ? PRESET_CONFIGS[preset].contextLength : MAX_CONTEXT_LENGTH,
+    max_tokens: preset ? PRESET_CONFIGS[preset].maxOutputTokens : MAX_CONTEXT_LENGTH,
   };
 }
 
