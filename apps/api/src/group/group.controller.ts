@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Delete, Get, Param } from "@nestjs/common";
+import { Controller, Post, Body, Patch, Delete, Get, Param, Query } from "@nestjs/common";
 import { GroupService } from "./group.service";
 import { GetUser } from "@/auth/decorators/get-user.decorator";
 import { CreateGroupDto, UpdateGroupDto, GroupListRequestDto, AddGroupUserDto } from "./group.dto";
@@ -8,7 +8,7 @@ export class GroupController {
   constructor(private readonly groupService: GroupService) {}
 
   @Get()
-  async listGroups(@GetUser("id") userId: string, @Body() dto: GroupListRequestDto) {
+  async listGroups(@GetUser("id") userId: string, @Query() dto: GroupListRequestDto) {
     return this.groupService.listGroups(userId, dto);
   }
 
