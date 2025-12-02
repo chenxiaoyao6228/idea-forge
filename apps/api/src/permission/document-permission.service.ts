@@ -85,12 +85,15 @@ export class DocPermissionResolveService {
         },
       });
       if (member) {
-        // 3a. Document-level subspace permission overrides
-        const documentSubspacePermission = await this.getDocumentSubspaceRoleBasedPermission(userId, doc.id, doc.subspaceId);
-        if (documentSubspacePermission !== PermissionLevel.NONE) {
+        // 3a. Document-level subspace permission overrides (including inherited from parent documents)
+        const documentSubspaceResult = await this.getDocumentSubspaceRoleBasedPermission(userId, doc.id, doc.subspaceId);
+        if (documentSubspaceResult.level !== PermissionLevel.NONE) {
           return {
-            level: documentSubspacePermission,
+            level: documentSubspaceResult.level,
             source: "subspace",
+            // If permission comes from a parent document's override, include source info for tooltip
+            sourceDocId: documentSubspaceResult.sourceDocId,
+            sourceDocTitle: documentSubspaceResult.sourceDocTitle,
             priority: 4, // Subspace priority range is 3-4
           };
         }
@@ -125,25 +128,21 @@ export class DocPermissionResolveService {
   }
 
   /**
-   * Get permission level based on document-level subspace permission overrides
+   * Result type for document subspace permission resolution
    */
-  private async getDocumentSubspaceRoleBasedPermission(userId: string, documentId: string, subspaceId: string): Promise<PermissionLevel> {
-    // Get document with permission overrides
-    const document = await this.prismaService.doc.findUnique({
-      where: { id: documentId },
-      select: {
-        id: true,
-        subspaceAdminPermission: true,
-        subspaceMemberPermission: true,
-        nonSubspaceMemberPermission: true,
-      },
-    });
+  private static readonly NONE_RESULT = { level: PermissionLevel.NONE, sourceDocId: undefined, sourceDocTitle: undefined };
 
-    if (!document) {
-      return PermissionLevel.NONE;
-    }
-
-    // Get user's role in the subspace
+  /**
+   * Get permission level based on document-level subspace permission overrides.
+   * This method traverses the parent chain to find inherited subspace permission overrides.
+   * Returns the permission level along with source document info for tooltip display.
+   */
+  private async getDocumentSubspaceRoleBasedPermission(
+    userId: string,
+    documentId: string,
+    subspaceId: string,
+  ): Promise<{ level: PermissionLevel; sourceDocId?: string; sourceDocTitle?: string }> {
+    // Get user's role in the subspace first (only need to do this once)
     const subspaceMembership = await this.prismaService.subspaceMember.findFirst({
       where: {
         subspaceId,
@@ -152,23 +151,82 @@ export class DocPermissionResolveService {
       select: { role: true },
     });
 
-    // Check if document has overrides for this role
+    // Determine which permission field to check based on user's role
+    type RoleType = "ADMIN" | "MEMBER" | "NON_MEMBER";
+    let roleType: RoleType;
     if (subspaceMembership) {
-      switch (subspaceMembership.role) {
-        case "ADMIN":
-          // If document has a specific override (not null), use it; otherwise return NONE to inherit from subspace
-          return document.subspaceAdminPermission !== null ? document.subspaceAdminPermission : PermissionLevel.NONE;
-        case "MEMBER":
-          // If document has a specific override (not null), use it; otherwise return NONE to inherit from subspace
-          return document.subspaceMemberPermission !== null ? document.subspaceMemberPermission : PermissionLevel.NONE;
-        default:
-          return PermissionLevel.NONE;
-      }
+      roleType = subspaceMembership.role === "ADMIN" ? "ADMIN" : "MEMBER";
+    } else {
+      roleType = "NON_MEMBER";
     }
 
-    // User is not a member, check non-subspace member permission
-    // If document has a specific override (not null), use it; otherwise return NONE to inherit from subspace
-    return document.nonSubspaceMemberPermission !== null ? document.nonSubspaceMemberPermission : PermissionLevel.NONE;
+    // Traverse the document chain (current doc + ancestors) to find the first override
+    const visited = new Set<string>();
+    let currentDocId: string | null = documentId;
+    const maxDepth = 25;
+    let depth = 0;
+
+    while (currentDocId && depth < maxDepth) {
+      // Detect circular references
+      if (visited.has(currentDocId)) {
+        this.logger.warn(`Circular document hierarchy detected while resolving subspace permissions for document ${documentId}`);
+        return DocPermissionResolveService.NONE_RESULT;
+      }
+      visited.add(currentDocId);
+
+      // Get document with permission overrides
+      const document = await this.prismaService.doc.findUnique({
+        where: { id: currentDocId },
+        select: {
+          id: true,
+          title: true,
+          parentId: true,
+          subspaceAdminPermission: true,
+          subspaceMemberPermission: true,
+          nonSubspaceMemberPermission: true,
+        },
+      });
+
+      if (!document) {
+        return DocPermissionResolveService.NONE_RESULT;
+      }
+
+      // Check if this document has an override for the user's role
+      let override: PermissionLevel | null = null;
+      switch (roleType) {
+        case "ADMIN":
+          override = document.subspaceAdminPermission;
+          break;
+        case "MEMBER":
+          override = document.subspaceMemberPermission;
+          break;
+        case "NON_MEMBER":
+          override = document.nonSubspaceMemberPermission;
+          break;
+      }
+
+      // If override exists (not null), use it
+      if (override !== null) {
+        // If this is NOT the original document, it's inherited from an ancestor
+        const isInherited = currentDocId !== documentId;
+        return {
+          level: override,
+          sourceDocId: isInherited ? document.id : undefined,
+          sourceDocTitle: isInherited ? document.title : undefined,
+        };
+      }
+
+      // Move to parent document
+      currentDocId = document.parentId;
+      depth++;
+    }
+
+    if (depth >= maxDepth) {
+      this.logger.warn(`Subspace permission inheritance depth limit (${maxDepth}) reached for document ${documentId}`);
+    }
+
+    // No override found in the chain, return NONE to fall through to subspace defaults
+    return DocPermissionResolveService.NONE_RESULT;
   }
 
   /**

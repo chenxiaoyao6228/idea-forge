@@ -88,6 +88,10 @@ function getPermissionTooltip(
 
   // State 5: Subspace permission
   if (source === "subspace") {
+    // If sourceDocTitle exists, permission is inherited from a parent document's subspace override
+    if (sourceDocTitle) {
+      return t(`Permission inherited from parent document "${sourceDocTitle}" subspace settings`);
+    }
     return t("Permission from subspace membership");
   }
 
@@ -277,11 +281,6 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
   const hasSubspaceAdminDocumentPermissionOverrides = currentDocument?.subspaceAdminPermission !== null;
   const hasSubspaceMemberDocumentPermissionOverrides = currentDocument?.subspaceMemberPermission !== null;
   const hasNonSubspaceMemberPermissionDocumentPermissionOverrides = currentDocument?.nonSubspaceMemberPermission !== null;
-
-  // Calculate non-subspace member count (workspace members not in this subspace)
-  const nonSubspaceMemberCount = subspaceSettings?.subspace
-    ? workspaceMembers.length - subspaceSettings.subspace.memberCount
-    : 0;
 
   const handleAddMembers = () => {
     showAddMembersModal({
@@ -508,9 +507,6 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-gray-600" />
                           <span className="text-sm font-medium">{t("Other Members")}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({nonSubspaceMemberCount} {t("members")})
-                          </span>
                         </div>
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <PermissionLevelSelector
@@ -593,7 +589,18 @@ export function MemberSharingTab({ documentId }: MemberSharingTabProps) {
             })}
 
             {/* Shared Users List */}
-            {sharedUsers.map((user) => {
+            {/* Filter out: 1) current user (shown in "Your permission" section)
+                           2) users with subspace/workspace-based permissions (shown in role-based rows) */}
+            {sharedUsers
+              .filter((user) => {
+                // Exclude current user - they see their permission in "Your permission" section
+                if (user.id === currentUserId) return false;
+                // Exclude users whose permission comes from subspace/workspace - they're represented by role-based rows
+                const source = user.permissionSource?.source;
+                if (source === "subspace" || source === "workspace") return false;
+                return true;
+              })
+              .map((user) => {
               // Determine permission state using hasParentPermission flag
               const hasParentPermission = user.hasParentPermission || false;
               const isDirect = user.permissionSource?.source === "direct";

@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "prisma:generate": "rimraf prisma-type-generated && npx prisma generate && node scripts/generate-prisma-types.js",
+    "prisma:sync": "dotenv-flow -p ../.. -- npx prisma db push && npm run prisma:generate",
     "prisma:push": "npx prisma db push",
     "prisma:studio": "npx prisma studio",
     "prisma:migrate:dev": "npx prisma migrate dev && npm run prisma:generate && npm run prisma:seed",

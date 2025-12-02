@@ -512,6 +512,7 @@ export class ShareDocumentService {
     const mergedGroupShares = this.mergeDirectAndInherited(directGroupShares, inheritedGroupShares);
 
     // 4. Ensure current user is always in the list with their effective permission
+    // This is needed for the frontend to show "Your permission" section
     const currentUserExists = mergedUserShares.some((share) => share.id === userId);
     if (!currentUserExists) {
       // User doesn't have direct or inherited permission, but might have subspace/workspace permission
