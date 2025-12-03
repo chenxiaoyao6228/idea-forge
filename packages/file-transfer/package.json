@@ -1,6 +1,6 @@
 {
   "name": "@idea/file-transfer",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "File transfer library with plugin architecture for uploads and imports",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
