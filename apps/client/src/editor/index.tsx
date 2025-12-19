@@ -66,13 +66,17 @@ function TiptapEditor({ id, editable = true, provider, user }: Props) {
         },
       }),
       // Collaboration extensions - provider is guaranteed to be ready by the HOC
+      // IMPORTANT: Pass provider option so UniqueID extension can detect collaboration mode
       Collaboration.configure({
         document: provider.document,
+        provider: provider,
       }),
-      CollaborationCursor.configure({
-        provider,
-        user,
-      }),
+      // TODO: CollaborationCursor v2.27.1 is incompatible with @tiptap/core v3.13.0
+      // Temporarily disabled until @tiptap/extension-collaboration-cursor v3 is released
+      // CollaborationCursor.configure({
+      //   provider,
+      //   user,
+      // }),
       TableOfContents.configure({
         scrollParent: () => document?.getElementById("WORK_CONTENT_SCROLL_CONTAINER") || window,
         getIndex: getHierarchicalIndexes,

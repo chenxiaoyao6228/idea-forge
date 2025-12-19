@@ -115,8 +115,8 @@
       "@nestjs/common": ">=10.4.16",
       "prismjs": ">=1.30.0",
       "mermaid": ">=11.10.0",
-      "@tiptap/pm": "3.7.2",
-      "@tiptap/core": "3.7.2"
+      "@tiptap/pm": "3.13.0",
+      "@tiptap/core": "3.13.0"
     }
   },
   "commitlint": {

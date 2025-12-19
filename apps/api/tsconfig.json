@@ -36,9 +36,7 @@
   },
   "include": [
     "src/**/*",
-    "test/**/*",
-    "../../packages/editor/src/**/*",
-    "../../packages/icons/src/**/*"
+    "test/**/*"
   ],
   "exclude": [
     "node_modules",
