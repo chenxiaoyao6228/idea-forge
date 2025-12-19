@@ -141,10 +141,10 @@ export function DocumentLink(props: DocumentLinkProps) {
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCreateChild} disabled={isCreating} title="Create child document">
           <PlusIcon className="h-3 w-3" />
         </Button>
-        <DocumentMenu documentId={node.id} documentTitle={node.title} onRename={handleRename} />
+        <DocumentMenu documentId={node.id} documentTitle={node.title} subspaceId={subspaceId} onRename={handleRename} />
       </>
     ),
-    [handleCreateChild, handleRename, isCreating, node.id, node.title],
+    [handleCreateChild, handleRename, isCreating, node.id, node.title, subspaceId],
   );
 
   const isExpandedAndNotDragging = isExpanded && !isDragging;

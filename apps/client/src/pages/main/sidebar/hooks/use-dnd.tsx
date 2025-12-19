@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import { showConfirmModal } from "@/components/ui/confirm-modal";
-import useSubSpaceStore, { useMoveSubspace, usePersonalSubspace, useRemoveDocumentFromStructure } from "@/stores/subspace-store";
+import useSubSpaceStore, { useMoveSubspace, usePersonalSubspace } from "@/stores/subspace-store";
 import useDocumentStore, { useMoveDocument, useDeleteDocument } from "@/stores/document-store";
 import { useOrderedStars } from "@/stores/star-store";
 import useStarStore from "@/stores/star-store";
@@ -53,7 +53,6 @@ function useDocumentDnD() {
   const { run: moveDocument } = useMoveDocument();
   const { run: deleteDocument } = useDeleteDocument();
   const documents = useDocumentStore((state) => state.documents);
-  const removeDocumentFromStructure = useRemoveDocumentFromStructure();
   const personalSubspace = usePersonalSubspace();
 
   const handleDocumentDrop = useCallback(
@@ -67,11 +66,7 @@ function useDocumentDnD() {
       }
 
       // Prevent no-op moves (same parent, subspace, and position)
-      if (
-        draggingItem.parentId === toDropItem.parentId &&
-        draggingItem.subspaceId === toDropItem.subspaceId &&
-        toDropItem.dropType !== "trash"
-      ) {
+      if (draggingItem.parentId === toDropItem.parentId && draggingItem.subspaceId === toDropItem.subspaceId && toDropItem.dropType !== "trash") {
         // For reorder operations, check if the target index matches current index
         if (
           (toDropItem.dropType === "reorder-top" || toDropItem.dropType === "reorder-bottom") &&
@@ -118,13 +113,11 @@ function useDocumentDnD() {
           });
 
           if (confirmed) {
-            // Remove from subspace navigation tree first (for both personal and regular subspaces)
-            if (draggingItem.subspaceId) {
-              removeDocumentFromStructure(draggingItem.subspaceId, draggingItem.id);
-            }
-
-            // Perform soft delete
-            await deleteDocument(draggingItem.id, { permanent: false });
+            // Perform soft delete with subspaceId for proper navigation tree removal
+            await deleteDocument(draggingItem.id, {
+              permanent: false,
+              subspaceId: draggingItem.subspaceId ?? undefined,
+            });
             toast.success(t("Document moved to trash"));
           }
         } catch (error) {
@@ -164,7 +157,7 @@ function useDocumentDnD() {
         });
       }
     },
-    [moveDocument, deleteDocument, documents, t, removeDocumentFromStructure],
+    [moveDocument, deleteDocument, documents, t, personalSubspace],
   );
   return { handleDocumentDrop };
 }

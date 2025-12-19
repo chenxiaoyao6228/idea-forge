@@ -96,7 +96,7 @@ export default function MyDocsArea() {
                 key={node.id}
                 node={node}
                 parentId={node.parentId ?? null}
-                subspaceId={node.subspaceId ?? null}
+                subspaceId={personalSubspace?.id ?? null}
                 depth={0}
                 index={index}
               />
