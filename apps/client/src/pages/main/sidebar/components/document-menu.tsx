@@ -13,10 +13,11 @@ import { showTrashModal } from "../trash-dialog";
 interface DocumentMenuProps {
   documentId: string;
   documentTitle: string;
+  subspaceId?: string | null;
   onRename?: () => void;
 }
 
-export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMenuProps) {
+export function DocumentMenu({ documentId, documentTitle, subspaceId, onRename }: DocumentMenuProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { docId: currentDocId } = useParams();
@@ -99,7 +100,7 @@ export function DocumentMenu({ documentId, documentTitle, onRename }: DocumentMe
         navigate(nextTarget);
       }
 
-      await deleteDocument(documentId, { permanent: false });
+      await deleteDocument(documentId, { permanent: false, subspaceId: subspaceId ?? undefined });
 
       // Show success toast with link to trash
       toast.success(

@@ -485,18 +485,21 @@ export const useRestoreDocument = () => {
 
 export const useDeleteDocument = () => {
   return useRequest(
-    async (documentId: string, options: { permanent?: boolean; user?: any } = {}) => {
+    async (documentId: string, options: { permanent?: boolean; user?: any; subspaceId?: string } = {}) => {
       try {
         const documents = useDocumentStore.getState().documents;
         const doc = documents[documentId];
+
+        // Determine subspaceId: prefer from options, fallback to document store
+        const subspaceId = options.subspaceId || doc?.subspaceId;
 
         if (options.permanent) {
           // Call API for permanent delete
           await documentApi.permanentDelete(documentId);
 
-          // Remove from subspace structure if document exists in store
-          if (doc?.subspaceId) {
-            removeDocumentFromSubspace(doc.subspaceId, documentId);
+          // Remove from subspace structure
+          if (subspaceId) {
+            removeDocumentFromSubspace(subspaceId, documentId);
           }
 
           // Remove from store if document exists there
@@ -512,8 +515,8 @@ export const useDeleteDocument = () => {
           await documentApi.delete(documentId);
 
           // Remove from subspace navigation tree
-          if (doc?.subspaceId) {
-            removeDocumentFromSubspace(doc.subspaceId, documentId);
+          if (subspaceId) {
+            removeDocumentFromSubspace(subspaceId, documentId);
           }
 
           // Soft delete - update store if document exists there
