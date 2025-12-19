@@ -5,7 +5,7 @@ import Typography from "@tiptap/extension-typography";
 import TextAlign from "@tiptap/extension-text-align";
 import { Dropcursor } from "@tiptap/extension-dropcursor";
 import Focus from "@tiptap/extension-focus";
-import UniqueID from "@tiptap/extension-unique-id";
+import { UniqueID } from "@tiptap/extension-unique-id";
 import TableOfContents, { type TableOfContentDataItem } from "@tiptap/extension-table-of-contents";
 
 // Import core extensions from shared package
@@ -115,6 +115,7 @@ export default function ReadOnlyEditor({ content, className, onTocUpdate, onEdit
         UniqueID.configure({
           attributeName: "id",
           types: ["heading", "paragraph", "blockQuote", "code", "codeBlock", "link", "tableCell", "tableRow", "tableHeader", "listItem"],
+          updateDocument: false, // Read-only mode - don't modify document
         }),
         TableOfContents.configure({
           scrollParent: () => document.getElementById("PUBLIC_DOC_SCROLL_CONTAINER") || window,

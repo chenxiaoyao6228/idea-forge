@@ -38,10 +38,14 @@ export const EmojiNode = Emoji.extend({
   selectable: false,
 
   addOptions() {
+    const parentOptions = this.parent?.();
     return {
-      //@ts-ignore
-      ...this.parent?.(),
+      ...parentOptions,
+      emojis: parentOptions?.emojis ?? [], // Ensure emojis is always defined
       enableEmoticons: true, // Enable <3 -> ❤️ by default
+      forceFallbackImages: parentOptions?.forceFallbackImages ?? false,
+      // suggestion is configured in the client app via EmojiNode.configure()
+      suggestion: parentOptions?.suggestion ?? { char: ":", items: () => [] },
       HTMLAttributes: {
         class: "emoji-node inline-block align-baseline",
       },

@@ -138,11 +138,14 @@ module.exports = {
       autoRestart: true,
       nodeArgs: isDebug ? ['--inspect=9333'] : [],
     }),
-    isDevelopment && new ForkTsCheckerWebpackPlugin({
-      typescript: {
-        configFile: path.resolve(__dirname, 'tsconfig.json'),
-      },
-    }),
+    // Disabled: ForkTsCheckerWebpackPlugin causes OOM issues
+    // Run `pnpm -F @idea/api typecheck` manually when needed
+    // isDevelopment && new ForkTsCheckerWebpackPlugin({
+    //   typescript: {
+    //     configFile: path.resolve(__dirname, 'tsconfig.json'),
+    //     memoryLimit: 2048,
+    //   },
+    // }),
     // !isDevelopment && sentryWebpackPlugin({
     //   org: "yorkchan6228",
     //   project: "idea-forge-client",
