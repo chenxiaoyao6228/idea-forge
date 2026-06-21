@@ -9,7 +9,7 @@
     "prisma:push": "npx prisma db push",
     "prisma:studio": "npx prisma studio",
     "prisma:migrate:dev": "npx prisma migrate dev && npm run prisma:generate && npm run prisma:seed",
-    "prisma:migrate:deploy": "npx prisma migrate deploy",
+    "prisma:migrate:deploy": "dotenv-flow -p ../.. -- npx prisma migrate deploy",
     "prisma:seed": "npx prisma db seed",
     "prisma:seed:reset": "npx prisma migrate reset --force && npx prisma db seed",
     "prisma:seed:dev": "dotenv-flow -p ../.. -- npx prisma db seed",
