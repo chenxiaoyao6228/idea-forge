@@ -105,13 +105,13 @@ echo "📦 Creating default MinIO bucket..."
 BUCKET_NAME="assets-idea-forge-dev"
 
 # Configure mc alias inside the running MinIO container
-docker exec $DOCKER_CONTAINER_NAME-minio mc alias set local http://localhost:9000 minioadmin minioadmin 2>/dev/null || true
+docker exec ${DOCKER_CONTAINER_NAME}-minio-1 mc alias set local http://localhost:9000 minioadmin minioadmin 2>/dev/null || true
 
 # Create bucket (ignore if exists)
-docker exec $DOCKER_CONTAINER_NAME-minio mc mb --ignore-existing local/$BUCKET_NAME 2>/dev/null || true
+docker exec ${DOCKER_CONTAINER_NAME}-minio-1 mc mb --ignore-existing local/$BUCKET_NAME 2>/dev/null || true
 
 # Set bucket policy to public (allow read access)
-docker exec $DOCKER_CONTAINER_NAME-minio mc anonymous set download local/$BUCKET_NAME 2>/dev/null || true
+docker exec ${DOCKER_CONTAINER_NAME}-minio-1 mc anonymous set download local/$BUCKET_NAME 2>/dev/null || true
 
 if [ $? -eq 0 ]; then
     echo "✅ MinIO bucket '$BUCKET_NAME' created and configured successfully"

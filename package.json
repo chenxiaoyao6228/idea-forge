@@ -32,7 +32,7 @@
     "prisma:studio": "pnpm -F @idea/api studio",
     "prisma:generate": "pnpm -F @idea/api prisma:generate",
     "migrate:dev": "pnpm -F @idea/api prisma:migrate:dev",
-    "migrate:deploy": "pnpm -F @idea/api migrate:deploy",
+    "migrate:deploy": "pnpm -F @idea/api prisma:migrate:deploy",
     "start": "turbo run start",
     "clean": "turbo run clean",
     "test": "turbo run test",
