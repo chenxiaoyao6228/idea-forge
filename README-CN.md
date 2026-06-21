@@ -144,7 +144,7 @@ pnpm run dev
 - 📚 完善文档
 - 🌍 添加翻译
 
-在提交拉取请求之前，请阅读我们的[贡献指南](CONTRIBUTING.md)。
+在提交拉取请求之前，请阅读我们的[贡献指南](CONTRIBUTING-CN.md)。
 
 ## 📄 许可证
 
