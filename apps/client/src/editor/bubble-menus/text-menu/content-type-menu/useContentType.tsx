@@ -67,7 +67,12 @@ export const useContentType = (editor: Editor | null) => {
         Icon: () => <ListTodo className="h-4 w-4" />,
         label: t("To-do list"),
         description: t("Track tasks with a to-do list."),
-        disabled: () => !editor.can().toggleTaskList(),
+        disabled: () => {
+          const can = editor.can() as ReturnType<Editor["can"]> & {
+            toggleTaskList?: () => boolean;
+          };
+          return typeof can.toggleTaskList !== "function" || !can.toggleTaskList();
+        },
         isActive: () => editor.isActive("taskList"),
         onClick: () => editor.chain().focus().toggleTaskList().run(),
       },
